@@ -1,13 +1,24 @@
-# CodeLab — IDE & Simulateurs Pédagogiques
+<p align="center">
+  <img src="client/icons/icone.png" alt="CodeLab Logo" width="130">
+</p>
 
-[![Licence: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Java: 17](https://img.shields.io/badge/Java-17%20LTS-orange.svg)](https://adoptium.net/)
-[![Rust: 2021](https://img.shields.io/badge/Rust-2021%20Edition-red.svg)](https://www.rust-lang.org/)
-[![Dépôt APP](https://img.shields.io/badge/Dépôt%20APP-IDDN--FR--001--260031-green.svg)](https://www.app.asso.fr/)
+<h1 align="center">CodeLab — IDE & Simulateurs Pédagogiques</h1>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="Licence: GPL v3"></a>
+  <a href="https://adoptium.net/"><img src="https://img.shields.io/badge/Java-17%20LTS-orange.svg" alt="Java: 17"></a>
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021%20Edition-red.svg" alt="Rust: 2021"></a>
+  <a href="https://www.app.asso.fr/"><img src="https://img.shields.io/badge/Dépôt%20APP-IDDN--FR--001--260031-green.svg" alt="Dépôt APP"></a>
+</p>
+
+<p align="center">
+  <strong>Environnement d'apprentissage de la programmation pour l'enseignement secondaire et supérieur</strong><br>
+  Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
+</p>
+
+---
 
 **CodeLab** est un environnement d'apprentissage de la programmation destiné aux collèges, lycées (NSI), classes préparatoires et premières années d'université (L1/L2). Conçu à [Le Mans Université](https://www.univ-lemans.fr), il associe un **client riche multiplateforme (Java 17 Swing / FlatLaf)** à un **serveur asynchrone haute performance (Rust / Tokio)** pour offrir une expérience pédagogique interactive, visuelle et supervisée en temps réel.
-
-Site officiel : [https://codelab.univ-lemans.fr](https://codelab.univ-lemans.fr)
 
 ---
 
