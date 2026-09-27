@@ -5,7 +5,7 @@
 <h1 align="center">CodeLab — IDE & Simulateurs Pédagogiques</h1>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="Licence: GPL v3"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-Éducative%20%26%20Non--Commerciale-blue.svg" alt="Licence: Éducative & Non-Commerciale"></a>
   <a href="https://adoptium.net/"><img src="https://img.shields.io/badge/Java-17%20LTS-orange.svg" alt="Java: 17"></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021%20Edition-red.svg" alt="Rust: 2021"></a>
   <a href="https://www.app.asso.fr/"><img src="https://img.shields.io/badge/Dépôt%20APP-IDDN--FR--001--260031-green.svg" alt="Dépôt APP"></a>
@@ -129,9 +129,10 @@ Le serveur démarre son écoute TCP sur le port configuré (par exemple `127.0.0
 ---
 
 ## 📜 Propriété Intellectuelle & Licence
-
+ 
 - **Auteur & Concepteur** : Jérôme Lehuen, Maître de Conférences, Le Mans Université (LIUM).
 - **Dépôt légal APP** : Le logiciel *CodeLab IDE & Simulators* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous le numéro :
   $$\text{IDDN-FR-001-260031-000-SC-2022-000-10000}$$
-- **Licence** : Ce projet est distribué sous licence libre **GNU General Public License v3.0 (GPL-3.0)**. Consultez le fichier [LICENSE](LICENSE) pour plus de détails.
+- **Licence & Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives, académiques et de recherche non commerciale. **Toute utilisation ou exploitation commerciale, revente ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université. Consultez le fichier [LICENSE](LICENSE) pour l'intégralité des termes et des mentions légales.
+- **Documentation & Manuels** : La documentation, les guides et les programmes d'exemples sont mis à disposition sous licence [Creative Commons CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/) (Attribution - Pas d'Utilisation Commerciale - Pas de Modification).
 - **Copyright** : © 2021-2026 Jérôme Lehuen, Le Mans Université.
