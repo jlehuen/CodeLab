@@ -2,7 +2,7 @@
   <img src="client/icons/icone.png" alt="CodeLab Logo" width="130">
 </p>
 
-<h1 align="center">CodeLab — IDE & Simulateurs Pédagogiques</h1>
+<h1 align="center">CodeLab IDE & Simulators</h1>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-Éducative%20%26%20Non--Commerciale-blue.svg" alt="Licence: Éducative & Non-Commerciale"></a>
@@ -22,7 +22,7 @@
 
 ---
 
-## 🎯 Philosophie & Approche Pédagogique
+## Philosophie & Approche Pédagogique
 
 - **Sortir du strict écran-clavier** : Rompre avec les exercices textuels austères en connectant le code à des simulateurs interactifs riches (modules PAC : robotique, ascenseur, feux tricolores, etc.) et à des périphériques matériels réels ou virtuels (capteurs, joysticks, manettes USB via JInput).
 - **Fondements théoriques** : Inspiré par les travaux de Jean Piaget, Marvin Minsky et le constructionnisme de Seymour Papert (créateur du langage Logo et pionnier de Lego Mindstorms).
@@ -39,7 +39,7 @@
 
 ---
 
-## 🧱 Architecture du Répertoire
+## Architecture du Répertoire
 
 ```text
 codelab/
@@ -72,7 +72,7 @@ codelab/
 
 ---
 
-## 🚀 Démarrage Rapide & Compilation
+## Démarrage Rapide & Compilation
 
 ### 1. Client Java
 
@@ -120,7 +120,7 @@ Le serveur démarre son écoute TCP sur le port configuré (par exemple `127.0.0
 
 ---
 
-## 🔒 Sécurité & Protection des Données (RGPD)
+## Sécurité & Protection des Données (RGPD)
 
 - **Confidentialité** : Les données nominatives étudiantes, listes de promotions, traces d'exécution et identifiants SMTP de production sont systématiquement isolés et exclus du dépôt public.
 - **Authentification** : Mots de passe chiffrés par empreinte SHA-256 (compatible avec le format standard `echo -n "votre_mdp" | sha256sum | xxd -r -p | base64`).
@@ -128,7 +128,7 @@ Le serveur démarre son écoute TCP sur le port configuré (par exemple `127.0.0
 
 ---
 
-## 📜 Propriété Intellectuelle & Licence
+## Propriété Intellectuelle & Licence
  
 - **Auteur & Concepteur** : Jérôme Lehuen, Maître de Conférences, Le Mans Université (LIUM).
 - **Dépôt légal APP** : Le logiciel *CodeLab IDE & Simulators* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous le numéro :
