@@ -16,11 +16,12 @@
   Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
 </p>
 
----
-
 **CodeLab** est un environnement d'apprentissage de la programmation destiné aux collèges, lycées (NSI), classes préparatoires et premières années d'université (L1/L2). Conçu à [Le Mans Université](https://www.univ-lemans.fr), il associe un **client riche multiplateforme (Java 17 Swing / FlatLaf)** à un **serveur asynchrone haute performance (Rust / Tokio)** pour offrir une expérience pédagogique interactive, visuelle et supervisée en temps réel.
 
----
+<p align="center">
+  <img src="client/images/screen_1.png" alt="screen_1.png">
+  <img src="client/images/screen_2.png" alt="screen_2.png">
+</p>
 
 ## Philosophie & Approche Pédagogique
 
@@ -30,7 +31,7 @@
   - **Impératif & Système** : C, Go
   - **Orienté Objet** : Java
   - **Scripting & Multiparadigme** : Python
-  - **Déclaratif / Systèmes experts** : CLIPS, Jess (moteur Rete)
+  - **Déclaratif / Systèmes experts** : CLIPS
   - **Fonctionnel** : Haskell
   - **Graphique & Créatif** : Processing
   - **Visuel** : Programmation par Blocs traduisibles en Python
@@ -50,7 +51,7 @@ codelab/
 │   │   ├── modules/            # Modules interactifs et simulateurs PAC
 │   │   └── utils/              # Cryptographie, parseurs, compression Tar/Zstd
 │   ├── data/                   # Ressources graphiques, sons, syntaxes de langages
-│   ├── hidden/codelab/         # Bibliothèques tierces (Jess, FlatLaf, Processing, JInput)
+│   ├── hidden/codelab/         # Bibliothèques tierces (FlatLaf, JInput, etc.)
 │   ├── natives/                # Bibliothèques natives C/C++ par OS (.dylib, .so, .dll)
 │   ├── build.xml               # Fichier de build Apache Ant
 │   ├── build.sh                # Script de compilation local
