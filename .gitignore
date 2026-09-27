@@ -42,6 +42,10 @@ ssh-*.command
 BILAN*
 ROADMAP*
 
+# Documentation technique interne et scripts de déploiement universitaire
+client/CODELAB.md
+client/distrib-ic2.sh
+
 # ------------------------------------------------------------------------------
 # 3. Logs, traces d'exécution et archives temporaires
 # ------------------------------------------------------------------------------
