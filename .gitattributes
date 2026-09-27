@@ -27,3 +27,24 @@
 *.zip binary
 *.tar binary
 *.zst binary
+
+# ------------------------------------------------------------------------------
+# Statistiques des langages GitHub (GitHub Linguist)
+# ------------------------------------------------------------------------------
+# Outils tiers embarqués (Apache Ant et ses 42 Mo de Javadoc/manuels HTML/XSLT)
+client/java/** linguist-vendored
+
+# Sources et bibliothèques natives tierces compilées (JInput C)
+client/natives/** linguist-vendored
+
+# Gabarits et squelettes d'activités pour apprenants
+client/codelab.files/** linguist-vendored
+
+# Documentation et mentions légales HTML
+client/data/mentions/** linguist-documentation
+
+# Gabarits web du tableau de bord serveur
+server/server/templates/** linguist-vendored
+
+# Reconnaissance explicite des lanceurs .command comme Shell
+*.command linguist-language=Shell
