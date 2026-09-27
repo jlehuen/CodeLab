@@ -38,6 +38,10 @@ server/ssh-univ.command
 client/gemini.sh
 ssh-*.command
 
+# Bilans techniques et feuilles de route internes
+BILAN*
+ROADMAP*
+
 # ------------------------------------------------------------------------------
 # 3. Logs, traces d'exécution et archives temporaires
 # ------------------------------------------------------------------------------
