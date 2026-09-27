@@ -131,9 +131,15 @@ Le serveur démarre son écoute TCP sur le port configuré (par exemple `127.0.0
 
 ## Propriété Intellectuelle & Licence
  
-- **Auteur & Concepteur** : Jérôme Lehuen, Maître de Conférences, Le Mans Université (LIUM).
-- **Dépôt légal APP** : Le logiciel *CodeLab IDE & Simulators* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous le numéro :
-  $$\text{IDDN-FR-001-260031-000-SC-2022-000-10000}$$
+- **Auteur** : Jérôme Lehuen, Maître de Conférences, Le Mans Université (LIUM).
+- **Dépôt légal** : Le logiciel *CodeLab IDE & Simulators* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous le numéro :
+
+<p align="center">
+  <img src="client/data/mentions/app.png" alt="app.png">
+  <br/>IDDN-FR-001-260031-000-SC-2022-000-10000
+</p>
+
 - **Licence & Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives, académiques et de recherche non commerciale. **Toute utilisation ou exploitation commerciale, revente ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université. Consultez le fichier [LICENSE](LICENSE) pour l'intégralité des termes et des mentions légales.
-- **Documentation & Manuels** : La documentation, les guides et les programmes d'exemples sont mis à disposition sous licence [Creative Commons CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/) (Attribution - Pas d'Utilisation Commerciale - Pas de Modification).
+- **Documentation** : La documentation, les guides et les programmes d'exemples sont mis à disposition sous licence [Creative Commons CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 - **Copyright** : © 2021-2026 Jérôme Lehuen, Le Mans Université.
+
