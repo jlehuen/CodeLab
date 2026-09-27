@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!ELEMENT data (groups, sessions, users)>
+<!ATTLIST data info CDATA #IMPLIED>
+
+<!ELEMENT groups (group+)>
+<!ELEMENT group EMPTY>
+<!ATTLIST group id ID #REQUIRED>
+
+<!ELEMENT sessions (session+)>
+<!ELEMENT session EMPTY>
+<!ATTLIST session
+    id ID #REQUIRED
+    openned (true|false) #REQUIRED
+    groups IDREFS #IMPLIED
+    users CDATA #IMPLIED>
+
+<!ELEMENT users (user+)>
+<!ELEMENT user EMPTY>
+<!ATTLIST user
+    login CDATA #REQUIRED
+    passwd CDATA #IMPLIED
+    status (STUDENT|TUTOR|ADMIN) #REQUIRED
+	groups IDREFS #IMPLIED
+    name CDATA #IMPLIED
+	mail CDATA #IMPLIED
+	
+	date CDATA #IMPLIED
+	addr CDATA #IMPLIED
+	session CDATA #IMPLIED
+	worktime CDATA #IMPLIED>

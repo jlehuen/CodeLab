@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Serveur CodeLab</title>
+    <link rel="stylesheet" href="admin_dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>🖥️&nbsp;&nbsp;Serveur CodeLab</h1>
+                <p>Interface web de monitoring et d'administration</p>
+            </div>
+            <div class="header-logo-container">
+                <img src="logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            </div>
+        </div>
+        
+        <div id="serverStoppedBanner" class="server-stopped" style="display: none;">
+            ⚠️ Le serveur a été arrêté - Aucune nouvelle donnée disponible
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-info">
+                <span id="lastRefresh">Initialisation...</span>
+            </div>
+            <div>
+                <span id="connectionStatus" class="connection-status">🔄 Connexion...</span>
+            </div>
+        </div>
+        
+        <!-- Zone de debug -->
+        <div class="debug-info">
+            <h4>📋 Debug Information</h4>
+            <div id="debugLog"></div>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="dashboard">📊 DASHBOARD</button>
+            <button class="nav-tab" data-tab="users">👥 UTILISATEURS</button>
+            <button class="nav-tab" data-tab="sessions">🎯 SESSIONS</button>
+            <button class="nav-tab" data-tab="clients">💻 CONNEXIONS</button>
+            <button class="nav-tab" data-tab="actions">⚙️ ACTIONS</button>
+        </div>
+        
+        <!-- Tab Dashboard -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalConnections">-</div>
+                    <div class="stat-label">Connexions totales</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="studentsCount">-</div>
+                    <div class="stat-label">Étudiants connectés</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="tutorsCount">-</div>
+                    <div class="stat-label">Tuteurs connectés</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeSessions">-</div>
+                    <div class="stat-label">Sessions actives</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab USERS_DICO -->
+		<div id="users" class="tab-content">
+			<div class="search-filter">
+				<input type="text" class="search-input" id="userSearch" placeholder="🔍 Rechercher un utilisateur...">
+				<button class="btn btn-refresh" onclick="loadUsersData()">Recharger</button>
+			</div>
+			
+			<div class="data-table">
+				<table id="usersTable">
+					<thead>
+						<tr>
+							<th class="sortable" data-column="login">Login</th>
+							<th class="sortable" data-column="fullname">Nom complet</th>
+							<th class="sortable" data-column="status">Statut</th>
+							<th class="sortable" data-column="groups">Groupes</th>
+							<th class="sortable" data-column="mail">Email</th>
+							<th class="sortable" data-column="date">Dernière connexion</th>
+							<th class="sortable" data-column="addr">Dernière IP</th>
+							<th class="sortable" data-column="session_id">Dernière session</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr><td colspan="9" style="text-align: center; padding: 20px;">Cliquez sur "Recharger" pour charger les données</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+        
+        <!-- Tab SESSIONS_DICO -->
+        <div id="sessions" class="tab-content">
+            <div class="search-filter">
+                <input type="text" class="search-input" id="sessionSearch" placeholder="🔍 Rechercher une session...">
+                <button class="btn btn-refresh" onclick="loadSessionsData()">Recharger</button>
+            </div>
+            
+            <div class="data-table">
+                <table id="sessionsTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="id">ID Session</th>
+                            <th class="sortable" data-column="openned">État</th>
+                            <th class="sortable" data-column="groups">Groupes autorisés</th>
+                            <th class="sortable" data-column="users">Utilisateurs spécifiques</th>
+                            <th class="sortable" data-column="total_users">Total utilisateurs</th>
+                            <th class="sortable" data-column="connected_users">Connectés maintenant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="6" style="text-align: center; padding: 20px;">Cliquez sur "Recharger" pour charger les données</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Tab Clients connectés -->
+        <div id="clients" class="tab-content">
+            <div class="clients-table">
+                <table id="clientsTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="login">Login</th>
+                            <th class="sortable" data-column="fullname">Nom complet</th>
+                            <th class="sortable" data-column="status">Statut</th>
+                            <th class="sortable" data-column="session">Session</th>
+                            <th class="sortable" data-column="addr">Adresse IP</th>
+                            <th class="sortable" data-column="duration">Durée de connexion</th>
+                            <th class="sortable" data-column="help_flag">Aide demandée</th>
+                            <th class="sortable" data-column="edited_file">Fichier édité</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="9" style="text-align: center; padding: 20px;">Chargement automatique...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Tab Actions -->
+        <div id="actions" class="tab-content">
+            <div class="actions">
+                <h3>Actions d'administration</h3>
+                <button class="btn btn-refresh" id="refreshBtn" onclick="testAllApis()">Tester toutes les API</button>
+                <button class="btn btn-warning" onclick="testDashboardLive()"> Test Dashboard Live</button>
+                <button class="btn btn-refresh" onclick="updateDashboard()">Forcer la mise à jour</button>
+                <button class="btn btn-success" id="autoRefreshBtn" onclick="toggleAutoRefresh()">Démarrer auto-refresh</button>
+                <button class="btn btn-danger" id="shutdownBtn" onclick="confirmShutdown()">Arrêter le serveur</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chargement des ressources externes -->
+    <script src="admin_dashboard.js"></script>
+</body>
+</html>

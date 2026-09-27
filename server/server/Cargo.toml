@@ -1,0 +1,149 @@
+# ============================================================================
+# Fichier : Cargo.toml
+# Version : 02/06/25
+# Auteur  : Jérôme Lehuen
+# Projet  : Serveur CodeLab
+# ============================================================================
+# Configuration Cargo pour le serveur CodeLab - un serveur TCP asynchrone
+# permettant la gestion de sessions de programmation collaborative
+
+[package]
+name = "codelab-server"
+version = "1.0.0"
+edition = "2021"
+authors = ["Jérôme Lehuen"]
+
+# Exclusions lors de la publication
+exclude = [
+    "sessions/*",      # Dossiers de sessions (données utilisateur)
+    "logs/*",          # Fichiers de logs
+    "temp/*",          # Fichiers temporaires
+    "config/*.xml",    # Fichiers de configuration avec données sensibles
+    "*.log",           # Tous les fichiers de log
+]
+
+# ============================================================================
+# DÉPENDANCES PRINCIPALES
+# ============================================================================
+
+[dependencies]
+# Runtime asynchrone - Coeur du serveur
+# Utilisé pour la gestion asynchrone des connexions TCP multiples
+tokio = { version = "1.40.0", features = ["full"] }
+tokio-stream = "0.1"
+
+# ============================================================================
+# SÉRIALISATION ET FORMATS DE DONNÉES
+# ============================================================================
+
+# Sérialisation JSON - Structure de données génériques
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# MessagePack - Communication binaire efficace avec les clients Java
+# Format plus compact et rapide que JSON pour les échanges réseau
+rmp-serde = "1.3"
+
+# XML - Gestion de la base de données des utilisateurs et sessions
+quick-xml = { version = "0.37.5", features = ["serialize"] }
+
+# TOML - Fichier de configuration du serveur
+toml = "0.8"
+
+# ============================================================================
+# COMPRESSION ET ARCHIVAGE
+# ============================================================================
+
+# Archives TAR - Compression des sessions pour envoi aux clients
+tar = "0.4"
+
+# ZStandard - Compression rapide et efficace des archives
+zstd = "0.13"
+
+# ============================================================================
+# CRYPTOGRAPHIE ET SÉCURITÉ
+# ============================================================================
+
+# SHA-256 - Hachage des mots de passe pour l'authentification
+sha2 = "0.10"
+
+# Base64 - Décodage de l'authentification HTTP Basic pour l'interface admin
+base64 = "0.22"
+
+# ============================================================================
+# GESTION DES DATES ET TEMPS
+# ============================================================================
+
+# Chrono - Gestion des timestamps, durées de connexion et logs datés
+# Utilisé pour les statistiques de temps de travail et les backups datés
+chrono = { version = "0.4", features = ["serde"] }
+
+# ============================================================================
+# UTILITAIRES SYSTÈME
+# ============================================================================
+
+# Expressions régulières - Parsing des noms de fichiers de backup datés
+regex = "1.10"
+
+# Verrouillage de fichiers - Éviter les conflits lors des sauvegardes
+fs2 = "0.4"
+
+# Gestion des signaux POSIX - Arrêt propre du serveur (SIGTERM, SIGINT)
+signal-hook = "0.3"
+
+# Interface C - Constantes pour les signaux système
+libc = "0.2"
+
+# Pour envoyer des emails via SMTP
+lettre = "0.11"
+
+# ============================================================================
+# LOGGING ET DÉBOGAGE
+# ============================================================================
+
+# Framework de logging principal
+log = "0.4"
+
+# Implémentation complète du logging avec rotation et formatage
+log4rs = "1.3"
+
+# ============================================================================
+# UTILITAIRES DE DÉVELOPPEMENT
+# ============================================================================
+
+# Initialisation paresseuse - Variables globales thread-safe (CONNECTED_CLIENTS)
+lazy_static = "1.5"
+
+# ============================================================================
+# NOTES TECHNIQUES
+# ============================================================================
+#
+# 1. ARCHITECTURE ASYNCHRONE
+#    - Utilisation de Tokio pour gérer de multiples connexions simultanées
+#    - Pattern actor avec des structures Client clonables
+#    - Gestion des signaux de shutdown gracieux
+# 
+# 2. COMMUNICATION
+#    - Protocol TCP custom avec handshake de login/password
+#    - MessagePack pour la communication binaire efficace avec les clients Java
+#    - Interface web d'administration avec authentification HTTP Basic
+# 
+# 3. STOCKAGE
+#    - Base de données XML pour les utilisateurs et sessions
+#    - Système de fichiers pour le stockage des projets étudiants
+#    - Compression TAR+ZStandard pour l'envoi des sessions complètes
+# 
+# 4. SÉCURITÉ
+#    - Hachage SHA-256 des mots de passe
+#    - Gestion des sessions avec vérification des permissions
+#    - Isolation des données par session/utilisateur
+# 
+# 5. ADMINISTRATION
+#    - Interface web pour monitoring en temps réel
+#    - Statistiques de connexion et d'utilisation
+#    - Contrôle à distance (arrêt, déconnexion forcée)
+# 
+# 6. MAINTENANCE
+#    - Système de backup automatique avec rotation
+#    - Nettoyage intelligent des fichiers de sauvegarde
+#    - Logging complet avec rotation des fichiers

@@ -1,0 +1,29 @@
+[server]
+name = "Serveur CodeLab Local"
+addr = "127.0.0.1:9988"
+# Mot de passe maître optionnel (laisser commenté ou vide pour désactiver)
+# Génération : echo -n "votre_mot_de_passe" | sha256sum | xxd -r -p | base64
+# magic_password = ""
+
+[admin]
+addr = "127.0.0.1:9989"
+username = "admin"
+# Hash SHA-256 du mot de passe admin (par défaut : hash de "admin")
+# Génération : echo -n "votre_mot_de_passe" | sha256sum
+password_hash = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+
+[timeout]
+read = 30
+write = 10
+
+[cleanup]
+phantom_interval = 60
+socket_timeout = 2
+
+[report]
+status    = "DISABLED"
+server    = ""
+username  = ""
+password  = ""
+from      = "codelab@example.com"
+to        = "admin@example.com"

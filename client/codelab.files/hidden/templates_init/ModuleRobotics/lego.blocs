@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<scratch>
+
+<main x='57' y='65'>
+<motoron port='2' puissance='50' x='62' y='90'/>
+<wait expr='2000' x='62' y='115'/>
+<motoroff port='2' x='62' y='140'/>
+</main>
+<end/>
+
+</scratch>

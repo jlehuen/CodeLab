@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--DOCTYPE config SYSTEM "ressources/codelab/robots.dtd"-->
+<!--
+#####################################################################
+##  This file is part of the CodeLab IDE and Robot Simulator       ##
+##  Copyright © Jérôme Lehuen 2021 - Jerome.Lehuen@univ-lemans.fr  ##
+#####################################################################
+-->
+
+<config>
+
+	<!-- Fonds de l'atelier robotique -->
+
+	<back filename="empty.png"
+		name_fr="Aucun fond"
+		name_en="No background"/>
+
+	<back filename="room_yellow.png"
+		name_fr="B01 Fond avec bords"
+		name_en="B01 Background with yellow borders"/>
+
+	<back filename="room_cyan_1.png"
+		name_fr="B02 Fond avec murs (obstacles)"
+		name_en="B02 Background with walls (obstacles)"/>
+
+	<back filename="room_cyan_2.png"
+		name_fr="B03 Fond avec murs et cibles colorées"
+		name_en="B03 Background with walls and colored targets"/>
+
+	<back filename="room_cyan_3.png"
+		name_fr="B04 Piste de tests pour capteurs de distance"
+		name_en="B04 Test track for distance sensors"/>
+
+	<back filename="fond_color.png"
+		name_fr="B05 Piste de tests pour le capteur de couleur"
+		name_en="B05 Test track for the color sensor"/>
+
+	<back filename="knossos_1.png"
+		name_fr="B06 Piste de tests pour le capteur de ligne"
+		name_en="B06 Test track for the line sensor"/>
+
+	<back filename="fangio_1.png"
+		name_fr="B07 Piste Fangio sans marques"
+		name_en="B07 Fangio track without black marks"/>
+
+	<back filename="fangio_2.png"
+		name_fr="B08 Piste Fangio avec marques"
+		name_en="B08 Fangio track with black marks"/>
+
+	<back filename="knossos_2.png"
+		name_fr="B09 Piste Knossos"
+		name_en="B09 Knossos track"/>
+
+	<back filename="knossos_3.png"
+		name_fr="B09bis Piste Knossos"
+		name_en="B09bis Knossos track"/>
+	
+	<back filename="curved.png"
+		name_fr="B10 Grande pièce fermée courbe"
+		name_en="B10 Large curved closed room"/>
+
+	<back filename="labyrinthe.png"
+		name_fr="B11 Très grand labyrinthe"
+		name_en="B11 Very large maze"/>
+
+	<!-- Configurations pour le robot Lego -->
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT01 Robot sans capteur"
+		name_en="NXT01 Sensorless robot">
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT02 Robot avec un capteur de contact"
+		name_en="NXT02 Robot with one contact sensor">
+		<touch port="IN_1" x="93" y="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT03 Robot avec un capteur de couleur"
+		name_en="NXT03 Robot with one color sensor">
+		<color port="IN_1" x="72" y="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT04 Robot avec un capteur de distance"
+		name_en="NXT04 Robot with one distance sensor">
+		<sonic port="IN_1" x="70" y="0" theta="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT05 Robot avec un clavier numérique"
+		name_en="NXT05 Robot with the numpad keyboard">
+		<numpad port="IN_1" x="-20" y="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT06 Robot avec un capteur de ligne"
+		name_en="NXT06 Robot with the line sensor">
+		<array port="IN_1" x="45" y="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT07 Robot contact et distance frontales"
+		name_en="NXT07 Robot front contact and distance">
+		<touch port="IN_1" x="93" y="-29"/>
+		<sonic port="IN_2" x="70" y="29" theta="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT08 Contact + couleur + distance + clavier"
+		name_en="NXT08 Contact + color + distance + numpad">
+		<touch port="IN_1" x="100" y="29"/>
+		<color port="IN_2" x="65" y="7"/>
+		<sonic port="IN_3" x="70" y="-28" theta="0"/>
+		<numpad port="IN_4" x="-20" y="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT09 Contact frontal et distances latérales"
+		name_en="NXT09 Contact and lateral distances">
+		<touch port="IN_1" x="93" y="0"/>
+		<sonic port="IN_2" x="43" y="-55" theta="-90"/>
+		<sonic port="IN_3" x="43" y="55" theta="90"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT10 Deux télémètres latéraux à gauche"
+		name_en="NXT10 Deux distance sensors on the left side">
+		<sonic port="IN_1" x="70" y="0" theta="0"/>
+		<sonic port="IN_2" x="43" y="-75" theta="-90"/>
+		<sonic port="IN_3" x="-100" y="-75" theta="-90"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT11 Trois distances et une boussole"
+		name_en="NXT11 Three distance sensors and one compass">
+		<sonic port="IN_1" x="83" y="0" theta="0"/>
+		<sonic port="IN_2" x="43" y="-55" theta="-90"/>
+		<sonic port="IN_3" x="43" y="55" theta="90"/>
+		<compas port="IN_4" x="0" y="0"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT12 Robot configuré pour l'activité Fangio"
+		name_en="NXT12 Robot configured for the Fangio activity">
+		<color port="IN_1" x="72" y="0"/>
+		<sonic port="IN_2" x="85" y="-28" theta="0"/>
+		<sonic port="IN_3" x="43" y="55" theta="90"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name_fr="NXT13 Robot configuré pour l'activité Knossos"
+		name_en="NXT13 Robot configured for the Knossos activity">
+		<array port="IN_1" x="45" y="0"/>
+		<color port="IN_2" x="72" y="0"/>
+	</robot>
+	
+	<robot type="Rovio" x="100" y="100" theta="0"
+		name_fr="Robot Rovio"
+		name_en="Rovio robot">
+	</robot>
+
+</config>

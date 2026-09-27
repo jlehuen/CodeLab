@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<plist version="1.0">
+	<dict>
+		<key>CFBundleName</key>
+		<string>CodeLab</string>
+
+		<key>CFBundleIdentifier</key>
+		<string>fr.univlemans.codelab</string>
+
+		<key>CFBundleGetInfoString</key>
+		<string>CodeLab IDE and Simulators</string>
+
+		<key>CFBundleExecutable</key>
+		<string>run.sh</string>
+
+		<key>CFBundleIconFile</key>
+		<string>AppIcon.icns</string>
+
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+
+		<key>CFBundlePackageType</key>
+		<string>APPL</string>
+
+		<key>CFBundleSignature</key>
+		<string>????</string>
+		
+		<key>NSHumanReadableCopyright</key>
+		<string>Copyright © 2025 Le Mans Université. All Rights Reserved.</string>
+	</dict>
+</plist>

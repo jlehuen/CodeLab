@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+#####################################################################
+##  This file is part of the CodeLab IDE and Robot Simulator       ##
+##  Copyright © Jérôme Lehuen 2021 - Jerome.Lehuen@univ-lemans.fr  ##
+#####################################################################
+-->
+
+<!ELEMENT config (back+, robot+)>
+
+<!ELEMENT back EMPTY>
+<!ATTLIST back filename CDATA #REQUIRED>
+<!ATTLIST back name_fr CDATA #REQUIRED>
+<!ATTLIST back name_en CDATA #REQUIRED>
+
+<!ELEMENT robot (touch|color|sonic|array|numpad|compas)*>
+<!ATTLIST robot type (Lego|Rovio|Roomba) #REQUIRED>
+<!ATTLIST robot x CDATA #REQUIRED>
+<!ATTLIST robot y CDATA #REQUIRED>
+<!ATTLIST robot theta CDATA #REQUIRED>
+<!ATTLIST robot name_fr CDATA #REQUIRED>
+<!ATTLIST robot name_en CDATA #REQUIRED>
+
+<!ELEMENT touch EMPTY>
+<!ATTLIST touch port (IN_1|IN_2|IN_3|IN_4) #REQUIRED>
+<!ATTLIST touch x CDATA #REQUIRED>
+<!ATTLIST touch y CDATA #REQUIRED>
+
+<!ELEMENT color EMPTY>
+<!ATTLIST color port (IN_1|IN_2|IN_3|IN_4) #REQUIRED>
+<!ATTLIST color x CDATA #REQUIRED>
+<!ATTLIST color y CDATA #REQUIRED>
+
+<!ELEMENT sonic EMPTY>
+<!ATTLIST sonic port (IN_1|IN_2|IN_3|IN_4) #REQUIRED>
+<!ATTLIST sonic x CDATA #REQUIRED>
+<!ATTLIST sonic y CDATA #REQUIRED>
+<!ATTLIST sonic theta CDATA #IMPLIED>
+
+<!ELEMENT array EMPTY>
+<!ATTLIST array port (IN_1|IN_2|IN_3|IN_4) #REQUIRED>
+<!ATTLIST array x CDATA #REQUIRED>
+<!ATTLIST array y CDATA #REQUIRED>
+
+<!ELEMENT numpad EMPTY>
+<!ATTLIST numpad port (IN_1|IN_2|IN_3|IN_4) #REQUIRED>
+<!ATTLIST numpad x CDATA #REQUIRED>
+<!ATTLIST numpad y CDATA #REQUIRED>
+
+<!ELEMENT compas EMPTY>
+<!ATTLIST compas port (IN_1|IN_2|IN_3|IN_4) #REQUIRED>
+<!ATTLIST compas x CDATA #REQUIRED>
+<!ATTLIST compas y CDATA #REQUIRED>

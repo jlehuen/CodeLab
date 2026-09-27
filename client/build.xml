@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- https://ant.apache.org/manual/ -->
+<!-- https://yworks.github.io/yGuard/ -->
+<!-- https://www.yworks.com/resources/yguard/yguard_ant_howto.html -->
+<!-- https://www.jmdoudoux.fr/java/dej/chap-ant.htm -->
+
+<project default="run">
+
+	<!-- ########## -->
+	<!-- Propriétés -->
+	<!-- ########## -->
+
+	<property environment="env"/>
+	<property name="env.VERSION" value="1.4.1"/>
+
+	<property name="main-class" value="CodeLab"/>
+	<property name="main-package" value="codelab"/>
+
+	<property name="sources-dir" value="src"/>
+	<property name="classes-dir" value="class"/>
+	<property name="ressources-dir" value="hidden"/>
+
+	<tstamp>
+		<format property="today" pattern="dd/MM/yy" locale="fr,FR"/>
+		<format property="build" pattern="yyMMddHHmm" locale="fr,FR"/>
+	</tstamp>
+
+	<!--property name="jarfile" value="${main-class}-${build}.jar"/-->
+	<property name="jarfile" value="${ressources-dir}/codelab/codelab.jar"/>
+
+	<!-- ################################################ -->
+	<!-- Macros de recopie pour conserver les permissions -->
+	<!-- ################################################ -->
+
+	<macrodef name="internal-copyfile">
+		<attribute name="file" default="NOT SET"/>
+		<attribute name="tofile" default="NOT SET"/>
+		<sequential>
+			<exec executable="cp" failonerror="true">
+				<arg value="@{file}"/>
+				<arg value="@{tofile}"/>
+			</exec>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="internal-copydir">
+		<attribute name="fromdir" default="NOT SET"/>
+		<attribute name="todir" default="NOT SET"/>
+		<sequential>
+			<exec executable="cp" failonerror="true">
+				<arg value="-r" />
+				<arg value="@{fromdir}/"/>
+				<arg value="@{todir}/"/>
+			</exec>
+		</sequential>
+	</macrodef>
+
+	<!-- ########### -->
+	<!-- Préparation -->
+	<!-- ########### -->
+
+	<target name="cls">
+		<exec executable="printf">
+			<arg value="\033c\033[3J"/>
+		</exec>
+	</target>
+
+	<target name="java-version">
+		<echo message="JAVA_HOME=${env.JAVA_HOME}"/>
+	</target>
+
+	<target name="clean" depends="cls">
+		<delete dir="${classes-dir}"/>
+		<mkdir dir="${classes-dir}"/>
+		<delete file="${main-class}.jar"/>
+		<delete file="${jarfile}"/>
+	</target>
+
+	<target name="replace">
+		<echo message="Remplacement du numéro de version dans le code: ${env.VERSION}"/>
+		<replaceregexp
+			match="VERSION = &quot;[0-9].[0-9].[0-9]&quot;;"
+			replace="VERSION = &quot;${env.VERSION}&quot;;">
+			<fileset dir="${sources-dir}/${main-package}">
+				<include name="AbstractCodeLab.java"/>
+			</fileset>
+		</replaceregexp>
+		
+		<echo message="Remplacement du numéro de build dans le code: ${build}"/>
+		<replaceregexp
+			match="BUILD = &quot;[0-9]+&quot;;"
+			replace="BUILD = &quot;${build}&quot;;">
+			<fileset dir="${sources-dir}/${main-package}">
+				<include name="AbstractCodeLab.java"/>
+			</fileset>
+		</replaceregexp>
+
+		<available file="../www/www/data/web.properties" property="webprops.present"/>
+	</target>
+
+	<target name="update-web-properties" if="webprops.present">
+		<echo message="Mise à jour automatique de web.properties: VERSION=${env.VERSION}, BUILD=${build}"/>
+		<replaceregexp file="../www/www/data/web.properties"
+			match="BUILD=[0-9]+"
+			replace="BUILD=${build}"/>
+		<replaceregexp file="../www/www/data/web.properties"
+			match="VERSION=[0-9].[0-9].[0-9]"
+			replace="VERSION=${env.VERSION}"/>
+	</target>
+
+	<!-- ########### -->
+	<!-- Compilation -->
+	<!-- ########### -->
+
+	<presetdef name="myjavac">
+		<javac debug="true" deprecation="on" includeantruntime="false"/>
+	</presetdef>
+
+	<target name="compile" depends="clean,java-version,replace,update-web-properties">
+		<myjavac srcdir="${sources-dir}" destdir="${classes-dir}">
+			<classpath refid="classpath"/>
+		</myjavac>
+	</target>
+
+	<!-- ############################ -->
+	<!-- Génération du jar de CodeLab -->
+	<!-- ############################ -->
+
+	<path id="classpath">
+		<fileset dir="${ressources-dir}/codelab/libraries">
+			<include name="**/*.jar"/>
+		</fileset>
+	</path>
+
+	<target name="make-jar" depends="compile">
+		<!-- Copie du répertoire data -->
+		<copy todir="${classes-dir}/data">
+			<fileset dir="data"/>
+		</copy>
+		<!-- Suppression des éléments inutiles -->
+		<delete dir="${classes-dir}/hote"/>
+		<!-- Définition du classpath du manifest -->
+		<manifestclasspath property="jar-classpath" jarfile="${jarfile}">
+			<classpath refid="classpath"/>
+		</manifestclasspath>
+		<!-- Génération du jar -->
+		<jar destfile="${jarfile}" basedir="${classes-dir}">
+			<manifest>
+				<attribute name="Author" value="Jerome.Lehuen@univ-lemans.fr"/>
+				<attribute name="Main-Class" value="${main-package}.${main-class}"/>
+				<attribute name="SplashScreen-Image" value="data/splash.png"/>
+				<attribute name="Class-Path" value="${jar-classpath}"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<!-- ############################ -->
+	<!-- Obfuscation d'un fichier jar -->
+	<!-- ############################ -->
+
+	<target name="obfuscate-with-yguard" depends="make-jar">
+		<move file="${jarfile}" tofile="tmp.jar"/>
+		<taskdef name="yguard"
+			classname="com.yworks.yguard.YGuardTask"
+			classpath="yguard/lib/yguard.jar"/>
+		<yguard>
+			<inoutpair in="tmp.jar" out="${jarfile}"/>
+			<shrink logfile="yguard-shrink.log"/>
+			<rename logfile="yguard-rename.log"
+				mainclass="${main-package}.${filename}">
+			</rename>
+		</yguard>
+		<delete file="tmp.jar"/>
+	</target>
+
+	<target name="obfuscate-with-proguard" depends="make-jar">
+		<move file="${jarfile}" tofile="proguard/input.jar"/>
+		<exec executable="${env.JAVA_HOME}/bin/java">
+			<arg value="-jar"/>
+			<arg value="proguard/proguard.jar"/>
+			<arg value="@proguard/codelab.pro"/>
+		</exec>
+		<delete file="proguard/input.jar"/>
+		<move file="proguard/output.jar" tofile="${jarfile}"/>
+	</target>
+
+	<!-- #################### -->
+	<!-- Exécution de CodeLab -->
+	<!-- #################### -->
+
+	<target name="run" depends="make-jar">
+		<java fork="true" jar="${jarfile}">
+			<jvmarg value="-Djava.library.path=./${ressources-dir}/libraries/natives/osx/"/>
+		</java>
+	</target>
+
+	<!-- ############## -->
+	<!-- Autres targets -->
+	<!-- ############## -->
+
+	<target name="codelab" depends="make-jar">
+		<!--
+		http://tutorials.jenkov.com/java-cryptography/keytool.html
+		https://www.devdungeon.com/content/java-keytool-tutorial
+
+		keytool -genkey -alias somekeyname
+		jarsigner /path/to/jar somekeyname
+
+		keytool -genkey -noprompt -alias Alias -dname "CN=Hostname, OU=OrganizationalUnit, O=Organization, L=City, S=State, C=Country" -keystore path.to.keystore -storepass password -keypass password -validity 3650
+		jarsigner -keystore path.to.keystore -storepass password -keypass password -signedjar signed.jar unsigned.jar Alias
+		<signjar jar="${jarfile}"
+			keystore="MyCertificateFolder/qoppasoftware.pfx"
+			storepass="12345"
+			alias="univ-lemans"/>
+		-->
+		<echo message="--> Fichier ${jarfile} généré"/>
+	</target>
+
+	<target name="codelab-pro" depends="obfuscate-with-proguard">
+		<property name="todesktop" value="${user.home}/Desktop/codelab-${build}.jar"/>
+		<internal-copyfile file="${jarfile}" tofile="${todesktop}"/>
+		<echo message="--> Fichier ${jarfile} généré et obfusqué"/>
+		<checksum algorithm="md5" file="${todesktop}"/>
+		<checksum algorithm="sha1" file="${todesktop}"/>
+		<echo message="--> Fichier ${jarfile}.md5 généré"/>
+		<echo message="--> Fichier ${jarfile}.sha1 généré"/>
+	</target>
+
+</project>

@@ -1,0 +1,2 @@
+
+// Use Linear PCM 44100 Hz, 8 or 16 bits encoded files

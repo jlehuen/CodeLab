@@ -1,0 +1,5 @@
+e9b54e7edb993a42215ebbf8d1c72359aebe212706edcc3455a9555c16f6a1e3  bin/arm64/libjinput-osx.dylib
+e9b54e7edb993a42215ebbf8d1c72359aebe212706edcc3455a9555c16f6a1e3  bin/arm64/libjinput-osx.jnilib
+d6dea646ddbf719aaf8de1e93accdaf1c4e4c38c8d90af5c5a7884b383d94004  bin/universal/libjinput-osx.dylib
+d6dea646ddbf719aaf8de1e93accdaf1c4e4c38c8d90af5c5a7884b383d94004  bin/universal/libjinput-osx.jnilib
+0350e108c086796a0397a2365aa17cb183a5074329ea3b4dd6fcbd33b62c1386  jar/jinput-osx-2.0.11.jar

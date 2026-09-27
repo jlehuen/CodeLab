@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<scratch>
+
+<main x='53' y='50'>
+<repeat expr='4' x='58' y='75'>
+<print expr='"go forward..."' x='63' y='100'/>
+<turtle_forward expr='100' x='63' y='125'/>
+<print expr='"turn right..."' x='63' y='150'/>
+<turtle_turnright expr='90' x='63' y='175'/>
+</repeat>
+</main>
+<end/>
+
+</scratch>

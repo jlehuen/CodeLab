@@ -1,0 +1,48 @@
+#!/bin/bash
+
+TARGET=/Users/lehuen/Desktop
+
+echo "----------------------------------------------------------------"
+echo "Génération de la distribution MacOS"
+echo "----------------------------------------------------------------"
+
+## brew install pcre
+VERSION=$(pcregrep -o1 'VERSION = "(.*)"' src/codelab/AbstractCodeLab.java)
+BUILD=$(pcregrep -o1 'BUILD = "([0-9]*)"' src/codelab/AbstractCodeLab.java)
+
+echo "VERSION = $VERSION"
+echo "BUILD = $BUILD"
+
+ZIPNAME=CodeLab-MacOS-$VERSION
+
+BASE=$(pwd)
+
+#########################################################################
+## Package the OSX application with JDK and libraries
+#########################################################################
+
+APP=$TARGET/CodeLab.app
+MACOS=$APP/Contents/MacOS
+
+rm -rf $APP
+cp -r mac-app $APP
+cp -r hidden/codelab $MACOS
+
+echo "Copie des fichiers de configuration..."
+cp sys-properties/sysconfig-mac.properties $MACOS/codelab/sysconfig.properties
+cp user-properties/user-mac.properties $MACOS/codelab/user.properties.bak
+
+echo "Copie des librairies natives..."
+cp natives/osx_64/* $MACOS/codelab/natives/
+
+echo "Préparation du dossier codelab.files..."
+cp -r codelab.files $MACOS/codelab/
+cd $MACOS/codelab/
+cp user.properties.bak codelab.files/userdata/user.properties
+mv codelab.files/hidden codelab.files/.hidden
+zip -qr files.zip codelab.files -x ".DS_Store" -x "._*"
+rm -r codelab.files
+
+echo "Actualisation du cache LaunchServices..."
+touch "$APP"
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" 2>/dev/null || true

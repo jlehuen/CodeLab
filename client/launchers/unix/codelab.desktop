@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=CodeLab
+GenericName=CodeLab
+Icon=/opt/CodeLab-ic2/codelab.ico
+Exec=/opt/CodeLab-ic2/codelab
+Terminal=false
+StartupNotify=false

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+#####################################################################
+## This file is part of the software CodeLab IDE and Simulators    ##
+## For any question about CodeLab e-mail to codelab@univ-lemans.fr ##
+#####################################################################
+
+		You can create or modifiy the robots configurations here
+		Have a look to the robot.dtd file but do not modify it!
+-->
+
+<robots>
+	<robot type="Lego" x="100" y="100" theta="0"
+		name="What a beautiful robot!">
+		<sonic port="IN_1" x="70" y="-55" theta="-30"/>
+		<sonic port="IN_2" x="70" y="0" theta="0"/>
+		<sonic port="IN_3" x="70" y="55" theta="30"/>
+	</robot>
+
+	<robot type="Lego" x="100" y="100" theta="0"
+		name="A lot of sensors">
+		<touch port="IN_1" x="100" y="29"/>
+		<color port="IN_2" x="65" y="7"/>
+		<sonic port="IN_3" x="70" y="-28" theta="0"/>
+		<compas port="IN_4" x="0" y="0"/>
+	</robot>
+</robots>

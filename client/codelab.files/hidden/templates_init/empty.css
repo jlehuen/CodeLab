@@ -1,0 +1,13 @@
+/*
+	Stylesheet _fileName_
+	Created by _author_ on _date_
+*/
+
+html, body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background-color: white;
+}

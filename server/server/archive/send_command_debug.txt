@@ -1,0 +1,50 @@
+	// ----------------------------------------------------------------------------
+    // Version de send_command avec gestion détaillée des erreurs
+
+    #[allow(dead_code)]
+    async fn send_command_debug(&self, cmd: CommandType, data: Vec<Value>) -> EmptyResult {
+        let mut socket = self.write_stream.write().await;
+        let message = MessageToClient::new(cmd, data);
+
+        // Sérialisation en MessagePack avec gestion d'erreur détaillée
+        let serialized = match to_vec(&message) {
+            Ok(data) => data,
+            Err(e) => {
+                eprintln!("SERVER: Sérialisation MessagePack échouée: {:?}", e);
+                eprintln!("SERVER: MESSAGE: {:?}", message);
+                return Err(Box::new(e));
+            }
+        };
+
+        // Afficher la taille du message sérialisé
+        eprintln!("SERVER: Taille du message sérialisé: {} octets", serialized.len());
+
+        // Afficher un aperçu hexadécimal du message pour le débogage
+        if serialized.len() > 0 {
+            let preview_size = std::cmp::min(serialized.len(), 64); // Limiter à 64 octets pour la lisibilité
+            let hex_preview: Vec<String> = serialized[..preview_size]
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect();
+            eprintln!("SERVER: Aperçu hexadécimal: {}", hex_preview.join(" "));
+        }
+
+        // Envoi du message sérialisé avec gestion d'erreur détaillée
+        match socket.write_all(&serialized).await {
+            Ok(_) => {
+                // Tenter le flush pour s'assurer que les données sont bien envoyées
+                match socket.flush().await {
+                    Ok(_) => eprintln!("SERVER: Message envoyé et flush effectué avec succès"),
+                    Err(e) => {
+                        eprintln!("SERVER: Erreur lors du flush du socket: {:?}", e);
+                        return Err(Box::new(e));
+                    }
+                }
+            },
+            Err(e) => {
+                eprintln!("SERVER: Erreur lors de l'envoi du message: {:?}", e);
+                return Err(Box::new(e));
+            }
+        }
+        Ok(())
+    }

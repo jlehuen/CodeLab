@@ -1,0 +1,103 @@
+# ==============================================================================
+# CodeLab - .gitignore racine pour publication GitHub
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Dossiers expressément exclus (paquets distribuables & site web)
+# ------------------------------------------------------------------------------
+/builds/
+/www/
+
+# ------------------------------------------------------------------------------
+# 2. Sécurité, identifiants et données nominatives (RGPD)
+# ------------------------------------------------------------------------------
+# Configuration serveur avec identifiants SMTP réels
+server/server/config/server.properties
+*.properties.local
+*.env
+*.env.*
+
+# Données nominatives d'étudiants et sessions réelles de production
+server/server/config/data_*/
+server/server/config/sessions.xml
+server/server/config/sessions_new.xml
+server/server/sessions/
+server/scripts-admin/
+
+# Tableurs de promotions d'étudiants (L1, L2, etc.)
+*.xlsx
+*.xls
+*.csv
+
+# Correspondances électroniques et échanges internes
+*.eml
+
+# Scripts d'accès direct SSH personnels ou commandes avec identifiants internes
+client/ssh-transit.command
+server/ssh-univ.command
+client/gemini.sh
+ssh-*.command
+
+# ------------------------------------------------------------------------------
+# 3. Logs, traces d'exécution et archives temporaires
+# ------------------------------------------------------------------------------
+*.log
+freeze.log
+server/temp/
+server/server/logs/
+codelab_files.zip
+*.zip.bak
+*.bak
+*~
+*.tmp
+
+# Fichier de profil utilisateur généré lors de tests locaux
+client/codelab.files/userdata/user.properties
+
+# ------------------------------------------------------------------------------
+# 4. Artefacts de compilation & Binaires lourds (> 100 Mo, bloquants sur GitHub)
+# ------------------------------------------------------------------------------
+# Serveur Rust (artefacts cargo)
+server/server/target/
+**/target/
+
+# Client Java (compilation Ant et JAR résultant)
+client/class/
+**/class/
+*.class
+client/hidden/codelab/codelab.jar
+
+# Runtimes JDK embarqués multi-plateformes (fichiers lib/modules > 120 Mo)
+client/java/linux_64/
+client/java/macos_ARM/
+client/java/windows_64/
+client/mac-app-arm/Contents/Java/
+client/mac-app-x64/Contents/Java/
+
+# Dépôts tiers clonés pour compilation native et builds intermédiaires
+client/natives/osx_64/jinput/
+client/natives/osx_arm/jinput-apple-silicon/build/
+
+# ------------------------------------------------------------------------------
+# 5. Fichiers système et d'environnements de développement (macOS / IDE)
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.Trashes
+._*
+__MACOSX/
+
+# Windows / Linux
+Thumbs.db
+desktop.ini
+
+# IDEs (IntelliJ, VS Code, Eclipse)
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.settings/
+.classpath
+.project

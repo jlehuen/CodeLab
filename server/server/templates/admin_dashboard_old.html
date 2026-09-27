@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serveur CodeLab</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header-content h1 { margin: 0; }
+        .header-content p { margin: 5px 0 0 0; }
+        .header-logo { max-height: 60px; max-width: 150px; object-fit: contain; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 2em; font-weight: bold; color: #3498db; }
+        .stat-label { color: #7f8c8d; margin-top: 5px; }
+        .clients-table { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .clients-table table { width: 100%; border-collapse: collapse; }
+        .clients-table th { 
+            background: #34495e; 
+            color: white; 
+            padding: 12px; 
+            text-align: left; 
+            cursor: pointer; 
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s;
+        }
+        .clients-table th:hover { 
+            background: #2c3e50; 
+        }
+        .clients-table th.sortable::after {
+            content: ' ↕️';
+            font-size: 0.8em;
+            opacity: 0.6;
+        }
+        .clients-table th.sort-asc::after {
+            content: ' 🔼';
+            color: #3498db;
+            opacity: 1;
+        }
+        .clients-table th.sort-desc::after {
+            content: ' 🔽';
+            color: #3498db;
+            opacity: 1;
+        }
+        .clients-table td { padding: 12px; border-bottom: 1px solid #ecf0f1; }
+        .clients-table tr:hover { background-color: #f8f9fa; }
+        .status-student { color: #27ae60; font-weight: bold; }
+        .status-tutor { color: #e74c3c; font-weight: bold; }
+        .status-admin { color: #9b59b6; font-weight: bold; }
+        .actions { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-refresh { background: #3498db; color: white; }
+        .btn-refresh:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .btn-disconnect { background: #e74c3c; color: white; padding: 5px 10px; font-size: 12px; border-radius: 3px; }
+        .btn-disconnect:hover { background: #c0392b; }
+        .status-bar { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .status-info { font-size: 14px; color: #7f8c8d; }
+        .connection-status { font-weight: bold; }
+        .help-flag { color: #f39c12; font-weight: bold; }
+        .server-stopped { background: #e74c3c; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        .btn:disabled { 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+        }
+        .btn:disabled:hover {
+            background: inherit;
+        }
+        .action-cell { text-align: center; width: 80px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>🖥️ &nbsp;Serveur CodeLab</h1>
+                <p>Interface de monitoring et d'administration</p>
+            </div>
+            <div class="header-logo-container">
+                <img src="logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            </div>
+        </div>
+        
+        <div id="serverStoppedBanner" class="server-stopped" style="display: none;">
+            ⚠️ Le serveur a été arrêté - Aucune nouvelle donnée disponible
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-info">
+                <span id="lastRefresh">Chargement...</span>
+            </div>
+            <div>
+                <span id="connectionStatus" class="connection-status">🔄 Connexion...</span>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalConnections">{{TOTAL_CONNECTIONS}}</div>
+                <div class="stat-label">Connexions totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="studentsCount">{{STUDENTS_COUNT}}</div>
+                <div class="stat-label">Étudiants connectés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="tutorsCount">{{TUTORS_COUNT}}</div>
+                <div class="stat-label">Tuteurs connectés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeSessions">{{ACTIVE_SESSIONS}}</div>
+                <div class="stat-label">Sessions actives</div>
+            </div>
+        </div>
+        
+        <div class="clients-table">
+            <table id="clientsTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="login">Login</th>
+                        <th class="sortable" data-column="fullname">Nom complet</th>
+                        <th class="sortable" data-column="status">Statut</th>
+                        <th class="sortable" data-column="session">Session</th>
+                        <th class="sortable" data-column="addr">Adresse IP</th>
+                        <th class="sortable" data-column="duration">Durée de connexion</th>
+                        <th class="sortable" data-column="help_flag">Aide demandée</th>
+                        <th class="sortable" data-column="edited_file">Fichier édité</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{CLIENTS_TABLE_ROWS}}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="actions">
+            <h3>Actions d'administration</h3>
+            <button class="btn btn-refresh" id="refreshBtn" onclick="updateDashboard()">Actualiser maintenant</button>
+            <button class="btn btn-success" id="autoRefreshBtn" onclick="toggleAutoRefresh()">Pause auto-refresh</button>
+            <button class="btn btn-danger" id="shutdownBtn" onclick="confirmShutdown()">Arrêter le serveur</button>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let autoRefreshInterval;
+        let isAutoRefreshEnabled = true;
+        let clientsData = []; // Stockage des données pour le tri
+        let currentSort = { column: null, direction: 'asc' };
+        let serverStopped = false;
+        let consecutiveErrors = 0;
+        
+        // Gestion de l'auto-refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(updateDashboard, 3000);
+            isAutoRefreshEnabled = true;
+            updateAutoRefreshButton();
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            isAutoRefreshEnabled = false;
+            updateAutoRefreshButton();
+        }
+        
+        function toggleAutoRefresh() {
+            if (serverStopped) return; // Ne pas permettre de reprendre si le serveur est arrêté
+            
+            if (isAutoRefreshEnabled) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+        }
+        
+        function updateAutoRefreshButton() {
+            const btn = document.getElementById('autoRefreshBtn');
+            if (btn) {
+                if (serverStopped) {
+                    btn.textContent = 'Auto-refresh arrêté';
+                    btn.className = 'btn btn-warning';
+                    btn.disabled = true;
+                } else {
+                    btn.textContent = isAutoRefreshEnabled ? 'Pause auto-refresh' : 'Reprendre auto-refresh';
+                    btn.className = isAutoRefreshEnabled ? 'btn btn-warning' : 'btn btn-success';
+                    btn.disabled = false;
+                }
+            }
+        }
+        
+        function handleServerStopped() {
+            serverStopped = true;
+            stopAutoRefresh();
+            
+            // Vider les statistiques
+            document.getElementById('totalConnections').textContent = '0';
+            document.getElementById('studentsCount').textContent = '0';
+            document.getElementById('tutorsCount').textContent = '0';
+            document.getElementById('activeSessions').textContent = '0';
+            
+            // Vider la table des clients
+            const tbody = document.querySelector('#clientsTable tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #e74c3c; font-weight: bold;">⚠️ Serveur arrêté - Aucun client connecté</td></tr>';
+            }
+            
+            // Afficher la bannière d'arrêt
+            document.getElementById('serverStoppedBanner').style.display = 'block';
+            
+            // Mettre à jour le statut
+            document.getElementById('connectionStatus').textContent = '🔴 Serveur arrêté';
+            document.getElementById('lastRefresh').textContent = 'Serveur arrêté le: ' + new Date().toLocaleTimeString('fr-FR');
+            
+            // Désactiver les boutons
+            document.getElementById('refreshBtn').disabled = true;
+            document.getElementById('shutdownBtn').disabled = true;
+            updateAutoRefreshButton();
+            
+            clientsData = []; // Vider les données
+        }
+        
+        // Nouvelle fonction pour déconnecter un client
+        async function disconnectClient(login, fullname) {
+            if (serverStopped) {
+                alert('Impossible de déconnecter un client : le serveur est arrêté');
+                return;
+            }
+            
+            if (!confirm(`Êtes-vous sûr de vouloir déconnecter ${fullname} (${login}) ?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/disconnect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ login: login })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        alert(`Client ${fullname} (${login}) déconnecté avec succès`);
+                        // Actualiser immédiatement le tableau
+                        updateDashboard();
+                    } else {
+                        alert(`Erreur lors de la déconnexion : ${result.message}`);
+                    }
+                } else {
+                    const errorResult = await response.json();
+                    alert(`Erreur HTTP ${response.status} : ${errorResult.message}`);
+                }
+            } catch (error) {
+                console.error('Erreur lors de la déconnexion:', error);
+                alert(`Erreur lors de la déconnexion : ${error.message}`);
+            }
+        }
+        
+        // Mise à jour du dashboard
+        async function updateDashboard() {
+            if (serverStopped) return; // Ne pas essayer de mettre à jour si le serveur est arrêté
+            
+            try {
+                const response = await fetch('/api/dashboard');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateStats(data.stats);
+                    clientsData = data.clients; // Stocker les données
+                    applySortAndUpdate(); // Appliquer le tri actuel
+                    updateLastRefresh();
+                    consecutiveErrors = 0; // Réinitialiser le compteur d'erreurs
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Erreur lors de la mise à jour:', error);
+                consecutiveErrors++;
+                
+                document.getElementById('connectionStatus').textContent = '❌ Erreur de connexion';
+                
+                // Si on a plusieurs erreurs consécutives, considérer que le serveur est arrêté
+                if (consecutiveErrors >= 3) {
+                    handleServerStopped();
+                }
+            }
+        }
+        
+        function updateStats(stats) {
+            document.getElementById('totalConnections').textContent = stats.total_connections;
+            document.getElementById('studentsCount').textContent = stats.students_count;
+            document.getElementById('tutorsCount').textContent = stats.tutors_count;
+            document.getElementById('activeSessions').textContent = stats.active_sessions;
+        }
+        
+        // Fonctions de tri
+        function sortClients(column, direction) {
+            const sortedData = [...clientsData].sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+                
+                // Traitement spécial pour certaines colonnes
+                switch (column) {
+                    case 'help_flag':
+                        aVal = a.help_flag ? 1 : 0;
+                        bVal = b.help_flag ? 1 : 0;
+                        break;
+                    case 'duration':
+                        // Convertir la durée en secondes pour le tri
+                        aVal = durationToSeconds(a.duration);
+                        bVal = durationToSeconds(b.duration);
+                        break;
+                    case 'status':
+                        // Ordre personnalisé : ADMIN, TUTOR, STUDENT
+                        const statusOrder = { 'ADMIN': 3, 'TUTOR': 2, 'STUDENT': 1 };
+                        aVal = statusOrder[a.status] || 0;
+                        bVal = statusOrder[b.status] || 0;
+                        break;
+                    default:
+                        // Tri alphabétique standard
+                        aVal = String(aVal).toLowerCase();
+                        bVal = String(bVal).toLowerCase();
+                }
+                
+                if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            return sortedData;
+        }
+        
+        function durationToSeconds(duration) {
+            // Convertit "HH:MM:SS" en secondes pour le tri
+            const parts = duration.split(':');
+            return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+        }
+        
+        function applySortAndUpdate() {
+            let dataToShow = clientsData;
+            
+            if (currentSort.column) {
+                dataToShow = sortClients(currentSort.column, currentSort.direction);
+            }
+            
+            updateClientsTable(dataToShow);
+            updateSortIndicators();
+        }
+        
+        function updateSortIndicators() {
+            // Retirer tous les indicateurs de tri
+            document.querySelectorAll('.clients-table th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+            });
+            
+            // Ajouter l'indicateur pour la colonne active
+            if (currentSort.column) {
+                const th = document.querySelector(`th[data-column="${currentSort.column}"]`);
+                if (th) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            }
+        }
+        
+        function updateClientsTable(clients) {
+            const tbody = document.querySelector('#clientsTable tbody');
+            if (!tbody) return;
+            
+            if (clients.length === 0) {
+                const message = serverStopped ? 
+                    '⚠️ Serveur arrêté - Aucun client connecté' : 
+                    'Aucun client connecté';
+                const color = serverStopped ? '#e74c3c' : '#7f8c8d';
+                const colspan = serverStopped ? '9' : '9';
+                tbody.innerHTML = `<tr><td colspan="${colspan}" style="text-align: center; color: ${color}; font-weight: ${serverStopped ? 'bold' : 'normal'};">${message}</td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = clients.map(client => {
+                const statusClass = {
+                    'STUDENT': 'status-student',
+                    'TUTOR': 'status-tutor',
+                    'ADMIN': 'status-admin'
+                }[client.status] || '';
+                
+                const helpClass = client.help_flag ? 'help-flag' : '';
+                const helpText = client.help_flag ? '🆘' : 'Non';
+                
+                // Échapper les guillemets dans les noms pour éviter les problèmes JavaScript
+                const escapedLogin = client.login.replace(/'/g, "\\'");
+                const escapedFullname = client.fullname.replace(/'/g, "\\'");
+                
+                return `<tr>
+                    <td>${client.login}</td>
+                    <td>${client.fullname}</td>
+                    <td><span class="${statusClass}">${client.status}</span></td>
+                    <td>${client.session}</td>
+                    <td>${client.addr}</td>
+                    <td>${client.duration}</td>
+                    <td><span class="${helpClass}">${helpText}</span></td>
+                    <td>${client.edited_file}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-disconnect" onclick="disconnectClient('${escapedLogin}', '${escapedFullname}')" ${serverStopped ? 'disabled' : ''}>
+                            Eject
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+        
+        function updateLastRefresh() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fr-FR');
+            document.getElementById('lastRefresh').textContent = `Dernière mise à jour: ${timeStr}`;
+            document.getElementById('connectionStatus').textContent = '🟢 Serveur actif';
+        }
+        
+        function confirmShutdown() {
+            if (serverStopped) return;
+            
+            if (confirm('Êtes-vous sûr de vouloir arrêter le serveur ?')) {
+                fetch('/api/shutdown', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Commande d\'arrêt envoyée au serveur');
+                        // Prévoir l'arrêt du serveur dans quelques secondes
+                        setTimeout(() => {
+                            handleServerStopped();
+                        }, 2000);
+                    } else {
+                        throw new Error('Erreur HTTP');
+                    }
+                })
+                .catch(error => {
+                    alert('Erreur lors de l\'arrêt du serveur: ' + error);
+                });
+            }
+        }
+        
+        // Gestion des clics sur les en-têtes pour le tri
+        function setupSortHandlers() {
+            document.querySelectorAll('.clients-table th.sortable').forEach(th => {
+                th.addEventListener('click', function() {
+                    if (serverStopped) return; // Désactiver le tri si le serveur est arrêté
+                    
+                    const column = this.dataset.column;
+                    
+                    if (currentSort.column === column) {
+                        // Inverser la direction si on clique sur la même colonne
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        // Nouvelle colonne, commencer par ordre croissant
+                        currentSort.column = column;
+                        currentSort.direction = 'asc';
+                    }
+                    
+                    applySortAndUpdate();
+                });
+            });
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLastRefresh();
+            setupSortHandlers();
+            startAutoRefresh();
+        });
+    </script>
+</body>
+</html>

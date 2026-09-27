@@ -1,0 +1,43 @@
+void
+int
+long
+short
+float
+double
+char
+
+const
+signed
+unsigned
+volatile
+enum
+extern
+register
+
+break
+continue
+return
+goto
+
+if (
+else
+switch (
+case
+default
+
+do
+while (
+for (
+
+sizeof
+static
+struct
+
+typeof
+union
+auto
+
+printf(
+
+include
+define

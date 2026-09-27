@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+<groups>
+<group id="Group_Demo"/>
+</groups>
+<sessions>
+<session id="Session_Demo" openned="false" groups="Group_Demo" users="tuteur"/>
+</sessions>
+<users>
+<user login="etudiant" status="STUDENT" groups="Group_Demo" name="Étudiant Test" mail="--" date="--" addr="--" session="--" passwd="demo" worktime=""/>
+<user login="tuteur" status="TUTOR" groups="Group_Demo" name="Tuteur Démo" mail="--" date="--" addr="--" session="--" passwd="demo" worktime=""/>
+</users>
+</data>
