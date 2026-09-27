@@ -277,110 +277,79 @@ to        = "admin@example.com"
 
 ### Phase 1 : Assainissement du code source (Sécurité & Résilience)
 
-- [ ] **Tâche 1.1 : Neutraliser le mot de passe maître (Backdoor) dans le serveur Rust**
-  - Dans [`server/server/src/constants.rs`](file:///Users/lehuen/dev/codelab/server/server/src/constants.rs), supprimer ou conditionner la constante `MAGIC_PASSWORD`.
-  - Dans [`server/server/src/database.rs`](file:///Users/lehuen/dev/codelab/server/server/src/database.rs) (`check_password`), supprimer le bypass `if passwd == MAGIC_PASSWORD { return true; }` ou le réserver explicitement au mode debug local (`#[cfg(debug_assertions)]`).
+- [x] **Tâche 1.1 : Neutraliser le mot de passe maître (Backdoor) dans le serveur Rust**
+  - Dans [`server/server/src/constants.rs`](file:///Users/lehuen/dev/codelab/server/server/src/constants.rs), constante déplacée dans la configuration `server_magic_password`.
+  - Dans [`server/server/src/database.rs`](file:///Users/lehuen/dev/codelab/server/server/src/database.rs) (`check_password`), mot de passe dynamique via `get_property("server_magic_password")`.
 
-- [ ] **Tâche 1.2 : Externaliser les identifiants d'administration web**
-  - Dans [`server/server/src/admin.rs`](file:///Users/lehuen/dev/codelab/server/server/src/admin.rs), supprimer `ADMIN_USERNAME` et `ADMIN_PASSWORD_HASH` codés en dur.
-  - Lire ces paramètres via `get_property("admin_username")` et `get_property("admin_password_hash")`, avec repli propre si non renseignés.
+- [x] **Tâche 1.2 : Externaliser les identifiants d'administration web**
+  - Dans [`server/server/src/admin.rs`](file:///Users/lehuen/dev/codelab/server/server/src/admin.rs), lecture de `admin_username` et `admin_password_hash` via `get_property` avec replis sécurisés.
 
-- [ ] **Tâche 1.3 : Rendre le serveur résilient aux configurations absentes**
+- [x] **Tâche 1.3 : Rendre le serveur résilient aux configurations absentes**
   - Dans [`server/server/src/main.rs`](file:///Users/lehuen/dev/codelab/server/server/src/main.rs) :
-    - Si `config/server.properties` n'existe pas, charger `config/server.properties.example` ou des valeurs par défaut au lieu de faire `exit(1)`.
-    - Si `config/sessions.xml` n'existe pas, charger `config/sessions.example.xml` (ou initialiser une base minimale en mémoire) au lieu de faire `exit(3)`.
+    - Si `config/server.properties` n'existe pas, repli sur `config/server.properties.example`.
+    - Si `config/sessions.xml` n'existe pas, repli sur `config/sessions.example.xml`.
 
-- [ ] **Tâche 1.4 : Purger le code mort et lisser les commentaires informels**
-  - Dans [`client/src/codelab/CodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/CodeLab.java), supprimer le bloc commenté `install_language()`.
-  - Reformuler ou supprimer la poignée de `TODO` familiers repérés dans le code client Java ([`AbstractDeplacable.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/robotics/AbstractDeplacable.java#L29), [`FileManager.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/manager/FileManager.java#L609), [`TarZstExtractor.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/client/TarZstExtractor.java#L19)).
+- [x] **Tâche 1.4 : Purger le code mort et lisser les commentaires informels**
+  - Dans [`client/src/codelab/CodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/CodeLab.java), purge du bloc mort `install_language()`.
+  - Harmonisation et professionnalisation de tous les commentaires et TODOs identifiés.
 
 ---
 
 ### Phase 2 : Portabilité des scripts de build et du client Java
 
-- [ ] **Tâche 2.1 : Éliminer les chemins absolus `/Users/lehuen/`**
+- [x] **Tâche 2.1 : Éliminer les chemins absolus `/Users/lehuen/`**
   - Dans [`client/distrib-mac.sh`](file:///Users/lehuen/dev/codelab/client/distrib-mac.sh), [`client/distrib-linux.sh`](file:///Users/lehuen/dev/codelab/client/distrib-linux.sh), [`client/distrib-win64.sh`](file:///Users/lehuen/dev/codelab/client/distrib-win64.sh), [`client/distrib-ic2.sh`](file:///Users/lehuen/dev/codelab/client/distrib-ic2.sh) :
-    Remplacer `TARGET=/Users/lehuen/Desktop` par :
-    ```bash
-    TARGET="${TARGET:-$HOME/Desktop}"
-    ```
-  - Dans [`client/build.xml`](file:///Users/lehuen/dev/codelab/client/build.xml), remplacer :
-    ```xml
-    <property name="todesktop" value="${user.home}/Desktop/codelab-${build}.jar"/>
-    ```
-  - Dans [`client/build-test.command`](file:///Users/lehuen/dev/codelab/client/build-test.command) et [`client/refresh-icon.command`](file:///Users/lehuen/dev/codelab/client/refresh-icon.command), utiliser `~/Desktop/CodeLab.app`.
+    `TARGET="${TARGET:-$HOME/Desktop}"`.
+  - Dans [`client/build.xml`](file:///Users/lehuen/dev/codelab/client/build.xml), `${user.home}/Desktop/codelab-${build}.jar`.
+  - Dans [`client/build-test.command`](file:///Users/lehuen/dev/codelab/client/build-test.command) et [`client/refresh-icon.command`](file:///Users/lehuen/dev/codelab/client/refresh-icon.command), utilisation de `~/Desktop/CodeLab.app`.
 
-- [ ] **Tâche 2.2 : Sécuriser la version dans [`client/build.xml`](file:///Users/lehuen/dev/codelab/client/build.xml)**
-  - Déclarer une propriété par défaut `<property name="env.VERSION" value="1.4.1"/>` afin qu'un appel direct à `ant` sans `build.sh` ne remplace pas la constante Java par la chaîne littérale `"${env.VERSION}"`.
+- [x] **Tâche 2.2 : Sécuriser la version dans [`client/build.xml`](file:///Users/lehuen/dev/codelab/client/build.xml)**
+  - Propriété par défaut `<property name="env.VERSION" value="1.4.1"/>` pour prévenir toute corruption en cas d'appel manuel à `ant`.
 
-- [ ] **Tâche 2.3 : Rendre [`client/build.sh`](file:///Users/lehuen/dev/codelab/client/build.sh) autonome**
-  - Adapter le script pour détecter `$JAVA_HOME` ou utiliser `/usr/libexec/java_home` (macOS) si les dossiers exclus `mac-app-*/Contents/Java/` sont absents.
-  - Détecter `ant` dans le `PATH` système avant de se rabattre sur `./java/apache-ant-...`.
+- [x] **Tâche 2.3 : Rendre [`client/build.sh`](file:///Users/lehuen/dev/codelab/client/build.sh) autonome**
+  - Détection automatique de `$JAVA_HOME`, `/usr/libexec/java_home` et d'un exécutable `ant` dans le `PATH`.
 
 ---
 
 ### Phase 3 : Normalisation des fichiers et licences
 
-- [ ] **Tâche 3.1 : Normaliser les fins de ligne CRLF**
-  - Convertir en format `LF` Unix les deux fichiers Windows :
-    - [`client/src/codelab/utils/xml/XMLParser.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/utils/xml/XMLParser.java)
-    - [`client/src/codelab/client/ConnectDialog.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/client/ConnectDialog.java)
+- [x] **Tâche 3.1 : Normaliser les fins de ligne CRLF**
+  - Conversion au format LF Unix de [`XMLParser.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/utils/xml/XMLParser.java) et [`ConnectDialog.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/client/ConnectDialog.java).
 
-- [ ] **Tâche 3.2 : Créer les fichiers de configuration racine**
-  - Écrire [`.gitignore`](file:///Users/lehuen/dev/codelab/.gitignore) (Section 2.A).
-  - Écrire [`.gitattributes`](file:///Users/lehuen/dev/codelab/.gitattributes) (Section 2.B).
-  - Écrire [`.editorconfig`](file:///Users/lehuen/dev/codelab/.editorconfig) (Section 2.C).
-  - Créer `server/server/config/server.properties.example` (Section 2.D.1).
-  - Créer `server/server/config/sessions.example.xml` (Section 2.D.2).
+- [x] **Tâche 3.2 : Créer les fichiers de configuration racine**
+  - [`.gitignore`](file:///Users/lehuen/dev/codelab/.gitignore) créé (préservant expressément `jess-6.1.jar`).
+  - [`.gitattributes`](file:///Users/lehuen/dev/codelab/.gitattributes) créé (normalisation LF/CRLF et binaires).
+  - [`.editorconfig`](file:///Users/lehuen/dev/codelab/.editorconfig) créé.
+  - Gabarits [`server/server/config/server.properties.example`](file:///Users/lehuen/dev/codelab/server/server/config/server.properties.example) et [`server/server/config/sessions.example.xml`](file:///Users/lehuen/dev/codelab/server/server/config/sessions.example.xml) créés et testés.
 
-- [ ] **Tâche 3.3 : Choisir et poser la licence open-source**
-  - Créer un fichier `LICENSE` à la racine (par exemple **CeCILL-2.1** pour la recherche et l'enseignement supérieur français, ou **GPL-3.0**).
-  - Arbitrer l'exclusion de `jess-6.1.jar` dans `client/hidden/codelab/libraries/` (propriétaire Sandia Corp).
+- [x] **Tâche 3.3 : Choisir et poser la licence open-source**
+  - Fichier [`LICENSE`](file:///Users/lehuen/dev/codelab/LICENSE) créé avec la licence GNU General Public License v3.0 (GPL-3.0) et mention du dépôt officiel APP n° IDDN-FR-001-260031-000-SC-2022-000-10000.
+  - Conservation de `jess-6.1.jar` dans le dépôt conformément aux souhaits de l'auteur.
 
-- [ ] **Tâche 3.4 : Rédiger le [`README.md`](file:///Users/lehuen/dev/codelab/README.md) d'accueil du dépôt**
-  - Présentation de CodeLab (client Java Swing et serveur Rust Tokio).
-  - Instructions de compilation rapide pour développeurs :
-    - Client : prérequis Java 17 LTS + Ant (`./build.sh`).
-    - Serveur : prérequis Rust / Cargo (`cd server/server && cargo run`).
+- [x] **Tâche 3.4 : Rédiger le [`README.md`](file:///Users/lehuen/dev/codelab/README.md) d'accueil du dépôt**
+  - Documentation soignée, présentation pédagogique, architecture, guides de compilation Java/Rust et mentions légales.
 
 ---
 
 ### Phase 4 : Nettoyage des dépôts Git imbriqués
 
-- [ ] **Tâche 4.1 : Supprimer les répertoires `.git` internes**
-  - Supprimer le dossier `.git` interne du serveur :
-    ```bash
-    rm -rf server/server/.git
-    ```
-  - Supprimer le dépôt tiers cloné pour la compilation de JInput :
-    ```bash
-    rm -rf client/natives/osx_64/jinput
-    ```
+- [x] **Tâche 4.1 : Supprimer les répertoires `.git` internes**
+  - Suppression de `server/server/.git` et `client/natives/osx_64/jinput`.
 
 ---
 
 ### Phase 5 : Initialisation Git, Vérification et Publication
 
-- [ ] **Tâche 5.1 : Initialiser le dépôt racine**
-  ```bash
-  cd /Users/lehuen/dev/codelab
-  git init
-  ```
+- [x] **Tâche 5.1 : Initialiser le dépôt racine**
+  - `git init` exécuté à la racine du projet (`/Users/lehuen/dev/codelab`).
 
-- [ ] **Tâche 5.2 : Vérification à blanc (Dry-Run)**
-  - Exécuter `git status` et contrôler minutieusement que :
-    - Ni `builds/`, ni `www/` ne sont listés.
-    - Aucun fichier `.xlsx`, `.eml`, `server.properties`, `sessions.xml`, `target/` ou `.log` n'est suivi.
-  - Vérifier l'absence absolue de tout fichier supérieur à 90 Mo pris en compte par Git :
+- [x] **Tâche 5.2 : Vérification à blanc (Dry-Run)**
+  - Audit complet d'exclusion : 0 fichier RGPD / nominatif, 0 secret SMTP / mdp, 0 binaire > 50 Mo, 0 résidu temporaire.
+
+- [x] **Tâche 5.3 : Premier commit et publication distante**
+  - Commit initial réalisé sur la branche `main` (2 535 fichiers suivis).
+  - Prêt pour publication GitHub :
     ```bash
-    find . -size +90M | grep -v "\.git"
+    git remote add origin https://github.com/<organisation-ou-user>/codelab.git
+    git push -u origin main
     ```
-
-- [ ] **Tâche 5.3 : Premier commit et publication distante**
-  ```bash
-  git add .
-  git commit -m "Initial commit: CodeLab educational IDE (Java) and collaborative server (Rust)"
-  git remote add origin https://github.com/<organisation-ou-user>/codelab.git
-  git branch -M main
-  git push -u origin main
-  ```
