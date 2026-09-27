@@ -9,7 +9,9 @@ Ce document constitue la référence technique et conceptuelle complète du proj
 - **Nom du projet** : CodeLab IDE & Simulators
 - **Auteur & Concepteur** : Jérôme Lehuen (Maître de Conférences, Le Mans Université, LIUM)
 - **Site officiel** : [https://codelab.univ-lemans.fr](https://codelab.univ-lemans.fr/)
-- **Statut légal** : © 2021-2026 Jérôme Lehuen, Le Mans Université — Tous droits réservés.
+- **Dépôt officiel GitHub** : [https://github.com/jlehuen/CodeLab](https://github.com/jlehuen/CodeLab)
+- **Dépôt légal APP** : N° `IDDN-FR-001-260031-000-SC-2022-000-10000` (Agence pour la Protection des Programmes)
+- **Statut légal & Licence** : © 2021-2026 Jérôme Lehuen, Le Mans Université. Licence Institutionnelle Éducative & Non-Commerciale (gratuite pour l'enseignement et la recherche, interdiction formelle de toute exploitation commerciale sans accord écrit préalable de l'auteur et de Le Mans Université). Manuels et documentation sous Creative Commons CC-BY-NC-ND.
 
 ### Philosophie & Objectifs Pédagogiques
 CodeLab est un environnement de développement intégré (IDE) et de simulation destiné à l'apprentissage de la programmation (collège, lycée NSI, licence L1/L2 universitaire).
@@ -365,5 +367,22 @@ Le script [`gemini.sh`](file:///Users/lehuen/dev/codelab/client/gemini.sh) perme
       - Recompilation native signée `libjinput-osx.dylib` / `.jnilib` et mise à jour de `jinput-2.0.9.jar`.
       - Sécurisation : Sauvegarde intégrale des binaires et sources d'origine dans [`client/natives/osx_arm/backup_original/`](file:///Users/lehuen/dev/codelab/client/natives/osx_arm/backup_original/) pour tout rollback éventuel.
 
-
-
+17. **Assainissement du Code, Normalisation Multiplateforme & Publication sur GitHub (Septembre 2026)** :
+    - **Sécurisation Applicative du Serveur Rust** :
+      - Suppression du mot de passe maître en dur (`MAGIC_PASSWORD`) : migration vers la propriété dynamique `server_magic_password` dans [`server.properties`](file:///Users/lehuen/dev/codelab/server/server/config/server.properties).
+      - Externalisation des identifiants d'administration web dans [`admin.rs`](file:///Users/lehuen/dev/codelab/server/server/src/admin.rs) (`admin_username`, `admin_password_hash`).
+      - Démarrage résilient dans [`main.rs`](file:///Users/lehuen/dev/codelab/server/server/src/main.rs) : basculement automatique sur les gabarits d'exemples sécurisés ([`server.properties.example`](file:///Users/lehuen/dev/codelab/server/server/config/server.properties.example) et [`sessions.example.xml`](file:///Users/lehuen/dev/codelab/server/server/config/sessions.example.xml)) lorsque les configurations réelles sont absentes.
+    - **Portabilité des Scripts & Build Client** :
+      - Élimination des chemins personnels absolus `/Users/lehuen/` dans l'ensemble des scripts de packaging (`distrib-mac.sh`, `distrib-linux.sh`, `distrib-win64*.sh`, `distrib-ic2.sh`) avec repli propre `${TARGET:-$HOME/Desktop}`.
+      - Sécurisation de la version dans [`build.xml`](file:///Users/lehuen/dev/codelab/client/build.xml) via `<property name="env.VERSION" value="1.4.1"/>` pour prévenir toute corruption en cas d'appel manuel à `ant`.
+      - Détection autonome du JDK système (`/usr/libexec/java_home`) et d'un exécutable Ant dans le `PATH` dans [`build.sh`](file:///Users/lehuen/dev/codelab/client/build.sh).
+    - **Gestion des Dépendances & Bibliothèque Jess** :
+      - Conservation et suivi formel de la bibliothèque [`jess-6.1.jar`](file:///Users/lehuen/dev/codelab/client/hidden/codelab/libraries/jess-6.1.jar) dans le dépôt Git (322 Ko).
+    - **Fichiers de Configuration Racine & Métadonnées Git** :
+      - [`.gitignore`](file:///Users/lehuen/dev/codelab/.gitignore) : exclusion stricte des répertoires de distribution volumineux (`builds/`, `www/`), des runtimes JDK (`client/java/*_64/`, `client/mac-app-*/Contents/Java/`), des données RGPD étudiantes (`server.properties`, `sessions*.xml`, `data_*/`, `*.xlsx`, `*.eml`), et des documents de travail internes (`BILAN*`, `ROADMAP*`).
+      - [`.gitattributes`](file:///Users/lehuen/dev/codelab/.gitattributes) : normalisation des fins de ligne (`eol=lf` pour Unix/Java/Rust, `eol=crlf` pour batch Windows), marquage binaire des JARs et bibliothèques natives.
+      - [`.editorconfig`](file:///Users/lehuen/dev/codelab/.editorconfig) : règles d'indentation harmonisées (onglets pour Java, 4 espaces pour Rust/XML/TOML/Markdown).
+    - **Calibrage des Statistiques de Langages (GitHub Linguist)** :
+      - Directives `linguist-vendored` appliquées sur `client/java/**` (excluant 42 Mo de manuels/Javadoc HTML d'Apache Ant) et `client/natives/**` pour restituer les proportions réelles de développement du projet (~85% Java, ~12% Rust, ~3% Shell).
+    - **Propriété Intellectuelle & Licence Officielle** :
+      - Licence Institutionnelle Éducative & Non-Commerciale alignée sur le dépôt légal APP n° `IDDN-FR-001-260031-000-SC-2022-000-10000` et sur [`mentions-fr.html`](file:///Users/lehuen/dev/codelab/client/data/mentions/mentions-fr.html) : gratuité intégrale pour l'enseignement et la recherche, interdiction formelle de toute exploitation commerciale sans accord écrit préalable de l'auteur et de Le Mans Université.
