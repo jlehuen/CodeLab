@@ -5,9 +5,9 @@ set -e
 # Script de Release et Publication CodeLab
 # ==============================================================================
 # 1. Compilation du client (./build.sh)
-# 2. Génération de toutes les distributions (./distrib-all.sh)
-# 3. Commit et Push des modifications de code dans Git
-# 4. Création et Push de la nouvelle version (Git tag + GitHub Release si gh dispo)
+# 2. Génération de toutes les distributions autonomes (./distrib-all.sh)
+# 3. Commit et Push des modifications de code et de documentation dans Git
+# 4. Création du tag Git et Publication de la Release GitHub officielle (Latest)
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,6 +17,25 @@ GIT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 if [ ! -d "$GIT_ROOT/.git" ]; then
     echo "Erreur : Dépôt Git introuvable à la racine $GIT_ROOT" >&2
     exit 1
+fi
+
+# Vérification de l'outil GitHub CLI (gh) pour la publication des Releases
+if ! command -v gh >/dev/null 2>&1; then
+    echo "================================================================" >&2
+    echo "Erreur : GitHub CLI ('gh') est requis pour publier les releases." >&2
+    echo "Installez-le avec : brew install gh" >&2
+    echo "Puis connectez-vous avec : gh auth login" >&2
+    echo "================================================================" >&2
+    exit 1
+fi
+
+# Vérification de la connexion à GitHub CLI
+if ! gh auth status >/dev/null 2>&1; then
+    echo "================================================================" >&2
+    echo "Attention : GitHub CLI n'est pas encore connecté à votre compte." >&2
+    echo "Connexion requise pour téléverser les releases..." >&2
+    echo "================================================================" >&2
+    gh auth login
 fi
 
 # Source de vérité : fichier racine VERSION (ou argument optionnel ex: ./release.sh 1.4.3)
@@ -30,8 +49,15 @@ if [ -f "$GIT_ROOT/VERSION" ]; then
     VERSION=$(tr -d '[:space:]' < "$GIT_ROOT/VERSION")
     export VERSION
     echo "Version cible (depuis VERSION) : $VERSION"
+else
+    echo "Erreur : Fichier VERSION introuvable à la racine $GIT_ROOT" >&2
+    exit 1
 fi
 
+# ==============================================================================
+# 1. Compilation du client (./build.sh)
+# ==============================================================================
+echo ""
 echo "================================================================"
 echo "==> [1/4] Exécution de ./build.sh..."
 echo "================================================================"
@@ -60,31 +86,44 @@ if [ -f "$GIT_ROOT/README.md" ]; then
     sed -i '' -E "s/CodeLab-Linux-[0-9]+\.[0-9]+\.[0-9]+\.zip/CodeLab-Linux-$VERSION.zip/g" "$GIT_ROOT/README.md"
 fi
 
+# ==============================================================================
+# 2. Génération de toutes les distributions (./distrib-all.sh)
+# ==============================================================================
+echo ""
 echo "================================================================"
 echo "==> [2/4] Exécution de ./distrib-all.sh..."
 echo "================================================================"
 cd "$SCRIPT_DIR"
 ./distrib-all.sh
 
+DISTRIB_DIR="$HOME/Desktop/$VERSION"
+if [ ! -d "$DISTRIB_DIR" ]; then
+    echo "Erreur : Dossier de distribution introuvable : $DISTRIB_DIR" >&2
+    exit 1
+fi
+
+# ==============================================================================
+# 3. Commit et Push des modifications de code dans Git
+# ==============================================================================
+echo ""
 echo "================================================================"
 echo "==> [3/4] Push des modifications de code dans Git..."
 echo "================================================================"
 cd "$GIT_ROOT"
 
-# Message de commit
 COMMIT_MSG="${2:-release: CodeLab v$VERSION (build $BUILD)}"
 
-# Indexation des fichiers de code et de documentation modifiés
+# Indexation des fichiers suivis et des nouveaux fichiers de gestion de version
 git add -u
 git add README.md 2>/dev/null || true
 git add VERSION release.sh client/release.sh 2>/dev/null || true
 
-# Commit si nécessaire
+# Commit si des modifications sont présentes
 if ! git diff --cached --quiet; then
     echo "Création du commit : $COMMIT_MSG"
     git commit -m "$COMMIT_MSG"
 else
-    echo "Aucune nouvelle modification de code à committer."
+    echo "Aucune modification de code supplémentaire à committer."
 fi
 
 # Push de la branche active
@@ -92,8 +131,12 @@ CURRENT_BRANCH=$(git branch --show-current)
 echo "Push de la branche '$CURRENT_BRANCH' vers origin..."
 git push origin "$CURRENT_BRANCH"
 
+# ==============================================================================
+# 4. Création du tag Git et Publication de la Release GitHub (Latest)
+# ==============================================================================
+echo ""
 echo "================================================================"
-echo "==> [4/4] Push de la nouvelle version dans Git..."
+echo "==> [4/4] Push de la version et Publication de la Release (Latest)..."
 echo "================================================================"
 TAG_NAME="v$VERSION"
 
@@ -103,42 +146,66 @@ if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
     git tag -d "$TAG_NAME"
 fi
 
-echo "Création du tag $TAG_NAME (build $BUILD)..."
+echo "Création du tag Git $TAG_NAME..."
 git tag -a "$TAG_NAME" -m "CodeLab release $VERSION (build $BUILD)"
 
-echo "Push du tag $TAG_NAME vers origin..."
+echo "Push du tag $TAG_NAME vers GitHub origin..."
 git push origin "$TAG_NAME" --force
 
-# Gestion des paquets GitHub Release
-DISTRIB_DIR="$HOME/Desktop/$VERSION"
-echo ""
-echo "Vérification de GitHub CLI (gh)..."
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-    echo "Publication automatique de la GitHub Release $TAG_NAME avec les installeurs..."
-    if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-        echo "La release $TAG_NAME existe déjà sur GitHub. Téléversement des fichiers..."
-        gh release upload "$TAG_NAME" "$DISTRIB_DIR"/* --clobber
-    else
-        gh release create "$TAG_NAME" "$DISTRIB_DIR"/* \
-            --title "CodeLab $VERSION" \
-            --notes "Release officielle de CodeLab $VERSION (build $BUILD)."
+# Extraction des notes de version depuis versions.md
+NOTES=$(python3 -c "
+import sys
+try:
+    content = open('$GIT_ROOT/www/www/downloads/versions.md', encoding='utf-8').read()
+    ver = '$VERSION'
+    idx = content.find('### Version ' + ver)
+    if idx != -1:
+        end = content.find('\n--', idx)
+        if end == -1: end = content.find('\n### Version', idx + 1)
+        notes = content[idx:end].strip() if end != -1 else content[idx:].strip()
+        print(notes)
+    else:
+        print('Release officielle de CodeLab $VERSION (build $BUILD).')
+except Exception:
+    print('Release officielle de CodeLab $VERSION (build $BUILD).')
+")
+
+# Collecte des fichiers à téléverser
+FILES_TO_UPLOAD=()
+for file in "$DISTRIB_DIR"/CodeLab-*; do
+    if [ -f "$file" ]; then
+        FILES_TO_UPLOAD+=("$file")
     fi
-    echo "Release GitHub publiée avec succès !"
+done
+
+if [ ${#FILES_TO_UPLOAD[@]} -eq 0 ]; then
+    echo "Erreur : Aucun fichier d'installation trouvé dans $DISTRIB_DIR" >&2
+    exit 1
+fi
+
+echo "Fichiers prêts pour la Release :"
+for f in "${FILES_TO_UPLOAD[@]}"; do
+    echo "  - $(basename "$f")"
+done
+
+echo ""
+echo "Téléversement des paquets sur GitHub Releases (tag $TAG_NAME, Latest)..."
+
+if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+    echo "Mise à jour de la release existante $TAG_NAME sur GitHub..."
+    gh release edit "$TAG_NAME" --title "CodeLab $VERSION" --notes "$NOTES" --latest
+    gh release upload "$TAG_NAME" "${FILES_TO_UPLOAD[@]}" --clobber
 else
-    echo "----------------------------------------------------------------"
-    echo "Information : 'gh' n'est pas installé ou connecté."
-    echo "Le tag Git $TAG_NAME a bien été poussé sur GitHub."
-    echo "Les paquets binaires prêts à être téléversés sont dans :"
-    echo "  $DISTRIB_DIR"
-    echo "Pour créer la release et joindre les installeurs via le navigateur :"
-    echo "  https://github.com/jlehuen/CodeLab/releases/new?tag=$TAG_NAME"
-    echo "Ou en ligne de commande après installation de gh :"
-    echo "  brew install gh && gh auth login"
-    echo "  gh release create $TAG_NAME $DISTRIB_DIR/* --title \"CodeLab $VERSION\" --notes \"Release $VERSION\""
-    echo "----------------------------------------------------------------"
+    echo "Création de la nouvelle release $TAG_NAME sur GitHub..."
+    gh release create "$TAG_NAME" "${FILES_TO_UPLOAD[@]}" \
+        --title "CodeLab $VERSION" \
+        --notes "$NOTES" \
+        --latest
 fi
 
 echo ""
 echo "================================================================"
-echo "Release CodeLab $VERSION (build $BUILD) terminée avec succès !"
+echo "🎉 Succès total : CodeLab $VERSION (build $BUILD) est en ligne !"
+echo "Page de la release : https://github.com/jlehuen/CodeLab/releases/tag/$TAG_NAME"
+echo "Lien permanent     : https://github.com/jlehuen/CodeLab/releases/latest"
 echo "================================================================"
