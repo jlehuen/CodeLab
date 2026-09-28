@@ -196,7 +196,7 @@ Des scripts de service sont également disponibles dans le dossier `server/` :
 ## Licence & Propriété Intellectuelle
  
 - **Auteur** : Jérôme Lehuen, Maître de Conférences à [Le Mans Université](https://www.univ-lemans.fr).
-- **Dépôt légal** : Le logiciel *CodeLab IDE & Simulators* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous le numéro :
+- **Dépôt légal** : Le logiciel *CodeLab* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) :
 
 <p align="center">
   <img src="client/data/mentions/app.png" alt="app.png">
