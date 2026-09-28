@@ -31,6 +31,8 @@
 # ------------------------------------------------------------------------------
 # Statistiques des langages GitHub (GitHub Linguist)
 # ------------------------------------------------------------------------------
+# Objectif : Ne conserver que Java et Rust dans les statistiques du projet
+
 # Outils tiers embarqués (Apache Ant et ses 42 Mo de Javadoc/manuels HTML/XSLT)
 client/java/** linguist-vendored
 
@@ -40,11 +42,26 @@ client/natives/** linguist-vendored
 # Gabarits et squelettes d'activités pour apprenants
 client/codelab.files/** linguist-vendored
 
+# Bibliothèques internes, modules et règles expertes
+client/hidden/** linguist-vendored
+
+# Lanceurs, scripts et installateurs multi-plateformes
+client/launchers/** linguist-vendored
+
 # Documentation et mentions légales HTML
-client/data/mentions/** linguist-documentation
+client/data/** linguist-documentation
 
 # Gabarits web du tableau de bord serveur
 server/server/templates/** linguist-vendored
 
-# Reconnaissance explicite des lanceurs .command comme Shell
-*.command linguist-language=Shell
+# Exclusion des scripts et formats annexes des statistiques GitHub (Java + Rust uniquement)
+*.sh linguist-vendored
+*.command linguist-vendored
+*.bat linguist-vendored
+*.cmd linguist-vendored
+*.clp linguist-vendored
+*.nsi linguist-vendored
+*.c linguist-vendored
+*.h linguist-vendored
+*.html linguist-documentation
+
