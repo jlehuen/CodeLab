@@ -11,7 +11,7 @@ SetCompressor /SOLID lzma
 
 ; Définitions par défaut si non fournies via la ligne de commande (-D)
 !ifndef VERSION
-  !define VERSION "1.4.1"
+  !define VERSION "1.4.2"
 !endif
 
 !ifndef BUILD
