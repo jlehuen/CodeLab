@@ -131,12 +131,19 @@ Une fois les JDK placés, lancez le script correspondant à votre cible :
 
 ### 2. Serveur Asynchrone Rust
 
-Le serveur CodeLab prend en charge les connexions simultanées des clients élèves et tuteurs, la sérialisation des échanges en MessagePack et l'administration web.
+Le serveur CodeLab orchestre les classes virtuelles, gère les flux bidirectionnels entre apprenants et enseignants et fournit un tableau de bord web de supervision.
+
+#### Architecture & Caractéristiques Techniques
+- **Modèle Acteur Asynchrone (Tokio)** : Conçu pour absorber simultanément des centaines de sessions à très faible empreinte mémoire, avec arrêt gracieux (*graceful shutdown*).
+- **Protocole Binaire Optimisé** : Échanges réseau compacts et rapides sérialisés au format **MessagePack** sur socket TCP.
+- **Tableau de Bord d'Administration Web** : Interface intégrée accessible par navigateur (HTTP Basic) permettant le suivi en temps réel des apprenants connectés, l'inspection des groupes et la déconnexion à distance.
+- **Persistance & Sécurité** : Définition déclarative des sessions, tuteurs et élèves en XML (`sessions.xml`), et stockage isolé des espaces de travail étudiants sur le système de fichiers.
+- **Sauvegardes Automatiques** : Système de rotation de backups horodatés avec compression haute performance **TAR + Zstandard** (`.tar.zst`).
 
 #### Prérequis
 - Toolchain [Rust & Cargo](https://rustup.rs/) (édition 2021 stable)
 
-#### Configuration initiale
+#### Configuration Initiale
 Créez vos fichiers de configuration locaux à partir des gabarits d'exemple fournis :
 ```bash
 cd server/server
@@ -146,11 +153,28 @@ cp config/sessions.example.xml config/sessions.xml
 
 *Remarque : Par sécurité et conformité RGPD, les fichiers réels `server.properties` et `sessions.xml` sont strictement ignorés par Git.*
 
-#### Lancement en développement
+#### Démarrage du Serveur
+
+##### Mode Développement
 ```bash
+cd server/server
 cargo run
 ```
-Le serveur démarre son écoute TCP sur le port configuré (par exemple `127.0.0.1:9988`) et son interface d'administration HTTP sur `127.0.0.1:9989`
+
+##### Mode Production (Binaire optimisé)
+```bash
+cd server/server
+cargo build --release
+./target/release/server
+```
+
+Le serveur écoute sur les adresses configurées dans `server.properties` :
+- **Port TCP (ex: 9988 ou 7878)** : Connexions réseau des clients élèves et enseignants.
+- **Port HTTP (ex: 9989)** : Interface web d'administration (`http://127.0.0.1:9989`). Les identifiants sont définis dans `server.properties` (identifiant `admin` et empreinte SHA-256 du mot de passe).
+
+Des scripts de service sont également disponibles dans le dossier `server/` :
+- `./run-server.sh` : Démarrage du serveur en arrière-plan.
+- `./kill-server.sh` : Arrêt propre du processus serveur.
 
 <p align="center">
   <br>
