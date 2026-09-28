@@ -12,40 +12,34 @@
 </p>
 
 <p align="center">
-  <strong>Environnement d'apprentissage de la programmation pour l'enseignement secondaire et supérieur</strong><br>
-  Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
+  <strong>Environnement d'Apprentissage de la Programmation
+  <br>pour l'Enseignement Secondaire et Supérieur</strong>
+  <br>
+  <br>Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
 </p>
 
-**CodeLab** est un environnement d'apprentissage de la programmation destiné aux collèges, lycées (NSI), classes préparatoires et premières années d'université (L1/L2). Conçu à [Le Mans Université](https://www.univ-lemans.fr), il associe un **client riche multiplateforme (Java 17 Swing / FlatLaf)** à un **serveur asynchrone haute performance (Rust / Tokio)** pour offrir une expérience pédagogique interactive, visuelle et supervisée en temps réel.
+**CodeLab** est un environnement pédagogique dédié à l'apprentissage de la programmation en collège, lycée et premières années d'études supérieures. Son originalité est qu'il propose des alternatives ludiques ou techniques aux traditionnelles interactions écran-clavier pour la conception des activités pédagogiques, au travers de l'utilisation de "modules applicatifs". Ces modules, disponibles sous la forme de plugins, peuvent être des **visualisations**, des **panneaux de contrôle**, des **simulateurs**, et autres systèmes temps-réel. Chaque module est l'association d'une **IHM** (Interface Homme-Machine) et d'une interface de programmation applicative (souvent désignée par le terme **API** pour Application Programming Interface), disponible pour chacun des langages supportés par CodeLab. Les apprenants peuvent ainsi se focaliser sur les aspects algorithmiques et sur le codage, tout en travaillant sur des applications qui possèdent des caractéristiques riches et motivantes.
+
+CodeLab supporte un large spectre de paradigmes de programmation (impératif, fonctionnel, objet, déclaratif) et ce afin de répondre aux recommandations du programme de la spécialité NSI (Numérique et Sciences Informatiques) de première et de terminale. En plus des langages traditionnels, CodeLab intègre un langage "par assemblage de blocs" qui permet de découvrir les structures de programmation en s'abstrayant d'une syntaxe spécifique.
+
+Une fonctionnalité de CodeLab est de permettre la constitution de **classes virtuelles** (en présence ou à distance) grâce à une architecture client-serveur dédiée. Le modèle utilisateur / groupe / session permet la constitution de groupes de TP à géométrie variable, encadrés par un ou plusieurs tuteurs. Ces derniers peuvent **suivre en temps réel** le travail des apprenants, tester leurs programmes, communiquer avec eux par l’intermédiaire d’une messagerie instantanée intégrée, les déconnecter en fin de séance, etc.
 
 <p align="center">
-  <img src="client/images/screen_1.png" alt="screen_1.png">
-  <img src="client/images/screen_2.png" alt="screen_2.png">
+  <img src="client/images/screen_1.png" alt="screen_1.png" width="400">
+  <img src="client/images/screen_2.png" alt="screen_2.png" width="430">
 </p>
 
-## Philosophie & Approche Pédagogique
-
-- **Sortir du strict écran-clavier** : Rompre avec les exercices textuels austères en connectant le code à des simulateurs interactifs riches (modules PAC : robotique, ascenseur, feux tricolores, etc.) et à des périphériques matériels réels ou virtuels (capteurs, joysticks, manettes USB via JInput).
-- **Fondements théoriques** : Inspiré par les travaux de Jean Piaget, Marvin Minsky et le constructionnisme de Seymour Papert (créateur du langage Logo et pionnier de Lego Mindstorms).
-- **Multi-paradigmes** :
-  - **Impératif & Système** : C, Go
-  - **Orienté Objet** : Java
-  - **Scripting & Multiparadigme** : Python
-  - **Déclaratif / Systèmes experts** : CLIPS
-  - **Fonctionnel** : Haskell
-  - **Graphique & Créatif** : Processing
-  - **Visuel** : Programmation par Blocs traduisibles en Python
-- **Mode classe virtuelle & supervision temps réel** : Suivi synchrone des travaux d'étudiants par les enseignants/tuteurs, téléguidage, télé-évaluation et assistance interactive.
-- **Zéro configuration pour l'apprenant** : Possibilité de distribuer des paquets autonomes embarquant leur propre environnement d'exécution (JDK, interpréteurs et bibliothèques natives).
-
----
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
 ## Architecture du Répertoire
 
 ```text
 codelab/
-├── client/                     # Application cliente Java 17 Swing
-│   ├── src/                    # Sources Java (package racine: codelab)
+├── client/                     # Application cliente Java
+│   ├── src/                    # Sources Java (package codelab)
 │   │   ├── client/             # Protocole réseau client-serveur (MessagePack)
 │   │   ├── controllers/        # Gestion des périphériques (JInput, joysticks, etc.)
 │   │   ├── modules/            # Modules interactifs et simulateurs PAC
@@ -55,7 +49,7 @@ codelab/
 │   ├── natives/                # Bibliothèques natives C/C++ par OS (.dylib, .so, .dll)
 │   ├── build.xml               # Fichier de build Apache Ant
 │   ├── build.sh                # Script de compilation local
-│   └── distrib-*.sh            # Scripts de packaging (macOS, Linux, Windows NSIS)
+│   └── distrib-*.sh            # Scripts de packaging (macOS, Linux, Windows)
 │
 ├── server/                     # Serveur d'infrastructure
 │   ├── server/                 # Serveur asynchrone Rust (Tokio)
@@ -64,16 +58,19 @@ codelab/
 │   │   └── Cargo.toml          # Dépendances et métadonnées Cargo
 │   └── scripts-server/         # Scripts de service et d'exploitation
 │
-├── .gitignore                  # Règles d'exclusion Git (RGPD, secrets, binaires > 100 Mo)
-├── .gitattributes              # Normalisation des fins de ligne (LF/CRLF) et binaires
-├── .editorconfig               # Règles d'indentation et d'encodage
-├── LICENSE                     # Licence GNU General Public License v3.0
-└── README.md                   # Ce document
+├── .gitignore
+├── .gitattributes
+├── .editorconfig
+├── LICENSE
+└── README.md
 ```
 
----
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
-## Démarrage Rapide & Compilation
+## Compilation & Démarrage Rapide
 
 ### 1. Client Java
 
@@ -86,15 +83,13 @@ codelab/
 cd client
 ./build.sh
 ```
-Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`.
+Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`
 
 #### Génération des paquets de distribution
 Des scripts automatisés permettent de construire les distributions pour chaque OS :
 - **macOS** (DMG universel Apple Silicon & Intel) : `./distrib-mac.sh`
 - **Linux** (archive autonome FreeDesktop) : `./distrib-linux.sh`
-- **Windows** (Installateur NSIS MUI2 par utilisateur) : `./distrib-win64-nsis.sh`
-
----
+- **Windows** (Installateur NSIS) : `./distrib-win64-nsis.sh`
 
 ### 2. Serveur Asynchrone Rust
 
@@ -117,21 +112,27 @@ cp config/sessions.example.xml config/sessions.xml
 ```bash
 cargo run
 ```
-Le serveur démarre son écoute TCP sur le port configuré (par exemple `127.0.0.1:9988`) et son interface d'administration HTTP sur `127.0.0.1:9989`.
+Le serveur démarre son écoute TCP sur le port configuré (par exemple `127.0.0.1:9988`) et son interface d'administration HTTP sur `127.0.0.1:9989`
 
----
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
-## Sécurité & Protection des Données (RGPD)
+## Sécurité & Protection des Données
 
 - **Confidentialité** : Les données nominatives étudiantes, listes de promotions, traces d'exécution et identifiants SMTP de production sont systématiquement isolés et exclus du dépôt public.
 - **Authentification** : Mots de passe chiffrés par empreinte SHA-256 (compatible avec le format standard `echo -n "votre_mdp" | sha256sum | xxd -r -p | base64`).
 - **Résilience** : Le serveur intègre un mode de repli automatique sur ses gabarits d'exemple si les configurations personnalisées ne sont pas présentes au démarrage.
 
----
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
-## Propriété Intellectuelle & Licence
+## Licence & Propriété Intellectuelle
  
-- **Auteur** : Jérôme Lehuen, Maître de Conférences, Le Mans Université (LIUM).
+- **Auteur** : Jérôme Lehuen, Maître de Conférences à [Le Mans Université](https://www.univ-lemans.fr).
 - **Dépôt légal** : Le logiciel *CodeLab IDE & Simulators* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous le numéro :
 
 <p align="center">

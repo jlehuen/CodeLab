@@ -50,7 +50,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.4.1"; // Attribué automatiquement par ant
-	public static final String BUILD = "2609271624"; // Attribué automatiquement par ant
+	public static final String BUILD = "2609272123"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
