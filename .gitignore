@@ -70,6 +70,7 @@ codelab_files.zip
 *.bak
 *~
 *.tmp
+*.md5
 
 # Fichier de profil utilisateur généré lors de tests locaux
 client/codelab.files/userdata/user.properties
