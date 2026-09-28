@@ -49,6 +49,7 @@ release.sh
 client/release.sh
 client/update-version.sh
 client/refresh-icon.command
+client/build-test.command
 
 # ------------------------------------------------------------------------------
 # 3. Logs, traces d'exécution et archives temporaires
