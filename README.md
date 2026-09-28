@@ -41,10 +41,10 @@ Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre 
 
 | Plateforme | Paquet d'installation | Architecture cible | Type de distribution |
 | :--- | :--- | :--- | :--- |
-| 🍏 **macOS** | [`CodeLab-MacOS-Silicon-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) | Image disque DMG universelle |
-| 🍏 **macOS** | [`CodeLab-MacOS-Intel-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) | Image disque DMG |
-| 🪟 **Windows** | [`CodeLab-Win64-1.4.1-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) | Installateur NSIS (sans droits admin) |
-| 🐧 **Linux** | [`CodeLab-Linux-1.4.1.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) | Archive autonome FreeDesktop |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Silicon-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) | Image disque DMG universelle |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Intel-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) | Image disque DMG |
+| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [`CodeLab-Win64-1.4.1-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) | Installateur NSIS (sans droits admin) |
+| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [`CodeLab-Linux-1.4.1.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) | Archive autonome FreeDesktop |
 
 <p align="center">
   <br>
