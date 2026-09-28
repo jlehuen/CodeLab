@@ -59,19 +59,17 @@ echo "Suppression des fichiers cachés..."
 export COPYFILE_DISABLE=1 # Désactive la création des fichiers cachés
 dot_clean $DISTRIB # Supprime les fichiers cachés existants
 
-cd /Users/lehuen/Desktop
+cd "$TARGET"
 
 echo "Compression du dossier $FILENAME..."
 
 zip -r -q $ZIPNAME.zip $FILENAME -x ".DS_Store" -x "._*"
 
-md5 $ZIPNAME.zip > $ZIPNAME.md5
 shasum $ZIPNAME.zip > $ZIPNAME.sha1
 
 echo "Copie dans le dossier $VERSION..."
 mkdir -p $VERSION
 mv $ZIPNAME.zip $VERSION
-mv $ZIPNAME.md5 $VERSION
 mv $ZIPNAME.sha1 $VERSION
 
 echo "Nettoyage du bureau..."

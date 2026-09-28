@@ -93,13 +93,11 @@ echo "Compression du dossier $FILENAME..."
     zip -r -q "$ZIPNAME.zip" "$FILENAME" -x "*.DS_Store*" -x "*._*" -x "*__MACOSX*"
     
     echo "Calcul des sommes de contrôle..."
-    md5 "$ZIPNAME.zip" > "$ZIPNAME.md5"
     shasum "$ZIPNAME.zip" > "$ZIPNAME.sha1"
     
     echo "Déplacement dans le dossier $VERSION..."
     mkdir -p "$VERSION"
     mv "$ZIPNAME.zip" "$VERSION/"
-    mv "$ZIPNAME.md5" "$VERSION/"
     mv "$ZIPNAME.sha1" "$VERSION/"
     
     echo "Nettoyage du répertoire temporaire..."

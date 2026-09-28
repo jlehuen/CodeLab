@@ -115,7 +115,6 @@ makensis \
 echo "3. Calcul des sommes de contrôle..."
 (
     cd "$OUTPUT_DIR"
-    md5 "$SETUP_NAME.exe" > "$SETUP_NAME.md5"
     shasum "$SETUP_NAME.exe" > "$SETUP_NAME.sha1"
 )
 
@@ -126,6 +125,5 @@ rm -rf "$PAYLOAD"
 echo "================================================================"
 echo "Succès : installateur Windows créé avec succès !"
 echo "Exécutable : $OUTPUT_EXE"
-echo "Sommes MD5  : $OUTPUT_DIR/$SETUP_NAME.md5"
 echo "Sommes SHA1 : $OUTPUT_DIR/$SETUP_NAME.sha1"
 echo "================================================================"

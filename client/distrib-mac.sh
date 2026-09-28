@@ -236,13 +236,11 @@ cd "$TARGET"
 #########################################################################
 
 echo "Calcul des sommes de contrôle pour $DMGNAME..."
-md5 "$DMGNAME" > "$NAME.md5"
 shasum "$DMGNAME" > "$NAME.sha1"
 
 echo "Copie dans le dossier $VERSION..."
 mkdir -p "$VERSION"
 mv "$DMGNAME" "$VERSION/"
-mv "$NAME.md5" "$VERSION/"
 mv "$NAME.sha1" "$VERSION/"
 
 echo "Distribution DMG créée avec succès : $TARGET/$VERSION/$DMGNAME"

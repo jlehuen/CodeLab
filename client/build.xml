@@ -91,7 +91,7 @@
 				<include name="AbstractCodeLab.java"/>
 			</fileset>
 		</replaceregexp>
-		
+
 		<echo message="Remplacement du numéro de build dans le code: ${build}"/>
 		<replaceregexp
 			match="BUILD = &quot;[0-9]+&quot;;"
@@ -226,10 +226,10 @@
 		<property name="todesktop" value="${user.home}/Desktop/codelab-${build}.jar"/>
 		<internal-copyfile file="${jarfile}" tofile="${todesktop}"/>
 		<echo message="--> Fichier ${jarfile} généré et obfusqué"/>
-		<checksum algorithm="md5" file="${todesktop}"/>
 		<checksum algorithm="sha1" file="${todesktop}"/>
-		<echo message="--> Fichier ${jarfile}.md5 généré"/>
 		<echo message="--> Fichier ${jarfile}.sha1 généré"/>
+		<!--checksum algorithm="md5" file="${todesktop}"/-->
+		<!--echo message="-- Fichier ${jarfile}.md5 généré"/-->
 	</target>
 
 </project>
