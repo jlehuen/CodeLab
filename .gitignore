@@ -56,6 +56,7 @@ server/install-univ.sh
 server/update-server.sh
 server/scripts-server/
 server/README.TXT
+server/server/archive/
 
 # ------------------------------------------------------------------------------
 # 3. Logs, traces d'exécution et archives temporaires
