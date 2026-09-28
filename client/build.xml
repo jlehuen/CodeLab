@@ -229,7 +229,7 @@
 		<checksum algorithm="sha1" file="${todesktop}"/>
 		<echo message="--> Fichier ${jarfile}.sha1 généré"/>
 		<!--checksum algorithm="md5" file="${todesktop}"/-->
-		<!--echo message="-- Fichier ${jarfile}.md5 généré"/-->
+		<!--echo message="Fichier ${jarfile}.md5 généré"/-->
 	</target>
 
 </project>

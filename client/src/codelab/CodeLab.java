@@ -690,7 +690,7 @@ public class CodeLab extends AbstractCodeLab {
 				VERSION, BUILD,
 				last_version != null ? last_version : "-",
 				last_build != null ? last_build : "-",
-				String.format("%s/versions.html", DOWNLOADS_URL));
+				DOWNLOADS_URL);
 
 			Object[] options = { CodeLab.LABEL("BTN_LATER"), CodeLab.LABEL("BTN_DOWNLOAD") };
 			ImageIcon icon = ResourceUtils.loadImageIcon("icons/icon_codelab.png");
@@ -707,7 +707,7 @@ public class CodeLab extends AbstractCodeLab {
 
 			// Si l'utilisateur choisit "Télécharger" (index 1)
 			if (choice == 1) {
-				Utils.openBrowser(String.format(DOWNLOADS_PAGE_URL, LANG));
+				Utils.openBrowser(DOWNLOADS_PAGE_URL);
 			}
 			return 0;
 		}

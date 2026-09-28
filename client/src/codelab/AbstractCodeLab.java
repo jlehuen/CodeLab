@@ -50,7 +50,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.4.2"; // Attribué automatiquement par ant
-	public static final String BUILD = "2609282210"; // Attribué automatiquement par ant
+	public static final String BUILD = "2609282238"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -114,8 +114,8 @@ public abstract class AbstractCodeLab extends JFrame {
 
 	public static final String LANGUAGE_FILE = "/data/syslang.properties"; // Fichier de langues (dans le jar)
 	public static final String CODELAB_URL = "https://codelab.univ-lemans.fr"; // Le site web de CodeLab
-	public static final String DOWNLOADS_URL = "https://codelab.univ-lemans.fr/downloads";
-	public static final String DOWNLOADS_PAGE_URL = "https://codelab.univ-lemans.fr/downloads/downloads-%s.php";
+	public static final String DOWNLOADS_URL = "https://github.com/jlehuen/CodeLab/releases";
+	public static final String DOWNLOADS_PAGE_URL = "https://github.com/jlehuen/CodeLab/releases/latest";
 	public static final String INFOCLIENT_URL = "https://codelab.univ-lemans.fr/doc-%s/usages/infoclient-%s";
 	public static final String INFOSERVER_URL = "https://codelab.univ-lemans.fr/doc-%s/usages/infoserver-%s";
 
