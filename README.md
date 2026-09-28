@@ -39,12 +39,12 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre environnement d'exécution, sans configuration préalable) sont téléchargeables dans les [Releases officielles](https://github.com/jlehuen/CodeLab/releases/latest) :
 
-| Plateforme | Paquet d'installation | Architecture cible | Type de distribution |
-| :--- | :--- | :--- | :--- |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Silicon-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) | Image disque DMG universelle |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Intel-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) | Image disque DMG |
-| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [`CodeLab-Win64-1.4.1-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) | Installateur NSIS (sans droits admin) |
-| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [`CodeLab-Linux-1.4.1.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) | Archive autonome FreeDesktop |
+| Plateforme | Paquet d'installation | Architecture cible |
+| :--- | :--- | :--- |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Silicon-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Intel-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) |
+| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [`CodeLab-Win64-1.4.1-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) |
+| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [`CodeLab-Linux-1.4.1.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) |
 
 <p align="center">
   <br>
