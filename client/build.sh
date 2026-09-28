@@ -1,7 +1,17 @@
 #!/bin/bash
 cd $(dirname $0)
 
-export VERSION=1.4.1
+# ----------------------------------------------------------------------------------------
+# Lecture de la version depuis le fichier racine VERSION
+# ----------------------------------------------------------------------------------------
+
+if [ -z "$VERSION" ]; then
+    if [ -f "../VERSION" ]; then
+        export VERSION=$(tr -d '[:space:]' < ../VERSION)
+    elif [ -f "./VERSION" ]; then
+        export VERSION=$(tr -d '[:space:]' < ./VERSION)
+    fi
+fi
 
 # ----------------------------------------------------------------------------------------
 # Détection de JAVA_HOME (JDK embarqué ou JDK système 17)

@@ -5,7 +5,7 @@
 <h1 align="center">CodeLab IDE & Simulators</h1>
 
 <p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest"><img src="https://img.shields.io/badge/Version-1.4.1-blue.svg" alt="Version: 1.4.1"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest"><img src="https://img.shields.io/badge/Version-1.4.2-blue.svg" alt="Version: 1.4.2"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-Éducative%20%26%20Non--Commerciale-blue.svg" alt="Licence: Éducative & Non-Commerciale"></a>
   <a href="https://adoptium.net/"><img src="https://img.shields.io/badge/Java-17%20LTS-orange.svg" alt="Java: 17"></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021%20Edition-red.svg" alt="Rust: 2021"></a>
@@ -35,16 +35,16 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
 
-## Téléchargements (Version 1.4.1)
+## Téléchargements (Version 1.4.2)
 
 Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre environnement d'exécution, sans configuration préalable) sont téléchargeables dans les [Releases officielles](https://github.com/jlehuen/CodeLab/releases/latest) :
 
 | Plateforme | Paquet d'installation | Architecture cible |
 | :--- | :--- | :--- |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Silicon-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Intel-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) |
-| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [`CodeLab-Win64-1.4.1-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) |
-| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [`CodeLab-Linux-1.4.1.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Silicon-1.4.2.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Intel-1.4.2.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) |
+| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [`CodeLab-Win64-1.4.2-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) |
+| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [`CodeLab-Linux-1.4.2.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) |
 
 <p align="center">
   <br>

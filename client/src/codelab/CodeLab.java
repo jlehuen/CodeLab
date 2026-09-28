@@ -398,25 +398,28 @@ public class CodeLab extends AbstractCodeLab {
 	// Gestionnaire de requêtes primaire
 	///////////////////////////////////////////////////
 
-	public synchronized String handleRequest(String query) {
-		//System.out.format("[%s]\n", query);
-		Map<String, String> params = Utils.getQueryParameters(query);
-		String name = params.get("module");
+	private final Object requestLock = new Object();
 
-		for (AbstractModule module : module_list) {
-			if (name.equals(module.getName())) {
-				if (currentModule != module) showModule(module); // Montrer le module (si besoin)
-				if (!module.isRunning()) startModule(module); // Activer le module (si besoin)
-				return module.handleRequest(params);
+	public String handleRequest(String query) {
+		synchronized (requestLock) {
+			//System.out.format("[%s]\n", query);
+			Map<String, String> params = Utils.getQueryParameters(query);
+			String name = params.get("module");
+
+			for (AbstractModule module : module_list) {
+				if (name.equals(module.getName())) {
+					if (currentModule != module) showModule(module); // Montrer le module (si besoin)
+					if (!module.isRunning()) startModule(module); // Activer le module (si besoin)
+					return module.handleRequest(params);
+				}
 			}
-		}
-		switch (name) {
-			case "INOUT":
-			case "AUDIO":
-				return this.handleRequest(params);
-			default:
-				return unknownModuleError(name);
-
+			switch (name) {
+				case "INOUT":
+				case "AUDIO":
+					return this.handleRequest(params);
+				default:
+					return unknownModuleError(name);
+			}
 		}
 	}
 

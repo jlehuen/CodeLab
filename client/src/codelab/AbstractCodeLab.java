@@ -49,8 +49,8 @@ public abstract class AbstractCodeLab extends JFrame {
 	// Constantes publiques finales
 	///////////////////////////////////////////////////
 
-	public static final String VERSION = "1.4.1"; // Attribué automatiquement par ant
-	public static final String BUILD = "2609272123"; // Attribué automatiquement par ant
+	public static final String VERSION = "1.4.2"; // Attribué automatiquement par ant
+	public static final String BUILD = "2609281517"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -489,8 +489,11 @@ public abstract class AbstractCodeLab extends JFrame {
 	}
 	
 	protected void showModule(AbstractModule module) {
-		// Version sans SwingUtilities.invokeLater...
-		tabbedpane.setSelectedComponent(module.getFullComponent());
+		if (SwingUtilities.isEventDispatchThread()) {
+			tabbedpane.setSelectedComponent(module.getFullComponent());
+		} else {
+			SwingUtilities.invokeLater(() -> tabbedpane.setSelectedComponent(module.getFullComponent()));
+		}
 	}
 
 	protected void startModule(AbstractModule module) {

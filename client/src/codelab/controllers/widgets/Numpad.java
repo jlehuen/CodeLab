@@ -11,6 +11,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import codelab.CodeLab;
 
@@ -71,16 +72,22 @@ public class Numpad extends JFrame {
 
 	public void open() {
 		if (isVisible()) return;
-		setLocationRelativeTo(CodeLab.INSTANCE);
-		setVisible(true);
-		requestFocus();
+		SwingUtilities.invokeLater(() -> {
+			if (isVisible()) return;
+			setLocationRelativeTo(CodeLab.INSTANCE);
+			setVisible(true);
+			requestFocus();
+		});
 	}
 
 	public void open(Point p) {
 		if (isVisible()) return;
-		setLocation(p);
-		setVisible(true);
-		requestFocus();
+		SwingUtilities.invokeLater(() -> {
+			if (isVisible()) return;
+			setLocation(p);
+			setVisible(true);
+			requestFocus();
+		});
 	}
 
 	///////////////////////////////////////////////////

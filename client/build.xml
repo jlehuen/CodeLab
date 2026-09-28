@@ -12,7 +12,12 @@
 	<!-- ########## -->
 
 	<property environment="env"/>
-	<property name="env.VERSION" value="1.4.1"/>
+	<loadfile property="file.VERSION" srcFile="../VERSION" quiet="true">
+		<filterchain>
+			<striplinebreaks/>
+		</filterchain>
+	</loadfile>
+	<property name="env.VERSION" value="${file.VERSION}"/>
 
 	<property name="main-class" value="CodeLab"/>
 	<property name="main-package" value="codelab"/>

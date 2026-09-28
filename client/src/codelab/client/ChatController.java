@@ -1,6 +1,7 @@
 package codelab.client;
 
 import java.util.HashMap;
+import javax.swing.SwingUtilities;
 
 /**
 *	Classe du gestionnaire de discussions
@@ -30,11 +31,15 @@ public class ChatController {
     }
 
     public static void chatFrom(String login, String fullname, String msg) {
-        openChat(login, fullname).appendIncomingMessage(msg);
+        SwingUtilities.invokeLater(() -> {
+            openChat(login, fullname).appendIncomingMessage(msg);
+        });
     }
 
 	public static void closeAll() {
-		for (ChatGUI chat : hashMapChatGUI.values())
-			chat.setVisible(false);
+		SwingUtilities.invokeLater(() -> {
+			for (ChatGUI chat : hashMapChatGUI.values())
+				chat.setVisible(false);
+		});
 	}
 }

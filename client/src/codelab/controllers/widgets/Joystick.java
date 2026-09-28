@@ -7,6 +7,7 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeListener;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 import codelab.CodeLab;
 
@@ -60,16 +61,22 @@ public class Joystick extends JFrame implements Runnable {
 
 	public void open() {
 		if (isVisible()) return;
-		setLocationRelativeTo(CodeLab.INSTANCE);
-		setVisible(true);
-		requestFocus();
+		SwingUtilities.invokeLater(() -> {
+			if (isVisible()) return;
+			setLocationRelativeTo(CodeLab.INSTANCE);
+			setVisible(true);
+			requestFocus();
+		});
 	}
 
 	public void open(Point p) {
 		if (isVisible()) return;
-		setLocation(p);
-		setVisible(true);
-		requestFocus();
+		SwingUtilities.invokeLater(() -> {
+			if (isVisible()) return;
+			setLocation(p);
+			setVisible(true);
+			requestFocus();
+		});
 	}
 
 	///////////////////////////////////////////////////
