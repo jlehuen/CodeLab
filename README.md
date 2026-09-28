@@ -5,6 +5,7 @@
 <h1 align="center">CodeLab IDE & Simulators</h1>
 
 <p align="center">
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest"><img src="https://img.shields.io/badge/Version-1.4.1-blue.svg" alt="Version: 1.4.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-Éducative%20%26%20Non--Commerciale-blue.svg" alt="Licence: Éducative & Non-Commerciale"></a>
   <a href="https://adoptium.net/"><img src="https://img.shields.io/badge/Java-17%20LTS-orange.svg" alt="Java: 17"></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021%20Edition-red.svg" alt="Rust: 2021"></a>
@@ -28,6 +29,22 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   <img src="client/images/screen_1.png" alt="screen_1.png" width="400">
   <img src="client/images/screen_2.png" alt="screen_2.png" width="430">
 </p>
+
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
+
+## Téléchargements (Version 1.4.1)
+
+Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre environnement d'exécution, sans configuration préalable) sont téléchargeables dans les [Releases officielles](https://github.com/jlehuen/CodeLab/releases/latest) :
+
+| Plateforme | Paquet d'installation | Architecture cible | Type de distribution |
+| :--- | :--- | :--- | :--- |
+| 🍏 **macOS** | [`CodeLab-MacOS-Silicon-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) | Image disque DMG universelle |
+| 🍏 **macOS** | [`CodeLab-MacOS-Intel-1.4.1.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) | Image disque DMG |
+| 🪟 **Windows** | [`CodeLab-Win64-1.4.1-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) | Installateur NSIS (sans droits admin) |
+| 🐧 **Linux** | [`CodeLab-Linux-1.4.1.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) | Archive autonome FreeDesktop |
 
 <p align="center">
   <br>
