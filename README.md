@@ -73,7 +73,8 @@ codelab/
 │   │   ├── src/                # Code source Rust (main, database, network, admin)
 │   │   ├── config/             # Gabarits de configuration (server.properties, sessions.xml)
 │   │   └── Cargo.toml          # Dépendances et métadonnées Cargo
-│   └── scripts-server/         # Scripts de service et d'exploitation
+│   ├── run-server.sh           # Script de démarrage du service
+│   └── kill-server.sh          # Script d'arrêt propre du service
 │
 ├── VERSION                     # Source unique du numéro de version
 ├── .gitignore
