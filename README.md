@@ -91,19 +91,39 @@ codelab/
 
 ### 1. Client Java
 
-#### Prérequis
-- Java Development Kit (JDK) 17 LTS installé et configuré (`JAVA_HOME`)
-- Apache Ant 1.10+ (ou utilisation de l'exécutable Ant détecté automatiquement)
+#### Prérequis pour la compilation
+- **Java Development Kit (JDK) 17 LTS** installé et configuré (`JAVA_HOME`)
+- **Apache Ant 1.10+** (ou utilisation de l'exécutable Ant présent dans `client/java/`)
 
 #### Compilation
 ```bash
 cd client
 ./build.sh
 ```
-Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`
+Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`. Vous pouvez le tester directement avec votre JVM locale :
+```bash
+java -jar hidden/codelab/codelab.jar
+```
 
-#### Génération des paquets de distribution
-Des scripts automatisés permettent de construire les distributions pour chaque OS :
+#### Génération des distributions autonomes (Packaging clé en main)
+
+> [!NOTE]
+> **Pourquoi les runtimes JDK ne sont-ils pas inclus dans le dépôt Git ?**  
+> Les environnements d'exécution Java complets dépassent la limite de taille par fichier imposée par GitHub (fichiers internes `lib/modules` > 100 Mo) et alourdiraient le dépôt de plus de 1,5 Go. Ils sont donc volontairement exclus via `.gitignore`.
+
+Pour construire les distributions autonomes prêtes à l'emploi (embarquant leur propre JVM sans dépendance pour l'utilisateur final), téléchargez au préalable les archives **JDK 17 LTS** officielles sur [Adoptium Temurin Releases](https://adoptium.net/fr/temurin/releases/?version=17) et décompressez-les dans les dossiers correspondants :
+
+| Plateforme cible | Archive officielle Adoptium Temurin 17 | Format | Dossier cible dans `client/` |
+| :--- | :--- | :--- | :--- |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS Apple Silicon** | [macOS aarch64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=aarch64&package=jdk) | `.tar.gz` | `mac-app-arm/Contents/Java/jdk-17.0.20.1+1/` |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS Intel** | [macOS x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=x64&package=jdk) | `.tar.gz` | `mac-app-x64/Contents/Java/jdk-17.0.8.1+1/` |
+| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows 64 bits** | [Windows x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=windows&arch=x64&package=jdk) | `.zip` | `java/windows_64/JDK-17.0.8.1+1/` |
+| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux 64 bits** | [Linux x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=linux&arch=x64&package=jdk) | `.tar.gz` | `java/linux_64/JDK-17.0.8.1+1/` |
+
+> [!TIP]
+> Si vous téléchargez une mise à jour mineure plus récente de Temurin 17 (ex: `jdk-17.0.14+7`), renommez simplement le dossier extrait avec le nom attendu dans le tableau ci-dessus (ou créez un lien symbolique) afin que les lanceurs et scripts de packaging le détectent automatiquement.
+
+Une fois les JDK placés, lancez le script correspondant à votre cible :
 - **macOS** (DMG universel Apple Silicon & Intel) : `./distrib-mac.sh`
 - **Linux** (archive autonome FreeDesktop) : `./distrib-linux.sh`
 - **Windows** (Installateur NSIS) : `./distrib-win64-nsis.sh`
