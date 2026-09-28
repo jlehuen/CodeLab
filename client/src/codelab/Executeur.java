@@ -385,16 +385,8 @@ public class Executeur implements Runnable {
 	// Méthodes privées
 	///////////////////////////////////////////////////
 
-	private BufferedWriter __getBufferedWriter__(OutputStream os) {
-		return new BufferedWriter(new OutputStreamWriter(os));
-	}
-
 	private BufferedReader __getBufferedReader__(InputStream is) {
 		return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-	}
-
-	private void printToConsole(char c, Color color, boolean caret) {
-		codelab.printToConsole(c, color, caret);
 	}
 
 	private void printToConsole(String str, Color color, boolean caret) {

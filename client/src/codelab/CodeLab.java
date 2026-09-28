@@ -532,19 +532,18 @@ public class CodeLab extends AbstractCodeLab {
 	}
 
 	public boolean connection() {
-		final String masterkey = BUILD;
 		boolean input_required = true;
 
 		if (AUTO_LOGIN && !PASSWD.equals(UNDEFINED)) {
+			consoleLog("Auto-login to the file server...");
 			try {
 				// Décryptage des identifiants
-				consoleLog("Auto-login to the file server...");
-				login = Encryption.decrypt(LOGIN, masterkey);
-				password = Encryption.decrypt(PASSWD, masterkey);
+				login = Encryption.decrypt(LOGIN);
+				password = Encryption.decrypt(PASSWD);
 				input_required = false;
 			}
 			catch (Exception e) {
-				consoleLog("An error occurred while retrieving connection data (perhaps due to a recent CodeLab update)");
+				consoleLog("An error occurred while retrieving connection data");
 			}
 		}
 
@@ -558,11 +557,11 @@ public class CodeLab extends AbstractCodeLab {
 			if (AUTO_LOGIN) {
 				try {
 					// Cryptage des identifiants
-					LOGIN = Encryption.encrypt(login, masterkey);
-					PASSWD = Encryption.encrypt(password, masterkey);
+					LOGIN = Encryption.encrypt(login);
+					PASSWD = Encryption.encrypt(password);
 				}
 				catch (Exception e) {
-					consoleLog("An error occurred while encrypt connection data");
+					consoleLog("An error occurred while encrypting connection data");
 					ExceptionManager.process(e); // Pas censé arriver !
 				}
 			}
@@ -1090,6 +1089,7 @@ public class CodeLab extends AbstractCodeLab {
 		}
 	}
 
+	/*
 	private static void restoreUserDirectory() {
 		// Choses à sauvegarder
 		String BACKUP1 = HOME + "/BACKUP1";
@@ -1119,6 +1119,7 @@ public class CodeLab extends AbstractCodeLab {
 		MyFileUtils.delete(BACKUP3);
 		MyFileUtils.delete(BACKUP4);
 	}
+	*/
 
 	///////////////////////////////////////////////////
 	// Méthode statique main
@@ -1161,7 +1162,6 @@ public class CodeLab extends AbstractCodeLab {
 		// ------------------------------------------------
 		// (Ré-)installer si besoin le dossier codelab.files
 
-		boolean first_run = false;
 		File file = new File(CODELAB_FILES);
 		if (!file.exists()) {
 			JOptionPane.showMessageDialog(null, LABEL("CODELAB_ERR2"), "CODELAB INFORMATION", JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);
@@ -1170,7 +1170,6 @@ public class CodeLab extends AbstractCodeLab {
 			MyFileUtils.copy(CODELAB_FILES_BAK, temp);
 			MyFileUtils.unzip(temp);
 			MyFileUtils.delete(temp);
-			first_run = true; // Pour inhiber la vérification de la version de codelab.files
 		}
 
 		// ------------------------------------------------
@@ -1301,7 +1300,7 @@ public class CodeLab extends AbstractCodeLab {
 
 		// ------------------------------------------------
 		// Vérification du dossier codelab.files
-
+		/*
 		int previous_major = Utils.getVersionPart(DATA_VERSION, 1);
 		boolean codelab_files_obsolete = (DATA_VERSION.equals(UNDEFINED) || previous_major < 1); // Condition d'obsolescence
 
@@ -1311,7 +1310,7 @@ public class CodeLab extends AbstractCodeLab {
 			saveHiddenProperties(); // Sauvegarder la ppté DATA_VERSION
 			relaunch(); // Relancer CodeLab
 		}
-
+		*/
 		// ------------------------------------------------
 		// Vérification de la connectivité
 

@@ -75,6 +75,8 @@ codelab/
 │   │   └── Cargo.toml          # Dépendances et métadonnées Cargo
 │   └── scripts-server/         # Scripts de service et d'exploitation
 │
+├── release.sh                  # Script de publication et packaging multiplateforme
+├── VERSION                     # Source unique du numéro de version
 ├── .gitignore
 ├── .gitattributes
 ├── .editorconfig
