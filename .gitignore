@@ -50,6 +50,12 @@ client/release.sh
 client/update-version.sh
 client/refresh-icon.command
 client/build-test.command
+server/compile-server.sh
+server/get-log.command
+server/install-univ.sh
+server/update-server.sh
+server/scripts-server/get-log.sh
+server/scripts-server/update-server.sh
 
 # ------------------------------------------------------------------------------
 # 3. Logs, traces d'exécution et archives temporaires
