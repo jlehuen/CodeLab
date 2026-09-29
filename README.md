@@ -4,13 +4,14 @@
 
 <h1 align="center">CodeLab IDE & Simulators</h1>
 
-<p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest"><img src="https://img.shields.io/badge/Version-1.4.2-blue.svg" alt="Version: 1.4.2"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-Éducative%20%26%20Non--Commerciale-blue.svg" alt="Licence: Éducative & Non-Commerciale"></a>
-  <a href="https://adoptium.net/"><img src="https://img.shields.io/badge/Java-17%20LTS-orange.svg" alt="Java: 17"></a>
-  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021%20Edition-red.svg" alt="Rust: 2021"></a>
-  <a href="https://www.app.asso.fr/"><img src="https://img.shields.io/badge/Dépôt%20APP-IDDN--FR--001--260031-green.svg" alt="Dépôt APP"></a>
-</p>
+<div align="center">
+
+[![Java](https://img.shields.io/badge/Java-17%20LTS-orange.svg)](https://adoptium.net/)
+[![Rust](https://img.shields.io/badge/Rust-2021%20Edition-red.svg)](https://www.rust-lang.org/)
+[![Licence](https://img.shields.io/badge/Licence-Éducative%20%26%20Non--Commerciale-blue.svg)](LICENSE)
+[![Dépôt APP](https://img.shields.io/badge/Dépôt%20APP-IDDN--FR--001--260031-green.svg)](https://www.app.asso.fr/)
+
+</div>
 
 <p align="center">
   <strong>Environnement d'Apprentissage de la Programmation
@@ -19,15 +20,21 @@
   <br>Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
 </p>
 
-**CodeLab** est un environnement pédagogique dédié à l'apprentissage de la programmation en collège, lycée et premières années d'études supérieures. Son originalité est qu'il propose des alternatives ludiques ou techniques aux traditionnelles interactions écran-clavier pour la conception des activités pédagogiques, au travers de l'utilisation de "modules applicatifs". Ces modules, disponibles sous la forme de plugins, peuvent être des **visualisations**, des **panneaux de contrôle**, des **simulateurs**, et autres systèmes temps-réel. Chaque module est l'association d'une **IHM** (Interface Homme-Machine) et d'une interface de programmation applicative (souvent désignée par le terme **API** pour Application Programming Interface), disponible pour chacun des langages supportés par CodeLab. Les apprenants peuvent ainsi se focaliser sur les aspects algorithmiques et sur le codage, tout en travaillant sur des applications qui possèdent des caractéristiques riches et motivantes.
+**CodeLab** est un environnement pédagogique dédié à l'apprentissage de la programmation en collège, lycée et premières années d'études supérieures. Son originalité est qu'il propose des alternatives ludiques ou techniques aux traditionnelles interactions écran-clavier pour la conception des activités pédagogiques, au travers de l'utilisation de "modules applicatifs". Ces modules, disponibles sous la forme de plugins, peuvent être des **visualisations**, des **panneaux de contrôle**, des **simulateurs**, et autres systèmes temps-réel. Chaque module est l'association d'une **IHM** (Interface Homme-Machine) et d'une interface de programmation applicative (souvent désignée par le terme **API** pour Application Programming Interface), disponible pour chacun des langages supportés par CodeLab. Les apprenants peuvent ainsi se focaliser sur les aspects algorithmiques et sur le codage, tout en travaillant sur des applications qui possèdent des caractéristiques riches et motivantes :
+
+<p align="center">
+  <img src="client/images/vignette-robot2D.gif" alt="Robot 2D" width="22%">&nbsp;&nbsp;
+  <img src="client/images/vignette-robot3D.gif" alt="Robot 3D" width="22%">&nbsp;&nbsp;
+  <img src="client/images/vignette-motor.gif" alt="Moteur" width="22%">&nbsp;&nbsp;
+  <img src="client/images/vignette-sorting.gif" alt="Tri" width="22%">
+</p>
 
 CodeLab supporte un large spectre de paradigmes de programmation (impératif, fonctionnel, objet, déclaratif) et ce afin de répondre aux recommandations du programme de la spécialité NSI (Numérique et Sciences Informatiques) de première et de terminale. En plus des langages traditionnels, CodeLab intègre un langage "par assemblage de blocs" qui permet de découvrir les structures de programmation en s'abstrayant d'une syntaxe spécifique.
 
 Une fonctionnalité de CodeLab est de permettre la constitution de **classes virtuelles** (en présence ou à distance) grâce à une architecture client-serveur dédiée. Le modèle utilisateur / groupe / session permet la constitution de groupes de TP à géométrie variable, encadrés par un ou plusieurs tuteurs. Ces derniers peuvent **suivre en temps réel** le travail des apprenants, tester leurs programmes, communiquer avec eux par l’intermédiaire d’une messagerie instantanée intégrée, les déconnecter en fin de séance, etc.
 
 <p align="center">
-  <img src="client/images/screen_1.png" alt="screen_1.png" width="400">
-  <img src="client/images/screen_2.png" alt="screen_2.png" width="430">
+  <img src="client/images/codelab_1.png" alt="Interface CodeLab" width="80%">
 </p>
 
 <p align="center">
@@ -37,14 +44,17 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 ## Téléchargements (Version 1.4.2)
 
-Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre environnement d'exécution, sans configuration préalable) sont téléchargeables dans les [Releases officielles](https://github.com/jlehuen/CodeLab/releases/latest) :
+Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre environnement d'exécution, sans configuration préalable) sont téléchargeables directement ci-dessous :
 
-| Plateforme | Paquet d'installation | Architecture cible |
-| :--- | :--- | :--- |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Silicon-1.4.2.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Apple Silicon (M1, M2, M3, M4) |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS** | [`CodeLab-MacOS-Intel-1.4.2.dmg`](https://github.com/jlehuen/CodeLab/releases/latest) | Intel 64 bits (x86_64) |
-| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [`CodeLab-Win64-1.4.2-Setup.exe`](https://github.com/jlehuen/CodeLab/releases/latest) | Windows 10 / 11 (64 bits) |
-| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [`CodeLab-Linux-1.4.2.zip`](https://github.com/jlehuen/CodeLab/releases/latest) | Linux (x86_64) |
+<p align="center">
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.4.2.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
+  &emsp;&emsp;&emsp;&emsp;
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.4.2-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
+  &emsp;&emsp;&emsp;&emsp;
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.4.2.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
+  <br>
+  <small>macOS : <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.4.2.dmg">Apple Silicon (M1/M2/M3/M4)</a> &bull; <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Intel-1.4.2.dmg">Intel (x86_64)</a></small>
+</p>
 
 <p align="center">
   <br>
@@ -102,12 +112,9 @@ codelab/
 cd client
 ./build.sh
 ```
-Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`. Vous pouvez le tester directement avec votre JVM locale :
-```bash
-java -jar hidden/codelab/codelab.jar
-```
+Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`.
 
-#### Génération des distributions autonomes (Packaging clé en main)
+#### Génération des distributions
 
 > [!NOTE]
 > **Pourquoi les runtimes JDK ne sont-ils pas inclus dans le dépôt Git ?**  
@@ -182,28 +189,17 @@ Des scripts de service sont également disponibles dans le dossier `server/` :
   <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
 
-## Sécurité & Protection des Données
-
-- **Confidentialité** : Les données nominatives étudiantes, listes de promotions, traces d'exécution et identifiants SMTP de production sont systématiquement isolés et exclus du dépôt public.
-- **Authentification** : Mots de passe chiffrés par empreinte SHA-256 (compatible avec le format standard `echo -n "votre_mdp" | sha256sum | xxd -r -p | base64`).
-- **Résilience** : Le serveur intègre un mode de repli automatique sur ses gabarits d'exemple si les configurations personnalisées ne sont pas présentes au démarrage.
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
-
 ## Licence & Propriété Intellectuelle
  
 - **Auteur** : Jérôme Lehuen, Maître de Conférences à [Le Mans Université](https://www.univ-lemans.fr).
-- **Dépôt légal** : Le logiciel *CodeLab* est enregistré auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) :
+- **Dépôt légal** : CodeLab est déposé auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) :
 
 <p align="center">
   <img src="client/data/mentions/app.png" alt="app.png">
   <br/>IDDN-FR-001-260031-000-SC-2022-000-10000
 </p>
 
-- **Licence & Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives, académiques et de recherche non commerciale. **Toute utilisation ou exploitation commerciale, revente ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université. Consultez le fichier [LICENSE](LICENSE) pour l'intégralité des termes et des mentions légales.
-- **Documentation** : La documentation, les guides et les programmes d'exemples sont mis à disposition sous licence [Creative Commons CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+- **Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives, académiques et de recherche non commerciale. **Toute utilisation ou exploitation commerciale, revente ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université.
+- **Licence** : Consultez le fichier [LICENSE](LICENSE) pour l'intégralité des termes et des mentions légales.
 - **Copyright** : © 2021-2026 Jérôme Lehuen, Le Mans Université.
 
