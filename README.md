@@ -162,7 +162,7 @@ Une fois les JDK placés, lancez le script correspondant à votre cible :
 - **Linux** (archive autonome FreeDesktop) : `./distrib-linux.sh`
 - **Windows** (Installateur NSIS) : `./distrib-win64-nsis.sh`
 
-### 2. Serveur Asynchrone Rust
+### 2. Serveur Rust
 
 Le serveur CodeLab orchestre les classes virtuelles, gère les flux bidirectionnels entre apprenants et enseignants et fournit un tableau de bord web de supervision.
 
@@ -217,14 +217,12 @@ Des scripts de service sont également disponibles dans le dossier `server/` :
 ## Licence & Propriété Intellectuelle
  
 - **Auteur** : Jérôme Lehuen, Maître de Conférences à [Le Mans Université](https://www.univ-lemans.fr).
-- **Dépôt légal** : CodeLab est déposé auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) :
+- **Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives, académiques et de recherche non commerciale. **Toute utilisation ou exploitation commerciale, revente ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université.
+- **Dépôt légal** : CodeLab est déposé auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous la référence IDDN-FR-001-260031-000-SC-2022-000-10000.
+- **Licence** : Consultez le fichier [LICENSE](LICENSE) pour l'intégralité des termes et des mentions légales.
+- **Copyright** : © 2021-2026 Jérôme Lehuen, Le Mans Université.
 
 <p align="center">
   <img src="client/data/mentions/app.png" alt="app.png">
   <br/>IDDN-FR-001-260031-000-SC-2022-000-10000
 </p>
-
-- **Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives, académiques et de recherche non commerciale. **Toute utilisation ou exploitation commerciale, revente ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université.
-- **Licence** : Consultez le fichier [LICENSE](LICENSE) pour l'intégralité des termes et des mentions légales.
-- **Copyright** : © 2021-2026 Jérôme Lehuen, Le Mans Université.
-
