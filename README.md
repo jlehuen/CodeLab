@@ -65,8 +65,7 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 | <img src="client/images/auth_codelab_mac_1.png" alt="Étape 1 - Glisser dans Applications" height="110"> | <img src="client/images/auth_codelab_mac_2.png" alt="Étape 2 - Cliquer sur Terminé" height="110"> | <img src="client/images/auth_codelab_mac_3.png" alt="Étape 3 - Ouvrir quand même" height="110"> | <img src="client/images/auth_codelab_mac_4.png" alt="Étape 4 - Confirmer" height="110"> | <img src="client/images/auth_codelab_mac_5.png" alt="Étape 5 - Mot de passe" height="110"> |
 | Glisser **CodeLab.app** dans le dossier **Applications**. | Cliquer sur **Terminé** lors du refus d'ouverture. | Dans **Réglages Système** > **Confidentialité et sécurité**, cliquer sur **Ouvrir quand même**. | Relancer CodeLab et cliquer sur **Ouvrir quand même**. | Entrer votre mot de passe administrateur pour valider. |
 
-> [!TIP]
-> **Alternative en ligne de commande** : vous pouvez aussi lever le blocage dans le Terminal avec la commande `xattr -cr /Applications/CodeLab.app` ou encore utiliser l'application gratuite [Sentinel](https://github.com/alienator88/Sentinel) disponible sur GitHub.
+> 💡 **Alternative en ligne de commande** : vous pouvez aussi lever le blocage dans le Terminal avec la commande `xattr -cr /Applications/CodeLab.app` ou encore utiliser l'application gratuite [Sentinel](https://github.com/alienator88/Sentinel) disponible sur GitHub.
 
 </details>
 
@@ -76,9 +75,9 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 > Microsoft Defender SmartScreen bloque par défaut le lancement des installateurs téléchargés ne disposant pas d'un certificat commercial Microsoft Authenticode. Cette validation n'est requise **qu'une seule fois à l'installation** (aucun droit administrateur n'est requis) :
 
-| Instructions | Aperçu |
+| Instructions | &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;Aperçu&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; |
 | :--- | :---: |
-| 1. Sur l'écran *« Windows a protégé votre ordinateur »*, cliquez sur le lien **Informations complémentaires**.<br><br>2. Cliquez ensuite sur le bouton **Exécuter quand même** qui apparaît en bas.<br><br>3. L'installation s'exécute dans votre session utilisateur ; par la suite, le raccourci du menu Démarrer lancera CodeLab directement, sans aucun avertissement. | <img src="client/images/auth_codelab_win.png" alt="Autorisation Windows SmartScreen" height="135"> |
+| 1. Sur l'écran *« Windows a protégé votre ordinateur »*, cliquez sur le lien **Informations complémentaires**.<br><br>2. Cliquez ensuite sur le bouton **Exécuter quand même** qui apparaît en bas.<br><br>3. L'installation s'exécute dans votre session utilisateur ; par la suite, le raccourci du menu Démarrer lancera CodeLab directement, sans aucun avertissement. | <img src="client/images/auth_codelab_win.png" alt="Autorisation Windows SmartScreen" width="350"> |
 
 </details>
 
