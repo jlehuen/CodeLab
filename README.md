@@ -54,6 +54,8 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.4.2.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
 </p>
 
+Toutes les versions disponibles sont dans la section [Releases](https://github.com/jlehuen/CodeLab/releases) de CodeLab.
+
 <details>
 <summary>🍏 <b>macOS : procédure d'autorisation au premier lancement (Gatekeeper)</b></summary>
 <br>
