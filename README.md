@@ -42,9 +42,9 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
 
-## Téléchargements (Version 1.4.2)
+## Téléchargements (version 1.4.2)
 
-Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre environnement d'exécution, sans configuration préalable) sont téléchargeables directement ci-dessous :
+<br>
 
 <p align="center">
   <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.4.2.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
@@ -52,8 +52,6 @@ Les paquets d'installation autonomes prêts à l'emploi (embarquant leur propre 
   <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.4.2-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
   &emsp;&emsp;&emsp;&emsp;
   <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.4.2.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
-  <br>
-  <small>macOS : <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.4.2.dmg">Apple Silicon (M1/M2/M3/M4)</a> &bull; <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Intel-1.4.2.dmg">Intel (x86_64)</a></small>
 </p>
 
 <p align="center">
@@ -99,7 +97,7 @@ codelab/
   <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
 
-## Compilation & Démarrage Rapide
+## Compilation du client et du serveur
 
 ### 1. Client Java
 
