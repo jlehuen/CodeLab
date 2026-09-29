@@ -226,8 +226,8 @@
 		<property name="todesktop" value="${user.home}/Desktop/codelab-${build}.jar"/>
 		<internal-copyfile file="${jarfile}" tofile="${todesktop}"/>
 		<echo message="--> Fichier ${jarfile} généré et obfusqué"/>
-		<checksum algorithm="sha1" file="${todesktop}"/>
-		<echo message="--> Fichier ${jarfile}.sha1 généré"/>
+		<!--checksum algorithm="sha1" file="${todesktop}"/-->
+		<!--echo message="Fichier ${jarfile}.sha1 généré"/-->
 		<!--checksum algorithm="md5" file="${todesktop}"/-->
 		<!--echo message="Fichier ${jarfile}.md5 généré"/-->
 	</target>

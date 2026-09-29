@@ -232,15 +232,11 @@ mv "$BASE/CodeLab.dmg" "$TARGET/$DMGNAME"
 cd "$TARGET"
 
 #########################################################################
-## 4. Sommes de contrôle & Export
+## 4. Export
 #########################################################################
-
-echo "Calcul des sommes de contrôle pour $DMGNAME..."
-shasum "$DMGNAME" > "$NAME.sha1"
 
 echo "Copie dans le dossier $VERSION..."
 mkdir -p "$VERSION"
 mv "$DMGNAME" "$VERSION/"
-mv "$NAME.sha1" "$VERSION/"
 
 echo "Distribution DMG créée avec succès : $TARGET/$VERSION/$DMGNAME"

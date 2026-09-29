@@ -111,19 +111,11 @@ makensis \
     -DICON_FILE="$BASE/launchers/icon/codelab.ico" \
     "$BASE/launchers/windows/codelab.nsi"
 
-## 6. Sommes de contrôle
-echo "3. Calcul des sommes de contrôle..."
-(
-    cd "$OUTPUT_DIR"
-    shasum "$SETUP_NAME.exe" > "$SETUP_NAME.sha1"
-)
-
-## 7. Nettoyage du payload temporaire
-echo "4. Nettoyage de l'espace de staging..."
+## 6. Nettoyage du payload temporaire
+echo "3. Nettoyage de l'espace de staging..."
 rm -rf "$PAYLOAD"
 
 echo "================================================================"
 echo "Succès : installateur Windows créé avec succès !"
 echo "Exécutable : $OUTPUT_EXE"
-echo "Sommes SHA1 : $OUTPUT_DIR/$SETUP_NAME.sha1"
 echo "================================================================"

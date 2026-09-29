@@ -71,6 +71,9 @@ codelab_files.zip
 *~
 *.tmp
 *.md5
+*.sha*
+*.sha1
+*.sha256
 
 # Fichier de profil utilisateur généré lors de tests locaux
 client/codelab.files/userdata/user.properties

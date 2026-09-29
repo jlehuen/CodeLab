@@ -30,7 +30,7 @@ echo "----------------------------------------------------------------"
 echo "Finalisation du dossier $TARGET/$VERSION..."
 echo "----------------------------------------------------------------"
 mkdir -p "$TARGET/$VERSION"
-rm -f "$TARGET/$VERSION"/*.md5 2>/dev/null || true
+rm -f "$TARGET/$VERSION"/*.md5 "$TARGET/$VERSION"/*.sha* 2>/dev/null || true
 cp "$BASE/launchers/index.html" "$TARGET/$VERSION/"
 
 echo "================================================================"

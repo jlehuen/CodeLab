@@ -65,12 +65,9 @@ echo "Compression du dossier $FILENAME..."
 
 zip -r -q $ZIPNAME.zip $FILENAME -x ".DS_Store" -x "._*"
 
-shasum $ZIPNAME.zip > $ZIPNAME.sha1
-
 echo "Copie dans le dossier $VERSION..."
 mkdir -p $VERSION
 mv $ZIPNAME.zip $VERSION
-mv $ZIPNAME.sha1 $VERSION
 
 echo "Nettoyage du bureau..."
 rm -rf $FILENAME
