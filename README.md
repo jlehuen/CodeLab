@@ -48,11 +48,39 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 <p align="center">
   <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.4.2.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
-  &emsp;&emsp;
+  &emsp;
   <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.4.2-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
-  &emsp;&emsp;
+  &emsp;
   <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.4.2.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
 </p>
+
+<details>
+<summary>🍏 <b>macOS : procédure d'autorisation au premier lancement (Gatekeeper)</b></summary>
+<br>
+
+> Les systèmes macOS bloquent au premier lancement les applications qui ne disposent pas d'un certificat payant Apple Developer. Cette opération n'est requise **qu'une seule fois** :
+
+| 1. Installer | 2. Premier blocage | 3. Réglages Système | 4. Confirmer | 5. Mot de passe |
+| :---: | :---: | :---: | :---: | :---: |
+| <img src="client/images/auth_codelab_mac_1.png" alt="Étape 1 - Glisser dans Applications" height="110"> | <img src="client/images/auth_codelab_mac_2.png" alt="Étape 2 - Cliquer sur Terminé" height="110"> | <img src="client/images/auth_codelab_mac_3.png" alt="Étape 3 - Ouvrir quand même" height="110"> | <img src="client/images/auth_codelab_mac_4.png" alt="Étape 4 - Confirmer" height="110"> | <img src="client/images/auth_codelab_mac_5.png" alt="Étape 5 - Mot de passe" height="110"> |
+| Glisser **CodeLab.app** dans le dossier **Applications**. | Cliquer sur **Terminé** lors du refus d'ouverture. | Dans **Réglages Système** > **Confidentialité et sécurité**, cliquer sur **Ouvrir quand même**. | Relancer CodeLab et cliquer sur **Ouvrir quand même**. | Entrer votre mot de passe administrateur pour valider. |
+
+> [!TIP]
+> **Alternative en ligne de commande** : vous pouvez aussi lever le blocage dans le Terminal avec la commande `xattr -cr /Applications/CodeLab.app` ou encore utiliser l'application gratuite [Sentinel](https://github.com/alienator88/Sentinel) disponible sur GitHub.
+
+</details>
+
+<details>
+<summary>🪟 <b>Windows : procédure d'autorisation de l'installeur (SmartScreen)</b></summary>
+<br>
+
+> Microsoft Defender SmartScreen bloque par défaut le lancement des installateurs téléchargés ne disposant pas d'un certificat commercial Microsoft Authenticode. Cette validation n'est requise **qu'une seule fois à l'installation** (aucun droit administrateur n'est requis) :
+
+| Instructions | Aperçu |
+| :--- | :---: |
+| 1. Sur l'écran *« Windows a protégé votre ordinateur »*, cliquez sur le lien **Informations complémentaires**.<br><br>2. Cliquez ensuite sur le bouton **Exécuter quand même** qui apparaît en bas.<br><br>3. L'installation s'exécute dans votre session utilisateur ; par la suite, le raccourci du menu Démarrer lancera CodeLab directement, sans aucun avertissement. | <img src="client/images/auth_codelab_win.png" alt="Autorisation Windows SmartScreen" height="135"> |
+
+</details>
 
 <p align="center">
   <br>
@@ -120,12 +148,12 @@ Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`.
 
 Pour construire les distributions autonomes prêtes à l'emploi (embarquant leur propre JVM sans dépendance pour l'utilisateur final), téléchargez au préalable les archives **JDK 17 LTS** officielles sur [Adoptium Temurin Releases](https://adoptium.net/fr/temurin/releases/?version=17) et décompressez-les dans les dossiers correspondants :
 
-| Plateforme cible | Archive officielle Adoptium Temurin 17 | Format | Dossier cible dans `client/` |
+| Plateforme | Archive officielle Adoptium | Format | Dossier cible dans `client/` |
 | :--- | :--- | :--- | :--- |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS Apple Silicon** | [macOS aarch64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=aarch64&package=jdk) | `.tar.gz` | `mac-app-arm/Contents/Java/jdk-17.0.20.1+1/` |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **macOS Intel** | [macOS x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=x64&package=jdk) | `.tar.gz` | `mac-app-x64/Contents/Java/jdk-17.0.8.1+1/` |
-| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows 64 bits** | [Windows x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=windows&arch=x64&package=jdk) | `.zip` | `java/windows_64/JDK-17.0.8.1+1/` |
-| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux 64 bits** | [Linux x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=linux&arch=x64&package=jdk) | `.tar.gz` | `java/linux_64/JDK-17.0.8.1+1/` |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **Mac Silicon** | [macOS aarch64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=aarch64&package=jdk) | `.tar.gz` | `mac-app-arm/Contents/Java/jdk-17.0.20.1+1/` |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **Mac Intel** | [macOS x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=x64&package=jdk) | `.tar.gz` | `mac-app-x64/Contents/Java/jdk-17.0.8.1+1/` |
+| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [Windows x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=windows&arch=x64&package=jdk) | `.zip` | `java/windows_64/JDK-17.0.8.1+1/` |
+| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [Linux x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=linux&arch=x64&package=jdk) | `.tar.gz` | `java/linux_64/JDK-17.0.8.1+1/` |
 
 > [!TIP]
 > Si vous téléchargez une mise à jour mineure plus récente de Temurin 17 (ex: `jdk-17.0.14+7`), renommez simplement le dossier extrait avec le nom attendu dans le tableau ci-dessus (ou créez un lien symbolique) afin que les lanceurs et scripts de packaging le détectent automatiquement.
