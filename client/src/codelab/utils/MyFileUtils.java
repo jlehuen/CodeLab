@@ -1,5 +1,6 @@
 package codelab.utils;
 
+import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -281,6 +282,19 @@ public class MyFileUtils {
 			//ExceptionManager.process(e);
 			return false;
 		}
+	}
+
+	public static boolean moveToTrashOrDelete(File file) {
+		if (file == null || !file.exists()) return false;
+		try {
+			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.MOVE_TO_TRASH)) {
+				if (Desktop.getDesktop().moveToTrash(file)) {
+					return true;
+				}
+			}
+		} catch (Exception ignored) {}
+		delete(file);
+		return true;
 	}
 
 	public static void delete(File file) {

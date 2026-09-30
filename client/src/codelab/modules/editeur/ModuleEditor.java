@@ -433,7 +433,12 @@ public class ModuleEditor extends AbstractModule {
 
 	public boolean compileFile() {
 		// Modifie le flag compilation_ok de AbstractEditor
-		return editor.compile_file();
+		boolean ok = editor.compile_file();
+		if (ok) {
+			backupCurrentFile();
+			CodeLab.logger("Automatic backup created after successful compilation for: " + getCurrentFilename());
+		}
+		return ok;
 	}
 
 	public boolean convertSpaceToTab(int nbspaces) {

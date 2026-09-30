@@ -847,8 +847,17 @@ impl Client {
             None => return Err("Client status is None".into()),
         };
 
-        // Compresser la session dans TEMP_DIR
-        let file_name = "session.tar.zst";
+        // S'assurer que le dossier existe sur le serveur avant compression
+        if let Err(e) = ensure_dir_exists(&dir_path) {
+            log::warn!("Could not ensure dir exists for {}: {}", dir_path, e);
+        }
+
+        // Compresser la session dans TEMP_DIR avec un nom unique par client pour éliminer toute collision
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis();
+        let file_name = format!("session_{}_{}_{}.tar.zst", session, login, timestamp);
         let temp_file = format!("{}/{}", TEMP_DIR, file_name);
 
         if let Err(error) = compress_archive(&dir_path, &temp_file, Some(5)) {

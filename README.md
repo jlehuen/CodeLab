@@ -204,7 +204,7 @@ cargo build --release
 ```
 
 Le serveur écoute sur les adresses configurées dans `server.properties` :
-- **Port TCP (ex: 9988 ou 7878)** : Connexions réseau des clients élèves et enseignants.
+- **Port TCP (ex: 9988)** : Connexions réseau des clients élèves et enseignants.
 - **Port HTTP (ex: 9989)** : Interface web d'administration (`http://127.0.0.1:9989`). Les identifiants sont définis dans `server.properties` (identifiant `admin` et empreinte SHA-256 du mot de passe).
 
 Des scripts de service sont également disponibles dans le dossier `server/` :

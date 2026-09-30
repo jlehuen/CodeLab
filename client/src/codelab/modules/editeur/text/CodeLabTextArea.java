@@ -14,6 +14,10 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.ArrayList;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -427,12 +431,24 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 	///////////////////////////////////////////////////
 
 	public synchronized void save_content(File file) {
-		try (	FileOutputStream fos = new FileOutputStream(file);
-				Writer out = new OutputStreamWriter(fos, "UTF-8")) {
-
-			write(out);
+		File parentDir = file.getParentFile();
+		if (parentDir != null && !parentDir.exists()) {
+			parentDir.mkdirs();
+		}
+		File tempFile = new File(file.getAbsolutePath() + ".tmp");
+		try {
+			try (FileOutputStream fos = new FileOutputStream(tempFile);
+				 Writer out = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+				write(out);
+			}
+			try {
+				Files.move(tempFile.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(tempFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
 		}
 		catch (Exception e) {
+			if (tempFile.exists()) tempFile.delete();
 			ExceptionManager.process(e);
 		}
 	}

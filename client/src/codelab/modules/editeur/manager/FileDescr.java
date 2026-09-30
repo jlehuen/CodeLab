@@ -112,7 +112,7 @@ public class FileDescr {
 	}
 
 	public void delete() {
-		MyFileUtils.delete(file);
+		MyFileUtils.moveToTrashOrDelete(file);
 	}
 
 	public void rename(String name) {

@@ -14,6 +14,7 @@ use crate::properties::get_property;
 use crate::encode_sha256;
 
 use std::fs::{self, File};
+use std::path::Path;
 use std::io::{self, Write, BufReader};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -882,4 +883,656 @@ pub fn get_sessions_all() -> Vec<SessionDataAdmin> {
     // Trier par ID de session
     result.sort_by(|a, b| a.id.cmp(&b.id));
     result
+}
+
+// ============================================================================
+// Gestion du changement de groupe d'un étudiant
+// ============================================================================
+
+pub fn get_groups_all() -> Vec<String> {
+    let groups = GROUPS_LIST.read().unwrap();
+    let mut result = groups.clone();
+    result.sort();
+    result
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MoveSuggestion {
+    pub from_session: String,
+    pub to_session: Option<String>,
+    pub source_exists: bool,
+    pub source_file_count: usize,
+    pub target_exists: bool,
+    pub blocked: bool,
+    pub warning: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupChangeSimulation {
+    pub login: String,
+    pub fullname: String,
+    pub old_group: String,
+    pub new_group: String,
+    pub current_groups: Vec<String>,
+    pub resulting_groups: Vec<String>,
+    pub unchanged_sessions: Vec<String>,
+    pub departed_sessions: Vec<String>,
+    pub arrived_sessions: Vec<String>,
+    pub moves: Vec<MoveSuggestion>,
+    pub is_connected: bool,
+    pub can_apply: bool,
+    pub block_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SessionMoveInput {
+    pub from: String,
+    pub to: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MoveExecutionResult {
+    pub from_session: String,
+    pub to_session: String,
+    pub source_existed: bool,
+    pub files_moved: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GroupChangeResult {
+    pub status: String,
+    pub login: String,
+    pub old_group: String,
+    pub new_group: String,
+    pub resulting_groups: Vec<String>,
+    pub moves: Vec<MoveExecutionResult>,
+    pub disconnected: bool,
+    pub xml_saved: bool,
+    pub message: String,
+}
+
+// Compte récursivement le nombre de fichiers dans un répertoire
+fn count_files_in_dir(path: &Path) -> usize {
+    if !path.is_dir() {
+        return 0;
+    }
+    let mut count = 0;
+    if let Ok(entries) = fs::read_dir(path) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() {
+                count += 1;
+            } else if p.is_dir() {
+                count += count_files_in_dir(&p);
+            }
+        }
+    }
+    count
+}
+
+// Extrait le préfixe du module d'une session (ex: "IntroProg" pour "IntroProg_TP1")
+fn session_module_prefix(session_id: &str) -> &str {
+    if let Some(idx) = session_id.find("_TP") {
+        return &session_id[..idx];
+    }
+    if let Some(idx) = session_id.rfind('_') {
+        return &session_id[..idx];
+    }
+    session_id
+}
+
+// Simule un changement de groupe pour un étudiant
+pub fn simulate_group_change(
+    login: &str,
+    old_group: &str,
+    new_group: &str,
+    is_connected: bool,
+) -> Result<GroupChangeSimulation, String> {
+    // 1. Vérification de l'étudiant
+    let (fullname, current_groups) = {
+        let dico = USERS_DICO.read().unwrap();
+        let client = dico.get(login).ok_or_else(|| format!("Utilisateur '{}' introuvable", login))?;
+        if client.status != UserStatus::STUDENT {
+            return Err(format!("L'utilisateur '{}' n'est pas un étudiant ({:?})", login, client.status));
+        }
+        if !client.groups.contains(&old_group.to_string()) {
+            return Err(format!("L'étudiant '{}' n'appartient pas au groupe '{}'", login, old_group));
+        }
+        (client.fullname.clone(), client.groups.clone())
+    };
+
+    // 2. Vérification du nouveau groupe
+    {
+        let groups_list = GROUPS_LIST.read().unwrap();
+        if !groups_list.contains(&new_group.to_string()) {
+            return Err(format!("Le groupe cible '{}' n'existe pas", new_group));
+        }
+    }
+
+    if old_group == new_group {
+        return Err("Le nouveau groupe doit être différent de l'ancien groupe".to_string());
+    }
+
+    // 3. Calcul des nouveaux groupes
+    let mut resulting_groups = current_groups.clone();
+    if let Some(pos) = resulting_groups.iter().position(|g| g == old_group) {
+        resulting_groups[pos] = new_group.to_string();
+    }
+    resulting_groups.sort();
+    resulting_groups.dedup();
+
+    // 4. Calcul des sessions impactées
+    let (unchanged_sessions, departed_sessions, arrived_sessions) = {
+        let sessions_dico = SESSIONS_DICO.read().unwrap();
+        let mut unchanged = Vec::new();
+        let mut departed = Vec::new();
+        let mut arrived = Vec::new();
+
+        let has_student = |session: &Session, groups: &[String]| -> bool {
+            if session.users.contains(&login.to_string()) {
+                return true;
+            }
+            session.groups.iter().any(|g| groups.contains(g))
+        };
+
+        for session in sessions_dico.values() {
+            let in_before = has_student(session, &current_groups);
+            let in_after = has_student(session, &resulting_groups);
+
+            if in_before && in_after {
+                unchanged.push(session.id.clone());
+            } else if in_before && !in_after {
+                departed.push(session.id.clone());
+            } else if !in_before && in_after {
+                arrived.push(session.id.clone());
+            }
+        }
+
+        unchanged.sort();
+        departed.sort();
+        arrived.sort();
+        (unchanged, departed, arrived)
+    };
+
+    // 5. Appariement intelligent des sessions quittées vers les sessions d'arrivée
+    let mut unmatched_arrived = arrived_sessions.clone();
+    let mut move_suggestions = Vec::new();
+    let mut can_apply = true;
+    let mut block_reason = None;
+
+    for from_sess in &departed_sessions {
+        let from_prefix = session_module_prefix(from_sess);
+        let mut best_idx = None;
+
+        // Priorité 1 : même préfixe de module (ex: IntroProg_TP1 -> IntroProg_TP2)
+        for (i, to_sess) in unmatched_arrived.iter().enumerate() {
+            if session_module_prefix(to_sess) == from_prefix {
+                best_idx = Some(i);
+                break;
+            }
+        }
+
+        // Priorité 2 : s'il n'y a qu'une seule session quittée et une seule rejointe
+        if best_idx.is_none() && departed_sessions.len() == 1 && unmatched_arrived.len() == 1 {
+            best_idx = Some(0);
+        }
+
+        let to_sess_opt = if let Some(idx) = best_idx {
+            Some(unmatched_arrived.remove(idx))
+        } else {
+            None
+        };
+
+        // Vérification sur le système de fichiers
+        let source_path = Path::new(PROG_DIR).join(from_sess).join(login);
+        let source_exists = source_path.is_dir();
+        let source_file_count = if source_exists {
+            count_files_in_dir(&source_path)
+        } else {
+            0
+        };
+
+        let mut target_exists = false;
+        let mut blocked = false;
+        let mut warning = None;
+
+        if let Some(ref to_sess) = to_sess_opt {
+            let target_path = Path::new(PROG_DIR).join(to_sess).join(login);
+            if target_path.exists() {
+                target_exists = true;
+                blocked = true;
+                can_apply = false;
+                let msg = format!(
+                    "Le dossier '{}' existe déjà dans la session cible '{}'. Opération bloquée.",
+                    login, to_sess
+                );
+                warning = Some(msg.clone());
+                block_reason = Some(msg);
+            }
+        } else {
+            warning = Some("Aucune session de destination automatique trouvée pour ce dossier.".to_string());
+        }
+
+        move_suggestions.push(MoveSuggestion {
+            from_session: from_sess.clone(),
+            to_session: to_sess_opt,
+            source_exists,
+            source_file_count,
+            target_exists,
+            blocked,
+            warning,
+        });
+    }
+
+    Ok(GroupChangeSimulation {
+        login: login.to_string(),
+        fullname,
+        old_group: old_group.to_string(),
+        new_group: new_group.to_string(),
+        current_groups,
+        resulting_groups,
+        unchanged_sessions,
+        departed_sessions,
+        arrived_sessions,
+        moves: move_suggestions,
+        is_connected,
+        can_apply,
+        block_reason,
+    })
+}
+
+// Applique le changement de groupe et déplace les dossiers de session
+pub fn apply_group_change(
+    login: &str,
+    old_group: &str,
+    new_group: &str,
+    moves: Vec<SessionMoveInput>,
+) -> Result<GroupChangeResult, String> {
+    // 1. Vérification de l'étudiant
+    let resulting_groups = {
+        let dico = USERS_DICO.read().unwrap();
+        let client = dico.get(login).ok_or_else(|| format!("Utilisateur '{}' introuvable", login))?;
+        if client.status != UserStatus::STUDENT {
+            return Err(format!("L'utilisateur '{}' n'est pas un étudiant", login));
+        }
+        if !client.groups.contains(&old_group.to_string()) {
+            return Err(format!("L'étudiant '{}' n'appartient pas au groupe '{}'", login, old_group));
+        }
+        let mut groups = client.groups.clone();
+        if let Some(pos) = groups.iter().position(|g| g == old_group) {
+            groups[pos] = new_group.to_string();
+        }
+        groups.sort();
+        groups.dedup();
+        groups
+    };
+
+    // 2. Vérification du groupe cible
+    {
+        let groups_list = GROUPS_LIST.read().unwrap();
+        if !groups_list.contains(&new_group.to_string()) {
+            return Err(format!("Le groupe cible '{}' n'existe pas", new_group));
+        }
+    }
+
+    // 3. Règle absolue de sécurité (Opération bloquée si dossier cible existant)
+    for m in &moves {
+        let target_path = Path::new(PROG_DIR).join(&m.to).join(login);
+        if target_path.exists() {
+            return Err(format!(
+                "Opération bloquée : le dossier de destination '{}' existe déjà sur le serveur. Aucun fichier déplacé.",
+                target_path.display()
+            ));
+        }
+    }
+
+    // 4. Déplacement physique des répertoires
+    let mut execution_results = Vec::new();
+
+    for m in &moves {
+        let from_path = Path::new(PROG_DIR).join(&m.from).join(login);
+        let to_session_dir = Path::new(PROG_DIR).join(&m.to);
+        let to_path = to_session_dir.join(login);
+
+        // S'assurer que le dossier parent de la session de destination existe
+        if let Err(e) = utils::ensure_dir_exists(&to_session_dir) {
+            return Err(format!(
+                "Impossible de créer le répertoire de session '{}' : {}",
+                to_session_dir.display(),
+                e
+            ));
+        }
+
+        if from_path.is_dir() {
+            // Déplacer le dossier
+            if let Err(e) = fs::rename(&from_path, &to_path) {
+                return Err(format!(
+                    "Échec du déplacement de '{}' vers '{}' : {}",
+                    from_path.display(),
+                    to_path.display(),
+                    e
+                ));
+            }
+            execution_results.push(MoveExecutionResult {
+                from_session: m.from.clone(),
+                to_session: m.to.clone(),
+                source_existed: true,
+                files_moved: true,
+                message: format!("Dossier déplacé de {} vers {}", m.from, m.to),
+            });
+            log::info!("Moved student folder {} from {} to {}", login, m.from, m.to);
+        } else {
+            // Le dossier source n'existait pas encore sur le disque : créer le dossier dans la nouvelle session
+            if let Err(e) = utils::ensure_dir_exists(&to_path) {
+                return Err(format!(
+                    "Impossible de créer le dossier étudiant '{}' : {}",
+                    to_path.display(),
+                    e
+                ));
+            }
+            execution_results.push(MoveExecutionResult {
+                from_session: m.from.clone(),
+                to_session: m.to.clone(),
+                source_existed: false,
+                files_moved: false,
+                message: format!("Dossier source inexistant, nouveau dossier créé dans {}", m.to),
+            });
+            log::info!("Created empty student folder for {} in {}", login, m.to);
+        }
+    }
+
+    // 5. Mise à jour de USERS_DICO
+    {
+        let mut dico = USERS_DICO.write().unwrap();
+        if let Some(client) = dico.get_mut(login) {
+            client.groups = resulting_groups.clone();
+        }
+    }
+
+    // 6. Nettoyage des sessions_dico (retirer login de sessions.users si présent dans les sessions quittées)
+    {
+        let mut sess_dico = SESSIONS_DICO.write().unwrap();
+        for m in &moves {
+            if let Some(session) = sess_dico.get_mut(&m.from) {
+                session.users.retain(|u| u != login);
+            }
+        }
+    }
+
+    // 7. Sauvegarde du fichier XML et du backup daté
+    save_database(CONFIG_XML);
+    log::info!(
+        "Group change applied for student {}: {} -> {}. Database saved to {}",
+        login, old_group, new_group, CONFIG_XML
+    );
+
+    Ok(GroupChangeResult {
+        status: "success".to_string(),
+        login: login.to_string(),
+        old_group: old_group.to_string(),
+        new_group: new_group.to_string(),
+        resulting_groups,
+        moves: execution_results,
+        disconnected: false,
+        xml_saved: true,
+        message: format!(
+            "Groupe mis à jour avec succès ({} ➔ {}) et dossiers déplacés pour l'étudiant {}",
+            old_group, new_group, login
+        ),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    static TEST_MUTEX: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn test_session_module_prefix() {
+        assert_eq!(session_module_prefix("IntroProg_TP1"), "IntroProg");
+        assert_eq!(session_module_prefix("Python_TP3"), "Python");
+        assert_eq!(session_module_prefix("Test_1"), "Test");
+        assert_eq!(session_module_prefix("SimpleSession"), "SimpleSession");
+    }
+
+    #[test]
+    fn test_group_change_validation() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        // Initialiser temporairement les structures en mémoire
+        {
+            let mut groups = GROUPS_LIST.write().unwrap();
+            groups.clear();
+            groups.push("Group_1".to_string());
+            groups.push("Group_2".to_string());
+            groups.push("Group_3".to_string());
+        }
+        {
+            let mut users = USERS_DICO.write().unwrap();
+            users.clear();
+            users.insert("student1".to_string(), ClientData {
+                login: "student1".to_string(),
+                status: UserStatus::STUDENT,
+                groups: vec!["Group_1".to_string(), "Group_2".to_string()],
+                fullname: "Student One".to_string(),
+                mail: "--".to_string(),
+                date: "--".to_string(),
+                addr: "--".to_string(),
+                passwd: "pass".to_string(),
+                session_id: "--".to_string(),
+                work_time: HashMap::new(),
+            });
+            users.insert("tutor1".to_string(), ClientData {
+                login: "tutor1".to_string(),
+                status: UserStatus::TUTOR,
+                groups: vec![],
+                fullname: "Tutor One".to_string(),
+                mail: "--".to_string(),
+                date: "--".to_string(),
+                addr: "--".to_string(),
+                passwd: "pass".to_string(),
+                session_id: "--".to_string(),
+                work_time: HashMap::new(),
+            });
+        }
+        {
+            let mut sessions = SESSIONS_DICO.write().unwrap();
+            sessions.clear();
+            sessions.insert("Session_A".to_string(), Session {
+                id: "Session_A".to_string(),
+                openned: true,
+                groups: vec!["Group_1".to_string()],
+                users: vec![],
+            });
+            sessions.insert("Session_B".to_string(), Session {
+                id: "Session_B".to_string(),
+                openned: true,
+                groups: vec!["Group_2".to_string()],
+                users: vec![],
+            });
+            sessions.insert("Session_C".to_string(), Session {
+                id: "Session_C".to_string(),
+                openned: true,
+                groups: vec!["Group_3".to_string()],
+                users: vec![],
+            });
+        }
+
+        // Test non-student error
+        let err = simulate_group_change("tutor1", "Group_1", "Group_2", false);
+        assert!(err.is_err());
+        assert!(err.unwrap_err().contains("n'est pas un étudiant"));
+
+        // Test student does not have old_group
+        let err = simulate_group_change("student1", "Group_3", "Group_2", false);
+        assert!(err.is_err());
+        assert!(err.unwrap_err().contains("n'appartient pas au groupe"));
+
+        // Test target group does not exist
+        let err = simulate_group_change("student1", "Group_1", "Group_NonExistent", false);
+        assert!(err.is_err());
+        assert!(err.unwrap_err().contains("n'existe pas"));
+
+        // Test same group
+        let err = simulate_group_change("student1", "Group_1", "Group_1", false);
+        assert!(err.is_err());
+
+        // Test valid simulation: student1 in Group_1 and Group_2, replace Group_1 by Group_3
+        let sim = simulate_group_change("student1", "Group_1", "Group_3", false).unwrap();
+        assert_eq!(sim.login, "student1");
+        assert_eq!(sim.old_group, "Group_1");
+        assert_eq!(sim.new_group, "Group_3");
+        assert_eq!(sim.unchanged_sessions, vec!["Session_B"]); // Session_B relies on Group_2 which is kept
+        assert_eq!(sim.departed_sessions, vec!["Session_A"]);  // Session_A relies on Group_1 which is left
+        assert_eq!(sim.arrived_sessions, vec!["Session_C"]);   // Session_C relies on Group_3 which is joined
+        assert_eq!(sim.moves.len(), 1);
+        assert_eq!(sim.moves[0].from_session, "Session_A");
+        assert_eq!(sim.moves[0].to_session, Some("Session_C".to_string()));
+    }
+
+    #[test]
+    fn test_blocked_when_target_folder_exists() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        // Préparer un dossier cible existant sur disque
+        let target_dir = format!("{}/Session_C/student_blocked", PROG_DIR);
+        let _ = fs::create_dir_all(&target_dir);
+
+        {
+            let mut groups = GROUPS_LIST.write().unwrap();
+            groups.clear();
+            groups.push("Group_1".to_string());
+            groups.push("Group_3".to_string());
+        }
+        {
+            let mut users = USERS_DICO.write().unwrap();
+            users.clear();
+            users.insert("student_blocked".to_string(), ClientData {
+                login: "student_blocked".to_string(),
+                status: UserStatus::STUDENT,
+                groups: vec!["Group_1".to_string()],
+                fullname: "Blocked Student".to_string(),
+                mail: "--".to_string(),
+                date: "--".to_string(),
+                addr: "--".to_string(),
+                passwd: "pass".to_string(),
+                session_id: "--".to_string(),
+                work_time: HashMap::new(),
+            });
+        }
+        {
+            let mut sessions = SESSIONS_DICO.write().unwrap();
+            sessions.clear();
+            sessions.insert("Session_A".to_string(), Session {
+                id: "Session_A".to_string(),
+                openned: true,
+                groups: vec!["Group_1".to_string()],
+                users: vec![],
+            });
+            sessions.insert("Session_C".to_string(), Session {
+                id: "Session_C".to_string(),
+                openned: true,
+                groups: vec!["Group_3".to_string()],
+                users: vec![],
+            });
+        }
+
+        // La simulation doit détecter que le dossier cible existe déjà et bloquer
+        let sim = simulate_group_change("student_blocked", "Group_1", "Group_3", false).unwrap();
+        assert!(!sim.can_apply, "can_apply doit être false car le dossier cible existe");
+        assert!(sim.moves[0].blocked, "Le move doit être marqué comme bloqué");
+        assert!(sim.moves[0].target_exists, "target_exists doit être true");
+        assert!(sim.block_reason.is_some(), "Une raison de blocage doit être présente");
+
+        // L'application doit également être bloquée fermement
+        let apply_res = apply_group_change(
+            "student_blocked",
+            "Group_1",
+            "Group_3",
+            vec![SessionMoveInput {
+                from: "Session_A".to_string(),
+                to: "Session_C".to_string(),
+            }],
+        );
+        assert!(apply_res.is_err(), "L'application doit échouer");
+        assert!(apply_res.unwrap_err().contains("Opération bloquée"));
+
+        // Nettoyage du dossier temporaire
+        let _ = fs::remove_dir_all(&target_dir);
+        let _ = fs::remove_dir(format!("{}/Session_C", PROG_DIR));
+    }
+
+    #[test]
+    fn test_apply_group_change_success() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        let source_dir = format!("{}/Session_Src/student_ok", PROG_DIR);
+        let target_dir = format!("{}/Session_Dst/student_ok", PROG_DIR);
+        let _ = fs::create_dir_all(&source_dir);
+        let test_file = format!("{}/code.c", source_dir);
+        let _ = fs::write(&test_file, b"int main() { return 0; }");
+
+        {
+            let mut groups = GROUPS_LIST.write().unwrap();
+            groups.clear();
+            groups.push("Group_Src".to_string());
+            groups.push("Group_Dst".to_string());
+        }
+        {
+            let mut users = USERS_DICO.write().unwrap();
+            users.clear();
+            users.insert("student_ok".to_string(), ClientData {
+                login: "student_ok".to_string(),
+                status: UserStatus::STUDENT,
+                groups: vec!["Group_Src".to_string()],
+                fullname: "Student Success".to_string(),
+                mail: "--".to_string(),
+                date: "--".to_string(),
+                addr: "--".to_string(),
+                passwd: "pass".to_string(),
+                session_id: "--".to_string(),
+                work_time: HashMap::new(),
+            });
+        }
+        {
+            let mut sessions = SESSIONS_DICO.write().unwrap();
+            sessions.clear();
+            sessions.insert("Session_Src".to_string(), Session {
+                id: "Session_Src".to_string(),
+                openned: true,
+                groups: vec!["Group_Src".to_string()],
+                users: vec![],
+            });
+            sessions.insert("Session_Dst".to_string(), Session {
+                id: "Session_Dst".to_string(),
+                openned: true,
+                groups: vec!["Group_Dst".to_string()],
+                users: vec![],
+            });
+        }
+
+        let apply_res = apply_group_change(
+            "student_ok",
+            "Group_Src",
+            "Group_Dst",
+            vec![SessionMoveInput {
+                from: "Session_Src".to_string(),
+                to: "Session_Dst".to_string(),
+            }],
+        ).unwrap();
+
+        assert_eq!(apply_res.status, "success");
+        assert_eq!(apply_res.resulting_groups, vec!["Group_Dst"]);
+        assert!(apply_res.moves[0].files_moved);
+
+        // Vérifier que le dossier source n'existe plus et que le dossier cible existe avec le fichier
+        assert!(!Path::new(&source_dir).exists(), "Le dossier source doit avoir été déplacé");
+        assert!(Path::new(&target_dir).exists(), "Le dossier cible doit exister");
+        let moved_file = format!("{}/code.c", target_dir);
+        assert!(Path::new(&moved_file).exists(), "Le fichier étudiant doit être présent dans la cible");
+
+        // Nettoyage
+        let _ = fs::remove_dir_all(format!("{}/Session_Dst", PROG_DIR));
+        let _ = fs::remove_dir_all(format!("{}/Session_Src", PROG_DIR));
+    }
 }

@@ -221,6 +221,45 @@ public class CodeLabMenu extends JPopupMenu {
 		});
 
 		// ---------------------------------------
+		// Sauvegardes
+		// ---------------------------------------
+
+		JMenuItem itemCreateRecoveryBackup = new JMenuItem(CodeLab.LABEL("itemCreateRecoveryBackup"));
+		itemCreateRecoveryBackup.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.createManualRecoveryBackup();
+			}
+		});
+
+		JMenuItem itemRestoreRecoveryBackup = new JMenuItem(CodeLab.LABEL("itemRestoreRecoveryBackup"));
+		itemRestoreRecoveryBackup.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.restoreRecoveryBackup();
+			}
+		});
+
+		JMenuItem itemRecoveryFolder = new JMenuItem(CodeLab.LABEL("itemRecoveryFolder"));
+		itemRecoveryFolder.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.openRecoveryFolder();
+			}
+		});
+
+		JMenuItem itemCleanRecoveryFolder = new JMenuItem(CodeLab.LABEL("itemCleanRecoveryFolder"));
+		itemCleanRecoveryFolder.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.cleanRecoveryFolder();
+			}
+		});
+
+		JMenuItem itemExportZip = new JMenuItem(CodeLab.LABEL("itemExportZip"));
+		itemExportZip.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.exportWorkspaceZip();
+			}
+		});
+
+		// ---------------------------------------
 		// Ouvrir le dossier des plugins
 
 		JMenuItem itemModuleFolder = new JMenuItem(CodeLab.LABEL("itemModuleFolder"));
@@ -394,6 +433,14 @@ public class CodeLabMenu extends JPopupMenu {
 		menuConfigFile.add(itemRestoreConfigFile);
 		if (CodeLab.REDIRECT) menuConfigFile.add(itemShowLogfile);
 
+		JMenu menuBackups = new JMenu(CodeLab.LABEL("menuBackups"));
+		menuBackups.add(itemCreateRecoveryBackup);
+		menuBackups.add(itemRestoreRecoveryBackup);
+		if (Desktop.isDesktopSupported()) menuBackups.add(itemRecoveryFolder);
+		menuBackups.add(itemCleanRecoveryFolder);
+		menuBackups.add(new JSeparator());
+		menuBackups.add(itemExportZip);
+
 		JMenu menuEditor = new JMenu(CodeLab.LABEL("menuEditor"));
 		menuEditor.add(itemAutoCompletion);
 		menuEditor.add(itemCodeFolding);
@@ -418,6 +465,7 @@ public class CodeLabMenu extends JPopupMenu {
 		add(menuConsole);
 		add(menuPlugins);
 		add(menuConfigFile);
+		add(menuBackups);
 		add(new JSeparator());
 		add(itemGotoHomepage);
 		add(itemInformations);

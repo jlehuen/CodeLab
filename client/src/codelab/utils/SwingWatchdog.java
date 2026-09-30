@@ -15,7 +15,7 @@ import codelab.CodeLab;
 /**
  * Thread Watchdog de surveillance de l'Event Dispatch Thread (EDT) Swing.
  * Détecte les gels d'interface, génère un rapport de diagnostic complet
- * (deadlocks, thread dump) dans la console, codelab.log et un fichier persistant freeze.log,
+ * (deadlocks, thread dump) dans la console, codelab.log et un fichier persistant crash.log,
  * et force l'arrêt des programmes en cours si nécessaire.
  * 
  * @author Jérôme Lehuen + Gemini 3.8
@@ -25,7 +25,7 @@ public class SwingWatchdog extends Thread {
 
 	private static final long PING_INTERVAL_MS = 1000;   // Fréquence du heartbeat (1s)
 	private static final long FREEZE_TIMEOUT_MS = 4000;  // Seuil de détection de freeze (4s)
-	private static final String FREEZE_LOG_FILE = CodeLab.CODELAB_FILES + "/freeze.log";
+	private static final String CRASH_LOG_FILE = CodeLab.CODELAB_FILES + "/crash.log";
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 	private volatile long lastHeartbeat = System.currentTimeMillis();
@@ -111,7 +111,13 @@ public class SwingWatchdog extends Thread {
 		String timestamp = LocalDateTime.now().format(DATE_FORMATTER);
 
 		sb.append("\n====================================================================\n");
-		sb.append(String.format(">>> CODE-LAB FREEZE REPORT - %s <<<\n", timestamp));
+		sb.append(String.format(">>> CODELAB CRASH REPORT - %s <<<\n", timestamp));
+		sb.append(String.format("Version: %s (build %s) - OS: %s (%s)\n", CodeLab.VERSION, CodeLab.BUILD, CodeLab.SYSTEM, CodeLab.ARCHITECTURE));
+		if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.isConnected()) {
+			sb.append(String.format("User: %s (Session: %s) - IP: %s\n", CodeLab.INSTANCE.getUsername(), CodeLab.INSTANCE.getSession(), CodeLab.INSTANCE.getClientIP()));
+		} else {
+			sb.append("Mode: Offline\n");
+		}
 		sb.append(String.format("EDT freeze duration: %d ms (timeout threshold: %d ms)\n", elapsedMs, FREEZE_TIMEOUT_MS));
 		sb.append("====================================================================\n");
 
@@ -155,7 +161,7 @@ public class SwingWatchdog extends Thread {
 				sb.append("\tat ").append(ste.toString()).append("\n");
 			}
 		}
-		sb.append("\n==================== END OF FREEZE REPORT ====================\n\n");
+		sb.append("\n==================== END OF CRASH REPORT ====================\n\n");
 
 		String report = sb.toString();
 
@@ -165,9 +171,9 @@ public class SwingWatchdog extends Thread {
 		// Journalisation dans codelab.log
 		CodeLab.logger(report);
 
-		// Sauvegarde persistante dans codelab.files/freeze.log
+		// Sauvegarde persistante dans codelab.files/crash.log
 		try {
-			File logFile = new File(FREEZE_LOG_FILE);
+			File logFile = new File(CRASH_LOG_FILE);
 			File parent = logFile.getParentFile();
 			if (parent != null && !parent.exists()) {
 				parent.mkdirs();
@@ -176,9 +182,9 @@ public class SwingWatchdog extends Thread {
 				out.print(report);
 				out.flush();
 			}
-			CodeLab.logger(String.format("WATCHDOG: Rapport de freeze écrit avec succès dans '%s'", FREEZE_LOG_FILE));
+			CodeLab.logger(String.format("WATCHDOG: Rapport de crash écrit avec succès dans '%s'", CRASH_LOG_FILE));
 		} catch (Exception e) {
-			CodeLab.logger("WATCHDOG: Impossible d'écrire le rapport dans " + FREEZE_LOG_FILE + ": " + e.getMessage());
+			CodeLab.logger("WATCHDOG: Impossible d'écrire le rapport dans " + CRASH_LOG_FILE + ": " + e.getMessage());
 		}
 	}
 }

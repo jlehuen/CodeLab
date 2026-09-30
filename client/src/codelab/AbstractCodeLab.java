@@ -15,8 +15,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import org.apache.commons.io.FileUtils;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -39,7 +41,7 @@ import codelab.utils.Utils;
 
 /**
 *	Classe abstraite de CodeLab
-*	@author Jérôme Lehuen + Gemini 3.8
+*	@author Jérôme Lehuen
 *	@version 25/09/26
 */
 
@@ -49,8 +51,8 @@ public abstract class AbstractCodeLab extends JFrame {
 	// Constantes publiques finales
 	///////////////////////////////////////////////////
 
-	public static final String VERSION = "1.4.2"; // Attribué automatiquement par ant
-	public static final String BUILD = "2609282242"; // Attribué automatiquement par ant
+	public static final String VERSION = "1.4.3"; // Attribué automatiquement par ant
+	public static final String BUILD = "2609301216"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -100,6 +102,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static final String LOGFILE = CODELAB_FILES_HIDDEN + "/codelab.log"; // Le fichier de log
 	public static final String INFOFILE = CODELAB_FILES_HIDDEN + "/infos.txt"; // Trucs à transmettre (à chaque exécution de CodeLab)
 	public static final String DATAFILE = CODELAB_FILES_HIDDEN + "/data.properties"; // Propriétés cachées
+	public static final String RECOVERY_FOLDER = CODELAB_FILES_HIDDEN + "/recovery"; // Dossier des sauvegardes de secours
 
 	// Ressources utilisateur dans le dossier codelab.files
 
@@ -591,6 +594,34 @@ public abstract class AbstractCodeLab extends JFrame {
 		catch (IOException e) {
 			System.out.println("WARNING: Can't open " + file.toString());
 		}
+	}
+
+	public void openRecoveryFolder() {
+		File file = new File(RECOVERY_FOLDER);
+		if (!file.exists()) file.mkdirs();
+		try {
+			Desktop.getDesktop().open(file);
+		}
+		catch (IOException e) {
+			System.out.println("WARNING: Can't open " + file.toString());
+		}
+	}
+
+	public static void cleanOldRecoveryBackups() {
+		try {
+			File recoveryFolder = new File(CodeLab.RECOVERY_FOLDER);
+			if (!recoveryFolder.exists()) {
+				recoveryFolder.mkdirs();
+				return;
+			}
+			File[] backups = recoveryFolder.listFiles(File::isDirectory);
+			if (backups != null && backups.length > 10) {
+				Arrays.sort(backups, (f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()));
+				for (int i = 0; i < backups.length - 10; i++) {
+					FileUtils.deleteDirectory(backups[i]);
+				}
+			}
+		} catch (Exception ignored) {}
 	}
 
 	public boolean buildNewModule(String name) {

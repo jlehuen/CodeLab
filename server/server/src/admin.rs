@@ -23,8 +23,10 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use base64::{Engine as _, engine::general_purpose};
 use sha2::{Digest, Sha256};
 
-use crate::connected::get_all_clients;
-use crate::database::UserStatus;
+use crate::connected::{get_all_clients, is_connected, force_disconnect};
+use crate::database::{
+    get_groups_all, simulate_group_change, apply_group_change, SessionMoveInput, UserStatus,
+};
 use crate::constants::*;
 use crate::properties::*;
 
@@ -214,27 +216,17 @@ async fn handle_admin_request(
             let _ = GLOBAL_SHUTDOWN.0.send(true);
             generate_shutdown_response()
         },
+        ("GET", "/api/groups") => generate_groups_json().await,
+        ("POST", "/api/students/simulate_group_change") => {
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
+            handle_simulate_group_change(&body_content).await
+        },
+        ("POST", "/api/students/apply_group_change") => {
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
+            handle_apply_group_change(&body_content).await
+        },
         ("POST", "/api/disconnect") => {
-            let mut body_content = String::new();
-            let request_lines: Vec<&str> = request_str.lines().collect();
-            let mut body_start_idx = 0;
-            for (i, line) in request_lines.iter().enumerate() {
-                if line.trim().is_empty() {
-                    body_start_idx = i + 1;
-                    break;
-                }
-            }
-            if body_start_idx < request_lines.len() {
-                body_content = request_lines[body_start_idx..].join("\n");
-            }
-            if body_content.trim().is_empty() {
-                let mut additional_buffer = [0; 512];
-                if let Ok(additional_size) = socket.read(&mut additional_buffer).await {
-                    if additional_size > 0 {
-                        body_content = String::from_utf8_lossy(&additional_buffer[..additional_size]).to_string();
-                    }
-                }
-            }
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
             if let Some(login) = extract_login_from_json(&body_content) {
                 generate_disconnect_response(&login).await
             } else {
@@ -242,26 +234,7 @@ async fn handle_admin_request(
             }
         },
         ("POST", "/api/reset_password") => {
-            let mut body_content = String::new();
-            let request_lines: Vec<&str> = request_str.lines().collect();
-            let mut body_start_idx = 0;
-            for (i, line) in request_lines.iter().enumerate() {
-                if line.trim().is_empty() {
-                    body_start_idx = i + 1;
-                    break;
-                }
-            }
-            if body_start_idx < request_lines.len() {
-                body_content = request_lines[body_start_idx..].join("\n");
-            }
-            if body_content.trim().is_empty() {
-                let mut additional_buffer = [0; 512];
-                if let Ok(additional_size) = socket.read(&mut additional_buffer).await {
-                    if additional_size > 0 {
-                        body_content = String::from_utf8_lossy(&additional_buffer[..additional_size]).to_string();
-                    }
-                }
-            }
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
             if let Some(login) = extract_login_from_json(&body_content) {
                 generate_reset_password_response(&login).await
             } else {
@@ -277,6 +250,140 @@ async fn handle_admin_request(
     socket.shutdown().await?;
     Ok(())
 }   
+
+// Lit le corps d'une requête HTTP (en tenant compte de Content-Length si nécessaire)
+async fn read_request_body(
+    socket: &mut TcpStream,
+    request_str: &str,
+    headers: &std::collections::HashMap<String, String>,
+) -> String {
+    let mut body = String::new();
+    if let Some(pos) = request_str.find("\r\n\r\n") {
+        body = request_str[pos + 4..].to_string();
+    } else if let Some(pos) = request_str.find("\n\n") {
+        body = request_str[pos + 2..].to_string();
+    }
+
+    if let Some(cl_str) = headers.get("content-length") {
+        if let Ok(expected_len) = cl_str.parse::<usize>() {
+            let mut current_len = body.as_bytes().len();
+            while current_len < expected_len {
+                let mut buf = [0; 1024];
+                match socket.read(&mut buf).await {
+                    Ok(n) if n > 0 => {
+                        body.push_str(&String::from_utf8_lossy(&buf[..n]));
+                        current_len += n;
+                    }
+                    _ => break,
+                }
+            }
+        }
+    }
+    body
+}
+
+// Génère la liste des groupes au format JSON
+async fn generate_groups_json() -> String {
+    let groups = get_groups_all();
+    let json_items: Vec<String> = groups.iter().map(|g| format!("\"{}\"", escape_json(g))).collect();
+    format!(
+        "HTTP/1.1 200 OK\r\n\
+         Content-Type: application/json; charset=utf-8\r\n\
+         Connection: close\r\n\
+         \r\n\
+         [{}]",
+        json_items.join(",")
+    )
+}
+
+#[derive(serde::Deserialize)]
+struct SimulateRequest {
+    login: String,
+    old_group: String,
+    new_group: String,
+}
+
+// Traite la simulation du changement de groupe
+async fn handle_simulate_group_change(body_content: &str) -> String {
+    let req: SimulateRequest = match serde_json::from_str(body_content) {
+        Ok(r) => r,
+        Err(e) => {
+            log::warn!("Invalid JSON in simulate_group_change: {}", e);
+            return generate_error_json(&format!("JSON invalide : {}", e));
+        }
+    };
+
+    let is_conn = is_connected(&req.login).await;
+
+    match simulate_group_change(&req.login, &req.old_group, &req.new_group, is_conn) {
+        Ok(simulation) => match serde_json::to_string(&simulation) {
+            Ok(json_str) => format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: application/json; charset=utf-8\r\n\
+                 Connection: close\r\n\
+                 \r\n\
+                 {}",
+                json_str
+            ),
+            Err(e) => generate_error_json(&format!("Erreur de sérialisation : {}", e)),
+        },
+        Err(err_msg) => generate_error_json(&err_msg),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct ApplyRequest {
+    login: String,
+    old_group: String,
+    new_group: String,
+    moves: Vec<SessionMoveInput>,
+}
+
+// Traite l'application du changement de groupe
+async fn handle_apply_group_change(body_content: &str) -> String {
+    let req: ApplyRequest = match serde_json::from_str(body_content) {
+        Ok(r) => r,
+        Err(e) => {
+            log::warn!("Invalid JSON in apply_group_change: {}", e);
+            return generate_error_json(&format!("JSON invalide : {}", e));
+        }
+    };
+
+    // Déconnecter l'étudiant s'il est actuellement en ligne pour sécuriser le déplacement de dossiers
+    let was_connected = is_connected(&req.login).await;
+    if was_connected {
+        log::info!("Student {} is currently connected, disconnecting before group change", req.login);
+        force_disconnect(&req.login).await;
+    }
+
+    match apply_group_change(&req.login, &req.old_group, &req.new_group, req.moves) {
+        Ok(mut result) => {
+            result.disconnected = was_connected;
+            match serde_json::to_string(&result) {
+                Ok(json_str) => format!(
+                    "HTTP/1.1 200 OK\r\n\
+                     Content-Type: application/json; charset=utf-8\r\n\
+                     Connection: close\r\n\
+                     \r\n\
+                     {}",
+                    json_str
+                ),
+                Err(e) => generate_error_json(&format!("Erreur de sérialisation : {}", e)),
+            }
+        }
+        Err(err_msg) => {
+            log::warn!("Group change rejected: {}", err_msg);
+            format!(
+                "HTTP/1.1 400 Bad Request\r\n\
+                 Content-Type: application/json; charset=utf-8\r\n\
+                 Connection: close\r\n\
+                 \r\n\
+                 {{\"status\": \"error\", \"message\": \"{}\"}}",
+                escape_json(&err_msg)
+            )
+        }
+    }
+}
 
 // Extrait le login depuis le JSON de la requête
 fn extract_login_from_json(json_str: &str) -> Option<String> {

@@ -11,7 +11,8 @@ let isAutoRefreshEnabled = false;
 let allData = {
     clients: [],
     users: [],
-    sessions: []
+    sessions: [],
+    groups: []
 };
 let serverStopped = false;
 let consecutiveErrors = 0;
@@ -26,6 +27,7 @@ let sortState = {
 // Fonction de debug
 function debugLog(message, type = 'info') {
     const debugDiv = document.getElementById('debugLog');
+    if (!debugDiv) return;
     const timestamp = new Date().toLocaleTimeString();
     const cssClass = type === 'error' ? 'debug-error' : 
                     type === 'success' ? 'debug-success' : 
@@ -36,12 +38,56 @@ function debugLog(message, type = 'info') {
     logLine.textContent = `[${timestamp}] ${message}`;
     
     debugDiv.appendChild(logLine);
-    debugDiv.scrollTop = debugDiv.scrollHeight;
+    const container = document.getElementById('debugContent') || debugDiv;
+    container.scrollTop = container.scrollHeight;
     
     // Limiter à 50 lignes
     while (debugDiv.children.length > 50) {
         debugDiv.removeChild(debugDiv.firstChild);
     }
+}
+
+// Gestion de la console de debug (refermable)
+function toggleDebugConsole(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const debugInfo = document.getElementById('debugInfo');
+    const toggleIcon = document.getElementById('debugToggleIcon');
+    const toggleText = document.getElementById('debugToggleText');
+    if (!debugInfo) return;
+
+    const isCollapsed = debugInfo.classList.toggle('collapsed');
+    if (toggleIcon) toggleIcon.textContent = isCollapsed ? '▶' : '▼';
+    if (toggleText) toggleText.textContent = isCollapsed ? 'Afficher' : 'Réduire';
+
+    try {
+        localStorage.setItem('codelab_admin_debug_collapsed', isCollapsed ? 'true' : 'false');
+    } catch (_) {}
+}
+
+function clearDebugLog(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const debugDiv = document.getElementById('debugLog');
+    if (debugDiv) {
+        debugDiv.innerHTML = '';
+    }
+}
+
+function initDebugConsole() {
+    try {
+        const isCollapsed = localStorage.getItem('codelab_admin_debug_collapsed') === 'true';
+        if (isCollapsed) {
+            const debugInfo = document.getElementById('debugInfo');
+            const toggleIcon = document.getElementById('debugToggleIcon');
+            const toggleText = document.getElementById('debugToggleText');
+            if (debugInfo) debugInfo.classList.add('collapsed');
+            if (toggleIcon) toggleIcon.textContent = '▶';
+            if (toggleText) toggleText.textContent = 'Afficher';
+        }
+    } catch (_) {}
 }
 
 // Gestion du tri des tableaux
@@ -204,6 +250,17 @@ function setupTabs() {
             document.getElementById(targetTab).classList.add('active');
             
             debugLog(`Changement vers l'onglet: ${targetTab}`, 'info');
+
+            // Rechargement automatique de la liste selon l'onglet cliqué
+            if (targetTab === 'users') {
+                loadUsersData();
+            } else if (targetTab === 'sessions') {
+                loadSessionsData();
+            } else if (targetTab === 'clients') {
+                updateDashboard();
+            } else if (targetTab === 'dashboard') {
+                updateDashboard();
+            }
         });
     });
 }
@@ -212,10 +269,13 @@ function setupTabs() {
 async function loadUsersData() {
     debugLog('Chargement des données utilisateurs...', 'info');
     const tbody = document.querySelector('#usersTable tbody');
-    if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">🔄 Chargement...</td></tr>';
+    if (tbody && (!allData.users || allData.users.length === 0)) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">🔄 Chargement...</td></tr>';
     }
     
+    // Charger également les groupes en arrière-plan
+    loadGroupsData();
+
     try {
         const response = await fetch('/api/users');
         debugLog(`API Users - Status: ${response.status}`, response.ok ? 'success' : 'error');
@@ -228,13 +288,13 @@ async function loadUsersData() {
             const errorText = await response.text();
             debugLog(`Erreur API Users: ${errorText}`, 'error');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #e74c3c;">⌘ Erreur lors du chargement</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #e74c3c;">⌘ Erreur lors du chargement</td></tr>';
             }
         }
     } catch (error) {
         debugLog(`Exception Users: ${error.message}`, 'error');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #e74c3c;">⌘ Erreur de connexion</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #e74c3c;">⌘ Erreur de connexion</td></tr>';
         }
     }
 }
@@ -243,7 +303,7 @@ async function loadUsersData() {
 async function loadSessionsData() {
     debugLog('Chargement des données sessions...', 'info');
     const tbody = document.querySelector('#sessionsTable tbody');
-    if (tbody) {
+    if (tbody && (!allData.sessions || allData.sessions.length === 0)) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">🔄 Chargement...</td></tr>';
     }
     
@@ -270,45 +330,6 @@ async function loadSessionsData() {
     }
 }
 
-// Mise à jour de la table des utilisateurs
-function updateUsersTable() {
-    const tbody = document.querySelector('#usersTable tbody');
-    if (!tbody || allData.users.length === 0) {
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #7f8c8d;">Aucun utilisateur trouvé</td></tr>';
-        }
-        return;
-    }
-    
-    const filteredUsers = filterUsers();
-    const sortedUsers = applySortToData(filteredUsers, 'users');
-    debugLog(`Affichage de ${sortedUsers.length} utilisateurs`, 'info');
-    
-    tbody.innerHTML = sortedUsers.map(user => {
-        const statusClass = {
-            'STUDENT': 'status-student',
-            'TUTOR': 'status-tutor',
-            'ADMIN': 'status-admin'
-        }[user.status] || '';
-        
-        const groupsBadges = user.groups && user.groups !== '--' && user.groups.trim()
-            ? user.groups.split(',').map(g => g.trim()).filter(g => g)
-                .map(group => `<span class="badge">${group}</span>`).join(' ')
-            : '';
-        
-        return `<tr>
-            <td><strong>${user.login}</strong></td>
-            <td>${user.fullname || user.login}</td>
-            <td><span class="${statusClass}">${user.status}</span></td>
-            <td>${groupsBadges}</td>
-            <td>${user.mail !== '--' ? user.mail : ''}</td>
-            <td>${user.date !== '--' ? user.date : ''}</td>
-            <td>${user.addr !== '--' ? user.addr : ''}</td>
-            <td>${user.session_id !== '--' ? user.session_id : ''}</td>
-        </tr>`;
-    }).join('');
-}
-
 // Mise à jour de la table des sessions
 function updateSessionsTable() {
     const tbody = document.querySelector('#sessionsTable tbody');
@@ -325,7 +346,7 @@ function updateSessionsTable() {
     
     tbody.innerHTML = sortedSessions.map(session => {
         const statusClass = session.openned ? 'session-open' : 'session-closed';
-        const statusText = session.openned ? '✅ Ouverte' : '🔒 Fermée';
+        const statusText = session.openned ? 'Ouverte' : 'Fermée';
         
         const groupsBadges = session.groups && session.groups.trim()
             ? session.groups.split(' ').filter(g => g.trim())
@@ -648,6 +669,15 @@ function updateUsersTable() {
         const disabledAttr = isDisabled ? 'disabled' : '';
         const title = user.status === 'ADMIN' ? 'title="Impossible de réinitialiser le mot de passe d\'un administrateur"' : '';
         
+        const isStudent = user.status === 'STUDENT';
+        const groupBtnHtml = isStudent ? `
+            <button class="btn btn-group-change" 
+                    onclick="openChangeGroupModal('${escapedLogin}')" 
+                    ${serverStopped ? 'disabled' : ''} 
+                    title="Changer le groupe de cet étudiant">
+                Groupe
+            </button>` : '';
+
         return `<tr>
             <td><strong>${user.login}</strong></td>
             <td>${user.fullname || user.login}</td>
@@ -664,9 +694,383 @@ function updateUsersTable() {
                         ${title}>
                     Reset
                 </button>
+                ${groupBtnHtml}
             </td>
         </tr>`;
     }).join('');
+}
+
+// ============================================================================
+// Gestion de la modale de changement de groupe d'un étudiant (Option A)
+// ============================================================================
+
+let currentModalStudent = null;
+let currentSimulation = null;
+
+// Chargement de la liste des groupes
+async function loadGroupsData() {
+    try {
+        const response = await fetch('/api/groups');
+        if (response.ok) {
+            allData.groups = await response.json();
+            debugLog(`${allData.groups.length} groupes disponibles chargés`, 'info');
+        } else {
+            debugLog(`Erreur lors du chargement des groupes: HTTP ${response.status}`, 'error');
+        }
+    } catch (e) {
+        debugLog(`Exception lors du chargement des groupes: ${e.message}`, 'error');
+    }
+}
+
+// Ouvre la boîte de dialogue modale pour un étudiant
+async function openChangeGroupModal(login) {
+    debugLog(`Ouverture de la modale de changement de groupe pour: ${login}`, 'info');
+    
+    // Rechercher l'étudiant dans les données chargées
+    const student = allData.users.find(u => u.login === login);
+    if (!student) {
+        alert(`Étudiant avec le login '${login}' introuvable.`);
+        return;
+    }
+    currentModalStudent = student;
+    currentSimulation = null;
+
+    // S'assurer que les groupes sont chargés
+    if (!allData.groups || allData.groups.length === 0) {
+        await loadGroupsData();
+    }
+
+    // Mettre à jour les informations textuelles de l'étudiant
+    document.getElementById('modalStudentName').textContent = student.fullname || student.login;
+    document.getElementById('modalStudentLogin').textContent = student.login;
+
+    // Déterminer la liste des groupes actuels de l'étudiant
+    let studentGroups = [];
+    if (student.groups && student.groups !== '--') {
+        studentGroups = student.groups.split(',').map(g => g.trim()).filter(g => g);
+    }
+    
+    // Badges de groupes actuels
+    const groupsBadges = studentGroups.length > 0 
+        ? studentGroups.map(g => `<span class="badge">${g}</span>`).join(' ')
+        : '<em>Aucun groupe assigné</em>';
+    document.getElementById('modalCurrentGroups').innerHTML = groupsBadges;
+
+    // Remplir le sélecteur du groupe d'origine à remplacer
+    const oldGroupSelect = document.getElementById('oldGroupSelect');
+    oldGroupSelect.innerHTML = '';
+    studentGroups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        oldGroupSelect.appendChild(opt);
+    });
+
+    // Remplir le sélecteur du nouveau groupe cible
+    const newGroupSelect = document.getElementById('newGroupSelect');
+    newGroupSelect.innerHTML = '';
+    (allData.groups || []).forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        newGroupSelect.appendChild(opt);
+    });
+
+    // Sélectionner par défaut le premier groupe cible différent du groupe actuel
+    if (oldGroupSelect.value && newGroupSelect.options.length > 0) {
+        for (let i = 0; i < newGroupSelect.options.length; i++) {
+            if (newGroupSelect.options[i].value !== oldGroupSelect.value) {
+                newGroupSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Réinitialiser la zone de simulation
+    document.getElementById('simulationContainer').style.display = 'none';
+    document.getElementById('applyGroupChangeBtn').disabled = true;
+
+    // Afficher la modale
+    document.getElementById('groupChangeModal').style.display = 'flex';
+
+    // Déclencher la simulation immédiate
+    await onGroupSelectionChange();
+}
+
+// Ferme la modale
+function closeChangeGroupModal() {
+    document.getElementById('groupChangeModal').style.display = 'none';
+    currentModalStudent = null;
+    currentSimulation = null;
+}
+
+// Appelé lors d'un changement de sélection dans les listes déroulantes de groupes
+async function onGroupSelectionChange() {
+    if (!currentModalStudent) return;
+
+    const oldGroup = document.getElementById('oldGroupSelect').value;
+    const newGroup = document.getElementById('newGroupSelect').value;
+    const alertBox = document.getElementById('simulationAlert');
+    const applyBtn = document.getElementById('applyGroupChangeBtn');
+    const container = document.getElementById('simulationContainer');
+    const loading = document.getElementById('simulationLoading');
+
+    if (!oldGroup || !newGroup) {
+        container.style.display = 'none';
+        applyBtn.disabled = true;
+        return;
+    }
+
+    if (oldGroup === newGroup) {
+        container.style.display = 'block';
+        alertBox.className = 'alert-box alert-warning';
+        alertBox.textContent = '⚠️ Le nouveau groupe doit être différent du groupe d\'origine.';
+        alertBox.style.display = 'block';
+        document.getElementById('unchangedSessionsSection').style.display = 'none';
+        document.getElementById('movesSection').style.display = 'none';
+        document.getElementById('unmatchedArrivedSection').style.display = 'none';
+        applyBtn.disabled = true;
+        return;
+    }
+
+    loading.style.display = 'block';
+    container.style.display = 'none';
+    applyBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/students/simulate_group_change', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                login: currentModalStudent.login,
+                old_group: oldGroup,
+                new_group: newGroup
+            })
+        });
+
+        loading.style.display = 'none';
+        container.style.display = 'block';
+
+        if (response.ok) {
+            const sim = await response.json();
+            currentSimulation = sim;
+            renderSimulationResults(sim);
+        } else {
+            const err = await response.text();
+            alertBox.className = 'alert-box alert-danger';
+            alertBox.textContent = `Erreur lors de la simulation : ${err}`;
+            alertBox.style.display = 'block';
+            document.getElementById('unchangedSessionsSection').style.display = 'none';
+            document.getElementById('movesSection').style.display = 'none';
+            document.getElementById('unmatchedArrivedSection').style.display = 'none';
+        }
+    } catch (e) {
+        loading.style.display = 'none';
+        container.style.display = 'block';
+        alertBox.className = 'alert-box alert-danger';
+        alertBox.textContent = `Exception réseau : ${e.message}`;
+        alertBox.style.display = 'block';
+    }
+}
+
+// Affiche les résultats de la simulation
+function renderSimulationResults(sim) {
+    const alertBox = document.getElementById('simulationAlert');
+    const applyBtn = document.getElementById('applyGroupChangeBtn');
+
+    // 1. Sessions inchangées
+    const unchangedSection = document.getElementById('unchangedSessionsSection');
+    const unchangedList = document.getElementById('unchangedSessionsList');
+    if (sim.unchanged_sessions && sim.unchanged_sessions.length > 0) {
+        unchangedList.innerHTML = sim.unchanged_sessions
+            .map(s => `<span class="badge" style="background: #27ae60;">${s}</span>`)
+            .join(' ');
+        unchangedSection.style.display = 'block';
+    } else {
+        unchangedList.innerHTML = '<em>Aucune session partagée entre l\'ancien et le nouveau profil.</em>';
+        unchangedSection.style.display = 'block';
+    }
+
+    // 2. Mouvements de dossiers
+    const movesSection = document.getElementById('movesSection');
+    const tbody = document.getElementById('movesTableBody');
+    tbody.innerHTML = '';
+
+    if (!sim.moves || sim.moves.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #7f8c8d; padding: 12px;">Aucun dossier serveur à déplacer.</td></tr>';
+    } else {
+        sim.moves.forEach((move, idx) => {
+            const tr = document.createElement('tr');
+            
+            // Fichiers source
+            const fileInfo = move.source_exists 
+                ? `<strong>${move.source_file_count}</strong> fichier(s)` 
+                : '<span style="color:#7f8c8d;">Dossier vide / non créé</span>';
+
+            // Menu déroulant pour la session cible
+            let selectOptions = '';
+            sim.arrived_sessions.forEach(arrSess => {
+                const selected = (move.to_session === arrSess) ? 'selected' : '';
+                selectOptions += `<option value="${arrSess}" ${selected}>${arrSess}</option>`;
+            });
+            selectOptions += `<option value="" title="L'ancien dossier est conservé intact sur le serveur et un dossier vide sera créé dans la nouvelle session">-- Ne pas déplacer (créer nouveau dossier vide) --</option>`;
+
+            // Statut cible
+            let statusBadge = '';
+            if (move.blocked) {
+                statusBadge = `<span class="badge-blocked">Dossier existant (Bloqué)</span>`;
+            } else if (move.to_session) {
+                statusBadge = `<span class="badge-ready">Disponible</span>`;
+            } else {
+                statusBadge = `<span style="color: #e67e22;">Aucune session cible</span>`;
+            }
+
+            tr.innerHTML = `
+                <td><strong>${move.from_session}</strong></td>
+                <td>${fileInfo}</td>
+                <td>
+                    <select id="move_target_${idx}" onchange="onMoveTargetChange(${idx})">
+                        ${selectOptions}
+                    </select>
+                </td>
+                <td id="move_status_${idx}">${statusBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 3. Sessions arrivées sans dossier source
+    const unmatchedSection = document.getElementById('unmatchedArrivedSection');
+    const unmatchedList = document.getElementById('unmatchedArrivedList');
+    const targetSessionsInMoves = (sim.moves || []).map(m => m.to_session).filter(Boolean);
+    const orphanArrived = (sim.arrived_sessions || []).filter(s => !targetSessionsInMoves.includes(s));
+    if (orphanArrived.length > 0) {
+        unmatchedList.innerHTML = orphanArrived.map(s => `<strong>${s}</strong>`).join(', ');
+        unmatchedSection.style.display = 'block';
+    } else {
+        unmatchedSection.style.display = 'none';
+    }
+
+    // 4. Alertes et validation du bouton
+    if (!sim.can_apply) {
+        alertBox.className = 'alert-box alert-danger';
+        alertBox.textContent = `🛑 Opération bloquée : ${sim.block_reason || 'Un dossier existe déjà à destination.'}`;
+        alertBox.style.display = 'block';
+        applyBtn.disabled = true;
+    } else if (sim.is_connected) {
+        alertBox.className = 'alert-box alert-warning';
+        alertBox.textContent = `⚠️ L'étudiant est actuellement connecté au serveur. Il sera automatiquement déconnecté pour garantir l'intégrité du transfert.`;
+        alertBox.style.display = 'block';
+        applyBtn.disabled = false;
+    } else {
+        alertBox.style.display = 'none';
+        applyBtn.disabled = false;
+    }
+}
+
+// Appelé si l'administrateur change manuellement la session de destination d'un dossier
+function onMoveTargetChange(moveIndex) {
+    if (!currentSimulation) return;
+    const selectElem = document.getElementById(`move_target_${moveIndex}`);
+    const selectedTarget = selectElem.value;
+    
+    // Mettre à jour dans la simulation
+    currentSimulation.moves[moveIndex].to_session = selectedTarget || null;
+
+    const statusElem = document.getElementById(`move_status_${moveIndex}`);
+    if (statusElem) {
+        if (!selectedTarget) {
+            statusElem.innerHTML = `<span style="color: #7f8c8d;">Non déplacé</span>`;
+        } else {
+            statusElem.innerHTML = `<span class="badge-ready">Disponible</span>`;
+        }
+    }
+
+    // Recalculer les sessions orphelines
+    const targetSessionsInMoves = currentSimulation.moves.map(m => m.to_session).filter(Boolean);
+    const orphanArrived = (currentSimulation.arrived_sessions || []).filter(s => !targetSessionsInMoves.includes(s));
+    const unmatchedSection = document.getElementById('unmatchedArrivedSection');
+    const unmatchedList = document.getElementById('unmatchedArrivedList');
+    if (orphanArrived.length > 0) {
+        unmatchedList.innerHTML = orphanArrived.map(s => `<strong>${s}</strong>`).join(', ');
+        unmatchedSection.style.display = 'block';
+    } else {
+        unmatchedSection.style.display = 'none';
+    }
+}
+
+// Applique le changement de groupe
+async function applyGroupChange() {
+    if (!currentModalStudent || !currentSimulation) return;
+
+    const oldGroup = document.getElementById('oldGroupSelect').value;
+    const newGroup = document.getElementById('newGroupSelect').value;
+    const applyBtn = document.getElementById('applyGroupChangeBtn');
+
+    // Récupérer la liste des déplacements choisis
+    const moves = [];
+    if (currentSimulation.moves && currentSimulation.moves.length > 0) {
+        for (let i = 0; i < currentSimulation.moves.length; i++) {
+            const selectElem = document.getElementById(`move_target_${i}`);
+            const fromSess = currentSimulation.moves[i].from_session;
+            const toSess = selectElem ? selectElem.value : null;
+            if (toSess) {
+                moves.push({ from: fromSess, to: toSess });
+            }
+        }
+    }
+
+    const movesSummary = moves.length > 0 
+        ? moves.map(m => `• ${m.from} ➔ ${m.to}`).join('\n')
+        : '• Aucun dossier à déplacer';
+
+    const confirmMsg = `Confirmez-vous le changement de groupe pour ${currentModalStudent.fullname || currentModalStudent.login} (${currentModalStudent.login}) ?\n\n` +
+        `Remplacement : ${oldGroup} ➔ ${newGroup}\n\n` +
+        `Déplacement des dossiers :\n${movesSummary}\n\n` +
+        `Le fichier sessions.xml sera mis à jour avec une sauvegarde datée (.bak).`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    applyBtn.disabled = true;
+    applyBtn.textContent = 'Transfert en cours...';
+
+    try {
+        const response = await fetch('/api/students/apply_group_change', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                login: currentModalStudent.login,
+                old_group: oldGroup,
+                new_group: newGroup,
+                moves: moves
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            debugLog(`Changement de groupe réussi pour ${currentModalStudent.login}: ${oldGroup} -> ${newGroup}`, 'success');
+            alert(`✅ ${result.message}\n\n${moves.length} dossier(s) déplacé(s) sur le serveur.`);
+            closeChangeGroupModal();
+            // Recharger les données pour rafraîchir l'interface
+            await loadUsersData();
+            await loadSessionsData();
+            await updateDashboard();
+        } else {
+            const errorMsg = result.message || 'Erreur inconnue';
+            debugLog(`Erreur lors du changement de groupe: ${errorMsg}`, 'error');
+            alert(`❌ Opération échouée :\n\n${errorMsg}`);
+            applyBtn.disabled = false;
+            applyBtn.textContent = 'Valider le transfert';
+        }
+    } catch (e) {
+        debugLog(`Exception lors de l'application: ${e.message}`, 'error');
+        alert(`❌ Erreur réseau : ${e.message}`);
+        applyBtn.disabled = false;
+        applyBtn.textContent = 'Valider le transfert';
+    }
 }
 
 // Gestion de l'arrêt du serveur
@@ -732,6 +1136,7 @@ function testDashboardLive() {
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
+    initDebugConsole();
     debugLog('=== INITIALISATION DE L\'INTERFACE ===', 'info');
     debugLog('Configuration des onglets...', 'info');
     setupTabs();

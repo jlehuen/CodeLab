@@ -31,18 +31,44 @@
             </div>
         </div>
         
-        <!-- Zone de debug -->
-        <div class="debug-info">
-            <h4>📋 Debug Information</h4>
-            <div id="debugLog"></div>
+        <!-- Zone de debug refermable -->
+        <div class="debug-info" id="debugInfo">
+            <div class="debug-header" onclick="toggleDebugConsole()">
+                <div class="debug-header-title">
+                    <span id="debugToggleIcon" class="debug-toggle-icon">▼</span>
+                    <span>📋 Debug Information</span>
+                </div>
+                <div class="debug-header-actions">
+                    <button type="button" class="btn-debug-action" onclick="clearDebugLog(event)" title="Effacer les logs">Effacer</button>
+                    <span id="debugToggleText" class="debug-toggle-text">Réduire</span>
+                </div>
+            </div>
+            <div id="debugContent" class="debug-content">
+                <div id="debugLog"></div>
+            </div>
         </div>
         
         <div class="nav-tabs">
-            <button class="nav-tab active" data-tab="dashboard">📊 DASHBOARD</button>
-            <button class="nav-tab" data-tab="users">👥 UTILISATEURS</button>
-            <button class="nav-tab" data-tab="sessions">🎯 SESSIONS</button>
-            <button class="nav-tab" data-tab="clients">💻 CONNEXIONS</button>
-            <button class="nav-tab" data-tab="actions">⚙️ ACTIONS</button>
+            <button class="nav-tab active" data-tab="dashboard">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                <span>DASHBOARD</span>
+            </button>
+            <button class="nav-tab" data-tab="users">
+                <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>UTILISATEURS</span>
+            </button>
+            <button class="nav-tab" data-tab="sessions">
+                <svg viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.91a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.91a2 2 0 0 1-1.66 0L2 17.5"/></svg>
+                <span>SESSIONS</span>
+            </button>
+            <button class="nav-tab" data-tab="clients">
+                <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+                <span>CONNEXIONS</span>
+            </button>
+            <button class="nav-tab" data-tab="actions">
+                <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>ACTIONS</span>
+            </button>
         </div>
         
         <!-- Tab Dashboard -->
@@ -71,7 +97,6 @@
 		<div id="users" class="tab-content">
 			<div class="search-filter">
 				<input type="text" class="search-input" id="userSearch" placeholder="🔍 Rechercher un utilisateur...">
-				<button class="btn btn-refresh" onclick="loadUsersData()">Recharger</button>
 			</div>
 			
 			<div class="data-table">
@@ -90,7 +115,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<tr><td colspan="9" style="text-align: center; padding: 20px;">Cliquez sur "Recharger" pour charger les données</td></tr>
+						<tr><td colspan="9" style="text-align: center; padding: 20px;">Chargement automatique...</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -100,7 +125,6 @@
         <div id="sessions" class="tab-content">
             <div class="search-filter">
                 <input type="text" class="search-input" id="sessionSearch" placeholder="🔍 Rechercher une session...">
-                <button class="btn btn-refresh" onclick="loadSessionsData()">Recharger</button>
             </div>
             
             <div class="data-table">
@@ -116,7 +140,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="6" style="text-align: center; padding: 20px;">Cliquez sur "Recharger" pour charger les données</td></tr>
+                        <tr><td colspan="6" style="text-align: center; padding: 20px;">Chargement automatique...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -155,6 +179,105 @@
                 <button class="btn btn-refresh" onclick="updateDashboard()">Forcer la mise à jour</button>
                 <button class="btn btn-success" id="autoRefreshBtn" onclick="toggleAutoRefresh()">Démarrer auto-refresh</button>
                 <button class="btn btn-danger" id="shutdownBtn" onclick="confirmShutdown()">Arrêter le serveur</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boîte de dialogue Modale : Changement de groupe étudiant -->
+    <div id="groupChangeModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">
+                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Changement de groupe d'un étudiant</span>
+                </h3>
+                <button class="modal-close-btn" onclick="closeChangeGroupModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Info étudiant -->
+                <div class="student-info-box">
+                    <div><strong>Étudiant :</strong> <span id="modalStudentName">-</span> (<code id="modalStudentLogin">-</code>)</div>
+                    <div style="margin-top: 6px;"><strong>Groupes actuels :</strong> <span id="modalCurrentGroups">-</span></div>
+                </div>
+
+                <!-- Formulaire Option A : Remplacer un groupe existant -->
+                <div class="group-select-form">
+                    <div class="form-row">
+                        <label for="oldGroupSelect"><strong>Groupe à remplacer :</strong></label>
+                        <select id="oldGroupSelect" onchange="onGroupSelectionChange()">
+                            <!-- Rempli dynamiquement -->
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="newGroupSelect"><strong>Remplacer par le nouveau groupe :</strong></label>
+                        <select id="newGroupSelect" onchange="onGroupSelectionChange()">
+                            <!-- Rempli dynamiquement -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Zone de chargement -->
+                <div id="simulationLoading" style="display: none; text-align: center; padding: 15px; color: #3498db;">
+                    🔄 Calcul de l'impact et inspection des dossiers...
+                </div>
+
+                <!-- Zone de simulation / diagnostic -->
+                <div id="simulationContainer" style="display: none; margin-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Diagnostic des sessions et dossiers</h4>
+                    
+                    <div id="simulationAlert" class="alert-box" style="display: none;"></div>
+
+                    <!-- Sessions conservées -->
+                    <div id="unchangedSessionsSection" style="margin-bottom: 12px; font-size: 13px;">
+                        <span style="color: #27ae60; font-weight: bold;">✅ Sessions inchangées (aucun déplacement requis) :</span>
+                        <div id="unchangedSessionsList" style="margin-top: 4px;">-</div>
+                    </div>
+
+                    <!-- Sessions impactées / Mouvements de dossiers -->
+                    <div id="movesSection">
+                        <div style="font-weight: bold; margin-bottom: 6px; font-size: 13px;">
+                            Plan de déplacement des répertoires :
+                        </div>
+                        <table class="modal-moves-table" id="movesTable">
+                            <thead>
+                                <tr>
+                                    <th>Session source (quittée)</th>
+                                    <th>Fichiers source</th>
+                                    <th>
+                                        Session destination (rejointe)
+                                        <span class="help-tooltip-trigger" tabindex="0" aria-label="Aide sur le choix de destination">
+                                            <span class="help-icon">?</span>
+                                            <div class="help-tooltip-content">
+                                                <strong>Choix de la session destination :</strong>
+                                                <p><strong>• Session sélectionnée :</strong> Les fichiers du dossier étudiant sont déplacés vers cette nouvelle session.</p>
+                                                <p><strong>• Ne pas déplacer :</strong></p>
+                                                <ul>
+                                                    <li><em>Ancienne session :</em> Le dossier reste intact sur le serveur (archivage/historique préservé).</li>
+                                                    <li><em>Nouvelle session :</em> L'étudiant démarre avec un nouveau dossier vierge.</li>
+                                                </ul>
+                                            </div>
+                                        </span>
+                                    </th>
+                                    <th>Statut cible</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movesTableBody">
+                                <!-- Rempli dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Nouvelles sessions rejointes sans dossier source -->
+                    <div id="unmatchedArrivedSection" style="margin-top: 10px; font-size: 12px; color: #7f8c8d; display: none;">
+                        ℹ️ Nouvelles sessions rejointes sans dossier source (dossier vide initialisé) : <span id="unmatchedArrivedList"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeChangeGroupModal()">Annuler</button>
+                <button class="btn btn-primary" id="applyGroupChangeBtn" onclick="applyGroupChange()" disabled>
+                    Valider le transfert
+                </button>
             </div>
         </div>
     </div>

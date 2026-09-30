@@ -14,11 +14,15 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.apache.commons.io.FileUtils;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -65,6 +69,9 @@ public class CodelabClient {
 	private static final int MAX_RECONNECT_ATTEMPTS = 5;
 	private static final int RECONNECT_DELAY_MS = 2000;
 
+	// Détecteur d'inactivité utilisateur
+	private InactivityDetector inactivityDetector = null;
+
 	public static final boolean DEBUG = false;
 
 	///////////////////////////////////////////////////
@@ -77,6 +84,14 @@ public class CodelabClient {
 	public Statut getStatut() { return statut; }
 	public String getSession() { return session; }
 	public String getUsername() { return username; }
+	public String getClientIP() {
+		if (socket != null && socket.isConnected()) {
+			try {
+				return socket.getLocalAddress().getHostAddress();
+			} catch (Exception ignored) {}
+		}
+		return CodeLab.IP_ADDR;
+	}
 	public String getNickName() { return SERVER_NICKNAME; }
 	public boolean isStudent() { return statut.isStudent(); }
 	public boolean isTutor() { return statut.isTutor(); }
@@ -99,6 +114,8 @@ public class CodelabClient {
 		BACKUP_PERIOD = PropertyBase.getIntegerProperty("BACKUP_PERIOD") * 60000; // En minutes
 		UPDATE_PERIOD = PropertyBase.getIntegerProperty("UPDATE_PERIOD"); // En millisecondes
 		UPDATE_PERIOD_FAST = PropertyBase.getIntegerProperty("UPDATE_PERIOD_FAST");
+
+		inactivityDetector = new InactivityDetector(this);
 	}
 
 	///////////////////////////////////////////////////
@@ -108,6 +125,9 @@ public class CodelabClient {
 	private Timer timer = null;
 
 	public void stopAllTasks() {
+		if (inactivityDetector != null) {
+			inactivityDetector.stop();
+		}
 		if (timer == null) return;
 		timer.cancel();
 		timer = null;
@@ -153,12 +173,25 @@ public class CodelabClient {
 			}
 		};
 
+		// Tâche de surveillance de l'inactivité utilisateur (étudiants seulement)
+		TimerTask task_inactivity = new TimerTask() {
+			public void run() {
+				if (inactivityDetector != null) {
+					inactivityDetector.check();
+				}
+			}
+		};
+
 		// Démarrage des tâches répétitives
 		timer = new Timer(false);
 		if (isStudent() || isTutor() || isAdmin()) timer.schedule(task_1, 1000, UPDATE_PERIOD); // Sauvegarder le fichier si modifié
 		if (isStudent()) timer.schedule(task_2, BACKUP_PERIOD, BACKUP_PERIOD); // Faire un backup du fichier si student
 		if (isTutor() || isAdmin()) timer.schedule(task_3, 1000, UPDATE_PERIOD); // Récupérer le fichier si tuteur
 		timer.schedule(task_heartbeat, 15000, 30000); // Ping régulier toutes les 30s
+		if (isStudent()) {
+			inactivityDetector.start();
+			timer.schedule(task_inactivity, 5000, 5000); // Vérification de l'inactivité toutes les 5s
+		}
 	}
 
 	// -------------------------------------
@@ -193,18 +226,126 @@ public class CodelabClient {
 	}
 
 	///////////////////////////////////////////////////
-	// Pour extraire une session compressée
+	// Pour extraire une session compressée avec réconciliation
 	///////////////////////////////////////////////////
 
-	private boolean extractSession(Object[] archive, String filename, String destination) {
+	private static class SessionContext {
+		final String login;
+		final String session;
+		final String role;
+
+		SessionContext(String login, String session, String role) {
+			this.login = (login != null) ? login.trim() : "";
+			this.session = (session != null) ? session.trim() : "";
+			this.role = (role != null) ? role.trim() : "";
+		}
+	}
+
+	private SessionContext getLastSessionContext() {
+		File file = new File(CodeLab.CODELAB_FILES_HIDDEN + "/last_session.txt");
+		if (!file.exists()) return null;
+		try {
+			String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8).trim();
+			String[] parts = content.split(":", 3);
+			if (parts.length == 3) {
+				return new SessionContext(parts[0], parts[1], parts[2]);
+			} else if (parts.length == 2) {
+				return new SessionContext(parts[0], parts[1], "");
+			} else if (parts.length == 1 && !parts[0].isEmpty()) {
+				// Format de transition
+				return new SessionContext("", parts[0], "");
+			}
+			return null;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	private void setLastSessionContext(String userLogin, String sessionId, boolean isStudent) {
+		File file = new File(CodeLab.CODELAB_FILES_HIDDEN + "/last_session.txt");
+		try {
+			if (file.getParentFile() != null) file.getParentFile().mkdirs();
+			String role = isStudent ? "STUDENT" : "TUTOR";
+			String content = String.format("%s:%s:%s", userLogin != null ? userLogin : "", sessionId != null ? sessionId : "", role);
+			Files.write(file.toPath(), content.getBytes(StandardCharsets.UTF_8));
+		} catch (Exception ignored) {}
+	}
+
+	private void safetyBackup(String destination, String sessionId) {
+		if (!isStudent()) return; // Aucun recovery pour les tuteurs et admins
+		try {
+			File destDir = new File(destination);
+			if (!destDir.exists() || !destDir.isDirectory()) return;
+			File[] files = destDir.listFiles();
+			if (files == null || files.length == 0) return;
+
+			boolean hasUsefulFile = false;
+			for (File f : files) {
+				if (!f.getName().startsWith(".")) {
+					hasUsefulFile = true;
+					break;
+				}
+			}
+			if (!hasUsefulFile) return;
+
+			File recoveryBase = new File(CodeLab.RECOVERY_FOLDER);
+			if (!recoveryBase.exists()) recoveryBase.mkdirs();
+
+			String timestamp = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
+			String backupDirName = String.format("%s/%s_%s", CodeLab.RECOVERY_FOLDER, sessionId, timestamp);
+			File backupDir = new File(backupDirName);
+			backupDir.mkdirs();
+			FileUtils.copyDirectory(destDir, backupDir);
+			CodeLab.logger("Safety recovery backup created in: " + backupDirName);
+
+			cleanOldRecoveryBackups();
+		} catch (Exception e) {
+			System.err.println("Erreur safety backup : " + e.getMessage());
+		}
+	}
+
+	private void cleanOldRecoveryBackups() {
+		CodeLab.cleanOldRecoveryBackups();
+	}
+
+	private boolean extractSession(Object[] archive, String filename, String destination, String sessionId, boolean isStudent) {
 		byte[] fileContent = MessagePackUtils.convertObjectArrayToByteArray(archive);
 		String temp = String.format("%s/%s", CodeLab.TEMP_FOLDER, filename);
 		try (FileOutputStream fos = new FileOutputStream(temp)) {
 			fos.write(fileContent);
 			try {
-				MessagePackUtils.cleanDirectory(destination);
-				TarZstExtractor.extract(temp, destination);
-				new File(temp).delete(); // Suppression de l'archive
+				if (isStudent) {
+					SessionContext last = getLastSessionContext();
+					boolean isSameStudentAndSession = last != null
+						&& "STUDENT".equals(last.role)
+						&& this.login != null && !this.login.isEmpty() && this.login.equals(last.login)
+						&& sessionId != null && !sessionId.isEmpty() && sessionId.equals(last.session);
+
+					if (isSameStudentAndSession) {
+						// Snapshot préventif de sécurité UNIQUEMENT pour un étudiant qui se reconnecte à sa propre session
+						safetyBackup(destination, sessionId);
+
+						// Même étudiant et même session (reconnexion) : réconciliation intelligente sans écrasement
+						CodeLab.logger(String.format("Reconnecting student %s to session %s: reconciling workspace", this.login, sessionId));
+						TarZstExtractor.extractAndReconcile(temp, destination);
+					} else {
+						// Changement de session, nouvel étudiant ou bascule depuis tuteur : nettoyage complet et extraction (sans recovery parasite)
+						CodeLab.logger(String.format("New student workspace for %s (session %s, prev=%s): cleaning directory",
+							this.login, sessionId, (last != null ? last.login + "@" + last.session : "none")));
+						MessagePackUtils.cleanDirectory(destination);
+						TarZstExtractor.extract(temp, destination);
+					}
+
+					setLastSessionContext(this.login, sessionId, true);
+				} else {
+					// Pour les tuteurs / admins : aucun recovery n'est utile, l'archive serveur fait foi, nettoyage complet
+					CodeLab.logger(String.format("Tutor workspace for %s (session %s): cleaning directory for full tree", this.login, sessionId));
+					MessagePackUtils.cleanDirectory(destination);
+					TarZstExtractor.extract(temp, destination);
+					setLastSessionContext(this.login, sessionId, false);
+				}
+
+				new File(temp).delete(); // Suppression de l'archive temporaire
 				return true;
 			}
 			catch (IOException e) {
@@ -304,6 +445,31 @@ public class CodelabClient {
 	// Fermetures de connexion
 	///////////////////////////////////////////////////
 
+	public void onInactivityTimeout() {
+		if (!isConnected() || !isStudent()) return;
+
+		String logMsg = String.format("Inactivity timeout reached: disconnecting student %s", login);
+		codelab.consoleLog("Déconnexion automatique de la session pour inactivité prolongée.");
+		CodeLab.logger(logMsg);
+
+		// 1. Sauvegarde locale de sécurité
+		try {
+			if (editor != null) {
+				editor.saveCurrentFile();
+			}
+		} catch (Exception e) {
+			CodeLab.logger("Error saving current file on inactivity timeout: " + e.getMessage());
+		}
+
+		// 2. Fermeture ordonnée de la session distante et basculement en mode autonome
+		closeConnection();
+
+		// 3. Information explicative à l'étudiant
+		SwingUtilities.invokeLater(() -> {
+			Utils.showMessageDialog("INFORMATION", CodeLab.LABEL("MepaClient_inactivity_disconnected"));
+		});
+	}
+
 	public void closeConnection() {
 		intentionalDisconnect = true;
 		stopAllTasks(); // Arrêter les tâches répétitives
@@ -315,6 +481,8 @@ public class CodelabClient {
 		String msg = "Disconnected from the server, goto standalone mode";
 		codelab.consoleLog(msg);
 		CodeLab.logger(msg);
+
+		this.session = null;
 
 		SwingUtilities.invokeLater(() -> {
 			codelab.helpFlag = false;
@@ -361,8 +529,9 @@ public class CodelabClient {
 				return;
 			}
 
-			CodeLab.logger(String.format("Auto-reconnect attempt %d/%d...", attempt, MAX_RECONNECT_ATTEMPTS));
-			codelab.consoleLog(String.format("Reconnexion en cours (%d/%d)...", attempt, MAX_RECONNECT_ATTEMPTS));
+			String msg = String.format("Auto-reconnect attempt %d/%d...", attempt, MAX_RECONNECT_ATTEMPTS);
+			CodeLab.logger(msg);
+			codelab.consoleLog(msg);
 
 			if (performConnectProtocol(login, password, session, true)) {
 				reconnected = true;
@@ -961,7 +1130,7 @@ public class CodelabClient {
 
 		// Extraction de l'arborescence de la session
 		String destination = codelab.getProgramDir();
-		if (extractSession(file_content, filename, destination)) {
+		if (extractSession(file_content, filename, destination, sessionId, true)) {
 
 			this.statut = Statut.str2statut(statut);
 			this.session = sessionId;
@@ -1005,7 +1174,7 @@ public class CodelabClient {
 
 		// Extraction de l'arborescence de la session
 		String destination = codelab.getProgramDir();
-	    if (extractSession(file_content, filename, destination)) {
+	    if (extractSession(file_content, filename, destination, sessionId, false)) {
 
 			this.statut = Statut.str2statut(statut);
 			this.session = sessionId;

@@ -11,17 +11,25 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+
+import org.apache.commons.io.FileUtils;
+import net.lingala.zip4j.ZipFile;
+import codelab.modules.editeur.manager.BackupManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -205,6 +213,7 @@ public class CodeLab extends AbstractCodeLab {
 	public void things_to_do_before_exiting() {
 		CodeLab.logger("Things to do before exiting CodeLab...");
 		if (isRunning()) halt(); // Stopper exécution en cours
+		editor.saveAllFiles(); // Sauvegarde de tous les onglets ouverts
 		editor.saveCurrentFile(); // Sauvegarde en local et à distance
 		editor.backupCurrentFile(); // Backup daté du fichier courant
 		//executionMonitor.shutdown(); // Arrêter le moniteur d'exécution
@@ -578,6 +587,10 @@ public class CodeLab extends AbstractCodeLab {
 	public String getUsername() {
 		// Le nom complet de connexion ou le nom du fichier de pptés
 		return isConnected() ? client.getUsername() : USER;
+	}
+
+	public String getClientIP() {
+		return (client != null) ? client.getClientIP() : IP_ADDR;
 	}
 
 	public void serverActivity() {
@@ -1121,6 +1134,270 @@ public class CodeLab extends AbstractCodeLab {
 	}
 	*/
 
+	// -----------------------------------------------------------
+	// Méthodes de gestion des sauvegardes (Menu Sauvegardes)
+	// -----------------------------------------------------------
+
+	public boolean createManualRecoveryBackup() {
+		try {
+			String progDir = getProgramDir();
+			File srcDir = new File(progDir);
+			if (!srcDir.exists() || !srcDir.isDirectory()) {
+				Utils.showWarningDialog(LABEL("WARNING"), LABEL("noWorkspaceToBackup"));
+				return false;
+			}
+			File[] files = srcDir.listFiles();
+			if (files == null || files.length == 0) {
+				Utils.showWarningDialog(LABEL("WARNING"), LABEL("emptyWorkspaceToBackup"));
+				return false;
+			}
+			boolean hasUsefulFile = false;
+			for (File f : files) {
+				if (!f.getName().startsWith(".")) {
+					hasUsefulFile = true;
+					break;
+				}
+			}
+			if (!hasUsefulFile) {
+				Utils.showWarningDialog(LABEL("WARNING"), LABEL("emptyWorkspaceToBackup"));
+				return false;
+			}
+
+			File recoveryBase = new File(RECOVERY_FOLDER);
+			if (!recoveryBase.exists()) recoveryBase.mkdirs();
+
+			String namePrefix = isConnected() ? getSession() : "local";
+			if (namePrefix == null || namePrefix.isBlank() || namePrefix.equals("--")) namePrefix = "workspace";
+			String timestamp = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
+			String backupDirName = String.format("%s/%s_%s", RECOVERY_FOLDER, namePrefix, timestamp);
+			File backupDir = new File(backupDirName);
+			backupDir.mkdirs();
+			FileUtils.copyDirectory(srcDir, backupDir);
+			logger("Manual safety recovery backup created in: " + backupDirName);
+
+			cleanOldRecoveryBackups();
+
+			JOptionPane.showMessageDialog(FRAME,
+				String.format(LABEL("manualRecoveryBackupSuccess"), backupDir.getName()),
+				LABEL("menuBackups"),
+				JOptionPane.INFORMATION_MESSAGE,
+				ICON);
+			return true;
+		} catch (Exception e) {
+			logger("Error creating manual recovery backup: " + e.getMessage());
+			Utils.showWarningDialog(LABEL("WARNING"), e.getMessage());
+			return false;
+		}
+	}
+
+	public void restoreRecoveryBackup() {
+		File recoveryFolder = new File(RECOVERY_FOLDER);
+		if (!recoveryFolder.exists()) {
+			JOptionPane.showMessageDialog(FRAME, LABEL("noRecoveryBackupAvailable"), LABEL("menuBackups"), JOptionPane.INFORMATION_MESSAGE, ICON);
+			return;
+		}
+		File[] backups = recoveryFolder.listFiles(File::isDirectory);
+		if (backups == null || backups.length == 0) {
+			JOptionPane.showMessageDialog(FRAME, LABEL("noRecoveryBackupAvailable"), LABEL("menuBackups"), JOptionPane.INFORMATION_MESSAGE, ICON);
+			return;
+		}
+		Arrays.sort(backups, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
+
+		SimpleDateFormat df = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
+		String[] choices = new String[backups.length];
+		for (int i = 0; i < backups.length; i++) {
+			choices[i] = String.format("%s (%s)", backups[i].getName(), df.format(new Date(backups[i].lastModified())));
+		}
+
+		String selected = (String) JOptionPane.showInputDialog(FRAME,
+			LABEL("chooseRecoveryBackup"),
+			LABEL("restoreRecoveryTitle"),
+			JOptionPane.PLAIN_MESSAGE,
+			ICON,
+			choices,
+			choices[0]);
+		if (selected == null) return;
+
+		int index = -1;
+		for (int i = 0; i < choices.length; i++) {
+			if (choices[i].equals(selected)) {
+				index = i;
+				break;
+			}
+		}
+		if (index == -1) return;
+		File chosenBackup = backups[index];
+
+		if (!Utils.confirmDialog(String.format(LABEL("confirmRestoreRecoveryBackup"), chosenBackup.getName()))) {
+			return;
+		}
+
+		try {
+			String progDir = getProgramDir();
+			File srcDir = new File(progDir);
+
+			if (srcDir.exists() && srcDir.list() != null && srcDir.list().length > 0) {
+				String timestamp = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
+				File preRestore = new File(String.format("%s/pre_restore_%s", RECOVERY_FOLDER, timestamp));
+				FileUtils.copyDirectory(srcDir, preRestore);
+			}
+
+			if (!srcDir.exists()) srcDir.mkdirs();
+			FileUtils.cleanDirectory(srcDir);
+			FileUtils.copyDirectory(chosenBackup, srcDir);
+
+			if (getEditor() != null) {
+				getEditor().reset();
+				if (getEditor().getManager() != null) {
+					getEditor().getManager().populate();
+				}
+			}
+
+			if (isStudent() && isConnected()) {
+				uploadFilesRec(srcDir);
+			}
+
+			logger("Workspace restored from recovery backup: " + chosenBackup.getName());
+			JOptionPane.showMessageDialog(FRAME,
+				String.format(LABEL("restoreRecoverySuccess"), chosenBackup.getName()),
+				LABEL("menuBackups"),
+				JOptionPane.INFORMATION_MESSAGE,
+				ICON);
+		} catch (Exception e) {
+			logger("Error restoring recovery backup: " + e.getMessage());
+			Utils.showWarningDialog(LABEL("WARNING"), e.getMessage());
+		}
+	}
+
+	private void uploadFilesRec(File dir) {
+		File[] list = dir.listFiles();
+		if (list == null) return;
+		for (File f : list) {
+			if (f.getName().startsWith(".")) continue;
+			if (f.isDirectory()) uploadFilesRec(f);
+			else if (client != null) client.uploadFile(f);
+		}
+	}
+
+	public void cleanRecoveryFolder() {
+		File file = new File(RECOVERY_FOLDER);
+		if (!file.exists() || file.list() == null || file.list().length == 0) {
+			JOptionPane.showMessageDialog(FRAME, LABEL("noRecoveryBackupAvailable"), LABEL("menuBackups"), JOptionPane.INFORMATION_MESSAGE, ICON);
+			return;
+		}
+		if (!Utils.confirmDialog(LABEL("confirmCleanRecoveryBackups"))) return;
+		try {
+			File[] files = file.listFiles();
+			if (files != null) {
+				for (File f : files) {
+					if (f.isDirectory()) FileUtils.deleteDirectory(f);
+					else f.delete();
+				}
+			}
+			logger("Recovery backups folder cleaned");
+			JOptionPane.showMessageDialog(FRAME, LABEL("cleanRecoveryBackupsSuccess"), LABEL("menuBackups"), JOptionPane.INFORMATION_MESSAGE, ICON);
+		} catch (Exception e) {
+			logger("Error cleaning recovery folder: " + e.getMessage());
+			Utils.showWarningDialog(LABEL("WARNING"), e.getMessage());
+		}
+	}
+
+	public void exportWorkspaceZip() {
+		String progDir = getProgramDir();
+		File srcDir = new File(progDir);
+		if (!srcDir.exists() || !srcDir.isDirectory()) {
+			Utils.showWarningDialog(LABEL("WARNING"), LABEL("noWorkspaceToBackup"));
+			return;
+		}
+		File[] files = srcDir.listFiles();
+		if (files == null || files.length == 0) {
+			Utils.showWarningDialog(LABEL("WARNING"), LABEL("emptyWorkspaceToBackup"));
+			return;
+		}
+
+		String prefix = isConnected() ? getSession() : "codelab";
+		if (prefix == null || prefix.isBlank() || prefix.equals("--")) prefix = "codelab";
+		String timestamp = new SimpleDateFormat("yyyyMMdd_HHmm").format(new Date());
+		String suggestedName = String.format("%s_%s.zip", prefix, timestamp);
+
+		JFileChooser chooser = new JFileChooser();
+		File desktop = new File(System.getProperty("user.home") + "/Desktop");
+		chooser.setCurrentDirectory(desktop.exists() ? desktop : new File(System.getProperty("user.home")));
+		chooser.setSelectedFile(new File(suggestedName));
+		chooser.setDialogTitle(LABEL("exportZipTitle"));
+
+		if (chooser.showSaveDialog(FRAME) != JFileChooser.APPROVE_OPTION) return;
+		File targetFile = chooser.getSelectedFile();
+		if (targetFile == null) return;
+
+		if (!targetFile.getName().toLowerCase().endsWith(".zip")) {
+			targetFile = new File(targetFile.getAbsolutePath() + ".zip");
+		}
+
+		if (targetFile.exists()) {
+			if (!Utils.confirmDialog(LABEL("confirmOverwriteZip"))) return;
+			targetFile.delete();
+		}
+
+		File tempExportDir = new File(String.format("%s/export_%s", TEMP_FOLDER, timestamp));
+		try {
+			// 1. Recopie dans un dossier temporaire isolé
+			FileUtils.copyDirectory(srcDir, tempExportDir);
+
+			// 2. Nettoyage récursif des exclusions (__*, .exe, .orig, .bak, .class, cachés)
+			cleanExcludedForExport(tempExportDir);
+
+			File[] cleanFiles = tempExportDir.listFiles();
+			if (cleanFiles == null || cleanFiles.length == 0) {
+				Utils.showWarningDialog(LABEL("WARNING"), LABEL("emptyWorkspaceToBackup"));
+				return;
+			}
+
+			// 3. Compression de l'arborescence épurée
+			ZipFile zipFile = new ZipFile(targetFile);
+			for (File f : cleanFiles) {
+				if (f.isDirectory()) {
+					zipFile.addFolder(f);
+				} else {
+					zipFile.addFile(f);
+				}
+			}
+			zipFile.close();
+
+			logger("Workspace exported to ZIP: " + targetFile.getAbsolutePath());
+			JOptionPane.showMessageDialog(FRAME,
+				String.format(LABEL("exportZipSuccess"), targetFile.getAbsolutePath()),
+				LABEL("menuBackups"),
+				JOptionPane.INFORMATION_MESSAGE,
+				ICON);
+		} catch (Exception e) {
+			logger("Error exporting workspace ZIP: " + e.getMessage());
+			Utils.showWarningDialog(LABEL("WARNING"), LABEL("exportZipError") + "\n" + e.getMessage());
+		} finally {
+			try {
+				if (tempExportDir.exists()) FileUtils.deleteDirectory(tempExportDir);
+			} catch (Exception ignored) {}
+		}
+	}
+
+	private void cleanExcludedForExport(File dir) {
+		File[] files = dir.listFiles();
+		if (files == null) return;
+		for (File f : files) {
+			String name = f.getName().toLowerCase();
+			if (f.getName().startsWith(".") || f.getName().startsWith("__")
+					|| name.endsWith(".exe") || name.endsWith(".orig") || name.endsWith(".bak") || name.endsWith(".class")) {
+				if (f.isDirectory()) {
+					try { FileUtils.deleteDirectory(f); } catch (Exception ignored) {}
+				} else {
+					f.delete();
+				}
+			} else if (f.isDirectory()) {
+				cleanExcludedForExport(f);
+			}
+		}
+	}
+
 	///////////////////////////////////////////////////
 	// Méthode statique main
 	///////////////////////////////////////////////////
@@ -1223,8 +1500,14 @@ public class CodeLab extends AbstractCodeLab {
 
 		// ------------------------------------------------
 		// Initialiser le répertoire temp
-
+ 
 		Utils.initFolder(new File(TEMP_FOLDER));
+
+		// ------------------------------------------------
+		// Initialiser le répertoire recovery (créé si absent)
+
+		File recoveryDir = new File(RECOVERY_FOLDER);
+		if (!recoveryDir.exists()) recoveryDir.mkdirs();
 
 		// ------------------------------------------------
 		// Réinitialiser le répertoire includes
@@ -1391,7 +1674,7 @@ public class CodeLab extends AbstractCodeLab {
 		directPrintln("[codelab] Tip: Use 'pkill -9 -fi codelab' in case of panic", Console.COLOR_LOG);
 
 		String msg = String.format("CodeLab %s build %s (%s) is ready!", VERSION, BUILD, ARCHITECTURE);
-		directPrintln("[codelab] " + msg, Console.COLOR_LOG);
+		directPrintln("[codelab] " + msg, new Color(0, 140, 0));
 		
 		Utils.wait(1000);
 		WaitingDialog.close();

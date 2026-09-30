@@ -63,6 +63,7 @@ server/server/archive/
 # ------------------------------------------------------------------------------
 *.log
 freeze.log
+crash.log
 server/temp/
 server/server/logs/
 codelab_files.zip

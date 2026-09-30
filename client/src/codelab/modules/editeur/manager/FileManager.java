@@ -1021,9 +1021,9 @@ public class FileManager extends JTree {
 					editor.deleteFileDist(selectedFileDescr().getFile());
 					// Suppression dans l'éditeur
 					editor.remove_file(fd.getUID());
-					// Suppressions des sauvegardes locales
-					for (File file : BackupManager.backupsList(fd.getFile())) file.delete();
-					// Suppression effective
+					// Suppressions des sauvegardes locales vers la corbeille
+					for (File file : BackupManager.backupsList(fd.getFile())) MyFileUtils.moveToTrashOrDelete(file);
+					// Suppression effective (vers la corbeille)
 					fd.delete();
 					// Suppression dans le JTree
 					removeCurrentNode();

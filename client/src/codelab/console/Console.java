@@ -232,11 +232,18 @@ public class Console extends JScrollPane implements ConsoleInterface, KeyListene
 		queue.clear();
 		resetInputLine();
 		prev_caret = false;
-		try {
-			document.remove(0, document.getLength());
-		}
-		catch (BadLocationException e) {
-			ExceptionManager.process(e);
+		Runnable clearTask = () -> {
+			try {
+				document.remove(0, document.getLength());
+			}
+			catch (BadLocationException e) {
+				ExceptionManager.process(e);
+			}
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			clearTask.run();
+		} else {
+			SwingUtilities.invokeLater(clearTask);
 		}
 	}
 
@@ -248,8 +255,8 @@ public class Console extends JScrollPane implements ConsoleInterface, KeyListene
 			try {
 				SwingUtilities.invokeAndWait(this::drainQueue);
 			}
-			catch (Exception e) {
-				drainQueue();
+			catch (Exception ignored) {
+				// En cas d'interruption, flushTimer videra la file en toute sécurité sur l'EDT au prochain tick (<= 16ms)
 			}
 		}
 	}
