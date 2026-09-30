@@ -113,15 +113,17 @@ Il se peut que votre PATH ne comporte pas les bons chemins ou qu'un chemin soit 
 <details>
 <summary><b>Installer un compilateur C</b></summary>
 <br>
-Coming soon !
+
+>Coming soon !
 </details>
 
 <details>
 <summary><b>Installer Python + Numpy + Matplotlib</b></summary>
 <br>
-Un environnement virtuel Python (venv) est un dossier isolé où l’on peut installer des packages et exécuter du code Python sans interférer avec les autres distributions Python et projets du système. Commencez par installer une distribution récente de Python sur votre machine (si ce n'est pas déjà la cas) en allant sur le [site officiel](https://www.python.org/) de Python.
 
-Pour créer un environnement virtuel sous Linux / MacOS :
+>Un environnement virtuel Python (venv) est un dossier isolé où l’on peut installer des packages et exécuter du code Python sans interférer avec les autres distributions Python et projets du système. Commencez par installer une distribution récente de Python sur votre machine (si ce n'est pas déjà la cas) en allant sur le [site officiel](https://www.python.org) de Python.
+
+>Pour créer un environnement virtuel sous Linux / MacOS :
 
 ```bash
 $ cd
@@ -131,7 +133,7 @@ $ source my_python/bin/activate
 (my_python) $ pip install numpy matplotlib
 ```
 
-Pour créer un environnement virtuel sous Windows :
+>Pour créer un environnement virtuel sous Windows :
 
 ```bash
 $ cd ~
@@ -141,16 +143,16 @@ $ .\my_python\Scripts\Activate.ps1
 (my_python) $ pip install numpy matplotlib
 ```
 
-Ensuite, configurez CodeLab via le menu Configuration > Rechercher un langage > Interpréteur Python.
+>Ensuite, configurez CodeLab via le menu Configuration > Rechercher un langage > Interpréteur Python.
 
 
-Si lors d'une exécution, vous obtenez l'erreur **FigureCancasAgg is non-interactive, and thus cannot be shown** c'est que la librairie graphique Tk est manquante. Tapez ces lignes dans un terminal et relancez CodeLab :
+>Si lors d'une exécution, vous obtenez l'erreur **FigureCancasAgg is non-interactive, and thus cannot be shown** c'est que la librairie graphique Tk est manquante. Tapez ces lignes dans un terminal et relancez CodeLab :
 
 ```bash
 sudo apt update
 sudo apt install python3-tk
 ```
-Puis forcez au besoin le backend **TkAgg** au début de votre script :
+>Puis forcez au besoin le backend **TkAgg** au début de votre script :
 
 ```bash
 import matplotlib
