@@ -27,6 +27,7 @@ import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.regex.Matcher;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.io.FileUtils;
@@ -195,7 +196,7 @@ public class MyFileUtils {
 		Charset charset = StandardCharsets.UTF_8;
 		try {
 			String content = new String(Files.readAllBytes(path), charset);
-			content = content.replaceAll(rexp, str);
+			content = content.replaceAll(rexp, Matcher.quoteReplacement(str));
 			Files.write(path, content.getBytes(charset));
 			return true;
 		}

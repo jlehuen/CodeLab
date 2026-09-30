@@ -14,7 +14,6 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -29,7 +28,6 @@ import javax.swing.UIManager;
 
 import org.apache.commons.io.FileUtils;
 import net.lingala.zip4j.ZipFile;
-import codelab.modules.editeur.manager.BackupManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -43,6 +41,10 @@ import codelab.controllers.widgets.Joystick;
 import codelab.controllers.widgets.Numpad;
 import codelab.modules.editeur.AbstractEditor;
 import codelab.modules.editeur.ModuleEditor;
+import codelab.finders.CFinder;
+import codelab.finders.GoFinder;
+import codelab.finders.HaskellFinder;
+import codelab.finders.PythonFinder;
 import codelab.modules.editeur.manager.TypeLang;
 import codelab.modules.graphics.ModuleGraphics;
 import codelab.modules.robotics.ModuleRobotics;
@@ -204,6 +206,22 @@ public class CodeLab extends AbstractCodeLab {
 		showEditor();
 		// Prévenir le serveur
 		client.setEditedFile(AbstractEditor.EMPTY);
+	}
+
+	public void searchGccCompiler() {
+		new CFinder().searchAndConfigure(this);
+	}
+
+	public void searchGoCompiler() {
+		new GoFinder().searchAndConfigure(this);
+	}
+
+	public void searchHaskellCompiler() {
+		new HaskellFinder().searchAndConfigure(this);
+	}
+
+	public void searchPythonInterpreter() {
+		new PythonFinder().searchAndConfigure(this);
 	}
 
 	///////////////////////////////////////////////////
@@ -756,7 +774,7 @@ public class CodeLab extends AbstractCodeLab {
 		// Propriétés dans sysconfig.properties
 		CLIPS_CMD = String.format("%s/%s", BASE, CodeLab.PROP("CLIPS_CMD"));
 
-		if (!JAVA_HOME_USER.isBlank() && !JAVA_HOME_USER.equals("undefined") && JAVA_HOME_USER != null) {
+		if (JAVA_HOME_USER != null && !JAVA_HOME_USER.isBlank() && !JAVA_HOME_USER.equals("undefined")) {
 			// On remplace le JAVA_HOME par le JAVA_HOME_USER spécifié dans user.properties
 			JAVA_HOME = JAVA_HOME_USER;
 		}
@@ -788,7 +806,7 @@ public class CodeLab extends AbstractCodeLab {
 	// ------------------------------------------------
 	// Vérification du langage C
 
-	private static void check_C() {
+	public static void check_C() {
 		System.out.print("      Language C... ");
 		directPrint("[codelab] " + LABEL("CHECK_CC"), Console.COLOR_LOG);
 		if (GCC_CMD.equals(DISABLED)) {
@@ -813,7 +831,7 @@ public class CodeLab extends AbstractCodeLab {
 	// ------------------------------------------------
 	// Vérification du langage Go
 
-	private static void check_GO() {
+	public static void check_GO() {
 		System.out.print("      Language Go... ");
 		directPrint("[codelab] " + LABEL("CHECK_GO"), Console.COLOR_LOG);
 		if (GOLANG_CMD.equals(DISABLED)) {
@@ -838,7 +856,7 @@ public class CodeLab extends AbstractCodeLab {
 	// ------------------------------------------------
 	// Vérification du langage Haskell
 
-	private static void check_Haskell() {
+	public static void check_Haskell() {
 		System.out.print("      Language Haskell... ");
 		directPrint("[codelab] " + LABEL("CHECK_HASKELL"), Console.COLOR_LOG);
 		if (HASKELL_CMD.equals(DISABLED)) {
@@ -912,7 +930,7 @@ public class CodeLab extends AbstractCodeLab {
 	// ------------------------------------------------
 	// Vérification du langage Python
 
-	private static void check_Python() {
+	public static void check_Python() {
 		System.out.print("      Language Python... ");
 		directPrint("[codelab] " + LABEL("CHECK_PYTHON"), Console.COLOR_LOG);
 		if (PYTHON_CMD.equals(DISABLED)) {

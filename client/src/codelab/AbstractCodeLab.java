@@ -52,7 +52,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.4.3"; // Attribué automatiquement par ant
-	public static final String BUILD = "2609301414"; // Attribué automatiquement par ant
+	public static final String BUILD = "2609301503"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -758,7 +758,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static void directPrint(String str, Color color) {
 		// Méthode invoquée dans common.clp
 		// Ne doit pas être obfusquée !!
-		console.directPrint(str, color);
+		if (console != null) console.directPrint(str, color);
 	}
 
 	public static void directPrintln(String str, Color color) {

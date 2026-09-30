@@ -325,6 +325,37 @@ public class CodeLabMenu extends JPopupMenu {
 		});
 
 		// ---------------------------------------
+		// Compilateurs et interpréteurs
+
+		JMenuItem itemSearchGcc = new JMenuItem(CodeLab.LABEL("itemSearchGcc"));
+		itemSearchGcc.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.searchGccCompiler();
+			}
+		});
+
+		JMenuItem itemSearchGo = new JMenuItem(CodeLab.LABEL("itemSearchGo"));
+		itemSearchGo.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.searchGoCompiler();
+			}
+		});
+
+		JMenuItem itemSearchHaskell = new JMenuItem(CodeLab.LABEL("itemSearchHaskell"));
+		itemSearchHaskell.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.searchHaskellCompiler();
+			}
+		});
+
+		JMenuItem itemSearchPython = new JMenuItem(CodeLab.LABEL("itemSearchPython"));
+		itemSearchPython.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.searchPythonInterpreter();
+			}
+		});
+
+		// ---------------------------------------
 		// Changement de langue
 
 		JMenuItem itemLanguage = new JMenuItem(CodeLab.LABEL("itemLanguage"));
@@ -427,10 +458,17 @@ public class CodeLabMenu extends JPopupMenu {
 		// ---------------------------------------
 		// Création et affichage du menu
 
+		JMenu menuFinders = new JMenu(CodeLab.LABEL("menuFinders"));
+		menuFinders.add(itemSearchGcc);
+		menuFinders.add(itemSearchGo);
+		menuFinders.add(itemSearchHaskell);
+		menuFinders.add(itemSearchPython);
+
 		JMenu menuConfigFile = new JMenu(CodeLab.LABEL("menuConfigFile"));
 		menuConfigFile.add(itemLanguage);
 		menuConfigFile.add(itemEditConfigFile);
 		menuConfigFile.add(itemRestoreConfigFile);
+		menuConfigFile.add(menuFinders);
 		if (CodeLab.REDIRECT) menuConfigFile.add(itemShowLogfile);
 
 		JMenu menuBackups = new JMenu(CodeLab.LABEL("menuBackups"));
@@ -464,8 +502,8 @@ public class CodeLabMenu extends JPopupMenu {
 		add(menuEditor);
 		add(menuConsole);
 		add(menuPlugins);
-		add(menuConfigFile);
 		add(menuBackups);
+		add(menuConfigFile);
 		add(new JSeparator());
 		add(itemGotoHomepage);
 		add(itemInformations);
