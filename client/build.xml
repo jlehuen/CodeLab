@@ -124,6 +124,7 @@
 		</replaceregexp>
 
 		<available file="../www/www/data/web.properties" property="webprops.present"/>
+		<available file="../README.md" property="readme.present"/>
 	</target>
 
 	<target name="update-web-properties" if="webprops.present">
@@ -136,6 +137,25 @@
 			replace="VERSION=${version}"/>
 	</target>
 
+	<target name="update-readme" if="readme.present">
+		<echo message="Mise à jour automatique de README.md: version ${version}"/>
+		<replaceregexp file="../README.md"
+			match="## Téléchargements \([Vv]ersion [^)]+\)"
+			replace="## Téléchargements (version ${version})"/>
+		<replaceregexp file="../README.md"
+			match="CodeLab-MacOS-Silicon-[0-9]+\.[0-9]+\.[0-9]+\.dmg"
+			replace="CodeLab-MacOS-Silicon-${version}.dmg"/>
+		<replaceregexp file="../README.md"
+			match="CodeLab-MacOS-Intel-[0-9]+\.[0-9]+\.[0-9]+\.dmg"
+			replace="CodeLab-MacOS-Intel-${version}.dmg"/>
+		<replaceregexp file="../README.md"
+			match="CodeLab-Win64-[0-9]+\.[0-9]+\.[0-9]+-Setup\.exe"
+			replace="CodeLab-Win64-${version}-Setup.exe"/>
+		<replaceregexp file="../README.md"
+			match="CodeLab-Linux-[0-9]+\.[0-9]+\.[0-9]+\.zip"
+			replace="CodeLab-Linux-${version}.zip"/>
+	</target>
+
 	<!-- ########### -->
 	<!-- Compilation -->
 	<!-- ########### -->
@@ -144,7 +164,7 @@
 		<javac debug="true" deprecation="on" includeantruntime="false"/>
 	</presetdef>
 
-	<target name="compile" depends="clean,java-version,replace,update-web-properties">
+	<target name="compile" depends="clean,java-version,replace,update-web-properties,update-readme">
 		<myjavac srcdir="${sources-dir}" destdir="${classes-dir}">
 			<classpath refid="classpath"/>
 		</myjavac>

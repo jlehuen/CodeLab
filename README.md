@@ -42,7 +42,7 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
 
-## Téléchargements (version 1.4.2)
+## Téléchargements (version 1.4.3)
 
 <br>
 
