@@ -5,9 +5,16 @@ cd "$(dirname "$0")"
 BASE=$(pwd)
 TARGET="${TARGET:-$HOME/Desktop}"
 
-# Extraction de la version et du build
-VERSION=$(pcregrep -o1 'VERSION = "(.*)"' src/codelab/AbstractCodeLab.java)
+# Extraction de la version (fichier VERSION en priorité) et du build
+if [ -f "../VERSION" ]; then
+    VERSION=$(tr -d '[:space:]' < ../VERSION)
+elif [ -f "./VERSION" ]; then
+    VERSION=$(tr -d '[:space:]' < ./VERSION)
+else
+    VERSION=$(pcregrep -o1 'VERSION = "(.*)"' src/codelab/AbstractCodeLab.java)
+fi
 BUILD=$(pcregrep -o1 'BUILD = "([0-9]*)"' src/codelab/AbstractCodeLab.java)
+export VERSION
 
 echo "================================================================"
 echo "Génération des distributions CodeLab $VERSION (build $BUILD)"

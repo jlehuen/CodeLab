@@ -11,7 +11,13 @@ if ! command -v pcregrep >/dev/null 2>&1; then
     exit 1
 fi
 
-VERSION=$(pcregrep -o1 'VERSION = "(.*)"' src/codelab/AbstractCodeLab.java)
+if [ -f "../VERSION" ]; then
+    VERSION=$(tr -d '[:space:]' < ../VERSION)
+elif [ -f "./VERSION" ]; then
+    VERSION=$(tr -d '[:space:]' < ./VERSION)
+else
+    VERSION=$(pcregrep -o1 'VERSION = "(.*)"' src/codelab/AbstractCodeLab.java)
+fi
 BUILD=$(pcregrep -o1 'BUILD = "([0-9]*)"' src/codelab/AbstractCodeLab.java)
 
 if [ -z "$VERSION" ] || [ -z "$BUILD" ]; then
