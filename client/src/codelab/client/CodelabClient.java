@@ -226,7 +226,7 @@ public class CodelabClient {
 	}
 
 	///////////////////////////////////////////////////
-	// Pour extraire une session compressée avec réconciliation
+	// Pour extraire une session avec réconciliation
 	///////////////////////////////////////////////////
 
 	private static class SessionContext {

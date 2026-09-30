@@ -29,7 +29,7 @@
   <img src="client/images/vignette-sorting.gif" alt="Tri" width="22%">
 </p>
 
-CodeLab supporte un large spectre de paradigmes de programmation (impératif, fonctionnel, objet, déclaratif) et ce afin de répondre aux recommandations du programme de la spécialité NSI (Numérique et Sciences Informatiques) de première et de terminale. En plus des langages traditionnels, CodeLab intègre un langage "par assemblage de blocs" qui permet de découvrir les structures de programmation en s'abstrayant d'une syntaxe spécifique.
+CodeLab supporte un large spectre de **paradigmes de programmation** (impératif, fonctionnel, objet, déclaratif) et ce afin de répondre aux recommandations du programme de la spécialité NSI (Numérique et Sciences Informatiques) de première et de terminale. En plus des langages traditionnels, CodeLab intègre un langage "par assemblage de blocs" qui permet de découvrir les structures de programmation en s'abstrayant d'une syntaxe spécifique.
 
 Une fonctionnalité de CodeLab est de permettre la constitution de **classes virtuelles** (en présence ou à distance) grâce à une architecture client-serveur dédiée. Le modèle utilisateur / groupe / session permet la constitution de groupes de TP à géométrie variable, encadrés par un ou plusieurs tuteurs. Ces derniers peuvent **suivre en temps réel** le travail des apprenants, tester leurs programmes, communiquer avec eux par l’intermédiaire d’une messagerie instantanée intégrée, les déconnecter en fin de séance, etc.
 
@@ -88,7 +88,80 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
   <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
 
-## Architecture du Répertoire
+## Installation des langages
+
+CodeLab prend en charge un certain nombre de langages : certains sont intégrés à CodeLab (Java, Processing, CLIPS), certains sont peut-être déjà installés sur votre machine (comme C ou Python), d'autre seront à installer. Lorsque vous lancez CodeLab, la console affiche état des langages installés ou non :
+
+```
+[codelab] Vérification du langage C...OK -> Apple clang version 21.0.0 (clang-2100.1.1.101)
+[codelab] Vérification du langage Go...indisponible
+[codelab] Vérification du langage Java...OK -> javac 17.0.20.1
+[codelab] Vérification du langage Python...OK -> Python 3.13.15
+[codelab] Vérification de la librairie Numpy...OK -> Numpy version 2.3.0
+[codelab] Vérification de la librairie Matplotlib...OK -> Matplotlib version 3.10.3
+[codelab] Vérification du langage Processing...OK -> Processing version 4.3
+[codelab] Vérification du langage Haskell...indisponible
+[codelab] Vérification du langage CLIPS...OK -> CLIPS version 6.31 - CodeLab build (04/12/23)
+```
+
+Il se peut que votre PATH ne comporte pas les bons chemins ou qu'un chemin soit absent. Vous pouvez demander à CodeLab de rechercher le chemin d'un langage via l'item "Rechercher un langage" du menu Configuration. Enfin, il se peut que vous ayez besoin d'installer un langage absent de votre machine :
+
+<details>
+<summary><b>Installation d'un compilateur C</b></summary>
+
+</details>
+
+<details>
+<summary><b>Installation de Python + Numpy + Matplotlib</b></summary>
+
+Un environnement virtuel Python (venv) est un dossier isolé où l’on peut installer des packages et exécuter du code Python sans interférer avec les autres distributions Python et projets du système.
+
+Pour créer un environnement virtuel sous Linux / MacOS :
+
+```bash
+$ cd
+$ python -m venv my_python
+$ source my_python/bin/activate
+(my_python) $ pip install --upgrade pip
+(my_python) $ pip install numpy matplotlib
+```
+
+Pour créer un environnement virtuel sous Windows :
+
+```bash
+$ cd ~
+$ python -m venv my_python
+$ .\my_python\Scripts\Activate.ps1
+(my_python) $ pip install --upgrade pip
+(my_python) $ pip install numpy matplotlib
+```
+
+Ensuite, configurez CodeLab via le menu Configuration > Compilateurs & interpréteurs > Interpréteur Python.
+
+
+Si lors d'une exécution, vous obtenez l'erreur **FigureCancasAgg is non-interactive, and thus cannot be shown** c'est que la librairie graphique Tk est manquante. Tapez ces lignes dans un terminal et relancez CodeLab :
+
+```bash
+sudo apt update
+sudo apt install python3-tk
+```
+Puis forcez au besoin le backend **TkAgg** au début de votre script :
+
+```bash
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+```
+</details>
+
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
+
+## Compilation du client et du serveur
+
+### Architecture du Répertoire
 
 ```text
 codelab/
@@ -121,14 +194,7 @@ codelab/
 └── README.md
 ```
 
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
-
-## Compilation du client et du serveur
-
-### 1. Client Java
+### 1. Compilation du client Java
 
 #### Prérequis pour la compilation
 - **Java Development Kit (JDK) 17 LTS** installé et configuré (`JAVA_HOME`)
@@ -164,7 +230,7 @@ Une fois les JDK placés, lancez le script correspondant à votre cible :
 - **Linux** (archive autonome FreeDesktop) : `./distrib-linux.sh`
 - **Windows** (Installateur NSIS) : `./distrib-win64-nsis.sh`
 
-### 2. Serveur Rust
+### 2. Compilation du serveur Rust
 
 Le serveur CodeLab orchestre les classes virtuelles, gère les flux bidirectionnels entre apprenants et enseignants et fournit un tableau de bord web de supervision.
 
@@ -175,10 +241,10 @@ Le serveur CodeLab orchestre les classes virtuelles, gère les flux bidirectionn
 - **Persistance & Sécurité** : Définition déclarative des sessions, tuteurs et élèves en XML (`sessions.xml`), et stockage isolé des espaces de travail étudiants sur le système de fichiers.
 - **Sauvegardes Automatiques** : Système de rotation de backups horodatés avec compression haute performance **TAR + Zstandard** (`.tar.zst`).
 
-#### Prérequis
+#### Prérequis pour la compilation
 - Toolchain [Rust & Cargo](https://rustup.rs/) (édition 2021 stable)
 
-#### Configuration Initiale
+#### Configuration initiale
 Créez vos fichiers de configuration locaux à partir des gabarits d'exemple fournis :
 ```bash
 cd server/server

@@ -263,7 +263,7 @@ public class TextEditor extends AbstractEditor {
 		if (initialized && value == editable) return; // Pas de changement => bye bye
 		initialized = true;
 
-		SwingUtilities.invokeLater(() -> {
+		Runnable updateTask = () -> {
 			this.editable = value;
 			if (value) {
 				textarea.setBackground(Color.WHITE);
@@ -288,7 +288,13 @@ public class TextEditor extends AbstractEditor {
 			updateLockBadge();
 			repaint();
 			CodeLab.FRAME.revalidate(); // Rafraîchissement complet du cadre de la fenêtre
-		});
+		};
+
+		if (SwingUtilities.isEventDispatchThread()) {
+			updateTask.run();
+		} else {
+			SwingUtilities.invokeLater(updateTask);
+		}
 	}
 
 	///////////////////////////////////////////////////

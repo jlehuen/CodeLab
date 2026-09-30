@@ -541,14 +541,13 @@ public class ModuleEditor extends AbstractModule {
 
 		// La nouvelle barre d'outils
 		toolbar = editor.getToolbar();
-		codelab.changeToolBar(toolbar);
+		update_UI();
 
 		// Quelques actualisations
 		editor.setEditableConfiguration(true);
 		editor.getToolbar().setLang("--");
 		editor.resetCompilationFlag();
 		updateFrameTitle();
-		update_UI();
 		SwingUtilities.invokeLater(() -> textEditor.getCodeLabTextArea().requestFocusInWindow());
 	}
 
@@ -773,11 +772,17 @@ public class ModuleEditor extends AbstractModule {
 
 	// Actualise l'interface après chaque changement de fichier
 	private void update_UI() {
-		SwingUtilities.invokeLater(() -> {
+		Runnable task = () -> {
 			int pos = splitpane_vertical.getDividerLocation(); // Position du séparateur vertical
 			splitpane_vertical.setDividerLocation(pos); // Position du séparateur vertical
 			splitpane_vertical.setRightComponent((JPanel) editor); // Placer l'éditeur à droite
 			codelab.changeToolBar(toolbar);
-		});
+		};
+
+		if (SwingUtilities.isEventDispatchThread()) {
+			task.run();
+		} else {
+			SwingUtilities.invokeLater(task);
+		}
 	}
 }

@@ -693,8 +693,13 @@ public class FileManager extends JTree {
 	}
 
 	public void resetSelectedNode() {
-		clearSelection();
-		selectedNode = null;
+		refreshFlag = true;
+		try {
+			clearSelection();
+			selectedNode = null;
+		} finally {
+			refreshFlag = false;
+		}
 	}
 
 	public void invokeLater_updateUI() {
