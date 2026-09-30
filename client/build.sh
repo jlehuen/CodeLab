@@ -2,15 +2,13 @@
 cd $(dirname $0)
 
 # ----------------------------------------------------------------------------------------
-# Lecture de la version depuis le fichier racine VERSION
+# Lecture de la version depuis le fichier racine VERSION (source de vérité)
 # ----------------------------------------------------------------------------------------
 
-if [ -z "$VERSION" ]; then
-    if [ -f "../VERSION" ]; then
-        export VERSION=$(tr -d '[:space:]' < ../VERSION)
-    elif [ -f "./VERSION" ]; then
-        export VERSION=$(tr -d '[:space:]' < ./VERSION)
-    fi
+if [ -f "../VERSION" ]; then
+    export VERSION=$(tr -d '[:space:]' < ../VERSION)
+elif [ -f "./VERSION" ]; then
+    export VERSION=$(tr -d '[:space:]' < ./VERSION)
 fi
 
 # ----------------------------------------------------------------------------------------

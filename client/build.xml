@@ -11,13 +11,35 @@
 	<!-- Propriétés -->
 	<!-- ########## -->
 
-	<property environment="env"/>
-	<loadfile property="file.VERSION" srcFile="../VERSION" quiet="true">
+	<!-- Lecture prioritaire du fichier VERSION (source de vérité absolue) -->
+	<loadfile property="version" srcFile="${basedir}/../VERSION" quiet="true">
 		<filterchain>
 			<striplinebreaks/>
 		</filterchain>
 	</loadfile>
-	<property name="env.VERSION" value="${file.VERSION}"/>
+	<loadfile property="version" srcFile="../VERSION" quiet="true">
+		<filterchain>
+			<striplinebreaks/>
+		</filterchain>
+	</loadfile>
+	<loadfile property="version" srcFile="${basedir}/VERSION" quiet="true">
+		<filterchain>
+			<striplinebreaks/>
+		</filterchain>
+	</loadfile>
+	<loadfile property="version" srcFile="VERSION" quiet="true">
+		<filterchain>
+			<striplinebreaks/>
+		</filterchain>
+	</loadfile>
+
+	<!-- Repli si le fichier VERSION n'a pas pu être lu -->
+	<property environment="env"/>
+	<property name="version" value="${env.VERSION}"/>
+	<property name="version" value="1.0.0"/>
+
+	<!-- Rétro-compatibilité pour env.VERSION si nécessaire -->
+	<property name="env.VERSION" value="${version}"/>
 
 	<property name="main-class" value="CodeLab"/>
 	<property name="main-package" value="codelab"/>
@@ -83,10 +105,10 @@
 	</target>
 
 	<target name="replace">
-		<echo message="Remplacement du numéro de version dans le code: ${env.VERSION}"/>
+		<echo message="Remplacement du numéro de version dans le code: ${version}"/>
 		<replaceregexp
-			match="VERSION = &quot;[0-9].[0-9].[0-9]&quot;;"
-			replace="VERSION = &quot;${env.VERSION}&quot;;">
+			match="VERSION = &quot;[^&quot;]+&quot;;"
+			replace="VERSION = &quot;${version}&quot;;">
 			<fileset dir="${sources-dir}/${main-package}">
 				<include name="AbstractCodeLab.java"/>
 			</fileset>
@@ -105,13 +127,13 @@
 	</target>
 
 	<target name="update-web-properties" if="webprops.present">
-		<echo message="Mise à jour automatique de web.properties: VERSION=${env.VERSION}, BUILD=${build}"/>
+		<echo message="Mise à jour automatique de web.properties: VERSION=${version}, BUILD=${build}"/>
 		<replaceregexp file="../www/www/data/web.properties"
 			match="BUILD=[0-9]+"
 			replace="BUILD=${build}"/>
 		<replaceregexp file="../www/www/data/web.properties"
-			match="VERSION=[0-9].[0-9].[0-9]"
-			replace="VERSION=${env.VERSION}"/>
+			match="VERSION=[^ \r\n]+"
+			replace="VERSION=${version}"/>
 	</target>
 
 	<!-- ########### -->
