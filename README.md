@@ -57,7 +57,9 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 Toutes les versions disponibles sont dans la section [Releases](https://github.com/jlehuen/CodeLab/releases) de CodeLab.
 
 <details>
-<summary>🍏 <b>macOS : procédure d'autorisation au premier lancement (Gatekeeper)</b></summary>
+<summary>
+<b>macOS : procédure d'autorisation au premier lancement (Gatekeeper)</b>
+</summary>
 <br>
 
 > Les systèmes macOS bloquent au premier lancement les applications qui ne disposent pas d'un certificat payant Apple Developer. Cette opération n'est requise **qu'une seule fois** :
@@ -72,7 +74,9 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 </details>
 
 <details>
-<summary>🪟 <b>Windows : procédure d'autorisation de l'installeur (SmartScreen)</b></summary>
+<summary>
+<b>Windows : procédure d'autorisation de l'installeur (SmartScreen)</b>
+</summary>
 <br>
 
 > Microsoft Defender SmartScreen bloque par défaut le lancement des installateurs téléchargés ne disposant pas d'un certificat commercial Microsoft Authenticode. Cette validation n'est requise **qu'une seule fois à l'installation** (aucun droit administrateur n'est requis) :
@@ -90,7 +94,7 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 
 ## Installation des langages
 
-CodeLab prend en charge un certain nombre de langages : certains sont intégrés à CodeLab (Java, Processing, CLIPS), certains sont peut-être déjà installés sur votre machine (comme C ou Python), d'autre seront à installer. Lorsque vous lancez CodeLab, la console affiche état des langages installés ou non :
+CodeLab prend en charge un certain nombre de langages : certains sont intégrés à CodeLab (Java, Processing, CLIPS), certains sont peut-être déjà installés sur votre machine (comme C ou Python), d'autre seront à installer. Lorsque vous lancez CodeLab, la console affiche un état des langages installés ou non :
 
 ```
 [codelab] Vérification du langage C...OK -> Apple clang version 21.0.0 (clang-2100.1.1.101)
@@ -107,14 +111,15 @@ CodeLab prend en charge un certain nombre de langages : certains sont intégrés
 Il se peut que votre PATH ne comporte pas les bons chemins ou qu'un chemin soit absent. Vous pouvez demander à CodeLab de rechercher le chemin d'un langage via l'item "Rechercher un langage" du menu Configuration. Enfin, il se peut que vous ayez besoin d'installer un langage absent de votre machine :
 
 <details>
-<summary><b>Installation d'un compilateur C</b></summary>
-
+<summary><b>Installer un compilateur C</b></summary>
+<br>
+Coming soon !
 </details>
 
 <details>
-<summary><b>Installation de Python + Numpy + Matplotlib</b></summary>
-
-Un environnement virtuel Python (venv) est un dossier isolé où l’on peut installer des packages et exécuter du code Python sans interférer avec les autres distributions Python et projets du système.
+<summary><b>Installer Python + Numpy + Matplotlib</b></summary>
+<br>
+Un environnement virtuel Python (venv) est un dossier isolé où l’on peut installer des packages et exécuter du code Python sans interférer avec les autres distributions Python et projets du système. Commencez par installer une distribution récente de Python sur votre machine (si ce n'est pas déjà la cas) en allant sur le [site officiel](https://www.python.org/) de Python.
 
 Pour créer un environnement virtuel sous Linux / MacOS :
 
@@ -136,7 +141,7 @@ $ .\my_python\Scripts\Activate.ps1
 (my_python) $ pip install numpy matplotlib
 ```
 
-Ensuite, configurez CodeLab via le menu Configuration > Compilateurs & interpréteurs > Interpréteur Python.
+Ensuite, configurez CodeLab via le menu Configuration > Rechercher un langage > Interpréteur Python.
 
 
 Si lors d'une exécution, vous obtenez l'erreur **FigureCancasAgg is non-interactive, and thus cannot be shown** c'est que la librairie graphique Tk est manquante. Tapez ces lignes dans un terminal et relancez CodeLab :
@@ -161,7 +166,7 @@ import matplotlib.pyplot as plt
 
 ## Compilation du client et du serveur
 
-### Architecture du Répertoire
+### Architecture du projet
 
 ```text
 codelab/
