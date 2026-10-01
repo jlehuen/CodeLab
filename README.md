@@ -45,7 +45,7 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 - [Téléchargements](#téléchargements-version-143)
 - [Installation des langages](#installation-des-langages)
-- [Plugins & Modules applicatifs](#plugins--modules-applicatifs)
+- [Installation des modules applicatifs](#installation-des-modules-applicatifs)
 - [Compilation du client et du serveur](#compilation-du-client-et-du-serveur)
   - [1. Compilation du client Java](#1-compilation-du-client-java)
   - [2. Compilation du serveur Rust](#2-compilation-du-serveur-rust)
@@ -172,13 +172,13 @@ import matplotlib.pyplot as plt
 
 <br>
 
-## Plugins & Modules applicatifs
+## Installation des modules applicatifs
 
 CodeLab s'enrichit grâce à des **modules applicatifs** téléchargeables sous forme de plugins (`.pac`). Chaque module propose une interface graphique dédiée et une API multi-langages (C, Go, Java, Python, CLIPS, etc.) pour concevoir des activités motivantes (robotique 2D/3D, asservissement moteur, visualisation d'algorithmes de tri, etc.).
 
 Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (`.pac`) et le guide de création de nouveaux modules avec le CDK sont disponibles dans le dossier [plugins/](plugins/) :
 
-| Module Applicatif | Code source | Exécutable (`.pac`) |
+| Module Applicatif | Code source | Plugin (`.pac`) |
 | :--- | :---: | :---: |
 | **Hello World** (initiation premier module) | [HelloModule.zip](plugins/downloads/HelloModule.zip) | [HelloModule.pac](plugins/downloads/HelloModule.pac) |
 | **Tracé 2D** (dessin géométrique vectoriel) | [DrawingModule.zip](plugins/downloads/DrawingModule.zip) | [DrawingModule.pac](plugins/downloads/DrawingModule.pac) |

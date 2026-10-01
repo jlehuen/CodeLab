@@ -1,10 +1,10 @@
-# Plugins & Modules Applicatifs CodeLab
+# Modules Applicatifs CodeLab
 
 CodeLab permet d'enrichir l'environnement d'apprentissage à l'aide de **modules applicatifs** (plugins). Chaque module associe une interface graphique interactive (IHM) et une interface de programmation (API) accessible dans tous les langages supportés par CodeLab (C, Go, Java, Python, CLIPS, etc.).
 
 ---
 
-## 1. Installer un plugin précompilé (`.pac`)
+## 1. Installer un plugin (`.pac`)
 
 Pour utiliser un module déjà compilé :
 
@@ -14,11 +14,11 @@ Pour utiliser un module déjà compilé :
 
 ---
 
-## 2. Modules disponibles
+## 2. Plugins disponibles
 
-Les archives téléchargeables ci-dessous contiennent les exécutables prêts à l'emploi (`.pac`) ainsi que les archives sources complètes (`.zip`) :
+Les archives téléchargeables ci-dessous contiennent les plugins prêts à l'emploi (`.pac`) ainsi que les archives sources complètes (`.zip`) :
 
-| Module Applicatif | Code source | Exécutable précompilé | Taille (`.pac`) |
+| Module Applicatif | Code source | Plugin | Taille (`.pac`) |
 | :--- | :---: | :---: | :---: |
 | **Exemple du premier tutoriel** : module *Hello World* | [HelloModule.zip](downloads/HelloModule.zip) | [HelloModule.pac](downloads/HelloModule.pac) | ~30 Ko |
 | **Exemple du deuxième tutoriel** : module de tracé en 2D | [DrawingModule.zip](downloads/DrawingModule.zip) | [DrawingModule.pac](downloads/DrawingModule.pac) | ~29 Ko |
@@ -29,7 +29,7 @@ Les archives téléchargeables ci-dessous contiennent les exécutables prêts à
 
 ---
 
-## 3. Compiler un module existant (`.zip`)
+## 3. Compiler un plugins (`.zip`)
 
 Si vous souhaitez modifier le code d'un module ou le recompiler :
 
@@ -43,7 +43,7 @@ Si vous souhaitez modifier le code d'un module ou le recompiler :
 
 ---
 
-## 4. Créer un nouveau module avec le CDK
+## 4. Créer un nouveau plugins avec le CDK
 
 Pour concevoir un nouveau module applicatif interactif :
 
