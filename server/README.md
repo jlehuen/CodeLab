@@ -79,11 +79,12 @@ export HTTPS_PROXY="proxy.univ-lemans.fr:3128"
 
 ## 3. Configuration du Serveur (`server.properties`)
 
-Le fichier de configuration est stocké dans `server/config/server.properties`. 
+Le fichier de configuration est situé dans le sous-dossier `server/config/server.properties`. 
 
-Lors de la première installation, copiez le fichier d'exemple [server.properties.example](file:///Users/lehuen/dev/codelab/server/server/config/server.properties.example) :
+Depuis le dossier `server/`, copiez le fichier d'exemple [server.properties.example](file:///Users/lehuen/dev/codelab/server/server/config/server.properties.example) :
 
 ```bash
+# Depuis server/
 cd server/config
 cp server.properties.example server.properties
 ```
@@ -152,19 +153,19 @@ La grammaire formelle est définie dans [sessions.dtd](file:///Users/lehuen/dev/
   <!-- 2. Déclaration des sessions de travail -->
   <sessions>
     <!-- Une session associe des groupes autorisés et des tuteurs responsables -->
-    <session id="TP_Algo_1" openned="false" groups="Group_1" users="lehuen lemeunier"/>
-    <session id="TP_Algo_2" openned="false" groups="Group_2" users="lehuen lemeunier"/>
+    <session id="Session_1" openned="false" groups="Group_1" users="lehuen lemeunier"/>
+    <session id="Session_2" openned="false" groups="Group_2" users="lehuen lemeunier"/>
   </sessions>
 
   <!-- 3. Comptes utilisateurs (enseignants et étudiants) -->
   <users>
     <!-- Tuteurs / Administrateurs -->
-    <user login="lehuen" passwd="secret" status="TUTOR" name="Jérôme Lehuen"/>
-    <user login="lemeunier" passwd="secret" status="TUTOR" name="Thierry Lemeunier"/>
+    <user login="lehuen" status="TUTOR" name="Jérôme Lehuen"/>
+    <user login="lemeunier" status="TUTOR" name="Thierry Lemeunier"/>
 
     <!-- Étudiants rattachés à des groupes -->
-    <user login="test01" passwd="test01" status="STUDENT" groups="Group_1" name="James Griffin" mail="James.Griffin@univ-lemans.fr"/>
-    <user login="test04" passwd="test04" status="STUDENT" groups="Group_1 Group_2" name="Katherine Scott"/>
+    <user login="test01" status="STUDENT" groups="Group_1" name="James Griffin" mail="James.Griffin@univ-lemans.fr"/>
+    <user login="test04" status="STUDENT" groups="Group_1 Group_2" name="Katherine Scott" mail="Katherine.Scott@univ-lemans.fr"/>
   </users>
 
 </data>
@@ -226,13 +227,14 @@ Le fichier sessions.xml est valide
 ---
 
 ## 5. Compilation et Démarrage
-
+ 
 ### Compilation standard Cargo
 
-Placez-vous dans le répertoire du projet Rust (`server/server/`) :
+Depuis le dossier `server/`, placez-vous dans le sous-dossier contenant `Cargo.toml` (`server/`) :
 
 ```bash
-cd server/server
+# Depuis server/
+cd server
 
 # Compilation en mode Debug (développement rapide)
 cargo build
@@ -241,24 +243,24 @@ cargo build
 cargo build --release
 ```
 
-Le binaire exécutable généré est situé dans `server/server/target/release/codelab-server`.
+Le binaire exécutable généré est situé dans `server/target/release/codelab-server`.
 
 ---
 
 ### Lancement et arrêt
 
-Deux scripts de gestion sont fournis à la racine du dossier `server/` :
+Deux scripts de gestion sont fournis directement à la racine du dossier `server/` :
 
 #### Lancer le serveur :
 ```bash
-cd server
+# Depuis server/
 ./run-server.sh
 ```
 Ce script vérifie si le port d'écoute est déjà occupé et lance le serveur en tâche de fond.
 
 #### Arrêter le serveur :
 ```bash
-cd server
+# Depuis server/
 ./kill-server.sh
 ```
 Ce script termine proprement le processus serveur associé au port d'écoute configuré.
