@@ -1,0 +1,10 @@
+	<user login="test01" status="STUDENT" groups="Group_1" name="James Griffin" mail="James.Griffin@univ-lemans.fr"/>
+	<user login="test02" status="STUDENT" groups="Group_1" name="Anthony Ford" mail="Anthony.Ford@univ-lemans.fr"/>
+	<user login="test03" status="STUDENT" groups="Group_1" name="Winnie Brown" mail="Winnie.Brown@univ-lemans.fr"/>
+	<user login="test04" status="STUDENT" groups="Group_1 Group_2" name="Katherine Scott" mail="Katherine.Scott@univ-lemans.fr"/>
+	<user login="test05" status="STUDENT" groups="Group_1 Group_2" name="Dana Huggins" mail="Dana.Huggins@univ-lemans.fr"/>
+	<user login="test06" status="STUDENT" groups="Group_2" name="Piper Dempsey"/>
+	<user login="test07" status="STUDENT" groups="Group_2" name="Donald Craig"/>
+	<user login="test08" status="STUDENT" groups="Group_2" name="Joshua Darnell" mail="Joshua.Darnell@univ-lemans.fr"/>
+	<user login="test09" status="STUDENT" groups="Group_2" name="Judith Heard" mail="Judith.Heard@univ-lemans.fr"/>
+	<user login="test10" status="STUDENT" groups="Group_2" name="Michael Moore" mail="Michael.Moore@univ-lemans.fr"/>

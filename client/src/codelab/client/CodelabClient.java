@@ -39,8 +39,8 @@ import codelab.utils.Utils;
 
 /**
 *	Classe du client CodeLab
-*	@author Jérôme Lehuen + Gemini 3.8
-*	@version 14/09/26
+*	@author Jérôme Lehuen
+*	@version 30/09/26
 */
 
 public class CodelabClient {

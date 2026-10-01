@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import org.apache.commons.io.FileUtils;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -33,6 +32,8 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
+
+import org.apache.commons.io.FileUtils;
 
 import codelab.console.Console;
 import codelab.console.ConsoleInterface;
@@ -52,7 +53,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.4.3"; // Attribué automatiquement par ant
-	public static final String BUILD = "2609301800"; // Attribué automatiquement par ant
+	public static final String BUILD = "2609301819"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
