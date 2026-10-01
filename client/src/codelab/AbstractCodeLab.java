@@ -43,7 +43,7 @@ import codelab.utils.Utils;
 /**
 *	Classe abstraite de CodeLab
 *	@author Jérôme Lehuen
-*	@version 25/09/26
+*	@version 10/10/26
 */
 
 public abstract class AbstractCodeLab extends JFrame {
@@ -53,7 +53,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.4.3"; // Attribué automatiquement par ant
-	public static final String BUILD = "2609301819"; // Attribué automatiquement par ant
+	public static final String BUILD = "2610011423"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -120,6 +120,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static final String CODELAB_URL = "https://codelab.univ-lemans.fr"; // Le site web de CodeLab
 	public static final String DOWNLOADS_URL = "https://github.com/jlehuen/CodeLab/releases";
 	public static final String DOWNLOADS_PAGE_URL = "https://github.com/jlehuen/CodeLab/releases/latest";
+	public static final String MODULES_URL = "https://github.com/jlehuen/CodeLab#installation-des-modules-applicatifs";
 	public static final String INFOCLIENT_URL = "https://codelab.univ-lemans.fr/doc-%s/usages/infoclient-%s";
 	public static final String INFOSERVER_URL = "https://codelab.univ-lemans.fr/doc-%s/usages/infoserver-%s";
 

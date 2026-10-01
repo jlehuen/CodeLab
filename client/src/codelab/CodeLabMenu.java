@@ -201,11 +201,13 @@ public class CodeLabMenu extends JPopupMenu {
 			}
 		});
 
+		// ---------------------------------------
+		// Télécharger des modules
+
 		JMenuItem itemDownloadModules = new JMenuItem(CodeLab.LABEL("itemDownloadModules"));
 		itemDownloadModules.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				String url = String.format("%s/downloads/downloads-%s.php#plugins", CodeLab.CODELAB_URL, CodeLab.LANG);
-				Utils.openBrowser(url);
+				Utils.openBrowser(CodeLab.MODULES_URL);
 			}
 		});
 
