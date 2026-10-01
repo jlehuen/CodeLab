@@ -284,6 +284,33 @@ Des scripts de service sont également disponibles dans le dossier `server/` :
 - `./run-server.sh` : Démarrage du serveur en arrière-plan.
 - `./kill-server.sh` : Arrêt propre du processus serveur.
 
+### 3. Administration du serveur
+
+Le serveur CodeLab intègre nativement une console web d'administration et des outils automatisés pour préparer et piloter les classes virtuelles sans dépendance externe.
+
+#### Tableau de bord d'administration Web
+- **Accès** : `http://localhost:9989` *(ou adresse IP du serveur)*.
+- **Authentification** : HTTP Basic (compte défini dans `server.properties` avec mot de passe haché en SHA-256).
+- **Fonctionnalités clés** :
+  - **Supervision en temps réel** : visualisation des étudiants et tuteurs connectés, de leur adresse IP, de leur temps de travail et de la session rejointe.
+  - **Pilotage des sessions** : ouverture et fermeture des accès aux sessions de TP en un clic.
+  - **Changement de groupe à chaud** : transfert immédiat d'un étudiant d'un groupe à un autre en mémoire vive sans coupure ni perte de code.
+  - **Contrôle et déconnexion forcée** des sessions bloquées.
+
+#### Préparation des utilisateurs et des sessions (`sessions.xml`)
+La liste des groupes, sessions et utilisateurs autorisés est déclarée dans `sessions.xml` (validé par `sessions.dtd`). Pour convertir automatiquement vos listes d'étudiants (fichiers `.xlsx` ou `.csv`) en fragments XML prêts à être insérés :
+- **macOS / Linux** : lancez `./build-xml.sh` dans `server/server/config/data/` (mode interactif).
+- **Windows** : glissez-déposez simplement votre fichier `users.xlsx` sur l'icône de `build-xml.bat`.
+- **Multiplateforme** : `python build-xml.py [source.xlsx|csv]`.
+- **Validation DTD** : vérifiez la conformité de votre fichier via `./xml-validator.sh sessions.xml`.
+
+#### Scripts de service
+Depuis le dossier `server/` :
+- `./run-server.sh` : démarrage du serveur en tâche de fond avec contrôle de port.
+- `./kill-server.sh` : arrêt propre du service avec finalisation des écritures sur disque et déconnexion ordonnée des clients.
+
+> 📖 **Documentation complète** : Pour les détails techniques avancés (architecture asynchrone Tokio, configuration SMTP des alertes, gestion des timeouts, rotation automatique des sauvegardes et conformité RGPD), consultez le [manuel complet du serveur](server/README.md).
+
 <p align="center">
   <br>
   <img src="client/data/mentions/separator.png" alt="separator.png">
