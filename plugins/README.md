@@ -18,14 +18,14 @@ Pour utiliser un module déjà compilé :
 
 Les archives téléchargeables ci-dessous contiennent les exécutables prêts à l'emploi (`.pac`) ainsi que les archives sources complètes (`.zip`) :
 
-| Module Applicatif | Auteur | Code source | Exécutable précompilé | Taille (`.pac`) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Exemple du premier tutoriel** : module *Hello World* | CodeLab Team | [HelloModule.zip](downloads/HelloModule.zip) | [HelloModule.pac](downloads/HelloModule.pac) | ~30 Ko |
-| **Exemple du deuxième tutoriel** : module de tracé en 2D | CodeLab Team | [DrawingModule.zip](downloads/DrawingModule.zip) | [DrawingModule.pac](downloads/DrawingModule.pac) | ~29 Ko |
-| **Exemple du troisième tutoriel** : simulateur de moteur NXT | CodeLab Team | [MotorModule.zip](downloads/MotorModule.zip) | [MotorModule.pac](downloads/MotorModule.pac) | ~887 Ko |
-| **Laboratoire de tris** : visualiseur d'algorithmes (bubble sort, quick sort, etc.) | CodeLab Team | [SortingModule.zip](downloads/SortingModule.zip) | [SortingModule.pac](downloads/SortingModule.pac) | ~36 Ko |
-| **Atelier graphique** : version plugin du module tortue vectorielle (Logo) | CodeLab Team | [TurtleModule.zip](downloads/TurtleModule.zip) | [TurtleModule.pac](downloads/TurtleModule.pac) | ~72 Ko |
-| **Robot industriel 5 axes CoreTech 3D** : bras articulé en 3D temps réel | CodeLab Team | [Robot3DModule.zip](downloads/Robot3DModule.zip) | [Robot3DModule.pac](downloads/Robot3DModule.pac) | ~15,6 Mo |
+| Module Applicatif | Code source | Exécutable précompilé | Taille (`.pac`) |
+| :--- | :---: | :---: | :---: |
+| **Exemple du premier tutoriel** : module *Hello World* | [HelloModule.zip](downloads/HelloModule.zip) | [HelloModule.pac](downloads/HelloModule.pac) | ~30 Ko |
+| **Exemple du deuxième tutoriel** : module de tracé en 2D | [DrawingModule.zip](downloads/DrawingModule.zip) | [DrawingModule.pac](downloads/DrawingModule.pac) | ~29 Ko |
+| **Exemple du troisième tutoriel** : simulateur de moteur NXT | [MotorModule.zip](downloads/MotorModule.zip) | [MotorModule.pac](downloads/MotorModule.pac) | ~887 Ko |
+| **Laboratoire de tris** : visualiseur d'algorithmes (bubble sort, quick sort, etc.) | [SortingModule.zip](downloads/SortingModule.zip) | [SortingModule.pac](downloads/SortingModule.pac) | ~36 Ko |
+| **Atelier graphique** : version plugin du module tortue vectorielle (Logo) | [TurtleModule.zip](downloads/TurtleModule.zip) | [TurtleModule.pac](downloads/TurtleModule.pac) | ~72 Ko |
+| **Robot industriel 5 axes CoreTech 3D** : bras articulé en 3D temps réel | [Robot3DModule.zip](downloads/Robot3DModule.zip) | [Robot3DModule.pac](downloads/Robot3DModule.pac) | ~15,6 Mo |
 
 ---
 

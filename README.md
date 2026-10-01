@@ -42,8 +42,8 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 ## Sommaire
 
 - [Téléchargements](#téléchargements-version-143)
-- [Plugins & Modules applicatifs](#plugins--modules-applicatifs)
 - [Installation des langages](#installation-des-langages)
+- [Plugins & Modules applicatifs](#plugins--modules-applicatifs)
 - [Compilation du client et du serveur](#compilation-du-client-et-du-serveur)
   - [1. Compilation du client Java](#1-compilation-du-client-java)
   - [2. Compilation du serveur Rust](#2-compilation-du-serveur-rust)
@@ -94,23 +94,6 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 | 1. Sur l'écran *« Windows a protégé votre ordinateur »*, cliquez sur le lien **Informations complémentaires**.<br><br>2. Cliquez ensuite sur le bouton **Exécuter quand même** qui apparaît en bas.<br><br>3. L'installation s'exécute dans votre session utilisateur ; par la suite, le raccourci du menu Démarrer lancera CodeLab directement, sans aucun avertissement. | <img src="client/images/auth_codelab_win.png" alt="Autorisation Windows SmartScreen" width="350"> |
 
 </details>
-
-## Plugins & Modules applicatifs
-
-CodeLab s'enrichit grâce à des **modules applicatifs** téléchargeables sous forme de plugins (`.pac`). Chaque module propose une interface graphique dédiée et une API multi-langages (C, Go, Java, Python, CLIPS, etc.) pour concevoir des activités motivantes (robotique 2D/3D, asservissement moteur, visualisation d'algorithmes de tri, etc.).
-
-Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (`.pac`) et le guide de création de nouveaux modules avec le CDK sont disponibles dans le dossier [plugins/](plugins/) :
-
-| Module Applicatif | Auteur | Code source | Exécutable (`.pac`) |
-| :--- | :---: | :---: | :---: |
-| **Hello World** (initiation premier module) | CodeLab Team | [HelloModule.zip](plugins/downloads/HelloModule.zip) | [HelloModule.pac](plugins/downloads/HelloModule.pac) |
-| **Tracé 2D** (dessin géométrique vectoriel) | CodeLab Team | [DrawingModule.zip](plugins/downloads/DrawingModule.zip) | [DrawingModule.pac](plugins/downloads/DrawingModule.pac) |
-| **Moteur NXT** (simulateur & asservissement) | CodeLab Team | [MotorModule.zip](plugins/downloads/MotorModule.zip) | [MotorModule.pac](plugins/downloads/MotorModule.pac) |
-| **Laboratoire de tris** (visualisation bubble/quick sort) | CodeLab Team | [SortingModule.zip](plugins/downloads/SortingModule.zip) | [SortingModule.pac](plugins/downloads/SortingModule.pac) |
-| **Atelier graphique** (tortue vectorielle Logo) | CodeLab Team | [TurtleModule.zip](plugins/downloads/TurtleModule.zip) | [TurtleModule.pac](plugins/downloads/TurtleModule.pac) |
-| **Robot 3D** (bras articulé 5 axes cinématique 3D) | CodeLab Team | [Robot3DModule.zip](plugins/downloads/Robot3DModule.zip) | [Robot3DModule.pac](plugins/downloads/Robot3DModule.pac) |
-
-> 📖 Consultez le [manuel des plugins](plugins/README.md) pour les instructions détaillées d'installation, de compilation et de création via le CDK (*CodeLab Development Kit*).
 
 ## Installation des langages
 
@@ -180,6 +163,23 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 ```
 </details>
+
+## Plugins & Modules applicatifs
+
+CodeLab s'enrichit grâce à des **modules applicatifs** téléchargeables sous forme de plugins (`.pac`). Chaque module propose une interface graphique dédiée et une API multi-langages (C, Go, Java, Python, CLIPS, etc.) pour concevoir des activités motivantes (robotique 2D/3D, asservissement moteur, visualisation d'algorithmes de tri, etc.).
+
+Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (`.pac`) et le guide de création de nouveaux modules avec le CDK sont disponibles dans le dossier [plugins/](plugins/) :
+
+| Module Applicatif | Code source | Exécutable (`.pac`) |
+| :--- | :---: | :---: |
+| **Hello World** (initiation premier module) | [HelloModule.zip](plugins/downloads/HelloModule.zip) | [HelloModule.pac](plugins/downloads/HelloModule.pac) |
+| **Tracé 2D** (dessin géométrique vectoriel) | [DrawingModule.zip](plugins/downloads/DrawingModule.zip) | [DrawingModule.pac](plugins/downloads/DrawingModule.pac) |
+| **Moteur NXT** (simulateur & asservissement) | [MotorModule.zip](plugins/downloads/MotorModule.zip) | [MotorModule.pac](plugins/downloads/MotorModule.pac) |
+| **Laboratoire de tris** (visualisation bubble/quick sort) | [SortingModule.zip](plugins/downloads/SortingModule.zip) | [SortingModule.pac](plugins/downloads/SortingModule.pac) |
+| **Atelier graphique** (tortue vectorielle Logo) | [TurtleModule.zip](plugins/downloads/TurtleModule.zip) | [TurtleModule.pac](plugins/downloads/TurtleModule.pac) |
+| **Robot 3D** (bras articulé 5 axes cinématique 3D) | [Robot3DModule.zip](plugins/downloads/Robot3DModule.zip) | [Robot3DModule.pac](plugins/downloads/Robot3DModule.pac) |
+
+> 📖 Consultez le [manuel des plugins](plugins/README.md) pour les instructions détaillées d'installation, de compilation et de création via le CDK (*CodeLab Development Kit*).
 
 ## Compilation du client et du serveur
 
