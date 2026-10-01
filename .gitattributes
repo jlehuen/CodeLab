@@ -27,6 +27,11 @@
 *.zip binary
 *.tar binary
 *.zst binary
+*.pac binary
+
+# Modules applicatifs et plugins téléchargeables
+plugins/downloads/** binary
+plugins/downloads/** linguist-vendored
 
 # ------------------------------------------------------------------------------
 # Statistiques des langages GitHub (GitHub Linguist)
