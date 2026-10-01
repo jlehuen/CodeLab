@@ -39,6 +39,8 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   <img src="client/images/codelab_1.png" alt="Interface CodeLab" width="80%">
 </p>
 
+<br>
+
 ## Sommaire
 
 - [Téléchargements](#téléchargements-version-143)
@@ -49,6 +51,8 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   - [2. Compilation du serveur Rust](#2-compilation-du-serveur-rust)
   - [3. Administration du serveur](#3-administration-du-serveur)
 - [Licence & Propriété Intellectuelle](#licence--propriété-intellectuelle)
+
+<br>
 
 ## Téléchargements (version 1.4.3)
 
@@ -94,6 +98,8 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 | 1. Sur l'écran *« Windows a protégé votre ordinateur »*, cliquez sur le lien **Informations complémentaires**.<br><br>2. Cliquez ensuite sur le bouton **Exécuter quand même** qui apparaît en bas.<br><br>3. L'installation s'exécute dans votre session utilisateur ; par la suite, le raccourci du menu Démarrer lancera CodeLab directement, sans aucun avertissement. | <img src="client/images/auth_codelab_win.png" alt="Autorisation Windows SmartScreen" width="350"> |
 
 </details>
+
+<br>
 
 ## Installation des langages
 
@@ -164,6 +170,8 @@ import matplotlib.pyplot as plt
 ```
 </details>
 
+<br>
+
 ## Plugins & Modules applicatifs
 
 CodeLab s'enrichit grâce à des **modules applicatifs** téléchargeables sous forme de plugins (`.pac`). Chaque module propose une interface graphique dédiée et une API multi-langages (C, Go, Java, Python, CLIPS, etc.) pour concevoir des activités motivantes (robotique 2D/3D, asservissement moteur, visualisation d'algorithmes de tri, etc.).
@@ -180,6 +188,8 @@ Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (
 | **Robot 3D** (bras articulé 5 axes cinématique 3D) | [Robot3DModule.zip](plugins/downloads/Robot3DModule.zip) | [Robot3DModule.pac](plugins/downloads/Robot3DModule.pac) |
 
 > 📖 Consultez le [manuel des plugins](plugins/README.md) pour les instructions détaillées d'installation, de compilation et de création via le CDK (*CodeLab Development Kit*).
+
+<br>
 
 ## Compilation du client et du serveur
 
@@ -329,6 +339,8 @@ Depuis le dossier `server/` :
 - `./kill-server.sh` : arrêt propre du service avec finalisation des écritures sur disque et déconnexion ordonnée des clients.
 
 > 📖 **Documentation complète** : Pour les détails techniques avancés (architecture asynchrone Tokio, configuration SMTP des alertes, gestion des timeouts, rotation automatique des sauvegardes et conformité RGPD), consultez le [manuel complet du serveur](server/README.md).
+
+<br>
 
 ## Licence & Propriété Intellectuelle
  
