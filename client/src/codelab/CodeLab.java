@@ -25,9 +25,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-
-import org.apache.commons.io.FileUtils;
-import net.lingala.zip4j.ZipFile;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -64,10 +61,14 @@ import codelab.utils.audio.MiniSynth;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 
+import org.apache.commons.io.FileUtils;
+
+import net.lingala.zip4j.ZipFile;
+
 /**
 *	Classe principale de CodeLab
 *	@author Jérôme Lehuen
-*	@version 15/09/26
+*	@version 01/10/26
 */
 
 public class CodeLab extends AbstractCodeLab {

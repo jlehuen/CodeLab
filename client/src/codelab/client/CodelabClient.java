@@ -40,7 +40,7 @@ import codelab.utils.Utils;
 /**
 *	Classe du client CodeLab
 *	@author Jérôme Lehuen
-*	@version 30/09/26
+*	@version 01/10/26
 */
 
 public class CodelabClient {

@@ -12,7 +12,7 @@ import javax.crypto.spec.SecretKeySpec;
 /**
 *	Classe utilitaire d'encryption
 *	@author Jérôme Lehuen
-*	@version 16/12/23
+*	@version 01/10/26
 */
 
 public class Encryption {

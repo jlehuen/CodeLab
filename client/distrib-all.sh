@@ -20,11 +20,11 @@ echo "================================================================"
 echo "Génération des distributions CodeLab $VERSION (build $BUILD)"
 echo "================================================================"
 
-# 1. Distribution macOS Apple Silicon (ARM64)
-./distrib-mac.sh -arm
-
-# 2. Distribution macOS Intel (x86_64)
+# 1. Distribution macOS Intel (x86_64)
 ./distrib-mac.sh -x64
+
+# 2. Distribution macOS Apple Silicon (ARM64)
+./distrib-mac.sh -arm
 
 # 3. Distribution Windows 64-bit
 ./distrib-win64-nsis.sh

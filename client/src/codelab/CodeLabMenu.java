@@ -28,7 +28,7 @@ import codelab.utils.Utils;
 /**
 *	Classe du menu CodeLab
 *	@author Jérôme Lehuen
-*	@version 12/09/26
+*	@version 01/10/26
 */
 
 public class CodeLabMenu extends JPopupMenu {
@@ -470,8 +470,8 @@ public class CodeLabMenu extends JPopupMenu {
 		menuConfigFile.add(itemLanguage);
 		menuConfigFile.add(itemEditConfigFile);
 		menuConfigFile.add(itemRestoreConfigFile);
-		menuConfigFile.add(menuFinders);
 		if (CodeLab.REDIRECT) menuConfigFile.add(itemShowLogfile);
+		menuConfigFile.add(menuFinders);
 
 		JMenu menuBackups = new JMenu(CodeLab.LABEL("menuBackups"));
 		menuBackups.add(itemCreateRecoveryBackup);
