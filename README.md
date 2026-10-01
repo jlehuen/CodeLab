@@ -18,6 +18,8 @@
   <br>pour l'Enseignement Secondaire et Supérieur</strong>
   <br>
   <br>Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
+  <br><br>
+  <a href="#téléchargements-version-143"><img src="client/images/download.png" alt="Téléchargements" width="160"></a>
 </p>
 <br>
 
