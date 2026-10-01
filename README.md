@@ -21,31 +21,22 @@
   <br><br>
   <a href="#téléchargements-version-143"><img src="client/images/download.png" alt="Téléchargements" width="160"></a>
 </p>
-<br>
 
 **CodeLab** est un environnement pédagogique dédié à l'apprentissage de la programmation en collège, lycée et premières années d'études supérieures. Son originalité est qu'il propose des alternatives ludiques ou techniques aux traditionnelles interactions écran-clavier pour la conception des activités pédagogiques, au travers de l'utilisation de "modules applicatifs". Ces modules, disponibles sous la forme de plugins, peuvent être des **visualisations**, des **panneaux de contrôle**, des **simulateurs**, et autres systèmes temps-réel. Chaque module est l'association d'une **IHM** (Interface Homme-Machine) et d'une interface de programmation applicative (souvent désignée par le terme **API** pour Application Programming Interface), disponible pour chacun des langages supportés par CodeLab. Les apprenants peuvent ainsi se focaliser sur les aspects algorithmiques et sur le codage, tout en travaillant sur des applications qui possèdent des caractéristiques riches et motivantes :
 
-<br>
 <p align="center">
-  <img src="client/images/vignette-robot2D.gif" alt="Robot 2D" width="22%">&nbsp;&nbsp;
-  <img src="client/images/vignette-robot3D.gif" alt="Robot 3D" width="22%">&nbsp;&nbsp;
-  <img src="client/images/vignette-motor.gif" alt="Moteur" width="22%">&nbsp;&nbsp;
-  <img src="client/images/vignette-sorting.gif" alt="Tri" width="22%">
+  <img src="client/images/vignette-robot2D.webp" alt="Robot 2D" width="22%">&nbsp;&nbsp;
+  <img src="client/images/vignette-robot3D.webp" alt="Robot 3D" width="22%">&nbsp;&nbsp;
+  <img src="client/images/vignette-motor.webp" alt="Moteur" width="22%">&nbsp;&nbsp;
+  <img src="client/images/vignette-sorting.webp" alt="Tri" width="22%">
 </p>
-<br>
 
 CodeLab supporte un large spectre de **paradigmes de programmation** (impératif, fonctionnel, objet, déclaratif) et ce afin de répondre aux recommandations du programme de la spécialité NSI (Numérique et Sciences Informatiques) de première et de terminale. En plus des langages traditionnels, CodeLab intègre un langage "par assemblage de blocs" qui permet de découvrir les structures de programmation en s'abstrayant d'une syntaxe spécifique.
 
 Une fonctionnalité de CodeLab est de permettre la constitution de **classes virtuelles** (en présence ou à distance) grâce à une architecture client-serveur dédiée. Le modèle utilisateur / groupe / session permet la constitution de groupes de TP à géométrie variable, encadrés par un ou plusieurs tuteurs. Ces derniers peuvent **suivre en temps réel** le travail des apprenants, tester leurs programmes, communiquer avec eux par l’intermédiaire d’une messagerie instantanée intégrée, les déconnecter en fin de séance, etc.
 
-<br>
 <p align="center">
   <img src="client/images/codelab_1.png" alt="Interface CodeLab" width="80%">
-</p>
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
 
 ## Sommaire
@@ -57,11 +48,6 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
   - [2. Compilation du serveur Rust](#2-compilation-du-serveur-rust)
   - [3. Administration du serveur](#3-administration-du-serveur)
 - [Licence & Propriété Intellectuelle](#licence--propriété-intellectuelle)
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
 
 ## Téléchargements (version 1.4.3)
 
@@ -107,11 +93,6 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 | 1. Sur l'écran *« Windows a protégé votre ordinateur »*, cliquez sur le lien **Informations complémentaires**.<br><br>2. Cliquez ensuite sur le bouton **Exécuter quand même** qui apparaît en bas.<br><br>3. L'installation s'exécute dans votre session utilisateur ; par la suite, le raccourci du menu Démarrer lancera CodeLab directement, sans aucun avertissement. | <img src="client/images/auth_codelab_win.png" alt="Autorisation Windows SmartScreen" width="350"> |
 
 </details>
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
 
 ## Installation des langages
 
@@ -181,11 +162,6 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 ```
 </details>
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
 
 ## Compilation du client et du serveur
 
@@ -332,11 +308,6 @@ Depuis le dossier `server/` :
 
 > 📖 **Documentation complète** : Pour les détails techniques avancés (architecture asynchrone Tokio, configuration SMTP des alertes, gestion des timeouts, rotation automatique des sauvegardes et conformité RGPD), consultez le [manuel complet du serveur](server/README.md).
 
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
-
 ## Licence & Propriété Intellectuelle
  
 - **Auteur** : Jérôme Lehuen, Maître de Conférences à [Le Mans Université](https://www.univ-lemans.fr).
@@ -348,4 +319,9 @@ Depuis le dossier `server/` :
 <p align="center">
   <img src="client/data/mentions/app.png" alt="app.png">
   <br/>IDDN-FR-001-260031-000-SC-2022-000-10000
+</p>
+
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
