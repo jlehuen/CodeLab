@@ -29,7 +29,7 @@ Les archives téléchargeables ci-dessous contiennent les plugins prêts à l'em
 
 ---
 
-## 3. Compiler un plugins (`.zip`)
+## 3. Compiler un plugin (`.zip`)
 
 Si vous souhaitez modifier le code d'un module ou le recompiler :
 
@@ -43,7 +43,7 @@ Si vous souhaitez modifier le code d'un module ou le recompiler :
 
 ---
 
-## 4. Créer un nouveau plugins avec le CDK
+## 4. Créer un nouveau plugin avec le CDK
 
 Pour concevoir un nouveau module applicatif interactif :
 
