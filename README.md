@@ -6,7 +6,7 @@
 
 <div align="center">
 
-![Language](https://img.shields.io/badge/Language-Java-%20+%20Rust-orange)
+![Language](https://img.shields.io/badge/Language-Java%20+%20Rust-orange.svg)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-green.svg)
 
 <!--
