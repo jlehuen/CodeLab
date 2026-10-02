@@ -350,8 +350,8 @@ Depuis le dossier `server/` :
 ## Licence & Propriété Intellectuelle
  
 - **Auteur** : Jérôme Lehuen, Maître de Conférences à [Le Mans Université](https://www.univ-lemans.fr).
-- **Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives, académiques et de recherche non commerciale. **Toute utilisation ou exploitation commerciale, revente ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université.
-- **Dépôt légal** : CodeLab est déposé auprès de l'[Agence pour la Protection des Programmes (APP)](https://www.app.asso.fr/) sous la référence IDDN-FR-001-260031-000-SC-2022-000-10000.
+- **Conditions d'utilisation** : Ce logiciel (code source et binaires) est mis à disposition gratuitement à des fins éducatives et académiques. **Toute utilisation, exploitation commerciale ou sous-licence est strictement interdite** sans accord préalable écrit de l'auteur et de Le Mans Université.
+- **Dépôt légal** : CodeLab est déposé auprès de l'[Agence pour la Protection des Programmes](https://www.app.asso.fr/) (APP) sous la référence IDDN-FR-001-260031-000-SC-2022-000-10000.
 - **Licence** : Consultez le fichier [LICENSE](LICENSE) pour l'intégralité des termes et des mentions légales.
 - **Copyright** : © 2021-2026 Jérôme Lehuen, Le Mans Université.
 
