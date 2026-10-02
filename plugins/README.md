@@ -26,6 +26,7 @@ Les archives téléchargeables ci-dessous contiennent les plugins prêts à l'em
 | **Laboratoire de tris** : visualiseur d'algorithmes (bubble sort, quick sort, etc.) | [SortingModule.zip](downloads/SortingModule.zip) | [SortingModule.pac](downloads/SortingModule.pac) | ~36 Ko |
 | **Atelier graphique** : version plugin du module tortue vectorielle (Logo) | [TurtleModule.zip](downloads/TurtleModule.zip) | [TurtleModule.pac](downloads/TurtleModule.pac) | ~72 Ko |
 | **Robot industriel 5 axes CoreTech 3D** : bras articulé en 3D temps réel | [Robot3DModule.zip](downloads/Robot3DModule.zip) | [Robot3DModule.pac](downloads/Robot3DModule.pac) | ~15,6 Mo |
+| **Le Donjon Algorithmique** : labyrinthes, clés, portes et trésors (recherche de chemin, IA, main droite) | [DungeonModule.zip](downloads/DungeonModule.zip) | [DungeonModule.pac](downloads/DungeonModule.pac) | ~78 Ko |
 
 ---
 

@@ -6,10 +6,14 @@
 
 <div align="center">
 
-[![Java](https://img.shields.io/badge/Java-17%20LTS-orange.svg)](https://adoptium.net/)
-[![Rust](https://img.shields.io/badge/Rust-2021%20Edition-red.svg)](https://www.rust-lang.org/)
-[![Licence](https://img.shields.io/badge/Licence-Éducative%20%26%20Non--Commerciale-blue.svg)](LICENSE)
+![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-blue.svg)
+[![Language](https://img.shields.io/badge/Java-%20+%20Rust-orange.svg)](https://adoptium.net/)
+[![Licence](https://img.shields.io/badge/Éducative%20%26%20Non--Commerciale-green.svg)](LICENSE)
+
+<!--
+[![Serveur](https://img.shields.io/badge/Rust-red.svg)](https://www.rust-lang.org/)
 [![Dépôt APP](https://img.shields.io/badge/Dépôt%20APP-IDDN--FR--001--260031-green.svg)](https://www.app.asso.fr/)
+-->
 
 </div>
 
@@ -35,8 +39,10 @@ CodeLab supporte un large spectre de **paradigmes de programmation** (impératif
 
 Une fonctionnalité de CodeLab est de permettre la constitution de **classes virtuelles** (en présence ou à distance) grâce à une architecture client-serveur dédiée. Le modèle utilisateur / groupe / session permet la constitution de groupes de TP à géométrie variable, encadrés par un ou plusieurs tuteurs. Ces derniers peuvent **suivre en temps réel** le travail des apprenants, tester leurs programmes, communiquer avec eux par l’intermédiaire d’une messagerie instantanée intégrée, les déconnecter en fin de séance, etc.
 
+<br>
+
 <p align="center">
-  <img src="client/images/codelab_1.png" alt="Interface CodeLab" width="80%">
+  <img src="client/images/codelab_1.png" alt="Interface CodeLab">
 </p>
 
 <br>
@@ -155,7 +161,7 @@ $ .\my_python\Scripts\Activate.ps1
 >Ensuite, configurez CodeLab via le menu Configuration > Rechercher un langage > Interpréteur Python.
 
 
->Si lors d'une exécution, vous obtenez l'erreur **FigureCancasAgg is non-interactive, and thus cannot be shown** c'est que la librairie graphique Tk est manquante. Tapez ces lignes dans un terminal et relancez CodeLab :
+>Si lors d'une exécution, vous obtenez l'erreur **FigureCanvasAgg is non-interactive, and thus cannot be shown** c'est que la librairie graphique Tk est manquante. Tapez ces lignes dans un terminal et relancez CodeLab :
 
 ```bash
 sudo apt update

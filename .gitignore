@@ -45,6 +45,7 @@ ROADMAP*
 # Documentation technique interne et scripts de déploiement universitaire
 client/CODELAB.md
 client/distrib-ic2.sh
+git-*
 release.sh
 client/release.sh
 client/update-version.sh
