@@ -6,11 +6,10 @@
 
 <div align="center">
 
-[![Licence](https://img.shields.io/badge/Éducative%20%26%20Non--Commerciale-green.svg)](LICENSE)
+![Language](https://img.shields.io/badge/Java-%20+%20Rust-orange.svg)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-green)
 
 <!--
-[![Language](https://img.shields.io/badge/Java-%20+%20Rust-orange.svg)](https://adoptium.net/)
 [![Serveur](https://img.shields.io/badge/Rust-red.svg)](https://www.rust-lang.org/)
 [![Dépôt APP](https://img.shields.io/badge/Dépôt%20APP-IDDN--FR--001--260031-green.svg)](https://www.app.asso.fr/)
 -->
