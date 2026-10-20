@@ -1,0 +1,315 @@
+/* --------------------------------------------------------------------------
+   TAILLES DES FORMULES MATHÉMATIQUES LATEX ET DES DIAGRAMMES MERMAID
+   -------------------------------------------------------------------------- */
+:root {
+    --math-scale: 1.0;
+    --math-inline-scale: 1.75;
+    --math-display-scale: 2.00;
+    --mermaid-scale: 0.3;
+}
+
+html,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+ol,
+ul,
+li,
+img {
+  margin: 0;
+  padding: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+html * {
+  font-family: "ff-din-web-pro-1", "ff-din-web-pro-2", sans-serif;
+  font-size: 16px;
+  line-height: 19.2px;
+  color-profile: sRGB;
+}
+body {
+  margin: 3px;
+}
+p {
+  font-weight: lighter;
+  margin-bottom: 2px;
+}
+strong {
+  font-weight: bold;
+}
+ol,
+ul {
+  margin-left: 2em;
+  margin-bottom: 2px;
+}
+ul ul,
+ol ol,
+ul ol,
+ol ul {
+  margin-top: 10px;
+}
+li {
+  margin-bottom: 1px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: lighter;
+  text-transform: capitalize;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+h1 {
+  font-size: 24.624px;
+  line-height: 29.548799999999996px;
+}
+h2 {
+  font-size: 24.624px;
+  line-height: 29.548799999999996px;
+}
+h3 {
+  font-size: 23.44px;
+  line-height: 28.128px;
+}
+h4 {
+  font-size: 22.16px;
+  line-height: 26.592px;
+}
+h5 {
+  font-size: 22.16px;
+  line-height: 26.592px;
+}
+h6 {
+  font-size: 22.16px;
+  line-height: 26.592px;
+}
+img {
+  margin-bottom: 2px;
+}
+h1 img,
+h2 img,
+h3 img,
+h4 img,
+h5 img,
+h6 img,
+p img {
+  margin-bottom: 0;
+}
+pre {
+  margin-bottom: 2px;
+}
+pre,
+code {
+  font-family: monospace;
+}
+pre {
+  white-space: pre;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 15px;
+}
+blockquote {
+  border-left: 4px solid;
+  padding: 0 15px;
+}
+blockquote > :first-child {
+  margin-top: 0;
+}
+blockquote > :last-child {
+  margin-bottom: 15px;
+}
+h1 {
+  text-transform: uppercase;
+  font-weight: bold;
+  border-bottom: 1px solid;
+}
+h2 {
+  border-bottom: 1px solid;
+}
+h3,
+h4,
+h5,
+h6 {
+  border-bottom: none;
+}
+html * {
+  color: #657b83;
+}
+html body {
+  background-color: #fdf6e3;
+}
+html h1,
+html h2,
+html h3,
+html h4,
+html h5,
+html h6 {
+  color: #586e75;
+  border-color: #657b83;
+}
+html a,
+html a:active,
+html a:visited {
+  color: #586e75;
+}
+html a:hover {
+  background-color: #eee8d5;
+}
+html pre {
+  color: #586e75;
+  background-color: #eee8d5;
+}
+html a,
+html a:active,
+html a:visited,
+html code.url {
+  color: #b58900;
+}
+html h1 {
+  color: #b58900;
+}
+html h2,
+html h3,
+html h4,
+html h5,
+html h6 {
+  color: #b58900;
+}
+kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  font-size: 11px;
+  line-height: 10px;
+  color: #555;
+  vertical-align: middle;
+  background-color: #fcfcfc;
+  border: solid 1px #ccc;
+  border-bottom-color: #bbb;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #bbb;
+}
+
+@media print {
+  body {
+    margin: 0;
+  }
+}
+
+/* ==========================================================================
+   ALIGNEMENT & UNIFICATION GÉOMÉTRIQUE CODELAB (BASE SUR MARKDOWN.CSS)
+   ========================================================================== */
+
+body {
+    font-size: 12px;
+    margin: 3px;
+    padding: 0;
+    line-height: 1.35;
+}
+
+h1 {
+    font-size: 1.22em;
+    font-weight: bold;
+    margin: 4px 0 4px 0;
+    padding-bottom: 2px;
+}
+
+h2 {
+    font-size: 1.12em;
+    font-weight: bold;
+    margin: 3px 0 3px 0;
+    padding-bottom: 2px;
+}
+
+h3 {
+    font-size: 1.02em;
+    font-weight: bold;
+    margin: 3px 0 2px 0;
+}
+
+h4, h5, h6 {
+    font-size: 0.92em;
+    font-weight: bold;
+    margin: 2px 0 2px 0;
+}
+
+p {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    line-height: 1.35;
+}
+
+ul, ol {
+    margin: 2px 0 4px 0;
+    padding-left: 18px;
+}
+
+li {
+    margin-bottom: 1px;
+}
+
+blockquote {
+    font-size: 0.95em;
+    margin: 3px 0;
+    padding-left: 6px;
+}
+
+table {
+    margin: 4px 0;
+    max-width: 100%;
+}
+
+th, td {
+    font-size: 0.92em;
+    padding: 2px 6px;
+}
+
+code, tt {
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    padding: 1px 3px;
+}
+
+pre {
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    padding: 4px;
+    margin: 3px 0;
+    max-width: 100%;
+}
+
+hr {
+    margin: 6px 0;
+}
+
+img {
+    vertical-align: middle;
+    max-width: 100%;
+}
+
+img[alt=center] {
+    display: block;
+    margin: 0 auto;
+}
+
+img.math-inline {
+    vertical-align: middle;
+}
+
+div.math-display {
+    margin: 6px 0;
+    text-align: center;
+}
+
+img.math-display {
+    vertical-align: middle;
+}

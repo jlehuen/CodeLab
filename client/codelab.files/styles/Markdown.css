@@ -1,0 +1,305 @@
+/* ==========================================================================
+   CodeLab - Feuille de style CSS pour les cellules Markdown des Notebooks
+   ==========================================================================
+   Ce fichier est personnalisable pour adapter l'apparence des textes Markdown.
+   Accès direct depuis CodeLab : Menu "Éditeur" > "Style Markdown".
+   Emplacement du fichier : ~/codelab.files/userdata/markdown.css
+
+   Conseils pour la personnalisation :
+   - Le moteur Swing de Java gère le standard HTML 3.2 / CSS 1 et 2.1.
+   - Les couleurs s'expriment en hexadécimal (ex: #0969da, #ffffff, #24292f)
+     ou par leurs noms standards (ex: blue, gray, red, black).
+   - Les tailles peuvent s'exprimer en pixels (px) ou en unités relatives (em, %).
+   - La balise spéciale ${FONT_SIZE} est automatiquement remplacée par la taille
+     de police configurée dans CodeLab (menu Éditeur > Police de l'éditeur).
+   - Dès la sauvegarde (Ctrl+S ou Cmd+S), le carnet actif se met à jour.
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   1. TAILLES DES FORMULES MATHÉMATIQUES LATEX ET DES DIAGRAMMES MERMAID
+   --------------------------------------------------------------------------
+   Ajustez ces 3 multiplicateurs pour grossir ou rétrécir les formules :
+   - math-scale         : Multiplicateur global pour toutes les formules (défaut : 1.0)
+   - math-inline-scale  : Facteur pour les formules en ligne dans le texte $...$ (défaut : 2.00)
+   - math-display-scale : Facteur pour les formules centrées en bloc $$...$$ (défaut : 3.00)
+   - mermaid-scale      : Taille des diagrammes, valeurs acceptées de 0.1 à 3.0
+   -------------------------------------------------------------------------- */
+
+:root {
+    --math-scale: 1.0;
+    --math-inline-scale: 1.75;
+    --math-display-scale: 2.00;
+    --mermaid-scale: 0.3;
+}
+
+/* --------------------------------------------------------------------------
+   2. TEXTE PRINCIPAL & CORPS DE DOCUMENT (body)
+   --------------------------------------------------------------------------
+   Définit la police par défaut, la taille de base et la couleur du texte.
+   - font-family : Liste des polices dans l'ordre de priorité. La police "Inter"
+                   est intégrée nativement à CodeLab. Vous pouvez ajouter
+                   "Verdana", "Georgia" ou d'autres polices selon vos préférences.
+   - color       : Couleur du texte (ex: #24292f = gris très foncé / quasi noir).
+   - margin      : Marge extérieure autour du texte de la cellule.
+   -------------------------------------------------------------------------- */
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    color: #606060;
+    margin: 3px;
+    padding: 0;
+}
+
+/* --------------------------------------------------------------------------
+   3. TITRES DE SECTIONS (h1, h2, h3, h4, h5, h6)
+   --------------------------------------------------------------------------
+   Les tailles sont relatives (em) pour s'adapter à la taille de police active.
+   - 1.22em signifie 122% de la taille de texte de base.
+   - color         : Couleur du titre (ex: #0969da = bleu pour h1).
+   - border-bottom : Filet de soulignement sous les titres h1 et h2.
+   - margin        : Espacement au-dessus et en-dessous du titre.
+   -------------------------------------------------------------------------- */
+
+h1 {
+    font-size: 1.22em;
+    font-weight: bold;
+    color: #0969da;
+    border-bottom: 1px solid #d0d7de;
+    margin: 4px 0 4px 0;
+    padding-bottom: 2px;
+}
+
+h2 {
+    font-size: 1.12em;
+    font-weight: bold;
+    color: #1f2328;
+    border-bottom: 1px solid #d0d7de;
+    margin: 3px 0 3px 0;
+    padding-bottom: 2px;
+}
+
+h3 {
+    font-size: 1.02em;
+    font-weight: bold;
+    color: #1f2328;
+    margin: 3px 0 2px 0;
+}
+
+h4, h5, h6 {
+    font-size: 0.92em;
+    font-weight: bold;
+    color: #57606a;
+    margin: 2px 0 2px 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. PARAGRAPHES DE TEXTE (p)
+   --------------------------------------------------------------------------
+   - margin-top    : Espacement vertical avant les paragraphes.
+   - margin-bottom : Espacement vertical après les paragraphes.
+   - line-height   : Interlignage (hauteur de ligne) pour le confort de lecture.
+   -------------------------------------------------------------------------- */
+
+p {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    line-height: 1.35;
+}
+
+/* --------------------------------------------------------------------------
+   5a. CODE EN LIGNE ET BLOCS DE CODE (code, pre)
+   --------------------------------------------------------------------------
+   - font-family      : Police à chasse fixe (monospace) pour le code.
+   - font-size        : Taille des caractères de code (ex: 10.5px ou 0.9em).
+   - background       : Couleur de fond (ex: yellow ou #f6f8fa).
+   - padding          : Espacement intérieur autour du code.
+   -------------------------------------------------------------------------- */
+
+code {
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    background: yellow;
+    color: #24292f;
+    padding: 1px 3px;
+}
+
+pre {
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    background-color: #f6f8fa;
+    color: #24292f;
+    padding: 4px;
+    margin: 3px 0;
+    max-width: 100%;
+}
+
+pre code {
+    background: #f6f8fa;
+}
+
+/*
+pre[alt=term] {
+    font-size: 11px;
+    background: #1E2832;
+    color: #7DCE10;
+    padding: 8px 12px;
+    margin: 6px 0;
+    max-width: 100%;
+}
+*/
+
+/* --------------------------------------------------------------------------
+   5b. STYLES PAR LANGAGE DES BLOCS DE CODE
+   --------------------------------------------------------------------------
+   Un bloc de code Markdown écrit avec un langage après les ``` reçoit la classe
+   "language-<nom>" : ```python donne pre.language-python, ```console donne
+   pre.language-console, ```c donne pre.language-c, etc.
+   Le nom est en minuscules ; "c++" devient "cpp" et "c#" devient "csharp".
+   Pour un nouveau langage, copiez un des blocs ci-dessous et changez le nom.
+   Les blocs sans langage gardent le style "pre" de la section 5.
+   IMPORTANT : la règle "pre.language-xxx code" fixe la couleur du texte ET le fond du code
+   (même couleur que le fond du bloc) ; sans elle, les réglages de "code" plus haut reprennent le
+   dessus. Swing ne comprend pas "background: transparent" : indiquez la couleur du bloc.
+   -------------------------------------------------------------------------- */
+
+pre.language-console {
+    font-size: 11px;
+    background-color: #1E2832;
+    color: #7DCE10;
+    padding: 8px 12px;
+    margin: 6px 0;
+}
+
+pre.language-console code {
+    color: #7DCE10;
+    background: #1E2832;
+}
+
+pre.language-python {
+    background-color: #f3f7fb;
+    color: #24292f;
+    border-left: 3px solid #3776ab;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-python code {
+    color: #24292f;
+    background: #f3f7fb;
+}
+
+pre.language-c {
+    background-color: #f4f4fa;
+    color: #24292f;
+    border-left: 3px solid #5c6bc0;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-c code {
+    color: #24292f;
+    background: #f4f4fa;
+}
+
+/* --------------------------------------------------------------------------
+   6. LISTES À PUCES ET LISTES NUMÉROTÉES (ul, ol, li)
+   --------------------------------------------------------------------------
+   - padding-left  : Retrait de tabulation pour aligner les puces à gauche.
+   - margin-bottom : Espacement vertical entre chaque élément de la liste.
+   -------------------------------------------------------------------------- */
+
+ul, ol {
+    margin: 2px 0 4px 0;
+    padding-left: 18px;
+}
+
+li {
+    margin-bottom: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   7. CITATIONS ET ENCADRÉS REMARQUES (blockquote)
+   --------------------------------------------------------------------------
+   Utilisé pour les textes précédés de "> " dans le Markdown.
+   - border-left  : Bandeau / barre verticale sur le côté gauche (3px de large).
+   - color        : Couleur du texte de la citation (ex: gris discret #57606a).
+   - padding-left : Retrait intérieur pour décoller le texte de la barre gauche.
+   -------------------------------------------------------------------------- */
+
+blockquote {
+    font-size: 0.95em;
+    margin: 3px 0;
+    padding-left: 6px;
+    border-left: 3px solid #d0d7de;
+    color: #57606a;
+}
+
+/* --------------------------------------------------------------------------
+   8. TABLEAUX DE DONNÉES (table, th, td)
+   --------------------------------------------------------------------------
+   - border           : Filet fin entourant chaque case du tableau.
+   - padding          : Aération intérieure des cases (marge texte / bordure).
+   - background-color : Fond de l'en-tête (th) pour le démarquer des données.
+   -------------------------------------------------------------------------- */
+
+table {
+    margin: 4px 0;
+    max-width: 100%;
+}
+
+th, td {
+    font-size: 0.92em;
+    border: 1px solid #d0d7de;
+    padding: 2px 6px;
+}
+
+th {
+    background-color: #f6f8fa;
+    font-weight: bold;
+}
+
+/* --------------------------------------------------------------------------
+   9. SÉPARATEURS HORIZONTAUX & LIENS HYPERTEXTES (hr, a)
+   --------------------------------------------------------------------------
+   - hr : Ligne de séparation produite par "---" ou "***" dans le Markdown.
+   - a  : Liens cliquables (couleur et soulignement).
+   -------------------------------------------------------------------------- */
+
+hr {
+    border-top: 1px solid #d0d7de;
+    margin: 6px 0;
+}
+
+a {
+    color: #0969da;
+    text-decoration: none;
+}
+
+/* --------------------------------------------------------------------------
+   10. IMAGES ET FORMULES MATHÉMATIQUES (img, math)
+   --------------------------------------------------------------------------
+   Règle le centrage et l'alignement vertical des images et équations.
+   -------------------------------------------------------------------------- */
+
+img {
+    vertical-align: middle;
+    max-width: 100%;
+}
+
+img[alt=center] {
+    display: block;
+    margin: 0 auto;
+}
+
+img.math-inline {
+    vertical-align: middle;
+}
+
+div.math-display {
+    margin: 6px 0;
+    text-align: center;
+}
+
+img.math-display {
+    vertical-align: middle;
+}

@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "description": "Pondérations et barème universel CodeLab pour Java / POO (6 + 8 + 4 + 2 = 20 pts)",
+  "axes": {
+    "axe1_compilation_max": 6.0,
+    "axe2_conception_max": 8.0,
+    "axe3_style_max": 4.0,
+    "axe4_validation_max": 2.0
+  },
+  "anti_triche": {
+    "assistance_ia": {
+      "malus_eleve": 2.0,
+      "plafond_note_eleve": 13.5,
+      "malus_modere": 1.0,
+      "plafond_note_modere": 15.5
+    },
+    "similarite": {
+      "seuil_detection_pct": 85.0,
+      "malus_1_fichier": 0.5,
+      "malus_2_fichiers": 1.5,
+      "malus_3_fichiers_ou_plus": 2.5,
+      "malus_max_total": 2.5
+    }
+  },
+  "profils": {
+    "note_min_excellence": 16.0,
+    "interdire_excellence_si_ia": true,
+    "interdire_excellence_si_similarite": true
+  }
+}

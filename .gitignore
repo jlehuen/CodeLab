@@ -85,6 +85,10 @@ client/codelab.files/userdata/ai_cache/
 **/skills/**/__pycache__/
 **/skills/**/*.pyc
 
+# Skills d'évaluation pédagogiques spécifiques (sujets & corrigés d'enseignements)
+**/skills/eval-introprog/
+**/skills/eval-intropython/
+
 # ------------------------------------------------------------------------------
 # 4. Artefacts de compilation & Binaires lourds (> 100 Mo, bloquants sur GitHub)
 # ------------------------------------------------------------------------------
