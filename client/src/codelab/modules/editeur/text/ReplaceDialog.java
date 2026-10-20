@@ -20,6 +20,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
 
@@ -145,12 +146,19 @@ public class ReplaceDialog extends JDialog implements ActionListener {
 	// Méthodes privées
 	///////////////////////////////////////////////////
 
-	private void removeAllMarks() {
+	private RSyntaxTextArea getTargetTextArea() {
+		if (module == null) return null;
 		AbstractEditor editor = module.getEditor();
-		if (!editor.isTextEditor()) return; // Pas un editeur de textes
+		if (editor == null) return null;
+		if (editor.isTextEditor()) {
+			return ((TextEditor) editor).getCodeLabTextArea();
+		}
+		return editor.getActiveRSyntaxTextArea();
+	}
 
-		CodeLabTextArea textArea = ((TextEditor)editor).getCodeLabTextArea();
-		if (textArea == null) return; // Pas de fichier en cours d'édition
+	private void removeAllMarks() {
+		RSyntaxTextArea textArea = getTargetTextArea();
+		if (textArea == null) return;
 
 		SearchContext context = new SearchContext();
 		context.setMarkAll(false);
@@ -185,19 +193,17 @@ public class ReplaceDialog extends JDialog implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 
-		AbstractEditor editor = module.getEditor();
-		if (!editor.isTextEditor()) return; // Pas un editeur de textes
-
-		CodeLabTextArea textArea = ((TextEditor)editor).getCodeLabTextArea();
-		if (textArea == null) return; // Pas de fichier en cours d'édition
-
 		String action = e.getActionCommand();
 
 		if (action.equals("CLOSE")) {
 			// Fermeture de la fenêtre de dialogue
 			dispatchEvent(new WindowEvent(window, WindowEvent.WINDOW_CLOSING));
 			ReplaceDialog.window = null;
+			return;
 		}
+
+		RSyntaxTextArea textArea = getTargetTextArea();
+		if (textArea == null) return;
 
 		SearchContext context = new SearchContext();
 		String text1 = champ1.getText();

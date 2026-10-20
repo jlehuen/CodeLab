@@ -31,6 +31,7 @@ RUN_LOG="$LOG_DIR/run.log"
     echo "BASE=$BASE"
     echo "LAUNCHER=$LAUNCHER"
     echo "JAVA_HOME=$JAVA_HOME"
+    echo "ARGS=$@"
 } > "$RUN_LOG" 2>/dev/null
 
 # -----------------------------------------------------------------------------
@@ -54,14 +55,13 @@ DLIB="$BASE/codelab/natives"
 
 # https://jogamp.org/bugzilla/show_bug.cgi?id=1317#c21
 
-"$JAVA" -Xmx1024m \
+echo "PID=$$" >> "$RUN_LOG" 2>/dev/null
+
+exec "$JAVA" -Xmx1024m \
     --add-exports java.base/java.lang=ALL-UNNAMED \
     --add-exports java.desktop/sun.awt=ALL-UNNAMED \
     --add-exports java.desktop/sun.java2d=ALL-UNNAMED \
     -Dfile.encoding=UTF-8 \
     -Djava.library.path="$DLIB" \
     -Xdock:name=CodeLab \
-    -jar "$CODELAB" --log "$@" &
-
-PID=$!
-echo "PID=$PID" >> "$RUN_LOG" 2>/dev/null
+    -jar "$CODELAB" --log "$@"

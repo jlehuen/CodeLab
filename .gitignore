@@ -79,6 +79,11 @@ codelab_files.zip
 
 # Fichier de profil utilisateur généré lors de tests locaux
 client/codelab.files/userdata/user.properties
+client/codelab.files/userdata/ai_cache/
+
+# Cache Python des skills d'évaluation
+**/skills/**/__pycache__/
+**/skills/**/*.pyc
 
 # ------------------------------------------------------------------------------
 # 4. Artefacts de compilation & Binaires lourds (> 100 Mo, bloquants sur GitHub)

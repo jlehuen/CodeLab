@@ -145,6 +145,7 @@ public class PluginLoader {
 
 		String templates_folder = String.format("%s/%s", CodeLab.TEMPLATES_FOLDER, moduleName);
 		String exercices_folder = String.format("%s/%s", CodeLab.EXERCICES_FOLDER, moduleName);
+		String man_folder = String.format("%s/%s", CodeLab.MAN_FOLDER, moduleName);
 
 		// Effacer les anciens répertoires
 		MyFileUtils.delete(new File(includes_c));
@@ -154,6 +155,7 @@ public class PluginLoader {
 		MyFileUtils.delete(new File(includes_python));
 		MyFileUtils.delete(new File(templates_folder));
 		MyFileUtils.delete(new File(exercices_folder));
+		MyFileUtils.delete(new File(man_folder));
 
 		Pattern pattern = Pattern.compile("includes/([^.]+).go");
 
@@ -176,10 +178,26 @@ public class PluginLoader {
 				// Recopier les templates et les exercices
 				else if (path.matches("templates/.*")) extract(jar, entry, templates_folder);
 				else if (path.matches("exercices/.*")) extract(jar, entry, exercices_folder);
+				// Recopier la documentation du module (en préservant l'arborescence man/img/...)
+				else if (path.matches("man/.*")) {
+					String subpath = path.substring(4);
+					extractRelative(jar, entry, man_folder, subpath);
+				}
 			}
 		}
 		catch (IOException e) {
 			ExceptionManager.process(e);
+		}
+	}
+
+	private void extractRelative(JarFile jar, JarEntry entry, String baseDir, String subpath) throws IOException {
+		File file = new File(baseDir, subpath);
+		File parent = file.getParentFile();
+		if (parent != null) parent.mkdirs();
+		try (InputStream in = jar.getInputStream(entry)) {
+			try (FileOutputStream out = new FileOutputStream(file)) {
+				in.transferTo(out);
+			}
 		}
 	}
 

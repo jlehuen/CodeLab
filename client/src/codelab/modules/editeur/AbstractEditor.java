@@ -217,4 +217,5 @@ public abstract class AbstractEditor extends JPanel {
 	public abstract void setEditableConfiguration(boolean value);
 	public abstract void addLineHighlight(int line, Color color);
 	public abstract void removeAllLineHighlights();
+	public org.fife.ui.rsyntaxtextarea.RSyntaxTextArea getActiveRSyntaxTextArea() { return null; }
 }

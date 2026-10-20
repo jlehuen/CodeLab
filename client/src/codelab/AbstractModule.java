@@ -6,6 +6,7 @@ import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,6 +26,7 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 
 import codelab.console.ConsoleInterface;
 import codelab.helper.DefaultToolbar;
+import codelab.utils.Utils;
 
 /**
 *	Classe abstraite des modules applicatifs
@@ -327,6 +329,31 @@ public abstract class AbstractModule {
 		catch (IOException e) {
 			ExceptionManager.process(e);
 			return null;
+		}
+	}
+
+	///////////////////////////////////////////////////
+	// Manuel et documentation du module
+	///////////////////////////////////////////////////
+
+	public boolean hasManual() {
+		File manFolder = new File(String.format("%s/%s", CodeLab.MAN_FOLDER, name.toLowerCase()));
+		if (!manFolder.exists()) return false;
+		File htmlFile1 = new File(manFolder, name + ".html");
+		File htmlFile2 = new File(manFolder, getClass().getSimpleName() + ".html");
+		File htmlFile3 = new File(manFolder, "index.html");
+		return htmlFile1.exists() || htmlFile2.exists() || htmlFile3.exists();
+	}
+
+	public void openManual() {
+		File manFolder = new File(String.format("%s/%s", CodeLab.MAN_FOLDER, name.toLowerCase()));
+		File htmlFile = new File(manFolder, name + ".html");
+		if (!htmlFile.exists()) htmlFile = new File(manFolder, getClass().getSimpleName() + ".html");
+		if (!htmlFile.exists()) htmlFile = new File(manFolder, "index.html");
+		if (htmlFile.exists()) {
+			Utils.openBrowser(htmlFile.toURI().toString());
+		} else {
+			Utils.showWarningDialog("ATTENTION", CodeLab.LABEL("NO_MANUAL_FOUND"));
 		}
 	}
 }

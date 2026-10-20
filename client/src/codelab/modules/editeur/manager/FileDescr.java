@@ -30,6 +30,7 @@ public class FileDescr {
 	private ImageIcon icon_java = ResourceUtils.loadImageIcon("icons/mini_icon_java.png");
 	private ImageIcon icon_clips = ResourceUtils.loadImageIcon("icons/mini_icon_clips.png");
 	private ImageIcon icon_python = ResourceUtils.loadImageIcon("icons/mini_icon_python.png");
+	private ImageIcon icon_jupyter = ResourceUtils.loadImageIcon("icons/mini_icon_jupyter.png");
 	private ImageIcon icon_haskell = ResourceUtils.loadImageIcon("icons/mini_icon_haskell.png");
 	private ImageIcon icon_blocs = ResourceUtils.loadImageIcon("icons/mini_icon_blocs.png");
 	private ImageIcon icon_processing = ResourceUtils.loadImageIcon("icons/mini_icon_process.png");
@@ -39,12 +40,15 @@ public class FileDescr {
 	private ImageIcon icon_image = ResourceUtils.loadImageIcon("icons/mini_icon_eye.png");
 	private ImageIcon icon_array = ResourceUtils.loadImageIcon("icons/mini_icon_numpy.png");
 
-	///////////////////////////////////////////////////
-	// Constructeur
-	///////////////////////////////////////////////////
+	private String label = null;
 
 	public FileDescr(File file) {
+		this(file, null);
+	}
+
+	public FileDescr(File file, String label) {
 		this.file = file;
+		this.label = label;
 		uid = UUID.randomUUID(); // Clé unique pour le HashMap de la classe Editeur
 	}
 
@@ -54,6 +58,8 @@ public class FileDescr {
 
 	public void setFile(File file) { this.file = file; }
 	public void setModified(boolean value) { modified = value; }
+	public void setLabel(String label) { this.label = label; }
+	public String getLabel() { return label; }
 
 	public File getFile() { return file; }
 	public Path getPath() { return file.toPath(); }
@@ -73,6 +79,7 @@ public class FileDescr {
 			case ".h": return icon_c;
 			case ".go": return icon_go;
 			case ".py": return icon_python;
+			case ".ipynb": return icon_jupyter;
 			case ".hs": return icon_haskell;
 			case ".lua": return icon_lua;
 			case ".lsp": return icon_lisp;
@@ -104,6 +111,7 @@ public class FileDescr {
 	///////////////////////////////////////////////////
 
 	public String toString() {
+		if (label != null) return label;
 		return file.getName();
 	}
 

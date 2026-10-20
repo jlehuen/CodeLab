@@ -27,6 +27,7 @@ import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
 
 import codelab.CodeLab;
+import codelab.PropertyBase;
 import codelab.Compilateur;
 import codelab.ExceptionManager;
 import codelab.modules.editeur.AbstractEditor;
@@ -114,6 +115,11 @@ public class TextEditor extends AbstractEditor {
 		return textarea;
 	}
 
+	@Override
+	public org.fife.ui.rsyntaxtextarea.RSyntaxTextArea getActiveRSyntaxTextArea() {
+		return textarea;
+	}
+
 	public JTextArea getTextArea() {
 		// Utilisé par Automator Lorem Ipsum
 		return textarea;
@@ -140,10 +146,27 @@ public class TextEditor extends AbstractEditor {
 		if (file == null) {
 			if (extern_file == null) return;
 			textarea.save_content(extern_file);
+			setModified(false);
+			if (extern_file.getName().endsWith(".css")) {
+				codelab.modules.editeur.notebook.NotebookCellPane.clearCssCache();
+				codelab.utils.LatexRenderer.clearCache();
+			}
+			if (extern_file.getName().equals("user.properties")) {
+				PropertyBase.load();
+				CodeLab.reloadProxySettings();
+			}
 		}
 		else {
 			textarea.save_content(file);
 			setModified(false);
+			if (file.getName().endsWith(".css")) {
+				codelab.modules.editeur.notebook.NotebookCellPane.clearCssCache();
+				codelab.utils.LatexRenderer.clearCache();
+			}
+			if (file.getName().equals("user.properties")) {
+				PropertyBase.load();
+				CodeLab.reloadProxySettings();
+			}
 		}
 	}
 

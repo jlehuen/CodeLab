@@ -166,23 +166,32 @@ public abstract class AbstractFinder {
 	///////////////////////////////////////////////////
 
 	protected void runWhichCommand(Set<String> candidates, String binName) {
-		try {
-			ProcessBuilder pb = new ProcessBuilder("which", binName);
-			pb.redirectErrorStream(true);
-			Process p = pb.start();
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
-				String line;
-				while ((line = br.readLine()) != null) {
-					line = normalizePath(line);
-					if (line != null && !line.isBlank() && !line.startsWith("which:") && !line.contains("no " + binName)) {
-						File f = new File(line);
-						if (f.exists()) candidates.add(normalizePath(f.getAbsolutePath()));
-						else candidates.add(line);
+		List<List<String>> cmds = new ArrayList<>();
+		cmds.add(Arrays.asList("which", binName));
+		String shell = System.getenv("SHELL");
+		if (shell != null && !shell.isBlank()) {
+			cmds.add(Arrays.asList(shell, "-l", "-c", "which " + binName));
+		}
+
+		for (List<String> cmd : cmds) {
+			try {
+				ProcessBuilder pb = new ProcessBuilder(cmd);
+				pb.redirectErrorStream(true);
+				Process p = pb.start();
+				try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+					String line;
+					while ((line = br.readLine()) != null) {
+						line = normalizePath(line);
+						if (line != null && !line.isBlank() && !line.startsWith("which:") && !line.contains("no " + binName)) {
+							File f = new File(line);
+							if (f.exists()) candidates.add(normalizePath(f.getAbsolutePath()));
+							else candidates.add(line);
+						}
 					}
 				}
-			}
-			p.waitFor(2, TimeUnit.SECONDS);
-		} catch (Exception ignored) {}
+				p.waitFor(2, TimeUnit.SECONDS);
+			} catch (Exception ignored) {}
+		}
 	}
 
 	protected void runWhereCommand(Set<String> candidates, String binName) {

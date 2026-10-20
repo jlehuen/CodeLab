@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,13 +42,14 @@ import codelab.CodeLab;
 import codelab.client.ChatController;
 import codelab.client.NewpassDialog;
 import codelab.client.UserData;
+import codelab.eval.SessionEvaluator;
 import codelab.modules.editeur.ModuleEditor;
 import codelab.utils.Utils;
 
 /**
 *	Classe de la table des utlisateurs
 *	@author Jérôme Lehuen
-*	@version 23/10/25
+*	@version 09/10/26
 */
 
 // https://www.codejava.net/java-se/swing/6-techniques-for-sorting-jtable-you-should-know
@@ -91,6 +94,8 @@ public class UserTable extends JScrollPane {
 
 	private JMenuItem itemTchat = new JMenuItem();
 	private JMenuItem itemControl = new JMenuItem();
+	private JMenu menuEvalStudent = new JMenu();
+	private JMenu menuEvalSession = new JMenu();
 	private JMenuItem itemResetPasswd= new JMenuItem();
 	private JMenuItem itemDeconnexion = new JMenuItem();
 	private JMenuItem itemOpenSession = new JMenuItem();
@@ -207,6 +212,18 @@ public class UserTable extends JScrollPane {
 			}
 		});
 
+		table.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e)) {
+					int r = table.rowAtPoint(e.getPoint());
+					if (r >= 0 && r < table.getRowCount()) {
+						table.setRowSelectionInterval(r, r);
+					}
+					updateMenuItems();
+				}
+			}
+		});
+
 		// Menu popup
 		UserPopupMenu popupMenu = new UserPopupMenu();
 		table.setComponentPopupMenu(popupMenu);
@@ -231,14 +248,42 @@ public class UserTable extends JScrollPane {
 	// Méthodes privées
 	///////////////////////////////////////////////////
 
-	private UserData findUserData(String login) {
-		// Trouver un utilisateur
+	public UserData findUserData(String login) {
+		if (login == null || login.isBlank()) return null;
+		// Recherche prioritaire dans le modèle complet (insensible aux filtres de vue)
+		if (model != null) {
+			for (int i = 0; i < model.getRowCount(); i++) {
+				Object obj = model.getValueAt(i, 0);
+				if (obj instanceof UserData) {
+					UserData udata = (UserData) obj;
+					if (login.equals(udata.getLogin()))
+						return udata;
+				}
+			}
+		}
+		// Recherche de secours sur les lignes visibles de la table
 		for (int i = 0; i < table.getRowCount(); i++) {
 			UserData udata = (UserData) table.getValueAt(i, 0);
-			if (udata.getLogin().equals(login))
+			if (udata != null && login.equals(udata.getLogin()))
 				return udata;
 		}
 		return null;
+	}
+
+	public String getStudentName(String login) {
+		UserData udata = findUserData(login);
+		if (udata != null && udata.getName() != null && !udata.getName().isBlank()) {
+			return udata.getName().trim();
+		}
+		return null;
+	}
+
+	public List<UserData> getAllUsers() {
+		List<UserData> list = new ArrayList<>();
+		for (int i = 0; i < table.getRowCount(); i++) {
+			list.add((UserData) table.getValueAt(i, 0));
+		}
+		return list;
 	}
 
 	private int findRow(String login) {
@@ -310,6 +355,7 @@ public class UserTable extends JScrollPane {
 
 		itemTchat.setEnabled(ispresent);
 		itemControl.setEnabled(isstudent);
+		menuEvalStudent.setEnabled(isstudent);
 		itemResetHelpFlag.setEnabled(ispresent && helpFlag);
 		itemResetPasswd.setEnabled(isstudent || client_Admin || client_Lehuen);
 		itemDeconnexion.setEnabled((ispresent && isstudent) || client_Admin || client_Lehuen);
@@ -331,7 +377,11 @@ public class UserTable extends JScrollPane {
 
 		menuStudent.setText(String.format(CodeLab.LABEL("UserTable_menuStudent"), udata));
 		itemControl.setText(String.format(label2, udata));
+		menuEvalSession.setText(String.format(CodeLab.LABEL("menuEvalSession"), sessionId));
+		SessionEvaluator.populateSkillsSubmenu(menuEvalSession, skill -> SessionEvaluator.evaluateSession(codelab, sessionId, skill));
 		itemTchat.setText(String.format(CodeLab.LABEL("UserTable_4"), udata));
+		menuEvalStudent.setText(String.format(CodeLab.LABEL("menuEvalStudent"), udata.getName()));
+		SessionEvaluator.populateSkillsSubmenu(menuEvalStudent, skill -> SessionEvaluator.evaluateStudent(codelab, udata.getLogin(), udata.getName(), skill));
 		itemDeconnexion.setText(String.format(CodeLab.LABEL("UserTable_5"), udata));
 		itemResetPasswd.setText(String.format(CodeLab.LABEL("UserTable_6"), udata));
 		itemResetHelpFlag.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
@@ -406,18 +456,6 @@ public class UserTable extends JScrollPane {
 			udata.setEditedFile(path);
 		}
 	}
-
-	/*
-	public void controlEverybody() {
-		// Pour prendre la main sur tous les clients
-		for (int i = 0; i < table.getRowCount(); i++) {
-			UserData udata = (UserData) table.getValueAt(i, 0);
-			if (udata.isStudent() && !udata.isControlled()) {
-				codelab.askControlMode(udata.getLogin(), true);
-			}
-		}
-	}
-	*/
 
 	public void disableAllControled() {
 		// Pour redonner la main aux clients controlés
@@ -599,14 +637,6 @@ public class UserTable extends JScrollPane {
 				}
 			});
 
-			/*
-			// Prendre le contrôle sur tout le monde
-			itemEnableControlAll.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					controlEverybody();
-				}
-			});
-			*/
 
 			// Rendre la main à tout le monde
 			itemDisableControlAll.addActionListener(new ActionListener() {
@@ -728,14 +758,17 @@ public class UserTable extends JScrollPane {
 
 			// Construction du menu
 
+			menuStudent.add(menuEvalStudent);
+			menuStudent.add(new JSeparator());
 			menuStudent.add(itemTchat);
 			menuStudent.add(itemResetHelpFlag);
 			menuStudent.add(itemControl);
 			menuStudent.add(itemResetPasswd);
 			menuStudent.add(itemDeconnexion);
 
+			menuGroup.add(menuEvalSession);
+			menuGroup.add(new JSeparator());
 			menuGroup.add(itemMessage);
-//			menuGroup.add(itemEnableControlAll);
 			menuGroup.add(itemDisableControlAll);
 			menuGroup.add(itemDeconnexionAll);
 

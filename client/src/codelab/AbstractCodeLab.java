@@ -43,7 +43,7 @@ import codelab.utils.Utils;
 /**
 *	Classe abstraite de CodeLab
 *	@author Jérôme Lehuen
-*	@version 01/10/26
+*	@version 12/10/26
 */
 
 public abstract class AbstractCodeLab extends JFrame {
@@ -52,8 +52,8 @@ public abstract class AbstractCodeLab extends JFrame {
 	// Constantes publiques finales
 	///////////////////////////////////////////////////
 
-	public static final String VERSION = "1.4.3"; // Attribué automatiquement par ant
-	public static final String BUILD = "2610011442"; // Attribué automatiquement par ant
+	public static final String VERSION = "1.5.0"; // Attribué automatiquement par ant
+	public static final String BUILD = "2610201202"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -98,6 +98,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static final String INCLUDES_FOLDER = CODELAB_FILES_HIDDEN + "/includes"; // Le dossier des API par langage
 	public static final String TEMPLATES_FOLDER = CODELAB_FILES_HIDDEN + "/templates"; // Le dossier des templates (modèles)
 	public static final String EXERCICES_FOLDER = CODELAB_FILES_HIDDEN + "/exercices"; // Le dossier des exemples et des exercices
+	public static final String MAN_FOLDER = CODELAB_FILES_HIDDEN + "/man"; // Le dossier des manuels des modules
 	public static String PROG_DIST_FOLDER = CODELAB_FILES_HIDDEN + "/programs/dist"; // Le dossier des programmes en mode connecté (modifiable dans le constructeur)
 	public static final String PROG_LOCAL_FOLDER = CODELAB_FILES_HIDDEN + "/programs/local"; // Le dossier des programmes en mode standalone
 	public static final String LOGFILE = CODELAB_FILES_HIDDEN + "/codelab.log"; // Le fichier de log
@@ -108,11 +109,16 @@ public abstract class AbstractCodeLab extends JFrame {
 	// Ressources utilisateur dans le dossier codelab.files
 
 	public static final String MODULES_FOLDER = CODELAB_FILES + "/modules"; // Le dossier où déposer les plugins
+	public static final String SKILLS_FOLDER = CODELAB_FILES + "/skills"; // Le dossier des skills pédagogiques et d'évaluation
+	public static final String EVALUATIONS_FOLDER = CODELAB_FILES + "/evaluations"; // Le dossier permanent des comptes-rendus d'évaluation
+	public static final String STYLES_FOLDER = CODELAB_FILES + "/styles"; // Le dossier des styles CSS Markdown et rapports
 	public static final String USER_DATA_FOLDER = CODELAB_FILES + "/userdata"; // Le dossier de données utilisateur
 	public static final String USER_MEDIA_FOLDER = USER_DATA_FOLDER + "/media"; // Le dossier où déposer les médias (wav, etc.)
 	public static final String USER_GRAPH_FOLDER = USER_DATA_FOLDER + "/mod_graphics"; // Le dossier mod_graphics
 	public static final String USER_ROBOT_FOLDER = USER_DATA_FOLDER + "/mod_robotics"; // Le dossier mod_robotics
 	public static final String USER_PROP_FILE = USER_DATA_FOLDER + "/user.properties"; // Le fichier de configuration utilisateur
+	public static final String MARKDOWN_CSS_FILE = STYLES_FOLDER + "/Markdown.css"; // La feuille de style Markdown par défaut
+	public static final String REPORT_CSS_FILE = STYLES_FOLDER + "/report.css"; // Feuille de style CSS de secours pour les rapports
 
 	// Quelques autres constantes finales
 
@@ -148,6 +154,8 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static boolean REPORT_EXCEPTIONS; // Mode reporting ou non
 	public static boolean RETE_FLAG; // Activation du moteur d'inférences
 	public static boolean PRINT_FACTS; // Affichage de la BDF dans le log
+	public static String REPORT_STYLE = "Basic"; // Style CSS sélectionné pour les rapports d'évaluation IA
+	public static String IPYNB_STYLE = "Markdown"; // Style CSS sélectionné pour les fichiers ipynb
 
 	public static boolean WRK_SERVER_OK;
 	public static boolean ERR_SERVER_OK;
@@ -198,14 +206,6 @@ public abstract class AbstractCodeLab extends JFrame {
 			// https://rollbar.com/blog/java-unsatisfiedlinkerror-runtime-error/
 			// https://github.com/jinput/jinput/issues/42
 		}
-
-		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-			e.printStackTrace();
-			// Affiche une boîte de dialogue si possible
-			javax.swing.SwingUtilities.invokeLater(() ->
-				javax.swing.JOptionPane.showMessageDialog(null, "Erreur fatale: " + e.getMessage())
-			);
-		});
 	}
 
 	///////////////////////////////////////////////////
@@ -219,8 +219,7 @@ public abstract class AbstractCodeLab extends JFrame {
 				super.dispatchEvent(newEvent);
 			}
 			catch (Throwable e) {
-				Exception ex = new Exception(e);
-				ExceptionManager.process(ex);
+				ExceptionManager.process(e);
 			}
 		}
 	}
@@ -228,8 +227,12 @@ public abstract class AbstractCodeLab extends JFrame {
 	private class LastChanceHandler implements Thread.UncaughtExceptionHandler {
 
 		public void uncaughtException(Thread t, Throwable e) {
-			Exception ex = new Exception(e);
-			ExceptionManager.process(ex);
+			e.printStackTrace();
+			ExceptionManager.process(e);
+			// Affiche une boîte de dialogue si possible
+			SwingUtilities.invokeLater(() ->
+				JOptionPane.showMessageDialog(null, "Erreur fatale: " + e.getMessage())
+			);
 		}
 	}
 
@@ -331,6 +334,14 @@ public abstract class AbstractCodeLab extends JFrame {
 
 			// Autres infos
 			DATA_VERSION = getStringData("DATA_VERSION");
+			REPORT_STYLE = getStringData("REPORT_STYLE");
+			if (REPORT_STYLE == null || REPORT_STYLE.trim().isEmpty() || REPORT_STYLE.equals(UNDEFINED)) {
+				REPORT_STYLE = "Basic";
+			}
+			IPYNB_STYLE = getStringData("IPYNB_STYLE");
+			if (IPYNB_STYLE == null || IPYNB_STYLE.trim().isEmpty() || IPYNB_STYLE.equals(UNDEFINED)) {
+				IPYNB_STYLE = "Markdown";
+			}
 
 			return true;
 		}
@@ -367,6 +378,8 @@ public abstract class AbstractCodeLab extends JFrame {
 
 			// Autres infos
 			setStringData("DATA_VERSION", VERSION); // Version actuelle de CodeLab
+			setStringData("REPORT_STYLE", REPORT_STYLE != null ? REPORT_STYLE : "Basic");
+			setStringData("IPYNB_STYLE", IPYNB_STYLE != null ? IPYNB_STYLE : "Markdown");
 
 			HIDDEN_DATA.store(new FileWriter(DATAFILE), null);
 		}

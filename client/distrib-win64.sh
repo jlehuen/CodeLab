@@ -72,6 +72,7 @@ cp launchers/windows/patch-codelab.bat "$DISTRIB/"
 cp launchers/windows/install.bat "$DISTRIB/"
 cp launchers/icon/codelab.ico "$DISTRIB/"
 cp launchers/README.TXT "$DISTRIB/"
+cp data/report.css "$DISTRIB/report.css"
 
 echo "Préparation du dossier codelab.files..."
 cp -r codelab.files "$DISTRIB/.hidden/codelab/"

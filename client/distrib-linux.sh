@@ -40,12 +40,13 @@ cp bin/linux_64/* $DISTRIB/.hidden/bin/
 echo "Copie du dossier JDK-17.0.8.1+1..."
 cp -r java/linux_64/JDK-17.0.8.1+1 $DISTRIB/.hidden/
 
-echo "Copie des launchers..."
+echo "Copie des launchers et styles..."
 cp launchers/unix/codelab $DISTRIB
 cp launchers/icon/codelab.ico $DISTRIB
 cp launchers/unix/first_time.sh $DISTRIB
 cp launchers/unix/kill_codelab.sh $DISTRIB
 cp launchers/README.TXT $DISTRIB
+cp data/report.css $DISTRIB/report.css
 
 echo "Préparation du dossier codelab.files..."
 cp -r codelab.files $DISTRIB/.hidden/codelab/

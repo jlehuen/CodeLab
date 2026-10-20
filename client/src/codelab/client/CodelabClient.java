@@ -843,35 +843,84 @@ public class CodelabClient {
 		return (res == JOptionPane.YES_OPTION);
 	}
 
+	public static boolean isDistFile(File file) {
+		if (file == null) return false;
+		String norm = file.getAbsolutePath().replaceAll("\\\\", "/");
+		return norm.contains("/programs/dist/") || norm.contains("/dist/") || norm.endsWith("/dist");
+	}
+
 	private void downloadCurrentFile() {
 		File file = editor.getCurrentFile();
-		UserData udata = editor.getUserTable().getSelectedUser();
+		if (file == null) return;
+		if (!isDistFile(file)) return;
+		if (FileManager.isClone(file)) return;
+
+		UserData udata = (editor.getUserTable() != null) ? editor.getUserTable().getSelectedUser() : null;
 		// On actualise seulement si l'auteur du fichier est connecté et que ce n'est pas un clone
-		if (file != null && !FileManager.isClone(file) && udata.isConnected()) {
+		if (udata != null && udata.isConnected()) {
 			requestFile(file);
 		}
 	}
 
 	private String name4server(File file) {
+		if (file == null) return null;
 		try {
-			if (file.toString().endsWith("dist")) // Cas à la racine
-				return String.format("%s/%s", session, login);
 			String path = file.toString().replaceAll("\\\\", "/"); // Normalisation des séparateurs sous Windows
-			String endpath = path.split("dist/", 0)[1]; // Fin du chemin
+			if (path.endsWith("dist") || path.endsWith("dist/")) // Cas à la racine
+				return String.format("%s/%s", session, login);
+
+			String endpath = null;
+			int idx = path.lastIndexOf("/dist/");
+			if (idx != -1) {
+				endpath = path.substring(idx + "/dist/".length());
+			} else {
+				int idx2 = path.lastIndexOf("dist/");
+				if (idx2 != -1) {
+					endpath = path.substring(idx2 + "dist/".length());
+				}
+			}
+
+			if (endpath == null || endpath.isEmpty()) {
+				return null;
+			}
+
+			if ((isTutor() || isAdmin()) && endpath.startsWith("evaluations/")) {
+				return String.format("%s/%s", session, endpath);
+			}
 			String result = String.format("%s/%s/%s", session, login, endpath);
 			return result;
 		}
-		catch (ArrayIndexOutOfBoundsException e) {
+		catch (Exception e) {
 			return null; // Pas censé arriver
 		}
 	}
 
 	private String name4update(File file) {
 		// Adapte le path à destination d'une update tuteur
-		String path = file.toString().replaceAll("\\\\", "/"); // Normalisation des séparateurs sous Windows
-		String endpath = path.split("dist/", 0)[1]; // Fin du chemin
-		String result = String.format("%s/%s", session, endpath);
-		return result;
+		if (file == null) return null;
+		try {
+			String path = file.toString().replaceAll("\\\\", "/"); // Normalisation des séparateurs sous Windows
+			String endpath = null;
+			int idx = path.lastIndexOf("/dist/");
+			if (idx != -1) {
+				endpath = path.substring(idx + "/dist/".length());
+			} else {
+				int idx2 = path.lastIndexOf("dist/");
+				if (idx2 != -1) {
+					endpath = path.substring(idx2 + "dist/".length());
+				}
+			}
+
+			if (endpath == null || endpath.isEmpty()) {
+				return null; // Fichier hors du dossier dist (ex: rapport d'évaluation)
+			}
+
+			String result = String.format("%s/%s", session, endpath);
+			return result;
+		}
+		catch (Exception e) {
+			return null;
+		}
 	}
 
 	private String localPath(String path) {
@@ -1047,17 +1096,21 @@ public class CodelabClient {
 
 	public void requestFile(File file) {
 		if (!isConnected()) return;
+		if (file == null) return;
 		String serverPath = name4update(file); // Nom du fichier sur le serveur
+		if (serverPath == null) return;
 		String clientPath = file.toString(); // Pour enregistrer le fichier reçu
 		server.requestFile(serverPath, clientPath);
 	}
 
 	public void uploadFile(File file) {
 		if (!isConnected()) return;
+		if (file == null) return;
 		if (isTooBig(file)) return; // Fichier trop volumineux
+		String name4server = name4server(file);
+		if (name4server == null) return;
 		try {
 			byte[] content = Files.readAllBytes(Paths.get(file.toString()));
-			String name4server = name4server(file);
 			server.uploadFile(content, name4server);
 		}
 		catch (IOException e) {
@@ -1083,11 +1136,13 @@ public class CodelabClient {
 
 	public void uploadControlledFile(File file, String user_login) {
 		if (!isConnected()) return;
+		if (file == null) return;
 		if (isTooBig(file)) return; // Fichier trop volumineux
+		String name4server = name4server(file);
+		if (name4server == null) return;
 		try {
 			//codelab.printlnToConsole("* Uploading file to " + user_login, Color.BLUE, false);
 			byte[] content = Files.readAllBytes(Paths.get(file.toString()));
-			String name4server = name4server(file);
 			server.uploadControlledFile(content, name4server, user_login);
 		}
 		catch (IOException e) {
@@ -1100,6 +1155,10 @@ public class CodelabClient {
 	///////////////////////////////////////////////////
 
 	private UserData[] userDataArray = null; // Utilisateurs de la session
+
+	public UserData[] getUserDataArray() {
+		return userDataArray;
+	}
 
 	@SuppressWarnings("unused")
 	private void printUserDataArray() {

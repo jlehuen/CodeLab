@@ -13,6 +13,7 @@ public class DefaultToolbar extends AbstractToolbar {
 
 	public DefaultToolbar(AbstractModule module) {
         super(module);
+        if (module.hasManual()) addButton("MAN");
         addSeparatorflex();
         endToolbar();
     }

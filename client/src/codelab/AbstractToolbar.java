@@ -15,6 +15,7 @@ import codelab.controllers.devices.EventViewer;
 import codelab.controllers.widgets.Joystick;
 import codelab.controllers.widgets.Numpad;
 import codelab.modules.editeur.ModuleEditor;
+import codelab.modules.editeur.manager.FileManager;
 import codelab.utils.ResourceUtils;
 import codelab.utils.Utils;
 
@@ -87,6 +88,7 @@ public abstract class AbstractToolbar extends JToolBar {
 	protected ImageIcon icon_clear = ResourceUtils.loadImageIcon("icons/icon_clear.png");
 	protected ImageIcon icon_tools = ResourceUtils.loadImageIcon("icons/icon_tools.png");
 	protected ImageIcon icon_turtle = ResourceUtils.loadImageIcon("icons/icon_turtle.png");
+	protected ImageIcon icon_man = ResourceUtils.loadImageIcon("icons/icon_man.png");
 
 	protected ImageIcon icon_help_on = ResourceUtils.loadImageIcon("icons/icon_help_on.png");
 	protected ImageIcon icon_help_off = ResourceUtils.loadImageIcon("icons/icon_help_off.png");
@@ -111,6 +113,7 @@ public abstract class AbstractToolbar extends JToolBar {
 	protected ImageIcon logo_clips = ResourceUtils.loadImageIcon("icons/logo_clips.png");
 	protected ImageIcon logo_haskell = ResourceUtils.loadImageIcon("icons/logo_haskell.png");
 	protected ImageIcon logo_python = ResourceUtils.loadImageIcon("icons/logo_python.png");
+	protected ImageIcon logo_jupyter = ResourceUtils.loadImageIcon("icons/logo_jupyter.png");
 	protected ImageIcon logo_scratch = ResourceUtils.loadImageIcon("icons/logo_blocs.png");
 	protected ImageIcon logo_processing = ResourceUtils.loadImageIcon("icons/logo_process.png");
 
@@ -227,12 +230,14 @@ public abstract class AbstractToolbar extends JToolBar {
 
 	protected ToolButton resetButton;
 	protected ToolButton dataButton;
+	protected ToolButton manButton;
 	protected ToolButton numpadButton;
 	protected ToolButton joystickButton;
 	protected ToolButton controllerButton;
 
 	protected void addButton(String ident) {
 		switch (ident) {
+			case "MAN":		add(manButton = new ToolButton("MAN", LABEL("Btn_man"), LABEL("Btn_man_tooltip"), icon_man, this)); break;
 			case "RESET":	add(resetButton = new ToolButton("RESET", LABEL("Btn_reset"), LABEL("Btn_reset_tooltip"), icon_reset, this)); break;
 			case "DATA":	add(dataButton = new ToolButton("DATA", LABEL("Btn_data"), LABEL("Btn_data_tooltip"), icon_dashboard, this)); break;
 			case "NUMPAD":	add(numpadButton = new ToolButton("NUMPAD", LABEL("Btn_numpad"), LABEL("Btn_numpad_tooltip"), icon_numpad, this)); break;
@@ -294,8 +299,9 @@ public abstract class AbstractToolbar extends JToolBar {
 				stopButton.setEnabled(false);
 			}
 			ModuleEditor moduleEditor = getEditor();
+			boolean is_evals = (moduleEditor != null && moduleEditor.getExplorerMode() == FileManager.MODE_EVALUATIONS);
 			boolean editable_mode = (moduleEditor == null) || moduleEditor.getEditor().getEditable();
-			newButton.setEnabled(!codelab.isTutor() && editable_mode);
+			newButton.setEnabled(!codelab.isTutor() && !is_evals && editable_mode);
 		}
 		if (autoconsole) consoleButton.setIcon(icon_console_auto);
 		else if (alerte) consoleButton.setIcon(icon_console_alert);
@@ -366,6 +372,7 @@ public abstract class AbstractToolbar extends JToolBar {
 			case "STOP":	action_stop(); break;
 			case "RESET":	action_reset(); break;
 			case "HELP":	action_help(); break;
+			case "MAN":		module.openManual(); break;
 			case "TERM":	module.toggleConsole(); break;
 			case "DATA":	module.toggleDataTable(); break;
 			case "NUMPAD":	action_open_widget(1); break;
@@ -378,9 +385,10 @@ public abstract class AbstractToolbar extends JToolBar {
 	}
 
 	public void action_new() {
+		ModuleEditor editor = getEditor();
+		if (editor != null && editor.getExplorerMode() == FileManager.MODE_EVALUATIONS) return;
 		SwingUtilities.invokeLater(() -> {
 			// Évite le blocage de focus au niveau de l'éditeur
-			ModuleEditor editor = getEditor();
 			codelab.setSelectedModule(editor);
 			editor.new_file();
 		});

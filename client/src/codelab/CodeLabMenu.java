@@ -17,7 +17,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JSeparator;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 import codelab.console.ConsolePopupMenu;
 import codelab.utils.MyFileUtils;
@@ -34,6 +37,8 @@ import codelab.utils.Utils;
 public class CodeLabMenu extends JPopupMenu {
 
 	private static final long serialVersionUID = 1L;
+
+	public static JCheckBoxMenuItem itemEnableProxy;
 
 	private CodeLab codelab;
 
@@ -327,6 +332,17 @@ public class CodeLabMenu extends JPopupMenu {
 		});
 
 		// ---------------------------------------
+		// Réinitialiser le dossier codelab.files
+
+		JMenuItem itemRestoreCodelabFiles = new JMenuItem(CodeLab.LABEL("itemRestoreCodelabFiles"));
+		itemRestoreCodelabFiles.setEnabled(!codelab.isRunning());
+		itemRestoreCodelabFiles.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				codelab.resetCodelabFiles();
+			}
+		});
+
+		// ---------------------------------------
 		// Compilateurs et interpréteurs
 
 		JMenuItem itemSearchGcc = new JMenuItem(CodeLab.LABEL("itemSearchGcc"));
@@ -382,6 +398,20 @@ public class CodeLabMenu extends JPopupMenu {
 				if (en.isSelected() && !CodeLab.LANG.equals("en")) changeLanguage("en");
 				if (fr.isSelected() && !CodeLab.LANG.equals("fr")) changeLanguage("fr");
 			}
+		});
+
+		// ---------------------------------------
+		// Styles CSS Markdown (rapports d'évaluation & carnets ipynb)
+		// ---------------------------------------
+
+		JMenu menuMarkdownStyles = new JMenu(CodeLab.LABEL("menuMarkdownStyles"));
+		buildMarkdownStylesMenu(menuMarkdownStyles);
+		menuMarkdownStyles.addMenuListener(new MenuListener() {
+			public void menuSelected(MenuEvent e) {
+				buildMarkdownStylesMenu(menuMarkdownStyles);
+			}
+			public void menuDeselected(MenuEvent e) {}
+			public void menuCanceled(MenuEvent e) {}
 		});
 
 		// ---------------------------------------
@@ -458,6 +488,21 @@ public class CodeLabMenu extends JPopupMenu {
 		});
 
 		// ---------------------------------------
+		// Activation du proxy
+		// ---------------------------------------
+
+		itemEnableProxy = new JCheckBoxMenuItem(CodeLab.LABEL("itemEnableProxy"));
+		itemEnableProxy.setSelected(CodeLab.isProxyEnabled());
+		itemEnableProxy.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				boolean selected = itemEnableProxy.isSelected();
+				if (selected != CodeLab.isProxyEnabled()) {
+					CodeLab.setProxyEnabled(selected);
+				}
+			}
+		});
+
+		// ---------------------------------------
 		// Création et affichage du menu
 
 		JMenu menuFinders = new JMenu(CodeLab.LABEL("menuFinders"));
@@ -470,14 +515,16 @@ public class CodeLabMenu extends JPopupMenu {
 		menuConfigFile.add(itemLanguage);
 		menuConfigFile.add(itemEditConfigFile);
 		menuConfigFile.add(itemRestoreConfigFile);
+		menuConfigFile.add(itemRestoreCodelabFiles);
 		if (CodeLab.REDIRECT) menuConfigFile.add(itemShowLogfile);
 		menuConfigFile.add(menuFinders);
 
 		JMenu menuBackups = new JMenu(CodeLab.LABEL("menuBackups"));
 		menuBackups.add(itemCreateRecoveryBackup);
 		menuBackups.add(itemRestoreRecoveryBackup);
-		if (Desktop.isDesktopSupported()) menuBackups.add(itemRecoveryFolder);
 		menuBackups.add(itemCleanRecoveryFolder);
+		// Pour ne pas révéler le .hidden de l'utilisateur
+		// if (Desktop.isDesktopSupported()) menuBackups.add(itemRecoveryFolder);
 		menuBackups.add(new JSeparator());
 		menuBackups.add(itemExportZip);
 
@@ -486,6 +533,7 @@ public class CodeLabMenu extends JPopupMenu {
 		menuEditor.add(itemCodeFolding);
 		menuEditor.add(itemInvisibles);
 		menuEditor.add(itemFontButton);
+		menuEditor.add(menuMarkdownStyles);
 
 		JMenu menuConsole = new JMenu(CodeLab.LABEL("Btn_term"));
 		menuConsole.add(itemAutoconsole);
@@ -504,13 +552,14 @@ public class CodeLabMenu extends JPopupMenu {
 		add(menuEditor);
 		add(menuConsole);
 		add(menuPlugins);
-		add(menuBackups);
 		add(menuConfigFile);
+		add(menuBackups);
 		add(new JSeparator());
 		add(itemGotoHomepage);
 		add(itemInformations);
 		add(itemCheckVersion);
 		add(new JSeparator());
+		add(itemEnableProxy);
 		add(itemRelaunchCodeLab);
 		add(itemQuitCodeLab);
 		if (CodeLab.TEST_REPORTING) add(itemTest1);
@@ -548,5 +597,44 @@ public class CodeLabMenu extends JPopupMenu {
 			CodeLab.ICON);
 		codelab.things_to_do_before_exiting();
 		CodeLab.relaunch();
+	}
+
+	private void buildMarkdownStylesMenu(JMenu menu) {
+		menu.removeAll();
+		ButtonGroup group = new ButtonGroup();
+		java.util.List<String> styles = CodeLab.getAvailableReportStyles();
+
+		// Détection contextuelle du document actif
+		codelab.modules.editeur.AbstractEditor currentEditor = (codelab.getEditor() != null) ? codelab.getEditor().getEditor() : null;
+		boolean isNotebook = currentEditor instanceof codelab.modules.editeur.notebook.NotebookEditor;
+		boolean isReport = currentEditor instanceof codelab.modules.editeur.markdown.MarkdownViewer;
+
+		String current;
+		if (isNotebook) {
+			current = AbstractCodeLab.IPYNB_STYLE != null ? AbstractCodeLab.IPYNB_STYLE : "Markdown";
+		} else if (isReport) {
+			current = AbstractCodeLab.REPORT_STYLE != null ? AbstractCodeLab.REPORT_STYLE : "Basic";
+		} else {
+			current = AbstractCodeLab.REPORT_STYLE != null ? AbstractCodeLab.REPORT_STYLE : "Basic";
+		}
+
+		for (String style : styles) {
+			JRadioButtonMenuItem item = new JRadioButtonMenuItem(style);
+			if (style.equalsIgnoreCase(current)) {
+				item.setSelected(true);
+			}
+			item.addActionListener(e -> {
+				if (isNotebook) {
+					codelab.setIpynbStyle(style);
+				} else if (isReport) {
+					codelab.setReportStyle(style);
+				} else {
+					codelab.setReportStyle(style);
+					codelab.setIpynbStyle(style);
+				}
+			});
+			group.add(item);
+			menu.add(item);
+		}
 	}
 }

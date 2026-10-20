@@ -80,7 +80,7 @@ public class ServerPopupMenu extends JPopupMenu {
 			add_disable(String.format("Server port: %d", client.getPort()));
 			if (CodeLab.PROXY_CONFIGURED) {
 				add_disable(String.format("Proxy host: %s", CodeLab.PROXY_HOST));
-				add_disable(String.format("Proxy port: %d", CodeLab.PROXY_PORT));
+				add_disable(String.format("Proxy port: %s", CodeLab.PROXY_PORT));
 			}
 			add_disable(String.format("Client login: %s", client.getLogin()));
 			add_disable(String.format("Client statut: %s", client.getStatut()));

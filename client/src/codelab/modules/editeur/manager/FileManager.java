@@ -3,8 +3,6 @@ package codelab.modules.editeur.manager;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -23,12 +21,9 @@ import org.apache.commons.io.FileUtils;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.JSeparator;
 import javax.swing.JTree;
+import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -63,23 +58,118 @@ public class FileManager extends JTree {
 	private CodeLab codelab;
 	private ModuleEditor editor;
 	private String base; // Dossier de départ
-	private JTree self; // Référence pour les listeners
 
 	private String rootPath; // Construit à partir de rootNode
 	private DefaultMutableTreeNode rootNode; // Le noeud racine
 	private DefaultMutableTreeNode selectedNode; // Le noeud sélectionné
 
-	private JPopupMenu menu_root, menu_file, menu_folder;
-	private JMenuItem itemF0, itemF1, itemF2, itemF3, itemF4, itemF5;
-	private JMenuItem item3, item4, item5, item6, item7, item8, item9, item12;
-	private JMenuItem item10a, item11a, item10b, item11b, item10c, item11c;
+	private FileManagerMenu fileManagerMenu;
+
+	public static final int MODE_PROGRAMS = 0;
+	public static final int MODE_EVALUATIONS = 1;
+	private int mode = MODE_PROGRAMS;
 
 	// Extensions autorisées et exclusions
 	private List<String> folders_to_exclude = Arrays.asList("__pycache__");
 	private List<String> files_to_exclude = Arrays.asList("__TODO__", "__temp.c");
 	private List<String> extensions = Arrays.asList(
-		".c", ".h", ".go", ".hs", ".py", ".java", ".pde", ".clp", ".blocs", ".npy",
-		".png", ".jpg", ".gif", ".txt", ".csv", ".log", ".html", ".css");
+		".c", ".h", ".go", ".hs", ".py", ".ipynb", ".java", ".pde", ".clp", ".blocs", ".npy",
+		".png", ".jpg", ".gif", ".txt", ".csv", ".log", ".html", ".css", ".md");
+
+	public int getMode() {
+		return mode;
+	}
+
+	public void setMode(int newMode) {
+		if (this.mode == newMode) return;
+		this.mode = newMode;
+		if (this.mode == MODE_EVALUATIONS) {
+			setBase(CodeLab.EVALUATIONS_FOLDER);
+			populate();
+			collapseAll();
+			invokeLater_updateUI();
+		} else {
+			restoreProgramsBase();
+		}
+	}
+
+	public void restoreProgramsBase() {
+		this.mode = MODE_PROGRAMS;
+		if (codelab.isConnected() && (codelab.isTutor() || codelab.isAdmin())) {
+			if (editor != null && editor.getUserTable() != null) {
+				UserData udata = editor.getUserTable().getSelectedUser();
+				if (udata != null && udata.isStudent()) {
+					setBase(codelab.getProgramDir() + "/" + udata.getLogin());
+					populate();
+					collapseAll();
+					invokeLater_updateUI();
+					return;
+				}
+			}
+			clear();
+		} else {
+			setBase(codelab.getProgramDir());
+			populate();
+			collapseAll();
+			invokeLater_updateUI();
+		}
+	}
+
+	public void highlightStudentEvaluation(String studentLogin) {
+		if (studentLogin == null || studentLogin.isEmpty() || rootNode == null) return;
+		Enumeration<TreeNode> en = rootNode.breadthFirstEnumeration();
+		DefaultMutableTreeNode targetNode = null;
+		while (en.hasMoreElements()) {
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode) en.nextElement();
+			FileDescr fd = getFileDescr(node);
+			if (fd != null && fd.getFilename().equals(studentLogin)) {
+				targetNode = node;
+				break;
+			}
+		}
+		if (targetNode != null) {
+			expandAndSelectNode(targetNode);
+		}
+	}
+
+	public static void openFileOrFolder(File file) {
+		if (file == null || !file.exists()) return;
+		try {
+			if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.OPEN)) {
+				java.awt.Desktop.getDesktop().open(file);
+			}
+		} catch (Exception e) {
+			CodeLab.logger("Error opening file/folder in desktop: " + e.getMessage());
+		}
+	}
+
+	public static boolean isEvaluation(File file) {
+		if (file == null) return false;
+		String path = file.getAbsolutePath().replace('\\', '/');
+		return path.contains("/evaluations/") || path.endsWith("/evaluations");
+	}
+
+	private boolean isFolderExcluded(File folder) {
+		if (folder == null) return true;
+		String name = folder.getName();
+		if (folders_to_exclude.contains(name)) return true;
+		if (name.startsWith(".")) return true;
+		if (mode == MODE_PROGRAMS && "evaluations".equalsIgnoreCase(name)) return true;
+		return false;
+	}
+
+	private boolean isFileExcluded(File file) {
+		if (file == null) return true;
+		String filename = file.getName();
+		if (files_to_exclude.contains(filename)) return true;
+		if (filename.startsWith(".")) return true;
+		if (mode == MODE_PROGRAMS) {
+			if (filename.endsWith("_rapport.md")) return true;
+			if (filename.startsWith("notes_") && filename.endsWith(".csv")) return true;
+			if (filename.startsWith("synthese_") && filename.endsWith(".md")) return true;
+		}
+		return false;
+	}
 
 	///////////////////////////////////////////////////
 	// Constructeur
@@ -88,7 +178,7 @@ public class FileManager extends JTree {
 	public FileManager(ModuleEditor editor, CodeLab codelab) {
 		this.editor = editor;
 		this.codelab = codelab;
-		this.self = this;
+		this.fileManagerMenu = new FileManagerMenu(this, editor, codelab);
 		setRootVisible(false);
 		setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 		setTransferHandler(new FileTransferHandler(this));
@@ -114,11 +204,11 @@ public class FileManager extends JTree {
 
 				if (fd.isFile()) {
 					editor.change_file(selectedNode);
-					if (!isClone(fd.getFile())) updateEditedFile(); // Information vers les tuteurs connectés
-					// Pour récupérer le fichier distant en mode tuteur connecté (seulement si pas un clone)
-					if (codelab.isConnected() && codelab.isTutor() && !isClone(fd.getFile())) {
+					if (mode == MODE_PROGRAMS && !isClone(fd.getFile()) && !isEvaluation(fd.getFile())) updateEditedFile(); // Information vers les tuteurs connectés
+					// Pour récupérer le fichier distant en mode tuteur connecté (seulement si pas un clone et pas une évaluation)
+					if (mode == MODE_PROGRAMS && codelab.isConnected() && codelab.isTutor() && !isClone(fd.getFile()) && !isEvaluation(fd.getFile())) {
 						UserData udata = editor.getUserTable().getSelectedUser();
-						if (udata.isConnected()) {
+						if (udata != null && udata.isConnected()) {
 							codelab.getClient().requestFile(fd.getFile());
 						}
 					}
@@ -137,10 +227,7 @@ public class FileManager extends JTree {
 				Point point = new Point(e.getX(), e.getY());
 				boolean isLeftMouseButton = SwingUtilities.isLeftMouseButton(e);
 				boolean isRightMouseButton = SwingUtilities.isRightMouseButton(e);
-				boolean menu_allowed = !codelab.isTutor() && !codelab.isAdmin() && !editor.controlled;
-
 				TreePath path = getPathForLocation(point.x, point.y);
-				boolean selection_multiple = (getSelectionRows().length > 1);
 
 				// -----------------------------------------------------------
 				// Clic sur le bouton gauche
@@ -160,9 +247,9 @@ public class FileManager extends JTree {
 						fd.setModified(false); // Pour enlever la coloration rouge
 						updateTreeAfterSelected(); // Pour actualiser la coloration
 
-						// Double-clic pour exécution (si exécutable)
+						// Double-clic pour exécution (si mode programmes et exécutable)
 						if (e.getClickCount() == 2 && !e.isConsumed()) {
-							if (isFile && editor.isExecutable()) {
+							if (mode == MODE_PROGRAMS && isFile && editor.isExecutable()) {
 								e.consume();
 								codelab.getToolbar().action_run(); // Exécuter le programme
 								codelab.getConsole().focus(); // Activer la console
@@ -176,184 +263,10 @@ public class FileManager extends JTree {
 				// -----------------------------------------------------------
 
 				else if (isRightMouseButton) {
-
-					if (path != null) {
-						if (!isPathSelected(path)) {
-							setSelectionPath(path);
-						}
-						selectedNode = (DefaultMutableTreeNode) path.getLastPathComponent();
-					}
-
-					if (codelab.isTutor() || codelab.isAdmin()) {
-						if (selectedNode == null) {
-							JPopupMenu menu = new JPopupMenu();
-							JMenuItem itemRef = new JMenuItem(LABEL("Refresh_manager"));
-							JMenuItem itemExp = new JMenuItem(LABEL("Expand_manager"));
-							itemRef.addActionListener(ev -> { populate(); editor.reset(); });
-							itemExp.addActionListener(ev -> expandAll());
-							menu.add(itemRef);
-							menu.add(itemExp);
-							menu.show(self, point.x, point.y);
-						} else {
-							FileDescr fd = (FileDescr) selectedNode.getUserObject();
-							if (fd.isDirectory()) {
-								JPopupMenu menu = new JPopupMenu();
-								JMenuItem itemRef = new JMenuItem(LABEL("Refresh_manager"));
-								JMenuItem itemExp = new JMenuItem(LABEL("Expand_manager"));
-								itemRef.addActionListener(ev -> { populate(); editor.reset(); });
-								itemExp.addActionListener(ev -> expandAll());
-								menu.add(itemRef);
-								menu.add(itemExp);
-								menu.show(self, point.x, point.y);
-							} else if (fd.isFile()) {
-								JPopupMenu menu = new JPopupMenu();
-								if (isClone(fd.getFile())) {
-									JMenuItem itemDel = new JMenuItem(String.format(LABEL("Delete_clone"), fd.getFilename()));
-									itemDel.addActionListener(ev -> delete_clone(selectedNode, fd));
-									menu.add(itemDel);
-								} else {
-									JMenuItem itemCln = new JMenuItem(String.format(LABEL("Clone_program_file"), fd.getFilename()));
-									itemCln.addActionListener(ev -> clone_file(fd, selectedNode));
-									menu.add(itemCln);
-								}
-								menu.add(new JSeparator());
-								JMenuItem itemRef = new JMenuItem(LABEL("Refresh_manager"));
-								JMenuItem itemExp = new JMenuItem(LABEL("Expand_manager"));
-								itemRef.addActionListener(ev -> { populate(); editor.reset(); });
-								itemExp.addActionListener(ev -> expandAll());
-								menu.add(itemRef);
-								menu.add(itemExp);
-								menu.show(self, point.x, point.y);
-							}
-						}
-					}
-
-					else if (menu_allowed) {
-
-						if (selectedNode == null) menu_root.show(self, point.x, point.y);
-
-						else {
-
-						FileDescr fd = (FileDescr) selectedNode.getUserObject();
-						String filename = fd.getFilename();
-						boolean isDirectory = fd.isDirectory();
-						boolean isFile = fd.isFile();
-
-						if (selection_multiple) {
-
-							menu_file = new JPopupMenu();
-							menu_file.add(itemF5 = new JMenuItem(LABEL("Delete_multiple_files")));
-							itemF5.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { delete_multiple_files(); }});
-							menu_file.show(self, point.x, point.y);
-
-						} else if (isDirectory) {
-
-							item3.setText(String.format(LABEL("New_program"), filename));
-							item4.setText(String.format(LABEL("New_folder"), filename));
-							item5.setText(String.format(LABEL("Rename_folder"), filename));
-							item6.setText(String.format(LABEL("Delete_folder"), filename));
-							item7.setText(String.format(LABEL("Download_folder"), filename));
-							menu_folder.show(self, point.x, point.y);
-
-						} else if (isFile) {
-
-							menu_file = new JPopupMenu();
-							menu_file.add(itemF0 = new JMenuItem());
-							menu_file.add(itemF1 = new JMenuItem());
-							menu_file.add(itemF2 = new JMenuItem());
-							menu_file.add(itemF3 = new JMenuItem());
-
-							itemF0.setText(String.format(LABEL("Rename_program"), filename));
-							itemF1.setText(String.format(LABEL("Delete_program"), filename));
-							itemF2.setText(String.format(LABEL("Duplicate_program"), filename));
-							itemF3.setText(String.format(LABEL("Backup_program"), filename));
-
-							itemF0.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { rename_file(); }});
-							itemF1.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { delete_file(); }});
-							itemF2.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { duplicate_file(); }});
-							itemF3.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { backup_file(); }});
-
-							// Sous-menu backups locaux
-							boolean backups_avalable = false;
-							JMenu menuBak = new JMenu(String.format(LABEL("Backups"), filename));
-							for (File file : BackupManager.backupsList(fd.getFile())) {
-								long size = MyFileUtils.getSize(file);
-								String date = BackupManager.getDateFormat(file);
-								String txt = size < 1024 ?
-									String.format(LABEL("Restore_backup_1"), date, size) :
-									String.format(LABEL("Restore_backup_2"), date, size / 1024);
-								JMenuItem item = new JMenuItem(txt);
-								item.addActionListener(new ActionListener() {
-									public void actionPerformed(ActionEvent e) {
-										restore_backup(file, date);
-									}
-								});
-								menuBak.add(item);
-								backups_avalable = true;
-							}
-							if (backups_avalable) {
-								menu_file.add(menuBak);
-							} else {
-								itemF4 = new JMenuItem(LABEL("No_backup"));
-								itemF4.setEnabled(false);
-								menu_file.add(itemF4);
-							}
-
-							menu_file.add(new JSeparator());
-							menu_file.add(item11a);
-							menu_file.add(item10a);
-							menu_file.show(self, point.x, point.y);
-						}
-					}
+					fileManagerMenu.showPopupMenu(point, path);
 				}
 			}
-		}
-	});
-
-		// -----------------------------------------------------------
-		// Les menus contextuels et leurs méthodes
-		// -----------------------------------------------------------
-
-		menu_folder = new JPopupMenu();
-		menu_folder.add(item3 = new JMenuItem());
-		menu_folder.add(item4 = new JMenuItem());
-		menu_folder.add(new JSeparator());
-		menu_folder.add(item5 = new JMenuItem());
-		menu_folder.add(item6 = new JMenuItem());
-		menu_folder.add(item7 = new JMenuItem());
-		menu_folder.add(new JSeparator());
-		menu_folder.add(item11b = new JMenuItem(LABEL("Refresh_manager")));
-		menu_folder.add(item10b = new JMenuItem(LABEL("Expand_manager")));
-
-		menu_root = new JPopupMenu();
-		menu_root.add(item8 = new JMenuItem(LABEL("New_root_program")));
-		menu_root.add(item9 = new JMenuItem(LABEL("New_root_folder")));
-		menu_root.add(new JSeparator());
-		menu_root.add(item11c = new JMenuItem(LABEL("Refresh_manager")));
-		menu_root.add(item10c = new JMenuItem(LABEL("Expand_manager")));
-
-		if (!codelab.isConnected()) {
-			// Item pour récupérer la dernière session distante
-			menu_root.add(item12 = new JMenuItem(LABEL("Copy_dist_folder")));
-			item12.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { copyDist(); }});
-		}
-
-		item11a = new JMenuItem(LABEL("Refresh_manager"));
-		item10a = new JMenuItem(LABEL("Expand_manager"));
-
-		item3.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { new_file(); }});
-		item4.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { new_folder(); }});
-		item5.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { rename_folder(); }});
-		item6.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { delete_folder(); }});
-		item7.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { download_folder(); }});
-		item8.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { new_root_file(); }});
-		item9.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { new_root_folder(); }});
-		item10a.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { expandAll(); }});
-		item10b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { expandAll(); }});
-		item10c.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { expandAll(); }});
-		item11a.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { populate(); editor.reset(); }});
-		item11b.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { populate(); editor.reset(); }});
-		item11c.addActionListener(new ActionListener() { public void actionPerformed(ActionEvent e) { populate(); editor.reset(); }});
+		});
 	}
 
 	///////////////////////////////////////////////////
@@ -364,12 +277,20 @@ public class FileManager extends JTree {
 		this.base = base;
 	}
 
+	public String getBase() {
+		return base;
+	}
+
 	public DefaultMutableTreeNode getRootNode() {
 		return rootNode;
 	}
 
 	public DefaultMutableTreeNode getSelectedNode() {
 		return selectedNode;
+	}
+
+	public void setSelectedNode(DefaultMutableTreeNode selectedNode) {
+		this.selectedNode = selectedNode;
 	}
 
 	public boolean isSelected() {
@@ -401,7 +322,7 @@ public class FileManager extends JTree {
 		((DefaultTreeModel)getModel()).removeNodeFromParent(node);
 	}
 
-	private FileDescr getFileDescr(DefaultMutableTreeNode node) {
+	FileDescr getFileDescr(DefaultMutableTreeNode node) {
 		// Retourne le FileDescr d'un noeud passé en paramètre
 		return (FileDescr) node.getUserObject();
 	}
@@ -427,7 +348,8 @@ public class FileManager extends JTree {
 		// Méthode privée invoquée par populate()
 		File file = new File(base);
 		if (file.exists()) {
-			setModel(new DefaultTreeModel(addNodes(null, file), true));
+			DefaultMutableTreeNode root = addNodes(null, file);
+			setModel(new DefaultTreeModel(root, true));
 			setCellRenderer(new CodeLabTreeRenderer());
 			rootNode = (DefaultMutableTreeNode) getModel().getRoot();
 			File rootFile = ((FileDescr) rootNode.getUserObject()).getFile();
@@ -442,16 +364,26 @@ public class FileManager extends JTree {
 		// Pour ajouter des noeuds à top à partir du répertoire dir -> utilisé par populate()
 
 		// Accrochage du répertoire courant
-		DefaultMutableTreeNode node = new DefaultMutableTreeNode(new FileDescr(dir));
+		String dirLabel = null;
+		if (mode == MODE_EVALUATIONS || isEvaluation(dir)) {
+			if (editor != null && editor.getUserTable() != null) {
+				String sName = editor.getUserTable().getStudentName(dir.getName());
+				if (sName != null && !sName.isBlank() && !sName.equalsIgnoreCase(dir.getName())) {
+					dirLabel = dir.getName() + " - " + sName;
+				}
+			}
+		}
+		DefaultMutableTreeNode node = new DefaultMutableTreeNode(new FileDescr(dir, dirLabel));
 		if (top != null) top.add(node);
 
 		// Collecte et tri du contenu du répertoire
 		File[] files = dir.listFiles();
+		if (files == null) return node;
 		Arrays.sort(files);
 
 		// Première passe pour les répertoires
 		for (File file : files) {
-			if (file.isDirectory() && !folders_to_exclude.contains(file.getName()))
+			if (file.isDirectory() && !isFolderExcluded(file))
 				addNodes(node, file);
 		}
 
@@ -460,8 +392,14 @@ public class FileManager extends JTree {
 			String filename = file.getName();
 			String ext = MyFileUtils.getExtension(filename);
 			if (file.isFile() && extensions.contains(ext)) {
-				if (files_to_exclude.contains(filename)) continue;
+				if (isFileExcluded(file)) continue;
 				if (filename.endsWith(".blocs.py")) continue;
+				if (filename.endsWith(".ipynb.py")) continue;
+				if (filename.endsWith(".ipynb.cell.py")) continue;
+				if (filename.endsWith(".ipynb.c")) continue;
+				if (filename.endsWith(".ipynb.cell.c")) continue;
+				if (filename.endsWith(".cell.c")) continue;
+				if (filename.endsWith(".cell.py")) continue;
 				if (filename.startsWith(".")) continue;
 				node.add(new DefaultMutableTreeNode(new FileDescr(file), false));
 			}
@@ -470,12 +408,13 @@ public class FileManager extends JTree {
 	}
 
 	public DefaultMutableTreeNode searchNode_file(File file) {
+		if (file == null || rootNode == null) return null;
 		// Recherche un noeud à partir d'un fichier
 		Enumeration<TreeNode> enumeration = rootNode.breadthFirstEnumeration();
 		while (enumeration.hasMoreElements()) {
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) enumeration.nextElement();
 			File file2 = getFileDescr(node).getFile();
-			if (file.equals(file2)) return node;
+			if (file.equals(file2) || file.getAbsolutePath().equals(file2.getAbsolutePath())) return node;
 		}
 		return null;
 	}
@@ -529,8 +468,10 @@ public class FileManager extends JTree {
 
 	private void expandAndSelectNode(DefaultMutableTreeNode node) {
 		SwingUtilities.invokeLater(() -> {
-			DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
-			expandPath(new TreePath(parent.getPath()));
+			if (node.getParent() != null) {
+				DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
+				expandPath(new TreePath(parent.getPath()));
+			}
 			TreeNode[] nodes = ((DefaultTreeModel) getModel()).getPathToRoot(node);
 			TreePath tpath = new TreePath(nodes);
 			scrollPathToVisible(tpath);
@@ -543,8 +484,11 @@ public class FileManager extends JTree {
 		// Pour transmettre au serveur le fichier en cours d'édition
 		if (codelab.isConnected() && (fd != null) && fd.isFile()) {
 			String path = fd.getFile().getPath().replaceAll("\\\\", "/"); // Normalisation des séparateurs sous Windows
-			String name = path.substring(path.lastIndexOf("/dist/") + 5);
-			codelab.getClient().setEditedFile(name);
+			int idx = path.lastIndexOf("/dist/");
+			if (idx != -1) {
+				String name = path.substring(idx + "/dist/".length());
+				codelab.getClient().setEditedFile(name);
+			}
 		}
 	}
 
@@ -557,8 +501,14 @@ public class FileManager extends JTree {
 			String filename = file.getName();
 			String ext = MyFileUtils.getExtension(filename);
 			if (file.isFile() && extensions.contains(ext)) {
-				if (files_to_exclude.contains(filename)) continue;
+				if (isFileExcluded(file)) continue;
 				if (filename.endsWith(".blocs.py")) continue;
+				if (filename.endsWith(".ipynb.py")) continue;
+				if (filename.endsWith(".ipynb.cell.py")) continue;
+				if (filename.endsWith(".ipynb.c")) continue;
+				if (filename.endsWith(".ipynb.cell.c")) continue;
+				if (filename.endsWith(".cell.c")) continue;
+				if (filename.endsWith(".cell.py")) continue;
 				if (filename.startsWith(".")) continue;
 				if (searchNode_file(file) == null) {
 					// Affichage dans la console
@@ -574,7 +524,7 @@ public class FileManager extends JTree {
 				}
 			}
 			// Appel récursif vers les sous-dossiers autorisés
-			else if (file.isDirectory() && !folders_to_exclude.contains(file.getName()))
+			else if (file.isDirectory() && !isFolderExcluded(file))
 				fileFound = fileFound || consolidate(file);
 		}
 		return fileFound;
@@ -608,23 +558,40 @@ public class FileManager extends JTree {
 
 					if (selected) setBackground(VERY_LIGHT_BLUE); // Personnalisation du fond de sélection
 
+					// En mode évaluations : afficher "login - name" pour les dossiers étudiants
+					if ((mode == MODE_EVALUATIONS || isEvaluation(fd.getFile())) && fd.isDirectory()) {
+						if (editor != null && editor.getUserTable() != null) {
+							String name = editor.getUserTable().getStudentName(filename);
+							if (name != null && !name.isBlank() && !name.equalsIgnoreCase(filename)) {
+								String display = filename + " - " + name;
+								setText(display);
+								fd.setLabel(display);
+							}
+						}
+					}
+
 					// Mise en évidence du fichier en cours d'édition (pour les tuteurs)
 					if (editor.getUserTable() != null) {
 
 						// Path au niveau du noeud avec le login -> [login/chemin]
 						String path = fd.getFile().toString();
 						path = path.replaceAll("\\\\", "/"); // Normalisation des séparateurs sous Windows
-						String name = path.substring(path.lastIndexOf("/dist/") + 6);
+						if (path.contains("/dist/")) {
+							int distIdx = path.lastIndexOf("/dist/");
+							if (distIdx + 6 <= path.length()) {
+								String name = path.substring(distIdx + 6);
 
-						// Path du fichier édité par le user sélectionné -> [login/chemin]
-						UserData udata = editor.getUserTable().getSelectedUser();
-						if (udata == null) return comp; // Protection défensive si aucune donnée utilisateur sélectionnée
+								// Path du fichier édité par le user sélectionné -> [login/chemin]
+								UserData udata = editor.getUserTable().getSelectedUser();
+								if (udata != null) {
+									String edited = udata.getLogin() + udata.getEditedFile();
+									edited = edited.replaceAll("\\\\", "/"); // Normalisation des séparateurs sous Windows
 
-						String edited = udata.getLogin() + udata.getEditedFile();
-						edited = edited.replaceAll("\\\\", "/"); // Normalisation des séparateurs sous Windows
-
-						// Comparaison des 2 chemins et visualisation du fichier édité
-						if (name.equals(edited)) setText(String.format(SPAN_FORMAT, "red", filename));
+									// Comparaison des 2 chemins et visualisation du fichier édité
+									if (name.equals(edited)) setText(String.format(SPAN_FORMAT, "red", filename));
+								}
+							}
+						}
 					}
 
 					// Mise en évidence des fichiers clones (bac à sable tuteur)
@@ -687,6 +654,15 @@ public class FileManager extends JTree {
 		}
 	}
 
+	public void collapseAll() {
+		for (int i = getRowCount() - 1; i >= 0; i--) {
+			try { collapseRow(i); }
+			catch (Exception e) {
+				ExceptionManager.process(e);
+			}
+		}
+	}
+
 	public void clear() {
 		setModel(null);
 		setCellRenderer(null);
@@ -731,7 +707,9 @@ public class FileManager extends JTree {
 		while (enumeration.hasMoreElements()) {
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) enumeration.nextElement();
 			FileDescr fd = getFileDescr(node);
-			fd.setFile(new File(codelab.getProgramDir() + getPath(node)));
+			if (fd != null && !isEvaluation(fd.getFile())) {
+				fd.setFile(new File(codelab.getProgramDir() + getPath(node)));
+			}
 		}
 	}
 
@@ -745,12 +723,22 @@ public class FileManager extends JTree {
 
 	public void new_droppedFile(File file, DefaultMutableTreeNode parent) {
 		if (parent == null) parent = rootNode;
+		if (parent == null) {
+			restoreProgramsBase();
+			parent = rootNode;
+		}
+		if (parent == null) return;
 		// Nom et extension du fichier à importer
 		String filename = MyFileUtils.getFilename(file).replace(' ', '_');
 		String ext = MyFileUtils.getExtension(filename);
 		// Emplacement de la destination
 		String parentPath = getFileDescr(parent).getFile().toString();
 		File newfile = new File(parentPath + File.separator + filename);
+		// Si un fichier homonyme existe déjà avec le même contenu, on le sélectionne
+		if (newfile.exists() && file.isFile() && Utils.sameContent(file, newfile)) {
+			selectNodeFromFile(newfile);
+			return;
+		}
 		// Fichier ou dossier ?
 		if (file.isFile() && extensions.contains(ext)) {
 			codelab.consoleLog(String.format(CodeLab.LABEL("Loading_file"), file));
@@ -773,8 +761,10 @@ public class FileManager extends JTree {
 			DefaultMutableTreeNode newParent = _NEW_FOLDER_(newfile, parent);
 			// Appels récursifs sur les fichiers du dossier
 			File[] files = file.listFiles();
-			Arrays.sort(files);
-			for (File f : files) new_droppedFile(f, newParent);
+			if (files != null) {
+				Arrays.sort(files);
+				for (File f : files) new_droppedFile(f, newParent);
+			}
 		}
 	}
 
@@ -826,7 +816,7 @@ public class FileManager extends JTree {
 		codelab.getClient().uploadFile(newfile); // Si mode connecté
 	}
 
-	private void new_root_file() {
+	void new_root_file() {
 		NewFileDialog dialog = new NewFileDialog(rootPath);
 		String filename = dialog.getFilename();
 		File template = dialog.getTemplate();
@@ -877,7 +867,7 @@ public class FileManager extends JTree {
 	// Action nouveau dossier
 	// -----------------------------------------------------------
 
-	private void new_folder() {
+	void new_folder() {
 		NewFolderDialog dialog = new NewFolderDialog();
 		String filename = dialog.getName();
 		if (filename == null) return; // Annulation
@@ -888,7 +878,7 @@ public class FileManager extends JTree {
 		_NEW_FOLDER_(newfile, selectedNode);
 	}
 
-	private void new_root_folder() {
+	void new_root_folder() {
 		NewFolderDialog dialog = new NewFolderDialog();
 		String filename = dialog.getName();
 		if (filename == null) return; // Annulation
@@ -933,7 +923,7 @@ public class FileManager extends JTree {
 	// Action renommer un fichier
 	// -----------------------------------------------------------
 
-	private void rename_file() {
+	void rename_file() {
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -974,7 +964,7 @@ public class FileManager extends JTree {
 	// Action renommer un dossier
 	// -----------------------------------------------------------
 
-	private void rename_folder() {
+	void rename_folder() {
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -1011,7 +1001,7 @@ public class FileManager extends JTree {
 	// Action supprimer un fichier
 	// -----------------------------------------------------------
 
-	private void delete_file() {
+	void delete_file() {
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -1046,7 +1036,7 @@ public class FileManager extends JTree {
 	// Action supprimer un dossier
 	// -----------------------------------------------------------
 
-	private void delete_folder() {
+	void delete_folder() {
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -1078,7 +1068,7 @@ public class FileManager extends JTree {
 	// Action supprimer plusieurs noeuds
 	// -----------------------------------------------------------
 
-	private void delete_multiple_files() {
+	void delete_multiple_files() {
 		int reply = JOptionPane.showConfirmDialog(CodeLab.FRAME,
 			LABEL("Confirm_multiple_del"),
 			LABEL("WARNING"), JOptionPane.YES_NO_OPTION);
@@ -1135,7 +1125,7 @@ public class FileManager extends JTree {
 	// Action dupliquer un fichier
 	// -----------------------------------------------------------
 
-	private void duplicate_file() {
+	void duplicate_file() {
 		FileDescr fd = selectedFileDescr();
 		if (fd == null) return; // Par sécurité
 
@@ -1160,7 +1150,7 @@ public class FileManager extends JTree {
 	// Action sauvegarder un fichier
 	// -----------------------------------------------------------
 
-	private void backup_file() {
+	void backup_file() {
 		editor.saveCurrentFile();
 		editor.backupCurrentFile();
 	}
@@ -1169,7 +1159,7 @@ public class FileManager extends JTree {
 	// Action restaurer une sauvegarde
 	// -----------------------------------------------------------
 
-	private void restore_backup(File file, String date) {
+	void restore_backup(File file, String date) {
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -1223,7 +1213,7 @@ public class FileManager extends JTree {
 	// Action télécharger un dossier
 	// -----------------------------------------------------------
 
-	private void download_folder() {
+	void download_folder() {
 		FileDescr fd = selectedFileDescr();
 		if (fd == null) return; // Par sécurité
 
@@ -1244,6 +1234,10 @@ public class FileManager extends JTree {
 		MyFileUtils.deleteFilesRec(dir, "*.orig");
 		MyFileUtils.deleteFilesRec(dir, "*.class");
 		MyFileUtils.deleteFilesRec(dir, "*.blocs.py");
+		MyFileUtils.deleteFilesRec(dir, "*.ipynb.py");
+		MyFileUtils.deleteFilesRec(dir, "*.ipynb.c");
+		MyFileUtils.deleteFilesRec(dir, "*.cell.py");
+		MyFileUtils.deleteFilesRec(dir, "*.cell.c");
 		MyFileUtils.deleteFilesRec(dir, ".DS_Store");
 		MyFileUtils.deleteFilesRec(dir, "__*");
 
@@ -1444,5 +1438,15 @@ public class FileManager extends JTree {
 		};
 		safeExecute(bloc);
 		updateUI();
+	}
+
+	@Override
+	public boolean getScrollableTracksViewportHeight() {
+		return getParent() instanceof JViewport && ((JViewport) getParent()).getHeight() > getPreferredSize().height;
+	}
+
+	@Override
+	public boolean getScrollableTracksViewportWidth() {
+		return getParent() instanceof JViewport && ((JViewport) getParent()).getWidth() > getPreferredSize().width;
 	}
 }

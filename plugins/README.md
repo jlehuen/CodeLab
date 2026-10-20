@@ -26,7 +26,7 @@ Les archives téléchargeables ci-dessous contiennent les plugins prêts à l'em
 | **Laboratoire de tris** : visualiseur d'algorithmes (bubble sort, quick sort, etc.) | [SortingModule.zip](downloads/SortingModule.zip) | [SortingModule.pac](downloads/SortingModule.pac) | ~36 Ko |
 | **Atelier graphique** : version plugin du module tortue vectorielle (Logo) | [TurtleModule.zip](downloads/TurtleModule.zip) | [TurtleModule.pac](downloads/TurtleModule.pac) | ~72 Ko |
 | **Robot industriel 5 axes CoreTech 3D** : bras articulé en 3D temps réel | [Robot3DModule.zip](downloads/Robot3DModule.zip) | [Robot3DModule.pac](downloads/Robot3DModule.pac) | ~15,6 Mo |
-| **Le Donjon Algorithmique** : labyrinthes, clés, portes et trésors (recherche de chemin, IA, main droite) | [DungeonModule.zip](downloads/DungeonModule.zip) | [DungeonModule.pac](downloads/DungeonModule.pac) | ~78 Ko |
+| **Le Donjon Algorithmique** : labyrinthes, clés, portes et trésors (recherche de chemin, IA, main droite) — [Guide didactique](downloads/DungeonModule/README.md) | [DungeonModule.zip](downloads/DungeonModule.zip) | [DungeonModule.pac](downloads/DungeonModule.pac) | ~134 Ko |
 
 ---
 
@@ -56,8 +56,9 @@ Pour concevoir un nouveau module applicatif interactif :
    - Sous Windows : `newmodule.bat Foo`
    *Cela crée une arborescence `Foo/` dans le dossier `CDK` ainsi qu'une première version prête à l'emploi `Foo.pac` dans le dossier `modules/`.*
 3. Vous pouvez d'ores et déjà tester le nouveau module en lançant CodeLab : un nouveau template *Hello* a été ajouté pour chacun des langages pris en charge.
-4. Éditez les 3 fichiers clés pour développer votre module :
+4. Éditez les fichiers clés pour développer votre module :
    - `Foo/src/codelab/modules/foo/Foo.java` : IHM principale et logique applicative Swing.
-   - `Foo/src/codelab/modules/foo/FooToolbar.java` : barre d'outils et contrôles interactifs.
-   - `Foo/includes/FooAPI.xml` : description de votre API au format XML (génération automatique des ponts d'appel multi-langages).
-5. Exécutez `./build.sh` (ou `build.bat`) pour générer, packager et tester votre plugin.
+   - `Foo/src/codelab/modules/foo/FooToolbar.java` : barre d'outils et contrôles interactifs (avec support du bouton `MAN`).
+   - `Foo/includes/FooAPI.xml` : description de votre API au format XML (génération automatique des bibliothèques clientes C, Go, Java, Python, CLIPS et de leurs documentations HTML de référence dédiées via les feuilles XSLT du CDK).
+   - `Foo/man/Foo.md` : documentation et manuel d'atelier en Markdown (avec sous-dossier `Foo/man/img/` pour les visuels). Lors du build (`./build.sh` ou `build.bat`), ce fichier est automatiquement compilé en HTML (`Foo.html`) par le parseur 100% Java embarqué, packagé dans `Foo.pac`, puis extrait à chaud par CodeLab pour consultation directe dans le navigateur via le bouton `MAN` ou le menu *Plugins > Manuel de l'atelier*.
+5. Exécutez `./build.sh` (ou `build.bat`) pour compiler le code Java, générer les bibliothèques et documentations HTML d'API multi-langages, compiler le manuel d'atelier Markdown, assembler le paquet `.pac` et le déployer automatiquement.

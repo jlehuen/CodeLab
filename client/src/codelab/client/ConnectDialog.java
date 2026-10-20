@@ -46,9 +46,9 @@ public class ConnectDialog {
 	public ConnectDialog() {
 		String host = CodeLab.PROP("SERVER_HOST");
 		String port = CodeLab.PROP("SERVER_PORT");
-		String phost = CodeLab.PROP("PROXY_HOST");
-		String pport = CodeLab.PROP("PROXY_PORT");
-		boolean proxy = (phost != null) && !phost.equals("undefined") && !phost.equals("NO_PROXY");
+		boolean proxy = CodeLab.PROXY_CONFIGURED;
+		String phost = CodeLab.PROXY_HOST;
+		String pport = CodeLab.PROXY_PORT;
 
 		JLabel info1Label = new JLabel("Server : ", JLabel.RIGHT);
 		JLabel info2Label = new JLabel("Proxy : ", JLabel.RIGHT);

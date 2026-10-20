@@ -104,6 +104,7 @@ public class UserData {
 
 	public String getLogin() { return login; }
 	public String getName() { return fullname; }
+	public String getMail() { return mail; }
 	public String getGroup() { return groups; }
 	public Statut getStatut() { return statut; }
 	public String getDate() { return date; }

@@ -127,6 +127,22 @@ public class PythonFinder extends AbstractFinder {
 			String userProfile = System.getenv("USERPROFILE");
 			if (userProfile != null && !userProfile.isBlank()) {
 				checkAndAddExecutable(candidates, new File(userProfile, "scoop/shims/python.exe"));
+				// Environnements virtuels dans USERPROFILE
+				try {
+					File homeDir = new File(userProfile);
+					File[] subs = homeDir.listFiles();
+					if (subs != null) {
+						for (File sub : subs) {
+							if (sub.isDirectory()) {
+								String name = sub.getName().toLowerCase();
+								if (name.contains("python") || name.contains("venv") || name.contains("conda")) {
+									checkAndAddExecutable(candidates, new File(sub, "Scripts/python.exe"));
+									checkAndAddExecutable(candidates, new File(sub, "python.exe"));
+								}
+							}
+						}
+					}
+				} catch (Exception ignored) {}
 			}
 		} else if (CodeLab.IS_OSX) {
 			checkAndAddExecutable(candidates, new File("/opt/homebrew/bin/python3"));
@@ -140,6 +156,65 @@ public class PythonFinder extends AbstractFinder {
 			checkAndAddExecutable(candidates, new File("/usr/bin/python3"));
 			checkAndAddExecutable(candidates, new File("/usr/local/bin/python3"));
 			checkAndAddExecutable(candidates, new File("/usr/bin/python"));
+		}
+
+		// Détection dans le dossier personnel de l'utilisateur (macOS et Linux)
+		if (CodeLab.IS_OSX || CodeLab.IS_LINUX) {
+			String userHome = System.getProperty("user.home");
+			if (userHome != null && !userHome.isBlank()) {
+				String[] commonUserPaths = new String[] {
+					"my_python/bin/python3",
+					"my_python/bin/python",
+					".local/bin/python3",
+					".local/bin/python",
+					"miniconda3/bin/python3",
+					"miniconda3/bin/python",
+					"anaconda3/bin/python3",
+					"anaconda3/bin/python",
+					"miniforge3/bin/python3",
+					"miniforge3/bin/python",
+					".pyenv/shims/python3",
+					".pyenv/shims/python",
+					"venv/bin/python3",
+					"venv/bin/python",
+					".venv/bin/python3",
+					".venv/bin/python",
+					"env/bin/python3",
+					"env/bin/python"
+				};
+				for (String rel : commonUserPaths) {
+					checkAndAddExecutable(candidates, new File(userHome, rel));
+				}
+
+				// Exploration des répertoires de premier niveau contenant python, venv ou conda
+				try {
+					File homeDir = new File(userHome);
+					File[] subs = homeDir.listFiles();
+					if (subs != null) {
+						for (File sub : subs) {
+							if (sub.isDirectory()) {
+								String name = sub.getName().toLowerCase();
+								if (name.contains("python") || name.contains("venv") || name.contains("conda")) {
+									File binDir = new File(sub, "bin");
+									if (binDir.isDirectory()) {
+										File[] binFiles = binDir.listFiles();
+										if (binFiles != null) {
+											for (File bf : binFiles) {
+												if (bf.getName().startsWith("python") && bf.canExecute()) {
+													checkAndAddExecutable(candidates, bf);
+												}
+											}
+										}
+									} else {
+										checkAndAddExecutable(candidates, new File(sub, "bin/python3"));
+										checkAndAddExecutable(candidates, new File(sub, "bin/python"));
+									}
+								}
+							}
+						}
+					}
+				} catch (Exception ignored) {}
+			}
 		}
 	}
 

@@ -35,10 +35,14 @@ import codelab.modules.editeur.manager.FileDescr;
 import codelab.modules.editeur.manager.FileManager;
 import codelab.modules.editeur.manager.TypeLang;
 import codelab.modules.editeur.manager.BackupManager;
+import codelab.modules.editeur.markdown.MarkdownViewer;
+import codelab.modules.editeur.notebook.NotebookCellPane;
+import codelab.modules.editeur.notebook.NotebookEditor;
 import codelab.modules.editeur.scratch.ScratchEditor;
 import codelab.modules.editeur.scratch.widgets.AbstractWidget;
 import codelab.modules.editeur.text.TextEditor;
 import codelab.modules.editeur.usertable.UserTable;
+import codelab.utils.LatexRenderer;
 import codelab.utils.MyFileUtils;
 import codelab.utils.Utils;
 
@@ -88,6 +92,7 @@ public class ModuleEditor extends AbstractModule {
 		splitpane_horizontal = new JSplitPane(JSplitPane.VERTICAL_SPLIT, managerScrollPane, null);
 		splitpane_horizontal.setBorder(BorderFactory.createEmptyBorder());
 		splitpane_horizontal.setDividerSize(0);
+		splitpane_horizontal.setResizeWeight(1.0);
 
 		// File manager à gauche et éditeur à droite
 		splitpane_vertical = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitpane_horizontal, (JPanel) editor);
@@ -174,11 +179,13 @@ public class ModuleEditor extends AbstractModule {
 	}
 
 	public boolean isCompilable() {
+		if (getExplorerMode() == FileManager.MODE_EVALUATIONS) return false;
 		if (isEmpty()) return false;
 		return getCurrentLanguage().isCompilable();
 	}
 
 	public boolean isExecutable() {
+		if (getExplorerMode() == FileManager.MODE_EVALUATIONS) return false;
 		if (isEmpty()) return false;
 		return getCurrentLanguage().isExecutable();
 	}
@@ -198,6 +205,7 @@ public class ModuleEditor extends AbstractModule {
 
 		File file = getCurrentFile();
 		if (file == null) return; // Si édition du fichier de configuration
+		if (FileManager.isEvaluation(file)) return; // Confidentialité absolue : jamais synchronisé ou transféré à l'étudiant
 
 		if (codelab.isTutor()) return;
 		if (codelab.isAdmin()) return;
@@ -209,6 +217,7 @@ public class ModuleEditor extends AbstractModule {
 	public synchronized void backupCurrentFile() {
 		File file1 = getCurrentFile();
 		if (file1 == null) return; // Si édition du fichier de configuration
+		if (FileManager.isEvaluation(file1)) return; // Pas de backup serveur pour les évaluations
 
 		// Générer un backup daté et le transmettre au serveur
 		File file2 = BackupManager.backup(file1);
@@ -242,7 +251,12 @@ public class ModuleEditor extends AbstractModule {
 				splitpane_horizontal.setTopComponent(managerScrollPane);
 				splitpane_horizontal.setBottomComponent(null);
 				splitpane_horizontal.setDividerSize(0);
+				splitpane_horizontal.setResizeWeight(1.0);
 				splitpane_vertical.setDividerLocation(vpos);
+				splitpane_horizontal.revalidate();
+				splitpane_horizontal.repaint();
+				splitpane_vertical.revalidate();
+				splitpane_vertical.repaint();
 				reset(); // Réinitialiser l'éditeur
 				break;
 			case TUTOR:
@@ -259,8 +273,13 @@ public class ModuleEditor extends AbstractModule {
 				splitpane_horizontal.setTopComponent(managerScrollPane);
 				splitpane_horizontal.setBottomComponent(usertable);
 				splitpane_horizontal.setDividerSize(DIV_SIZE);
+				splitpane_horizontal.setResizeWeight(0.5);
 				splitpane_horizontal.setDividerLocation(0.5);
 				splitpane_vertical.setDividerLocation(vpos);
+				splitpane_horizontal.revalidate();
+				splitpane_horizontal.repaint();
+				splitpane_vertical.revalidate();
+				splitpane_vertical.repaint();
 				reset(); // Rénitialiser l'éditeur
 				usertable.adjustColumnsWidth(); // Visibilité des colonnes
 				UserData udata = usertable.getSelectedUser();
@@ -271,6 +290,25 @@ public class ModuleEditor extends AbstractModule {
 				break;
 		}
 		updateFrameTitle();
+	}
+
+	public void setExplorerMode(int mode) {
+		if (manager == null) return;
+		if (editor != null && editor.isModified()) {
+			editor.save_content();
+		}
+		manager.setMode(mode);
+		reset();
+		manager.resetSelectedNode();
+		if (managerScrollPane != null) {
+			managerScrollPane.revalidate();
+			managerScrollPane.repaint();
+		}
+		if (toolbar != null) toolbar.update();
+	}
+
+	public int getExplorerMode() {
+		return (manager != null) ? manager.getMode() : FileManager.MODE_PROGRAMS;
 	}
 
 	public void reset() {
@@ -296,17 +334,21 @@ public class ModuleEditor extends AbstractModule {
 
 			case STUDENT:
 				// Le tuteur a sélectionné un étudiant
-				String base = codelab.getProgramDir() + "/" + udata.getLogin();
-				manager.setBase(base);
-				manager.populate();
-				manager.expandAll();
-				manager.invokeLater_updateUI();
-				clearHashMap(); // Après les actions sur le manager à cause du listener de changement
+				if (manager.getMode() == FileManager.MODE_PROGRAMS) {
+					String base = codelab.getProgramDir() + "/" + udata.getLogin();
+					manager.setBase(base);
+					manager.populate();
+					manager.expandAll();
+					manager.invokeLater_updateUI();
+					clearHashMap(); // Après les actions sur le manager à cause du listener de changement
 
-				// Récupérer si possible le dernier fichier visualisé pour cet étudiant
-				File lastFile = usertable.getLastFile(udata.getLogin());
-				if (lastFile != null) manager.selectNodeFromFile(lastFile);
- 				else closeCurrentEditor(2);
+					// Récupérer si possible le dernier fichier visualisé pour cet étudiant
+					File lastFile = usertable.getLastFile(udata.getLogin());
+					if (lastFile != null) manager.selectNodeFromFile(lastFile);
+					else closeCurrentEditor(2);
+				} else {
+					manager.highlightStudentEvaluation(udata.getLogin());
+				}
 
 				if (udata.isControlled())
 					// Active l'actualisation si le student était déjà sous contrôle du tuteur
@@ -317,10 +359,12 @@ public class ModuleEditor extends AbstractModule {
 
 			case TUTOR:
 			case ADMIN:
-				// Le tuteur a sélectionné un autre tuteur
-				manager.clear();
-				clearHashMap(); // Après les actions sur le manager à cause du listener de changement
-				closeCurrentEditor(1); // Affichage spécifique
+				// Le tuteur a sélectionné un autre tuteur ou lui-même
+				if (manager.getMode() == FileManager.MODE_PROGRAMS) {
+					manager.clear();
+					clearHashMap(); // Après les actions sur le manager à cause du listener de changement
+					closeCurrentEditor(1); // Affichage spécifique
+				}
 				break;
 
 			default: // Ne peut pas arriver
@@ -375,7 +419,7 @@ public class ModuleEditor extends AbstractModule {
 	public void start() {
 		if (isEmpty()) return;
 		String ext = getCurrentExtension();
-		if (ext.equals(".blocs")) compileFile(); // Traduire en Python
+		if (ext.equals(".blocs") || ext.equals(".ipynb")) compileFile(); // Traduire en Python
 	}
 
 	public String handleRequest(Map<String, String> params) {
@@ -398,6 +442,7 @@ public class ModuleEditor extends AbstractModule {
 	}
 
 	public void new_file() {
+		if (getExplorerMode() == FileManager.MODE_EVALUATIONS) return;
 		manager.new_file();
 	}
 
@@ -476,6 +521,15 @@ public class ModuleEditor extends AbstractModule {
 			return;
 		}
 
+		if (editor instanceof NotebookEditor) {
+			NotebookEditor nbEditor = (NotebookEditor) editor;
+			List<String> oldSources = nbEditor.getCellSources();
+			reloadCurrentFile(); // Rechargement du nouveau contenu
+			Color color = Color.decode("#FFFFE0"); // Jaune clair
+			nbEditor.highlightDifferences(oldSources, color);
+			return;
+		}
+
 		// Enregistrement des textes à comparer
 		File file_old = new File(CodeLab.TEMP_FOLDER + "/temp_old.txt"); // Fichier courant
 		File file_new = new File(CodeLab.TEMP_FOLDER + "/temp_new.txt"); // Fichier modifié
@@ -535,9 +589,21 @@ public class ModuleEditor extends AbstractModule {
 		// Pour ouvrir un fichier hors-filemanager (.properties par exemple)
 		if (save_flag) editor.save_content();
 		if (manager != null) manager.resetSelectedNode();
-		TextEditor textEditor = new TextEditor(this, MyFileUtils.getExtension(file));
-		editor = textEditor;
-		editor.load_content(file);
+		String ext = MyFileUtils.getExtension(file);
+		if (ext.equals(".ipynb")) {
+			NotebookEditor nbEditor = new NotebookEditor(this, ext);
+			editor = nbEditor;
+			editor.load_content(file);
+		} else if (ext.equals(".md") || ext.equals(".markdown")) {
+			MarkdownViewer mdViewer = new MarkdownViewer(this, ext);
+			editor = mdViewer;
+			editor.load_content(file);
+		} else {
+			TextEditor textEditor = new TextEditor(this, ext);
+			editor = textEditor;
+			editor.load_content(file);
+			SwingUtilities.invokeLater(() -> textEditor.getCodeLabTextArea().requestFocusInWindow());
+		}
 
 		// La nouvelle barre d'outils
 		toolbar = editor.getToolbar();
@@ -545,10 +611,9 @@ public class ModuleEditor extends AbstractModule {
 
 		// Quelques actualisations
 		editor.setEditableConfiguration(true);
-		editor.getToolbar().setLang("--");
+		editor.getToolbar().setLang(ext);
 		editor.resetCompilationFlag();
 		updateFrameTitle();
-		SwingUtilities.invokeLater(() -> textEditor.getCodeLabTextArea().requestFocusInWindow());
 	}
 
 	public void updateFrameTitle() {
@@ -586,6 +651,15 @@ public class ModuleEditor extends AbstractModule {
 		if ((!codelab.isTutor() && !codelab.isAdmin()) || editor.getFileDescriptor() == null || isClone(editor.getFileDescriptor())) // Si pas mode tuteur/admin ou si fichier hors-filemanager ou si clone...
 			editor.save_content(); // Sauvegarder le fichier courant
 
+		if (editor instanceof TextEditor) {
+			TextEditor te = (TextEditor) editor;
+			if ((te.extern_file != null && te.extern_file.getName().endsWith(".css")) ||
+				(te.getFilename() != null && te.getFilename().endsWith(".css"))) {
+				NotebookCellPane.clearCssCache();
+				LatexRenderer.clearCache();
+			}
+		}
+
 		FileDescr fd = (FileDescr) node.getUserObject();
 		String ext = fd.getExtension();
 		String uid = fd.getUID();
@@ -595,6 +669,9 @@ public class ModuleEditor extends AbstractModule {
 			editor = hashMapEditor.get(uid);
 			// Cas des fichiers qui peuvent avoir été modifiés lors d'une exécution
 			if (editor.isTextFile()) editor.load_content();
+			if (editor instanceof NotebookEditor) {
+				((NotebookEditor) editor).refreshMarkdownViews();
+			}
 		}
 		else {
 			// Créer un nouvel éditeur et le référencer
@@ -651,6 +728,7 @@ public class ModuleEditor extends AbstractModule {
 	}
 
 	public void uploadFile(File file) {
+		if (FileManager.isEvaluation(file)) return;
 		codelab.getClient().uploadFile(file);
 	}
 
@@ -753,6 +831,9 @@ public class ModuleEditor extends AbstractModule {
 			case ".gif": return new ImageViewer(this, node);
 			case ".npy": return new ImageViewer(this, node, "logo_numpy.png", "Numpy Array (not viewable data)");
 			case ".blocs": return new ScratchEditor(this, node);
+			case ".ipynb": return new NotebookEditor(this, node);
+			case ".md":
+			case ".markdown": return new MarkdownViewer(this, node);
 			default: return new TextEditor(this, node);
 		}
 	}

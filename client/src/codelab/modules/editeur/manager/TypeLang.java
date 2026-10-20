@@ -2,7 +2,7 @@ package codelab.modules.editeur.manager;
 
 public enum TypeLang {
 
-	C, GO, JAVA, PROCESS, PYTHON, HASKELL, CLIPS, BLOCS, HEADER, TEXT, HTML, CSS, ERROR;
+	C, GO, JAVA, PROCESS, PYTHON, IPYNB, HASKELL, CLIPS, BLOCS, HEADER, TEXT, HTML, CSS, MD, ERROR;
 
 	public String extension() {
 		switch (this) {
@@ -12,12 +12,14 @@ public enum TypeLang {
 			case PROCESS:	return ".pde";
 			case HASKELL:	return ".hs";
 			case PYTHON:	return ".py";
+			case IPYNB:		return ".ipynb";
 			case CLIPS:		return ".clp";
 			case BLOCS:		return ".blocs";
 			case TEXT:		return ".txt";
 			case CSS:		return ".css";
 			case HTML:		return ".html";
 			case HEADER:	return ".h";
+			case MD:		return ".md";
 			default:		return "ERROR";
 		}
 	}
@@ -31,12 +33,14 @@ public enum TypeLang {
 			case ".pde":	return PROCESS;
 			case ".hs":		return HASKELL;
 			case ".py":		return PYTHON;
+			case ".ipynb":	return IPYNB;
 			case ".clp":	return CLIPS;
 			case ".blocs":	return BLOCS;
 			case ".txt":	return TEXT;
 			case ".css":	return CSS;
 			case ".html":	return HTML;
 			case ".h":		return HEADER;
+			case ".md":		return MD;
 			default:		return ERROR;
 		}
 	}
@@ -48,18 +52,24 @@ public enum TypeLang {
 			case JAVA:
 			case HASKELL:
 			case PROCESS:
-			case BLOCS:		return true;
+			case BLOCS:
+			case IPYNB:		return true;
 			default:		return false;
 		}
 	}
 
 	public boolean isExecutable() {
 		switch (this) {
-			case CSS:
-			case TEXT:
-			case HEADER:
-			case ERROR:		return false;
-			default:		return true;
+			case C:
+			case GO:
+			case JAVA:
+			case HASKELL:
+			case PROCESS:
+			case BLOCS:
+			case IPYNB:
+			case PYTHON:
+			case CLIPS:		return true;
+			default:		return false;
 		}
 	}
 }

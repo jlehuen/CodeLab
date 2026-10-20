@@ -259,14 +259,19 @@ public class MyFileUtils {
 		}
 	}
 
-	public static void copyFolder(String sourceDirectoryLocation, String destinationDirectoryLocation) {
+	public static boolean copyFolder(String sourceDirectoryLocation, String destinationDirectoryLocation) {
 		try {
 			File sourceDirectory = new File(sourceDirectoryLocation);
+			if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
+				return false;
+			}
 			File destinationDirectory = new File(destinationDirectoryLocation);
 			FileUtils.copyDirectory(sourceDirectory, destinationDirectory);
+			return true;
 		}
 		catch (IOException e) {
 			ExceptionManager.process(e);
+			return false;
 		}
 	}
 

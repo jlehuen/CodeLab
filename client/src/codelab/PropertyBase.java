@@ -137,8 +137,21 @@ public class PropertyBase {
 		String rex = String.format("%s=.*", name);
 		String str = String.format("%s=%s", name, value);
 		CodeLab.logger("Writing " + CodeLab.USER_PROP_FILE);
-		MyFileUtils.findAndReplace(CodeLab.USER_PROP_FILE, rex, str);
-		USERCONF = Utils.readPropertyResourceBundle(CodeLab.USER_PROP_FILE); // Rechargement
+		boolean replaced = false;
+		try {
+			String content = Files.readString(Paths.get(CodeLab.USER_PROP_FILE));
+			if (content.matches("(?s).*\\b" + name + "=.*")) {
+				MyFileUtils.findAndReplace(CodeLab.USER_PROP_FILE, rex, str);
+				replaced = true;
+			}
+		} catch (Exception e) {
+			// ignore
+		}
+		if (!replaced) {
+			addUserProperty(name, value);
+		} else {
+			USERCONF = Utils.readPropertyResourceBundle(CodeLab.USER_PROP_FILE); // Rechargement
+		}
 	}
 
 	public static void addUserProperty(String name, String value) {

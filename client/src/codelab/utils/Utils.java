@@ -1,13 +1,17 @@
 package codelab.utils;
 
 import java.awt.AWTException;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Point;
 import java.awt.MouseInfo;
 import java.awt.Robot;
 import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -55,8 +59,15 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.JButton;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 import codelab.CodeLab;
 import codelab.ExceptionManager;
@@ -64,7 +75,7 @@ import codelab.ExceptionManager;
 /**
 *	Classe utilitaire un peu fourre-tout...
 *	@author Jérôme Lehuen
-*	@version 15/01/24
+*	@version 12/10/26
 */
 
 public class Utils {
@@ -170,7 +181,8 @@ public class Utils {
 			socket.connect(new InetSocketAddress(host, port), timeout);
 			// Définir le timeout pour les opérations de lecture
 			socket.setSoTimeout(timeout);
-			try (Socket autoCloseSocket = socket) {
+			try (	@SuppressWarnings("unused")
+					Socket s = socket) {
 				PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 				writer.println("PING"); // Envoyer un ping au serveur
 				return true;
@@ -188,7 +200,10 @@ public class Utils {
 	}
 
 	public static boolean isPortAvailable(int port) {
-		try (var ss = new ServerSocket(port); var ds = new DatagramSocket(port)) {
+		try (	@SuppressWarnings("unused")
+				var s1 = new ServerSocket(port);
+				@SuppressWarnings("unused")
+				var s2 = new DatagramSocket(port)) {
 			return true;
 		}
 		catch (IOException e) {
@@ -243,7 +258,10 @@ public class Utils {
 	public static boolean initFolder(File file) {
 		if (file.exists() && file.isDirectory()) {
 			// Vider le répertoire non récursivement
-			Arrays.stream(file.listFiles()).forEach(File::delete);
+			File[] files = file.listFiles();
+			if (files != null) {
+				Arrays.stream(files).forEach(File::delete);
+			}
 			return true;
 		}
 		else return file.mkdir();
@@ -496,15 +514,96 @@ public class Utils {
 	// Pour ouvrir des fenêtres de dialogue
 	///////////////////////////////////////////////////
 
+	private static Object createCopyableMessage(String texte) {
+		if (texte == null) return "";
+
+		boolean isMultilineOrLong = texte.contains("\n") || texte.length() > 120;
+		if (!isMultilineOrLong) {
+			JTextArea textArea = new JTextArea(texte);
+			textArea.setEditable(false);
+			textArea.setOpaque(false);
+			Font baseFont = UIManager.getFont("Label.font");
+			if (baseFont != null) {
+				textArea.setFont(baseFont);
+			}
+			textArea.setLineWrap(true);
+			textArea.setWrapStyleWord(true);
+			textArea.setBorder(null);
+
+			JPopupMenu popup = new JPopupMenu();
+			JMenuItem copyItem = new JMenuItem("Copier");
+			copyItem.addActionListener(e -> {
+				String sel = textArea.getSelectedText();
+				if (sel == null || sel.isEmpty()) sel = textArea.getText();
+				try {
+					StringSelection selection = new StringSelection(sel);
+					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+				} catch (Exception ex) {
+					// ignore
+				}
+			});
+			popup.add(copyItem);
+			textArea.setComponentPopupMenu(popup);
+			return textArea;
+		}
+
+		JPanel panel = new JPanel(new BorderLayout(0, 8));
+		JTextArea textArea = new JTextArea(texte);
+		textArea.setEditable(false);
+		textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+		textArea.setLineWrap(true);
+		textArea.setWrapStyleWord(true);
+		textArea.setCaretPosition(0);
+
+		JPopupMenu popup = new JPopupMenu();
+		JMenuItem copyItem = new JMenuItem("Copier");
+		copyItem.addActionListener(e -> {
+			String sel = textArea.getSelectedText();
+			if (sel == null || sel.isEmpty()) sel = textArea.getText();
+			try {
+				StringSelection selection = new StringSelection(sel);
+				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+			} catch (Exception ex) {
+				// ignore
+			}
+		});
+		popup.add(copyItem);
+		textArea.setComponentPopupMenu(popup);
+
+		JScrollPane scrollPane = new JScrollPane(textArea);
+		scrollPane.setPreferredSize(new Dimension(650, 320));
+
+		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+		JButton copyBtn = new JButton("📋 Copier tout le texte");
+		copyBtn.addActionListener(e -> {
+			try {
+				StringSelection selection = new StringSelection(texte);
+				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+				copyBtn.setText("✅ Copié !");
+			} catch (Exception ex) {
+				// ignore
+			}
+		});
+		btnPanel.add(copyBtn);
+
+		panel.add(scrollPane, BorderLayout.CENTER);
+		panel.add(btnPanel, BorderLayout.SOUTH);
+		return panel;
+	}
+
 	public static void showMessageDialog(String title, String texte) {
 		SwingUtilities.invokeLater(() -> {
-			JOptionPane.showMessageDialog(CodeLab.FRAME, texte, title, JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);
+			JOptionPane.showMessageDialog(CodeLab.FRAME, createCopyableMessage(texte), title, JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);
 		});
 	}
 
 	public static void showWarningDialog(String title, String texte) {
+		showWarningDialog(CodeLab.FRAME, title, texte);
+	}
+
+	public static void showWarningDialog(Component parent, String title, String texte) {
 		SwingUtilities.invokeLater(() -> {
-			JOptionPane.showMessageDialog(CodeLab.FRAME, texte, title, JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(parent != null ? parent : CodeLab.FRAME, createCopyableMessage(texte), title, JOptionPane.WARNING_MESSAGE);
 		});
 	}
 

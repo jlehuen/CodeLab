@@ -1,7 +1,6 @@
 package codelab.utils;
 
 import java.awt.Font;
-import java.awt.FontFormatException;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -11,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -86,22 +86,33 @@ public class ResourceUtils {
 		}
 	}
 
+	private static boolean fontsInitialized = false;
+
+	public static synchronized void initEmbeddedFonts() {
+		if (fontsInitialized) return;
+		fontsInitialized = true;
+		String[] fontFiles = {
+			"fonts/Inter-Regular.ttf",
+			"fonts/Inter-Bold.ttf",
+			"fonts/Inter-Italic.ttf"
+		};
+		for (String ff : fontFiles) {
+			loadFont(ff);
+		}
+	}
+
 	public static Font loadFont(String fontName) {
-		try {
-			final Font font = Font
-					.createFont(java.awt.Font.TRUETYPE_FONT, ResourceUtils.class.getResourceAsStream("/data/" + fontName))
-					.deriveFont(10f);
+		try (InputStream is = ResourceUtils.class.getResourceAsStream("/data/" + fontName)) {
+			if (is == null) return null;
+			final Font font = Font.createFont(java.awt.Font.TRUETYPE_FONT, is);
 			final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 			ge.registerFont(font);
 			return font;
 		}
-		catch (IOException e) {
-			ExceptionManager.process(e);
+		catch (Exception e) {
+			System.err.println("WARNING: Could not load embedded font " + fontName + ": " + e.getMessage());
+			return null;
 		}
-		catch (FontFormatException e) {
-			ExceptionManager.process(e);
-		}
-		return null;
 	}
 
 	public static InputStream loadInputStream_jar(String filename) {
@@ -111,10 +122,14 @@ public class ResourceUtils {
 	}
 
 	public static BufferedImage loadBufferedImageAsRessource(String filename) {
-		try {
-			return ImageIO.read(ResourceUtils.class.getResourceAsStream("/data/" + filename));
+		try (InputStream is = ResourceUtils.class.getResourceAsStream("/data/" + filename)) {
+			if (is == null) {
+				System.err.println("Resource not found: /data/" + filename);
+				return null;
+			}
+			return ImageIO.read(is);
 		}
-		catch (IOException e) {
+		catch (Exception e) {
 			return null;
 		}
 	}
@@ -129,7 +144,12 @@ public class ResourceUtils {
 	}
 
 	public static ImageIcon loadImageIcon(String filename) {
-		return new ImageIcon(ResourceUtils.class.getResource("/data/" + filename));
+		URL url = ResourceUtils.class.getResource("/data/" + filename);
+		if (url == null) {
+			System.err.println("Resource not found: /data/" + filename);
+			return new ImageIcon();
+		}
+		return new ImageIcon(url);
 	}
 
 	/*

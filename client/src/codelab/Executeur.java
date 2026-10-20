@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import codelab.console.Console;
 import codelab.modules.editeur.manager.TypeLang;
+import codelab.utils.JupyterUtils;
 import codelab.utils.MyFileUtils;
 import codelab.utils.Utils;
 
@@ -162,13 +163,55 @@ public class Executeur implements Runnable {
 
 			case PYTHON:
 			case BLOCS:
-				if (	CodeLab.PYTHON_CMD == null ||
-						CodeLab.PYTHON_CMD.equals("undefined") ||
-						CodeLab.PYTHON_CMD.equals("DISABLED")) {
-					Utils.showMessageDialog("ATTENTION", CodeLab.LABEL("noPythonError"));
-					break;
+			case IPYNB:
+				if (lang == TypeLang.IPYNB) {
+					File ipynbFile = new File(base, filename);
+					if (JupyterUtils.isCNotebook(ipynbFile)) {
+						filename = filename + ".c";
+						target = String.format("%s_c.exe", MyFileUtils.noExtension(filename));
+						File exeFile = new File(base, target);
+						if (!exeFile.exists()) {
+							File cFile = new File(base, filename);
+							try {
+								JupyterUtils.extractRunnableC(ipynbFile, cFile);
+								Compilateur comp = new Compilateur(codelab.getEditor(), cFile);
+								boolean ok = comp.compile();
+								if (!ok || !exeFile.exists()) {
+									isReady = false;
+									return;
+								}
+							} catch (Exception e) {
+								ExceptionManager.process(e);
+								isReady = false;
+								return;
+							}
+						}
+						pb = new ProcessBuilder(String.format("%s/%s", base, target));
+						break;
+					}
+					if (	CodeLab.PYTHON_CMD == null ||
+							CodeLab.PYTHON_CMD.equals("undefined") ||
+							CodeLab.PYTHON_CMD.equals("DISABLED")) {
+						Utils.showMessageDialog("ATTENTION", CodeLab.LABEL("noPythonError"));
+						break;
+					}
+					filename = filename + ".py";
+					File pyFile = new File(base, filename);
+					try {
+						JupyterUtils.extractRunnablePython(ipynbFile, pyFile);
+					}
+					catch (Exception e) {
+						ExceptionManager.process(e);
+					}
+				} else {
+					if (	CodeLab.PYTHON_CMD == null ||
+							CodeLab.PYTHON_CMD.equals("undefined") ||
+							CodeLab.PYTHON_CMD.equals("DISABLED")) {
+						Utils.showMessageDialog("ATTENTION", CodeLab.LABEL("noPythonError"));
+						break;
+					}
+					if (isBlocs) filename += ".py";
 				}
-				if (isBlocs) filename += ".py";
 				// -u force stdout to be unbuffered
 				List<String> pyCmd = new ArrayList<>(Utils.splitCommandLine(CodeLab.PYTHON_CMD));
 				pyCmd.add("-u");

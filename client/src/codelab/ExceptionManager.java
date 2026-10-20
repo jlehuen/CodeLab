@@ -2,6 +2,7 @@ package codelab;
 
 import java.util.Arrays;
 
+import codelab.utils.CrashReportManager;
 import codelab.utils.Utils;
 
 /**
@@ -13,12 +14,19 @@ import codelab.utils.Utils;
 public class ExceptionManager {
 
 	public static void process(Exception exception) {
+		process((Throwable) exception);
+	}
+
+	public static void process(Throwable exception) {
 
 		// Vers le fichier de log local
 		if (exception != null) {
 			CodeLab.logger("Exception stacktrace:\n");
 			exception.printStackTrace();
 		}
+
+		// Sauvegarde du rapport de crash dans le dossier "Crash report" (local ou dist)
+		CrashReportManager.saveCrashReport(exception, "ExceptionManager");
 
 		// Terminé si pas de CodeLab
 		CodeLab codelab = CodeLab.INSTANCE;

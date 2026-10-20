@@ -91,9 +91,9 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 	private JCheckBoxMenuItem itemDiff = new JCheckBoxMenuItem();
 	private JCheckBoxMenuItem itemInvisibles = new JCheckBoxMenuItem();
 
-	///////////////////////////////////////////////////
-	// Constructeur
-	///////////////////////////////////////////////////
+	public CodeLabTextArea(String ext) {
+		this(null, ext);
+	}
 
 	public CodeLabTextArea(TextEditor editor, String ext) {
 		super();
@@ -140,6 +140,11 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 				comment = "//";
 				syntaxe = SyntaxConstants.SYNTAX_STYLE_GO;
 				autoCompletion(provider_GO);
+				break;
+			case ".md":
+			case ".markdown":
+				comment = "<!--";
+				syntaxe = SyntaxConstants.SYNTAX_STYLE_MARKDOWN;
 				break;
 			default:
 				comment = "??";
@@ -210,8 +215,10 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 			public void removeUpdate(DocumentEvent e) {}
 			public void insertUpdate(DocumentEvent e) {}
 			public void changedUpdate(DocumentEvent e) {
-				editor.setModified(true); // Fichier modifié
-				editor.resetCompilationFlag(); // Doit être recompilé
+				if (editor != null) {
+					editor.setModified(true); // Fichier modifié
+					editor.resetCompilationFlag(); // Doit être recompilé
+				}
 			}
 		});
 
@@ -230,7 +237,7 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 				itemConvertSpaceToTab.setText(CodeLab.LABEL("itemConvertSpaceToTab"));
 				itemConvertTabToSpace.setText(CodeLab.LABEL("itemConvertTabToSpace"));
 				menuConvert.setText(CodeLab.LABEL("itemConvert"));
-				menuConvert.setEnabled(editor.getEditable());
+				menuConvert.setEnabled(editor != null ? editor.getEditable() : isEditable());
 			}
 		});
 
@@ -261,7 +268,7 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 		popup.add(menuConvert);
 		popup.add(itemInvisibles);
 
-		if (CodeLab.INSTANCE.isTutor() || CodeLab.INSTANCE.isAdmin()) {
+		if (editor != null && editor.module != null && (CodeLab.INSTANCE.isTutor() || CodeLab.INSTANCE.isAdmin())) {
 
 			popup.addPopupMenuListener(new PopupMenuListener() {
 				public void popupMenuCanceled(PopupMenuEvent e) {}

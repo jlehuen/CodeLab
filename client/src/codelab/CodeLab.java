@@ -2,6 +2,7 @@ package codelab;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Image;
 import java.awt.Taskbar;
 import java.awt.event.ComponentAdapter;
@@ -10,10 +11,17 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -42,6 +50,7 @@ import codelab.finders.CFinder;
 import codelab.finders.GoFinder;
 import codelab.finders.HaskellFinder;
 import codelab.finders.PythonFinder;
+import codelab.modules.editeur.manager.FileManager;
 import codelab.modules.editeur.manager.TypeLang;
 import codelab.modules.graphics.ModuleGraphics;
 import codelab.modules.robotics.ModuleRobotics;
@@ -68,13 +77,68 @@ import net.lingala.zip4j.ZipFile;
 /**
 *	Classe principale de CodeLab
 *	@author Jérôme Lehuen
-*	@version 01/10/26
+*	@version 12/10/26
 */
 
 public class CodeLab extends AbstractCodeLab {
 
 	public static JFrame FRAME = null;
 	public static CodeLab INSTANCE = null;
+	private static final List<File> PENDING_OPEN_FILES = Collections.synchronizedList(new ArrayList<>());
+
+	static {
+		setupDesktopHandlers();
+	}
+
+	private static void setupDesktopHandlers() {
+		try {
+			if (Desktop.isDesktopSupported()) {
+				Desktop desktop = Desktop.getDesktop();
+				if (desktop.isSupported(Desktop.Action.APP_OPEN_FILE)) {
+					desktop.setOpenFileHandler(e -> {
+						List<File> files = e.getFiles();
+						logger("Desktop openFiles received: " + files);
+						if (files != null) {
+							for (File f : files) {
+								if (INSTANCE != null) {
+									SwingUtilities.invokeLater(() -> INSTANCE.handleDroppedFile(f));
+								} else {
+									PENDING_OPEN_FILES.add(f);
+								}
+							}
+						}
+					});
+					logger("Desktop OpenFileHandler registered");
+				} else {
+					logger("Desktop APP_OPEN_FILE not supported");
+				}
+
+				if (desktop.isSupported(Desktop.Action.APP_OPEN_URI)) {
+					desktop.setOpenURIHandler(e -> {
+						URI uri = e.getURI();
+						logger("Desktop openURI received: " + uri);
+						if (uri != null) {
+							try {
+								File f = new File(uri);
+								if (INSTANCE != null) {
+									SwingUtilities.invokeLater(() -> INSTANCE.handleDroppedFile(f));
+								} else {
+									PENDING_OPEN_FILES.add(f);
+								}
+							} catch (Exception ex) {
+								logger("Desktop openURI conversion error: " + ex.getMessage());
+							}
+						}
+					});
+					logger("Desktop OpenURIHandler registered");
+				}
+			} else {
+				logger("Desktop is not supported on this platform");
+			}
+		} catch (Throwable t) {
+			logger("Error initializing Desktop handlers: " + t.getMessage());
+		}
+	}
 
 	private ModuleEditor editor;
 	private CodeLabRete moteur;
@@ -139,19 +203,11 @@ public class CodeLab extends AbstractCodeLab {
 			}
 		});
 
-		// Listener de redimmentionnement
+		// Listener de redimensionnement
 		getRootPane().addComponentListener(new ComponentAdapter() {
 			public void componentResized(ComponentEvent e) {
-				WaitingDialog.updateLocation();
 				for (AbstractModule module : module_list)
 					module.updateDividersLocation();
-			}
-		});
-
-		// Listener de déplacement
-		addComponentListener(new ComponentAdapter() {
-			public void componentMoved(ComponentEvent e) {
-				WaitingDialog.updateLocation();
 			}
 		});
 
@@ -171,6 +227,46 @@ public class CodeLab extends AbstractCodeLab {
 		setIconImage(this, "icone_big.png");
 		setResizable(true);
 		setVisible(true);
+	}
+
+	///////////////////////////////////////////////////
+	// Gestion du glisser-déposer sur l'icône de l'application
+	///////////////////////////////////////////////////
+
+	public void handleDroppedFile(File file) {
+		logger("handleDroppedFile: " + (file != null ? file.getAbsolutePath() : "null"));
+		if (file == null || !file.exists()) {
+			logger("handleDroppedFile: file does not exist or is null");
+			return;
+		}
+		showEditor();
+		toFront();
+		requestFocus();
+		try {
+			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_REQUEST_FOREGROUND)) {
+				Desktop.getDesktop().requestForeground(true);
+			}
+		} catch (Exception ignored) {}
+
+		FileManager manager = editor != null ? editor.getManager() : null;
+		if (manager == null) {
+			logger("handleDroppedFile: manager is null");
+			return;
+		}
+
+		if (manager.getMode() != FileManager.MODE_PROGRAMS) {
+			manager.restoreProgramsBase();
+		}
+
+		// Si le fichier se trouve déjà dans l'arborescence des programmes, on le sélectionne
+		if (manager.selectNodeFromFile(file)) {
+			logger("handleDroppedFile: file already in tree, selected");
+			return;
+		}
+
+		// Sinon, importation nominale du fichier déposé
+		logger("handleDroppedFile: importing dropped file via manager.new_droppedFile");
+		manager.new_droppedFile(file, null);
 	}
 
 	///////////////////////////////////////////////////
@@ -209,6 +305,206 @@ public class CodeLab extends AbstractCodeLab {
 		client.setEditedFile(AbstractEditor.EMPTY);
 	}
 
+	public static File getExecutableStandardCssFile() {
+		// 1. Dossier de l'exécutable (BASE)
+		if (BASE != null && !BASE.trim().isEmpty()) {
+			File f = new File(BASE, "report.css");
+			if (f.exists() && f.length() > 0) return f;
+			File fCodelab = new File(BASE, "codelab/report.css");
+			if (fCodelab.exists() && fCodelab.length() > 0) return fCodelab;
+		}
+		// 2. Dossier RESSOURCES
+		if (RESSOURCES != null && !RESSOURCES.trim().isEmpty()) {
+			File fRsc = new File(RESSOURCES, "report.css");
+			if (fRsc.exists() && fRsc.length() > 0) return fRsc;
+			File fRscCodelab = new File(RESSOURCES, "codelab/report.css");
+			if (fRscCodelab.exists() && fRscCodelab.length() > 0) return fRscCodelab;
+		}
+		// 3. Mode dev
+		File devArm = new File("client/mac-app-arm/Contents/MacOS/report.css");
+		if (devArm.exists() && devArm.length() > 0) return devArm;
+		File devData = new File("client/data/report.css");
+		if (devData.exists() && devData.length() > 0) return devData;
+		return null;
+	}
+
+	public static File getIpynbCssFile() {
+		initStylesFolder();
+
+		// 1. Style sélectionné pour les fichiers ipynb
+		String styleName = IPYNB_STYLE != null ? IPYNB_STYLE : "Markdown";
+		File f = getReportStyleFile(styleName);
+		if (f != null && f.exists() && f.length() > 0) return f;
+
+		// 2. Fichier Markdown.css dans STYLES_FOLDER (~/codelab.files/styles/Markdown.css)
+		File userFile = new File(MARKDOWN_CSS_FILE);
+		if (userFile.exists() && userFile.length() > 0) {
+			return userFile;
+		}
+
+		// 3. CSS standard dans le dossier de l'exécutable si le dossier styles est vide
+		File stdCss = getExecutableStandardCssFile();
+		if (stdCss != null && stdCss.exists() && stdCss.length() > 0) {
+			return stdCss;
+		}
+
+		return userFile;
+	}
+
+	public static File getMarkdownCssFile() {
+		if (INSTANCE != null && INSTANCE.getEditor() != null
+				&& INSTANCE.getEditor().getEditor() instanceof codelab.modules.editeur.markdown.MarkdownViewer) {
+			return getReportCssFile();
+		}
+		return getIpynbCssFile();
+	}
+
+	public void editMarkdownCssFile() {
+		File userFile = getMarkdownCssFile();
+		if (userFile != null && userFile.exists()) {
+			editor.open_file(userFile, true);
+			showEditor();
+			client.setEditedFile(AbstractEditor.EMPTY);
+		} else {
+			consoleLog("WARNING: Can't find or create " + (userFile != null ? userFile.getAbsolutePath() : "markdown.css"));
+		}
+	}
+
+	public static final String[] BUILTIN_REPORT_STYLES = {
+		"Basic", "Clearness", "Clearness_Dark", "GitHub", "GitHub2", "GitHub_2020",
+		"GitHub_Tomorrow", "Github2_Dark", "Gmail", "Google_Docs", "Markdown",
+		"Solarized_Dark", "Solarized_Light"
+	};
+
+	public static void initStylesFolder() {
+		File target = new File(STYLES_FOLDER);
+		if (!target.exists()) target.mkdirs();
+	}
+
+	public static java.util.List<String> getAvailableReportStyles() {
+		initStylesFolder();
+		java.util.Set<String> styles = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+		// 1. Scan des styles dans le dossier STYLES_FOLDER (~/codelab.files/styles)
+		File target = new File(STYLES_FOLDER);
+		if (target.exists() && target.isDirectory()) {
+			File[] files = target.listFiles((dir, name) -> name.endsWith(".css"));
+			if (files != null) {
+				for (File f : files) {
+					String n = f.getName();
+					styles.add(n.substring(0, n.length() - 4));
+				}
+			}
+		}
+
+		// 2. Mode dev : client/codelab.files/styles
+		File devDir = new File("client/codelab.files/styles");
+		if (devDir.exists() && devDir.isDirectory()) {
+			File[] files = devDir.listFiles((dir, name) -> name.endsWith(".css"));
+			if (files != null) {
+				for (File f : files) {
+					String n = f.getName();
+					styles.add(n.substring(0, n.length() - 4));
+				}
+			}
+		}
+
+		// 3. Si le dossier est vide (aucun fichier CSS), repli sur le CSS standard du dossier de l'exécutable
+		if (styles.isEmpty()) {
+			File standardCss = getExecutableStandardCssFile();
+			if (standardCss != null && standardCss.exists() && standardCss.length() > 0) {
+				String n = standardCss.getName();
+				styles.add(n.endsWith(".css") ? n.substring(0, n.length() - 4) : "report");
+			} else {
+				styles.add("report");
+			}
+		}
+
+		return new java.util.ArrayList<>(styles);
+	}
+
+	public static File getReportStyleFile(String styleName) {
+		if (styleName == null || styleName.trim().isEmpty()) {
+			styleName = REPORT_STYLE != null ? REPORT_STYLE : "Basic";
+		}
+		final String targetCssName = styleName + ".css";
+
+		// 1. Chercher dans STYLES_FOLDER (~/codelab.files/styles)
+		File f = new File(STYLES_FOLDER, targetCssName);
+		if (f.exists() && f.length() > 0) return f;
+
+		File stylesDir = new File(STYLES_FOLDER);
+		if (stylesDir.exists() && stylesDir.isDirectory()) {
+			File[] files = stylesDir.listFiles((dir, name) -> name.equalsIgnoreCase(targetCssName));
+			if (files != null && files.length > 0 && files[0].length() > 0) return files[0];
+		}
+
+		// 2. Mode dev : client/codelab.files/styles
+		File dev = new File("client/codelab.files/styles", targetCssName);
+		if (dev.exists() && dev.length() > 0) return dev;
+		File devDir = new File("client/codelab.files/styles");
+		if (devDir.exists() && devDir.isDirectory()) {
+			File[] files = devDir.listFiles((dir, name) -> name.equalsIgnoreCase(targetCssName));
+			if (files != null && files.length > 0 && files[0].length() > 0) return files[0];
+		}
+
+		// 3. CSS standard dans le dossier de l'exécutable si dossier vide ou demandé
+		File standardCss = getExecutableStandardCssFile();
+		if (standardCss != null && standardCss.exists() && standardCss.length() > 0) {
+			if (styleName.equalsIgnoreCase("report") || styleName.equalsIgnoreCase("standard")
+				|| (stylesDir.exists() && (stylesDir.list() == null || stylesDir.list().length == 0))) {
+				return standardCss;
+			}
+		}
+
+		// 4. Repli sur le CSS standard de l'exécutable s'il existe
+		if (standardCss != null && standardCss.exists() && standardCss.length() > 0) {
+			return standardCss;
+		}
+
+		return null;
+	}
+
+	public static File getReportCssFile() {
+		initStylesFolder();
+		File f = getReportStyleFile(REPORT_STYLE);
+		if (f != null && f.exists() && f.length() > 0) return f;
+
+		// CSS standard dans le dossier de l'exécutable
+		File std = getExecutableStandardCssFile();
+		if (std != null && std.exists() && std.length() > 0) return std;
+
+		return null;
+	}
+
+	public void setReportStyle(String styleName) {
+		if (styleName == null || styleName.trim().isEmpty()) return;
+		REPORT_STYLE = styleName;
+		saveHiddenProperties();
+
+		// Nettoyer les caches CSS pour actualisation instantanée des Notebooks et MarkdownViewer
+		codelab.modules.editeur.notebook.NotebookCellPane.clearCssCache();
+
+		// Si l'éditeur actif est un MarkdownViewer, réactualiser l'affichage
+		if (editor != null && editor.getEditor() instanceof codelab.modules.editeur.markdown.MarkdownViewer) {
+			((codelab.modules.editeur.markdown.MarkdownViewer) editor.getEditor()).renderMarkdown();
+		}
+	}
+
+	public void setIpynbStyle(String styleName) {
+		if (styleName == null || styleName.trim().isEmpty()) return;
+		IPYNB_STYLE = styleName;
+		saveHiddenProperties();
+
+		// Nettoyer les caches CSS pour actualisation instantanée des Notebooks
+		codelab.modules.editeur.notebook.NotebookCellPane.clearCssCache();
+
+		// Si l'éditeur actif est un NotebookEditor, réactualiser l'affichage
+		if (editor != null && editor.getEditor() instanceof codelab.modules.editeur.notebook.NotebookEditor) {
+			((codelab.modules.editeur.notebook.NotebookEditor) editor.getEditor()).refreshMarkdownViews();
+		}
+	}
+
 	public void searchGccCompiler() {
 		new CFinder().searchAndConfigure(this);
 	}
@@ -223,6 +519,137 @@ public class CodeLab extends AbstractCodeLab {
 
 	public void searchPythonInterpreter() {
 		new PythonFinder().searchAndConfigure(this);
+	}
+
+	///////////////////////////////////////////////////
+	// Gestion dynamique du proxy
+	///////////////////////////////////////////////////
+
+	public static boolean isProxyEnabled() {
+		return PROXY_CONFIGURED;
+	}
+
+	public static void initProxySettings() {
+		PROXY_HOST = CodeLab.PROP("PROXY_HOST");
+		PROXY_PORT = CodeLab.PROP("PROXY_PORT");
+		if (PROXY_PORT == null || PROXY_PORT.isBlank() || PROXY_PORT.equals(UNDEFINED)) {
+			PROXY_PORT = "3128";
+		}
+
+		// CodeLab démarre systématiquement sans proxy
+		PROXY_CONFIGURED = false;
+		System.clearProperty("http.proxyHost");
+		System.clearProperty("http.proxyPort");
+		System.clearProperty("https.proxyHost");
+		System.clearProperty("https.proxyPort");
+	}
+
+	public static void reloadProxySettings() {
+		String host = CodeLab.PROP("PROXY_HOST");
+		String port = CodeLab.PROP("PROXY_PORT");
+		String proxyEnabledProp = CodeLab.PROP("PROXY_ENABLED");
+
+		boolean shouldEnable = false;
+		if (proxyEnabledProp != null && !proxyEnabledProp.equals(UNDEFINED) && !proxyEnabledProp.isBlank()) {
+			shouldEnable = PropertyBase.getBooleanProperty("PROXY_ENABLED");
+		}
+
+		if (shouldEnable && host != null && !host.isBlank() 
+			&& !host.equalsIgnoreCase("NO") 
+			&& !host.equalsIgnoreCase("NO_PROXY") 
+			&& !host.equalsIgnoreCase("NONE") 
+			&& !host.equals(UNDEFINED)) {
+			PROXY_HOST = host;
+			PROXY_PORT = (port != null && !port.isBlank() && !port.equals(UNDEFINED)) ? port : "3128";
+			PROXY_CONFIGURED = true;
+			System.setProperty("http.proxyHost", PROXY_HOST);
+			System.setProperty("http.proxyPort", PROXY_PORT);
+			System.setProperty("https.proxyHost", PROXY_HOST);
+			System.setProperty("https.proxyPort", PROXY_PORT);
+		} else {
+			PROXY_CONFIGURED = false;
+			System.clearProperty("http.proxyHost");
+			System.clearProperty("http.proxyPort");
+			System.clearProperty("https.proxyHost");
+			System.clearProperty("https.proxyPort");
+		}
+
+		if (CodeLabMenu.itemEnableProxy != null && CodeLabMenu.itemEnableProxy.isSelected() != PROXY_CONFIGURED) {
+			CodeLabMenu.itemEnableProxy.setSelected(PROXY_CONFIGURED);
+		}
+	}
+
+	public static void setProxyEnabled(boolean enable) {
+		setProxyEnabled(enable, false, true);
+	}
+
+	public static void setProxyEnabled(boolean enable, boolean saveProperty, boolean notify) {
+		if (enable) {
+			PropertyBase.load();
+			String host = CodeLab.PROP("PROXY_HOST");
+			String port = CodeLab.PROP("PROXY_PORT");
+
+			// Si PROXY_HOST n'est pas encore défini ou est NO_PROXY, demander à l'utilisateur
+			if (host == null || host.isBlank() || host.equalsIgnoreCase("NO") 
+				|| host.equalsIgnoreCase("NO_PROXY") || host.equalsIgnoreCase("NONE") 
+				|| host.equals(UNDEFINED)) {
+				String input = (String) JOptionPane.showInputDialog(FRAME,
+					CodeLab.LABEL("proxyHostPrompt"),
+					CodeLab.LABEL("itemEnableProxy"),
+					JOptionPane.QUESTION_MESSAGE,
+					null,
+					null,
+					"proxy.univ-lemans.fr");
+				if (input != null && !input.isBlank()) {
+					host = input.trim();
+					PropertyBase.setUserProperty("PROXY_HOST", host);
+					if (port == null || port.isBlank() || port.equals(UNDEFINED)) {
+						port = "3128";
+						PropertyBase.setUserProperty("PROXY_PORT", port);
+					}
+				} else {
+					// Annulé par l'utilisateur
+					PROXY_CONFIGURED = false;
+					if (CodeLabMenu.itemEnableProxy != null) {
+						CodeLabMenu.itemEnableProxy.setSelected(false);
+					}
+					return;
+				}
+			}
+
+			PROXY_HOST = host;
+			PROXY_PORT = (port != null && !port.isBlank() && !port.equals(UNDEFINED)) ? port : "3128";
+			PROXY_CONFIGURED = true;
+
+			System.setProperty("http.proxyHost", PROXY_HOST);
+			System.setProperty("http.proxyPort", PROXY_PORT);
+			System.setProperty("https.proxyHost", PROXY_HOST);
+			System.setProperty("https.proxyPort", PROXY_PORT);
+
+			if (saveProperty) {
+				PropertyBase.setUserProperty("PROXY_ENABLED", "yes");
+			}
+			if (notify && INSTANCE != null) {
+				INSTANCE.printlnToConsole(String.format(CodeLab.LABEL("proxyActivated"), PROXY_HOST, PROXY_PORT));
+			}
+		} else {
+			PROXY_CONFIGURED = false;
+			System.clearProperty("http.proxyHost");
+			System.clearProperty("http.proxyPort");
+			System.clearProperty("https.proxyHost");
+			System.clearProperty("https.proxyPort");
+
+			if (saveProperty) {
+				PropertyBase.setUserProperty("PROXY_ENABLED", "no");
+			}
+			if (notify && INSTANCE != null) {
+				INSTANCE.printlnToConsole(CodeLab.LABEL("proxyDeactivated"));
+			}
+		}
+
+		if (CodeLabMenu.itemEnableProxy != null && CodeLabMenu.itemEnableProxy.isSelected() != PROXY_CONFIGURED) {
+			CodeLabMenu.itemEnableProxy.setSelected(PROXY_CONFIGURED);
+		}
 	}
 
 	///////////////////////////////////////////////////
@@ -243,8 +670,12 @@ public class CodeLab extends AbstractCodeLab {
 
 	public static void relaunch() {
 		try {
-			new ProcessBuilder(LAUNCHER, "--relauch").start();
-			CodeLab.exit();
+			if (LAUNCHER != null && !LAUNCHER.isBlank()) {
+				new ProcessBuilder(LAUNCHER, "--relauch").start();
+				CodeLab.exit();
+			} else {
+				logger("No LAUNCHER defined, cannot relaunch automatically.");
+			}
 		}
 		catch (IOException e) {
 			ExceptionManager.process(e);
@@ -301,14 +732,15 @@ public class CodeLab extends AbstractCodeLab {
 	}
 
 	public boolean execute() {
+		return execute(null);
+	}
+
+	public boolean execute(String customFilename) {
 		if (isRunning()) return false; // En principe cela ne doit pas arriver !!
+		if (editor != null && (editor.getExplorerMode() == FileManager.MODE_EVALUATIONS || !editor.isExecutable())) return false;
 
 		checkLocalServer(); // Lancer le serveur local (si besoin)
 		clearConsole(); // Effacer la console (si autoclear)
-
-		//System.out.println("Fichier => " + editor.getCurrentFilename());
-		//System.out.println("Flag modifié => " + editor.isModified());
-		//System.out.println("Flag comp_OK => " + editor.compilation_OK());
 
 		// Sauvagarder (si nécessaire)
 		if (editor.isModified()) {
@@ -317,7 +749,7 @@ public class CodeLab extends AbstractCodeLab {
 		}
 		
 		// Compiler (si nécessaire)
-		if (editor.isCompilable() && !editor.compilation_OK()) {
+		if (customFilename == null && editor.isCompilable() && !editor.compilation_OK()) {
 			CodeLab.logger("Compile program " + editor.getCurrentFilename());
 			boolean ok = editor.compileFile();
 			if (!ok) {
@@ -330,7 +762,7 @@ public class CodeLab extends AbstractCodeLab {
 
 		// Instancier un exécuteur
 		String base = editor.getCurrentDirectory();
-		String filename = editor.getCurrentFilename();
+		String filename = (customFilename != null) ? customFilename : editor.getCurrentFilename();
 		executeur = new Executeur(filename, base, this);
 		if (!executeur.isReady) {
 			// Pas censé arriver
@@ -1013,6 +1445,7 @@ public class CodeLab extends AbstractCodeLab {
 
 	public static void logger(String msg) {
 		System.out.format("[%s] %s\n", Utils.getDate(), msg);
+		System.out.flush();
 	}
 
 	public static void saveCurrentFile() {
@@ -1112,46 +1545,218 @@ public class CodeLab extends AbstractCodeLab {
 	private static void setLogFile(String filename) {
 		try {
 			File file = new File(filename);
-			PrintStream out = new PrintStream(file);
-			System.setOut(new PrintStream(out));
-			System.setErr(new PrintStream(out));
+			PrintStream out = new PrintStream(new java.io.FileOutputStream(file, true), true, "UTF-8");
+			System.setOut(out);
+			System.setErr(out);
 		}
 		catch (IOException e) {
 			ExceptionManager.process(e);
 		}
 	}
 
-	/*
 	private static void restoreUserDirectory() {
-		// Choses à sauvegarder
-		String BACKUP1 = HOME + "/BACKUP1";
-		String BACKUP2 = HOME + "/BACKUP2";
-		String BACKUP3 = HOME + "/BACKUP3";
-		String BACKUP4 = HOME + "/BACKUP4";
-		MyFileUtils.copyFolder(PROG_LOCAL_FOLDER, BACKUP1);
-		MyFileUtils.copyFolder(MODULES_FOLDER, BACKUP2);
-		MyFileUtils.copyFolder(USER_GRAPH_FOLDER, BACKUP3);
-		MyFileUtils.copyFolder(USER_ROBOT_FOLDER, BACKUP4);
+		File bakFile = getCodelabFilesArchive();
+		if (bakFile == null || !bakFile.exists() || !bakFile.canRead()) {
+			logger("ERROR: Reference archive not found or unreadable. Restore aborted.");
+			return;
+		}
 
-		// Supprimer l'actuel dossier codelab.files
-		MyFileUtils.delete(CODELAB_FILES);
-		// Restaurer le nouveau dossier codelab.files
-		String temp = CODELAB_FILES + ".zip";
-		MyFileUtils.copy(CODELAB_FILES_BAK, temp);
-		MyFileUtils.unzip(temp);
-		MyFileUtils.delete(temp);
+		File userDir = new File(CODELAB_FILES);
+		String timestamp = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
 
-		// Choses à restaurer
-		MyFileUtils.copyFolder(BACKUP1, PROG_LOCAL_FOLDER);
-		MyFileUtils.copyFolder(BACKUP2, MODULES_FOLDER);
-		MyFileUtils.copyFolder(BACKUP3, USER_GRAPH_FOLDER);
-		MyFileUtils.copyFolder(BACKUP4, USER_ROBOT_FOLDER);
-		MyFileUtils.delete(BACKUP1);
-		MyFileUtils.delete(BACKUP2);
-		MyFileUtils.delete(BACKUP3);
-		MyFileUtils.delete(BACKUP4);
+		// 1. Snapshot / Archive ZIP de sécurité de codelab.files AVANT suppression
+		if (userDir.exists()) {
+			File zipBackup = new File(HOME, String.format("codelab.files.backup_%s.zip", timestamp));
+			try {
+				logger("Creating safety zip backup of " + CODELAB_FILES + " to: " + zipBackup.getAbsolutePath());
+				boolean zipped = MyFileUtils.zipFolder(zipBackup.getAbsolutePath(), userDir);
+				if (!zipped) {
+					logger("ERROR: Failed to create safety zip backup of " + CODELAB_FILES + ". Restore aborted.");
+					return;
+				}
+				logger("Safety zip backup created successfully: " + zipBackup.getAbsolutePath());
+			} catch (Exception e) {
+				logger("ERROR creating safety zip backup of " + CODELAB_FILES + ": " + e.getMessage());
+				ExceptionManager.process(e);
+				return;
+			}
+		}
+
+		File backupDir = null;
+		File tempZip = null;
+		try {
+			// Création d'un dossier temporaire sécurisé pour la sauvegarde des données utilisateur
+			backupDir = Files.createTempDirectory("codelab_backup_").toFile();
+
+			// 2. Sauvegarde des données utilisateur existantes
+			File userPrograms = new File(CODELAB_FILES_HIDDEN, "programs");
+			File userModules = new File(MODULES_FOLDER);
+			File userSkills = new File(SKILLS_FOLDER);
+			File userData = new File(USER_DATA_FOLDER);
+			File userRecovery = new File(RECOVERY_FOLDER);
+			File userStyles = new File(STYLES_FOLDER);
+			File userEvaluations = new File(EVALUATIONS_FOLDER);
+			File userReportCss = new File(REPORT_CSS_FILE);
+
+			if (userPrograms.exists()) FileUtils.copyDirectory(userPrograms, new File(backupDir, "programs"));
+			if (userModules.exists()) FileUtils.copyDirectory(userModules, new File(backupDir, "modules"));
+			if (userSkills.exists()) FileUtils.copyDirectory(userSkills, new File(backupDir, "skills"));
+			if (userData.exists()) FileUtils.copyDirectory(userData, new File(backupDir, "userdata"));
+			if (userRecovery.exists()) FileUtils.copyDirectory(userRecovery, new File(backupDir, "recovery"));
+			if (userStyles.exists()) FileUtils.copyDirectory(userStyles, new File(backupDir, "styles"));
+			if (userEvaluations.exists()) FileUtils.copyDirectory(userEvaluations, new File(backupDir, "evaluations"));
+			if (userReportCss.exists()) FileUtils.copyFile(userReportCss, new File(backupDir, "report.css"));
+
+			// 3. Suppression de l'actuel dossier codelab.files
+			MyFileUtils.delete(CODELAB_FILES);
+
+			// 4. Extraction du nouveau dossier codelab.files depuis l'archive de référence
+			tempZip = new File(HOME, String.format("codelab.files.extract_%s.tmp.zip", timestamp));
+			MyFileUtils.copy(bakFile.getAbsolutePath(), tempZip.getAbsolutePath());
+			MyFileUtils.unzip(tempZip.getAbsolutePath());
+			MyFileUtils.delete(tempZip);
+			tempZip = null;
+
+			// Renommer 'hidden' en '.hidden' si nécessaire (selon packaging archive)
+			File hiddenVisible = new File(CODELAB_FILES, "hidden");
+			File hiddenDot = new File(CODELAB_FILES_HIDDEN);
+			if (hiddenVisible.exists() && !hiddenDot.exists()) {
+				hiddenVisible.renameTo(hiddenDot);
+			}
+
+			// 5. Restauration / fusion des données utilisateur
+			File bkpPrograms = new File(backupDir, "programs");
+			if (bkpPrograms.exists()) FileUtils.copyDirectory(bkpPrograms, new File(CODELAB_FILES_HIDDEN, "programs"));
+			File bkpModules = new File(backupDir, "modules");
+			if (bkpModules.exists()) FileUtils.copyDirectory(bkpModules, new File(MODULES_FOLDER));
+			File bkpSkills = new File(backupDir, "skills");
+			if (bkpSkills.exists()) FileUtils.copyDirectory(bkpSkills, new File(SKILLS_FOLDER));
+			File bkpUserData = new File(backupDir, "userdata");
+			if (bkpUserData.exists()) FileUtils.copyDirectory(bkpUserData, new File(USER_DATA_FOLDER));
+			File bkpRecovery = new File(backupDir, "recovery");
+			if (bkpRecovery.exists()) FileUtils.copyDirectory(bkpRecovery, new File(RECOVERY_FOLDER));
+			File bkpStyles = new File(backupDir, "styles");
+			if (bkpStyles.exists()) FileUtils.copyDirectory(bkpStyles, new File(STYLES_FOLDER));
+			File bkpEvaluations = new File(backupDir, "evaluations");
+			if (bkpEvaluations.exists()) FileUtils.copyDirectory(bkpEvaluations, new File(EVALUATIONS_FOLDER));
+			File bkpReportCss = new File(backupDir, "report.css");
+			if (bkpReportCss.exists()) FileUtils.copyFile(bkpReportCss, new File(REPORT_CSS_FILE));
+			logger("User directory restored successfully.");
+		}
+		catch (Exception e) {
+			logger("Error during restoreUserDirectory: " + e.getMessage());
+			ExceptionManager.process(e);
+		}
+		finally {
+			// 6. Nettoyage garanti
+			if (tempZip != null && tempZip.exists()) {
+				MyFileUtils.delete(tempZip);
+			}
+			if (backupDir != null && backupDir.exists()) {
+				MyFileUtils.delete(backupDir);
+			}
+		}
 	}
-	*/
+
+	public void resetCodelabFiles() {
+		// 1. Demande de confirmation à l'utilisateur
+		String message = LABEL("confirmRestoreCodelabFiles");
+		if (!Utils.confirmDialog(message)) return;
+
+		File archive = getCodelabFilesArchive();
+		if (archive == null || !archive.exists() || !archive.canRead()) {
+			Utils.showWarningDialog(LABEL("WARNING"), LABEL("CODELAB_ERR4"));
+			return;
+		}
+
+		File userDir = new File(CODELAB_FILES);
+		String timestamp = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
+
+		// 2. Snapshot de sécurité avant réinitialisation
+		File snapshotDir = null;
+		if (userDir.exists()) {
+			try {
+				snapshotDir = new File(HOME, String.format("codelab.files.snapshot_%s", timestamp));
+				boolean renamed = userDir.renameTo(snapshotDir);
+				if (!renamed) {
+					FileUtils.copyDirectory(userDir, snapshotDir);
+					FileUtils.deleteDirectory(userDir);
+				}
+				logger("Safety snapshot created at: " + snapshotDir.getAbsolutePath());
+			} catch (Exception e) {
+				logger("ERROR creating safety snapshot: " + e.getMessage());
+				Utils.showWarningDialog(LABEL("WARNING"), "Erreur lors de la création du snapshot de sécurité : " + e.getMessage());
+				return;
+			}
+		}
+
+		// 3. Extraction de la nouvelle arborescence codelab.files depuis l'archive de référence
+		try {
+			File tempZip = new File(HOME, String.format("codelab.files.extract_%s.tmp.zip", timestamp));
+			MyFileUtils.copy(archive.getAbsolutePath(), tempZip.getAbsolutePath());
+			MyFileUtils.unzip(tempZip.getAbsolutePath());
+			MyFileUtils.delete(tempZip);
+
+			// Renommer 'hidden' en '.hidden' si nécessaire (selon packaging archive)
+			File hiddenVisible = new File(CODELAB_FILES, "hidden");
+			File hiddenDot = new File(CODELAB_FILES_HIDDEN);
+			if (hiddenVisible.exists() && !hiddenDot.exists()) {
+				hiddenVisible.renameTo(hiddenDot);
+			}
+
+			// 4. Copier également le snapshot dans le nouveau RECOVERY_FOLDER pour l'historique dans l'interface
+			if (snapshotDir != null && snapshotDir.exists()) {
+				try {
+					File recoveryBase = new File(RECOVERY_FOLDER);
+					if (!recoveryBase.exists()) recoveryBase.mkdirs();
+					File recSnapshot = new File(recoveryBase, String.format("snapshot_codelab_files_%s", timestamp));
+					File oldProgs = new File(snapshotDir, ".hidden/programs/local");
+					if (!oldProgs.exists()) oldProgs = new File(snapshotDir, "hidden/programs/local");
+					if (oldProgs.exists()) {
+						FileUtils.copyDirectory(oldProgs, recSnapshot);
+					} else {
+						FileUtils.copyDirectory(snapshotDir, recSnapshot);
+					}
+				} catch (Exception ignored) {}
+			}
+
+			// 5. Message de succès
+			String snapPath = (snapshotDir != null) ? snapshotDir.getAbsolutePath() : "aucun";
+			JOptionPane.showMessageDialog(FRAME,
+				String.format(LABEL("resetCodelabFilesSuccess"), snapPath),
+				LABEL("itemRestoreCodelabFiles"),
+				JOptionPane.INFORMATION_MESSAGE,
+				ICON);
+
+			// 6. Relance ou rafraîchissement
+			things_to_do_before_exiting();
+			if (LAUNCHER != null && !LAUNCHER.isBlank()) {
+				relaunch();
+			} else {
+				if (getEditor() != null) {
+					getEditor().reset();
+					if (getEditor().getManager() != null) {
+						getEditor().getManager().setBase(getProgramDir());
+						getEditor().getManager().populate();
+					}
+				}
+			}
+		} catch (Exception e) {
+			logger("ERROR resetting codelab.files: " + e.getMessage());
+			ExceptionManager.process(e);
+			Utils.showWarningDialog(LABEL("WARNING"), "Erreur lors de la réinitialisation : " + e.getMessage());
+		}
+	}
+
+	private static File getCodelabFilesArchive() {
+		File bak = new File(CODELAB_FILES_BAK);
+		if (bak.exists() && bak.canRead()) return bak;
+		File rootZip = new File(BASE, "codelab_files.zip");
+		if (rootZip.exists() && rootZip.canRead()) return rootZip;
+		File parentZip = new File(new File(BASE).getParent(), "codelab_files.zip");
+		if (parentZip.exists() && parentZip.canRead()) return parentZip;
+		return null;
+	}
 
 	// -----------------------------------------------------------
 	// Méthodes de gestion des sauvegardes (Menu Sauvegardes)
@@ -1405,7 +2010,10 @@ public class CodeLab extends AbstractCodeLab {
 		for (File f : files) {
 			String name = f.getName().toLowerCase();
 			if (f.getName().startsWith(".") || f.getName().startsWith("__")
-					|| name.endsWith(".exe") || name.endsWith(".orig") || name.endsWith(".bak") || name.endsWith(".class")) {
+					|| name.endsWith(".exe") || name.endsWith(".orig") || name.endsWith(".bak") || name.endsWith(".class")
+					|| name.endsWith(".ipynb.py") || name.endsWith(".ipynb.cell.py")
+					|| name.endsWith(".ipynb.c") || name.endsWith(".ipynb.cell.c")
+					|| name.endsWith(".cell.c") || name.endsWith(".cell.py")) {
 				if (f.isDirectory()) {
 					try { FileUtils.deleteDirectory(f); } catch (Exception ignored) {}
 				} else {
@@ -1413,6 +2021,46 @@ public class CodeLab extends AbstractCodeLab {
 				}
 			} else if (f.isDirectory()) {
 				cleanExcludedForExport(f);
+			}
+		}
+	}
+
+	private static void restoreHiddenFolder(String targetFolderPath, String folderLabel) {
+		File targetFolder = new File(targetFolderPath);
+		File initFolder = new File(targetFolderPath + "_init");
+
+		// Si le dossier _init n'existe pas dans .hidden, tenter de le régénérer depuis les ressources
+		if (!initFolder.exists() || !initFolder.isDirectory()) {
+			// 1. Chercher dans BASE
+			File appHiddenInit = new File(BASE, "codelab.files/hidden/" + initFolder.getName());
+			if (!appHiddenInit.exists()) {
+				appHiddenInit = new File(BASE, "codelab.files/.hidden/" + initFolder.getName());
+			}
+			if (appHiddenInit.exists() && appHiddenInit.isDirectory()) {
+				MyFileUtils.copyFolder(appHiddenInit.getAbsolutePath(), initFolder.getAbsolutePath());
+			}
+			// 2. Mode développement (client/codelab.files/hidden/...)
+			else {
+				File devHiddenInit = new File("client/codelab.files/hidden/" + initFolder.getName());
+				if (devHiddenInit.exists() && devHiddenInit.isDirectory()) {
+					MyFileUtils.copyFolder(devHiddenInit.getAbsolutePath(), initFolder.getAbsolutePath());
+				}
+			}
+			// 3. Repli : si le dossier cible existe déjà, s'en servir pour initialiser _init
+			if (!initFolder.exists() && targetFolder.exists() && targetFolder.isDirectory()) {
+				MyFileUtils.copyFolder(targetFolder.getAbsolutePath(), initFolder.getAbsolutePath());
+			}
+		}
+
+		if (initFolder.exists() && initFolder.isDirectory()) {
+			System.out.format("   Restoring the hidden %s folder... ", folderLabel);
+			MyFileUtils.delete(targetFolder);
+			boolean ok = MyFileUtils.copyFolder(initFolder.getAbsolutePath(), targetFolder.getAbsolutePath());
+			System.out.println(ok ? "DONE" : "SKIPPED");
+		} else {
+			logger("WARNING: " + initFolder.getAbsolutePath() + " not found, keeping existing " + folderLabel + " folder.");
+			if (!targetFolder.exists()) {
+				targetFolder.mkdirs();
 			}
 		}
 	}
@@ -1427,6 +2075,7 @@ public class CodeLab extends AbstractCodeLab {
 		// Paramètres de la ligne de commande
 
 		ARGV = argv;
+		List<File> filesFromArgs = new ArrayList<>();
 		for (String arg: argv) {
 			if (arg.equals("--log")) REDIRECT = true; // Rediriger la sortie standard vers un fichier de log
 			if (arg.equals("--auto")) AUTOMATOR = true; // Exécuter l'automate de saisie dans l'éditeur de textes
@@ -1434,6 +2083,10 @@ public class CodeLab extends AbstractCodeLab {
 			if (arg.equals("--load")) FORCE_DOWNLOAD = true; // Forcer une mise-à-jour depuis le site de CodeLab
 			if (arg.equals("--restore")) FORCE_RESTORE = true; // Forcer la réinitialisation de codelab.files
 			if (arg.equals("--relauch")) VERIFY_RUNNING = false; // Inhiber la vérification d'autres instances
+			if (!arg.startsWith("-")) {
+				File f = new File(arg);
+				if (f.exists()) filesFromArgs.add(f);
+			}
 		}
 
 		// ------------------------------------------------
@@ -1451,13 +2104,9 @@ public class CodeLab extends AbstractCodeLab {
 		if (VERIFY_RUNNING) verifyCodelabRunning();
 
 		// ------------------------------------------------
-		// Supprimer si demandé le dossier codelab.files
-
-		if (FORCE_RESTORE) MyFileUtils.delete(CODELAB_FILES);
-
-		// ------------------------------------------------
 		// (Ré-)installer si besoin le dossier codelab.files
 
+		boolean first_run = false;
 		File file = new File(CODELAB_FILES);
 		if (!file.exists()) {
 			JOptionPane.showMessageDialog(null, LABEL("CODELAB_ERR2"), "CODELAB INFORMATION", JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);
@@ -1466,6 +2115,7 @@ public class CodeLab extends AbstractCodeLab {
 			MyFileUtils.copy(CODELAB_FILES_BAK, temp);
 			MyFileUtils.unzip(temp);
 			MyFileUtils.delete(temp);
+			first_run = true;
 		}
 
 		// ------------------------------------------------
@@ -1529,18 +2179,16 @@ public class CodeLab extends AbstractCodeLab {
 		if (!recoveryDir.exists()) recoveryDir.mkdirs();
 
 		// ------------------------------------------------
-		// Réinitialiser le répertoire includes
+		// Initialiser le répertoire permanent des évaluations (créé si absent)
 
-		System.out.println("   Restoring the hidden includes folder... DONE");
-		MyFileUtils.delete(new File(INCLUDES_FOLDER));
-		MyFileUtils.copyFolder(INCLUDES_FOLDER + "_init", INCLUDES_FOLDER);
+		File evalDir = new File(EVALUATIONS_FOLDER);
+		if (!evalDir.exists()) evalDir.mkdirs();
 
 		// ------------------------------------------------
-		// Réinitialiser le répertoire templates
+		// Réinitialiser les répertoires système cachés (includes & templates)
 
-		System.out.println("   Restoring the hidden templates folder... DONE");
-		MyFileUtils.delete(new File(TEMPLATES_FOLDER));
-		MyFileUtils.copyFolder(TEMPLATES_FOLDER + "_init", TEMPLATES_FOLDER);
+		restoreHiddenFolder(INCLUDES_FOLDER, "includes");
+		restoreHiddenFolder(TEMPLATES_FOLDER, "templates");
 
 		// ------------------------------------------------
 		// Chargement des propriétés
@@ -1548,15 +2196,14 @@ public class CodeLab extends AbstractCodeLab {
 		System.out.println("   Loading properties...");
 		PropertyBase.load();
 		loadHiddenProperties(); // Les pptés cachées dans .hidden
+		if (first_run) saveHiddenProperties();
+
+		// Initialiser et synchroniser le dossier des styles de rapports CSS
+		initStylesFolder();
+		getReportCssFile();
 
 		// Configuration du proxy
-		PROXY_HOST = CodeLab.PROP("PROXY_HOST");
-		PROXY_PORT = CodeLab.PROP("PROXY_PORT");
-		PROXY_CONFIGURED = (PROXY_HOST.equals("NO") || PROXY_HOST.equals("NO_PROXY")) ? false : true;
-		if (PROXY_CONFIGURED) {
-			System.setProperty("http.proxyHost", PROXY_HOST);
-			System.setProperty("http.proxyPort", PROXY_PORT);
-		}
+		initProxySettings();
 
 		// Chargement des propriétés distantes
 		String timeout = CodeLab.PROP("TIME_OUT");
@@ -1602,17 +2249,34 @@ public class CodeLab extends AbstractCodeLab {
 
 		// ------------------------------------------------
 		// Vérification du dossier codelab.files
-		/*
-		int previous_major = Utils.getVersionPart(DATA_VERSION, 1);
-		boolean codelab_files_obsolete = (DATA_VERSION.equals(UNDEFINED) || previous_major < 1); // Condition d'obsolescence
 
-		if (codelab_files_obsolete && !first_run) {
-			JOptionPane.showMessageDialog(null, LABEL("CODELAB_ERR4"), "CODELAB INFORMATION", JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);
-			restoreUserDirectory(); // Patcher le dossier codelab.files
-			saveHiddenProperties(); // Sauvegarder la ppté DATA_VERSION
-			relaunch(); // Relancer CodeLab
+		boolean codelab_files_obsolete = FORCE_RESTORE;
+
+		if (!codelab_files_obsolete && !first_run) {
+			int previous_major = Utils.getVersionPart(DATA_VERSION, 1);
+			int previous_minor = Utils.getVersionPart(DATA_VERSION, 2);
+			int current_major = Utils.getVersionPart(VERSION, 1);
+			int current_minor = Utils.getVersionPart(VERSION, 2);
+
+			if (DATA_VERSION.equals(UNDEFINED) || previous_major == -1 || previous_minor == -1) {
+				codelab_files_obsolete = true;
+			} else if (previous_major != current_major || previous_minor != current_minor) {
+				codelab_files_obsolete = true;
+			}
 		}
-		*/
+
+		if (codelab_files_obsolete) {
+			File bak = getCodelabFilesArchive();
+			if (bak == null || !bak.exists() || !bak.canRead()) {
+				logger("WARNING: codelab.files is obsolete, but reference archive is missing. Skipping restore.");
+			} else {
+				JOptionPane.showMessageDialog(null, LABEL("CODELAB_ERR4"), "CODELAB INFORMATION", JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);
+				restoreUserDirectory(); // Patcher le dossier codelab.files
+				saveHiddenProperties(); // Sauvegarder la ppté DATA_VERSION
+				relaunch(); // Relancer CodeLab
+			}
+		}
+		
 		// ------------------------------------------------
 		// Vérification de la connectivité
 
@@ -1641,8 +2305,9 @@ public class CodeLab extends AbstractCodeLab {
 		}
 
 		// ------------------------------------------------
-		// LookAndFeel et langue de CodeLab
+		// Polices embarquées, LookAndFeel et langue de CodeLab
 
+		ResourceUtils.initEmbeddedFonts();
 		setLookAndFeel(FLATLIGHTLAF);
 		setLanguage();
 
@@ -1668,6 +2333,11 @@ public class CodeLab extends AbstractCodeLab {
 		// Vérification des langages de programmation
 
 		checkProgramingLanguages();
+
+		// ------------------------------------------------
+		// Découverte et initialisation des compétences d'évaluation (Skills)
+
+		codelab.eval.SessionEvaluator.scanSkills();
 
 		// ------------------------------------------------
 		// Shutdown hook
@@ -1698,5 +2368,20 @@ public class CodeLab extends AbstractCodeLab {
 		Utils.wait(1000);
 		WaitingDialog.close();
 		logger(msg);
+
+		List<File> toOpen = new ArrayList<>();
+		toOpen.addAll(filesFromArgs);
+		synchronized (PENDING_OPEN_FILES) {
+			toOpen.addAll(PENDING_OPEN_FILES);
+			PENDING_OPEN_FILES.clear();
+		}
+		logger(String.format("Files to open at startup: %d (from args: %d)", toOpen.size(), filesFromArgs.size()));
+		if (!toOpen.isEmpty() && INSTANCE != null) {
+			SwingUtilities.invokeLater(() -> {
+				for (File f : toOpen) {
+					INSTANCE.handleDroppedFile(f);
+				}
+			});
+		}
 	}
 }

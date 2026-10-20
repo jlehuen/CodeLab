@@ -78,6 +78,21 @@ if [ ! -d "$MAC_APP_DIR" ]; then
     exit 1
 fi
 
+# Compilation du lanceur natif si source présent
+LAUNCHER_SRC="launchers/macos/launcher.m"
+if [ ! -f "$LAUNCHER_SRC" ] && [ -f "launcher.m" ]; then
+    LAUNCHER_SRC="launcher.m"
+fi
+
+if [ -f "$LAUNCHER_SRC" ]; then
+    if [ "$ARCH" = "arm" ]; then
+        clang -O2 -framework Cocoa -arch arm64 -o "$MAC_APP_DIR/Contents/MacOS/CodeLabApp" "$LAUNCHER_SRC"
+    else
+        clang -O2 -framework Cocoa -arch x86_64 -o "$MAC_APP_DIR/Contents/MacOS/CodeLabApp" "$LAUNCHER_SRC"
+    fi
+    chmod +x "$MAC_APP_DIR/Contents/MacOS/CodeLabApp"
+fi
+
 #########################################################################
 ## 1. Assemblage de l'application CodeLab.app
 #########################################################################
@@ -88,6 +103,7 @@ MACOS="$APP/Contents/MacOS"
 rm -rf "$APP"
 cp -r "$MAC_APP_DIR" "$APP"
 cp -r hidden/codelab "$MACOS"
+cp data/report.css "$MACOS/report.css"
 
 echo "Copie des fichiers de configuration..."
 cp sys-properties/sysconfig-mac.properties "$MACOS/codelab/sysconfig.properties"

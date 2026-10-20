@@ -22,7 +22,7 @@
   <br>
   <br>Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
   <br><br>
-  <a href="#téléchargements-version-143"><img src="client/images/download.png" alt="Téléchargements" width="160"></a>
+  <a href="#téléchargements-version-150"><img src="client/images/download.png" alt="Téléchargements" width="160"></a>
 </p>
 
 **CodeLab** est un environnement pédagogique dédié à l'apprentissage de la programmation en collège, lycée et premières années d'études supérieures. Son originalité est qu'il propose des alternatives ludiques ou techniques aux traditionnelles interactions écran-clavier pour la conception des activités pédagogiques, au travers de l'utilisation de "modules applicatifs". Ces modules, disponibles sous la forme de plugins, peuvent être des **visualisations**, des **panneaux de contrôle**, des **simulateurs**, et autres systèmes temps-réel. Chaque module est l'association d'une **IHM** (Interface Homme-Machine) et d'une interface de programmation applicative (souvent désignée par le terme **API** pour Application Programming Interface), disponible pour chacun des langages supportés par CodeLab. Les apprenants peuvent ainsi se focaliser sur les aspects algorithmiques et sur le codage, tout en travaillant sur des applications qui possèdent des caractéristiques riches et motivantes :
@@ -34,7 +34,7 @@
   <img src="client/images/vignette-sorting.webp" alt="Tri" width="22%">
 </p>
 
-CodeLab supporte un large spectre de **paradigmes de programmation** (impératif, fonctionnel, objet, déclaratif) et ce afin de répondre aux recommandations du programme de la spécialité NSI (Numérique et Sciences Informatiques) de première et de terminale. En plus des langages traditionnels, CodeLab intègre un langage "par assemblage de blocs" qui permet de découvrir les structures de programmation en s'abstrayant d'une syntaxe spécifique.
+CodeLab supporte un large spectre de **paradigmes de programmation** (impératif, fonctionnel, objet, déclaratif) et ce afin de répondre aux recommandations du programme de la spécialité NSI (Numérique et Sciences Informatiques) de première et de terminale. En plus des langages traditionnels, CodeLab intègre un langage "par assemblage de blocs" qui permet de découvrir les structures de programmation en s'abstrayant d'une syntaxe spécifique, un éditeur visuel natif interactif de **carnets Jupyter (.ipynb)** pour Python et pour le **C progressif**, ainsi qu'un outil d'**évaluation pédagogique automatisée assistée par IA** (audits déterministes AST/Clang, détection des anti-patterns de code, synthèses formatives par LLM) consultables directement dans un **visualiseur Markdown natif** à rendu HTML5.
 
 Une fonctionnalité de CodeLab est de permettre la constitution de **classes virtuelles** (en présence ou à distance) grâce à une architecture client-serveur dédiée. Le modèle utilisateur / groupe / session permet la constitution de groupes de TP à géométrie variable, encadrés par un ou plusieurs tuteurs. Ces derniers peuvent **suivre en temps réel** le travail des apprenants, tester leurs programmes, communiquer avec eux par l’intermédiaire d’une messagerie instantanée intégrée, les déconnecter en fin de séance, etc.
 
@@ -48,9 +48,10 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 ## Sommaire
 
-- [Téléchargements](#téléchargements-version-143)
+- [Téléchargements](#téléchargements-version-150)
 - [Installation des langages](#installation-des-langages)
 - [Installation des modules applicatifs](#installation-des-modules-applicatifs)
+- [Évaluation pédagogique automatisée & IA](#évaluation-pédagogique-automatisée--ia)
 - [Compilation du client et du serveur](#compilation-du-client-et-du-serveur)
   - [1. Compilation du client Java](#1-compilation-du-client-java)
   - [2. Compilation du serveur Rust](#2-compilation-du-serveur-rust)
@@ -59,16 +60,16 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 <br>
 
-## Téléchargements (version 1.4.3)
+## Téléchargements (version 1.5.0)
 
 <br>
 
 <p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.4.3.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.0.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.4.3-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.0-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.4.3.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.0.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
 </p>
 
 Toutes les versions disponibles sont dans la section [Releases](https://github.com/jlehuen/CodeLab/releases) de CodeLab.
@@ -191,8 +192,39 @@ Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (
 | **Laboratoire de tris** (visualisation bubble/quick sort) | [SortingModule.zip](plugins/downloads/SortingModule.zip) | [SortingModule.pac](plugins/downloads/SortingModule.pac) |
 | **Atelier graphique** (tortue vectorielle Logo) | [TurtleModule.zip](plugins/downloads/TurtleModule.zip) | [TurtleModule.pac](plugins/downloads/TurtleModule.pac) |
 | **Robot 3D** (bras articulé 5 axes cinématique 3D) | [Robot3DModule.zip](plugins/downloads/Robot3DModule.zip) | [Robot3DModule.pac](plugins/downloads/Robot3DModule.pac) |
+| **Donjon Algorithmique** (labyrinthes, clés et trésors) | [DungeonModule.zip](plugins/downloads/DungeonModule.zip) | [DungeonModule.pac](plugins/downloads/DungeonModule.pac) |
 
 > 📖 Consultez le [manuel des plugins](plugins/README.md) pour les instructions détaillées d'installation, de compilation et de création via le CDK (*CodeLab Development Kit*).
+
+<br>
+
+## Évaluation pédagogique automatisée & IA
+
+CodeLab intègre un système d'**évaluation automatisée assistée par IA** modulaire, basé sur des compétences spécialisées (*skills*) découverts dynamiquement au démarrage (ex: `eval-introprog` en C, `eval-intropython`, etc.).
+
+### 1. Fonctionnement Hybride & Intégrité des Notes
+- **Calcul 100 % Déterministe Hors-Ligne** : L'analyse statique du code (AST, expressions régulières, détection des 31 jalons de TP, anti-patterns comme les attentes actives bloquantes ou les troncatures de flottants), le contrôle syntaxique Clang (`-fsyntax-only`) et le calcul des notes sur 20 points ($8 + 8 + 2 + 2$) sont exécutés **localement sur la machine**. **La note finale est rigoureusement identique avec ou sans IA**.
+- **Calibration Réaliste & Plafonds d'Étape** : Fin des notes de complaisance. Un étudiant débutant bloqué prématurément (ex: au TP4 sans aborder les projets intégrateurs) voit sa note fidèlement plafonnée autour de 10–11/20 sans dévaloriser les étudiants ayant atteint l'autonomie complète (17–19/20).
+- **Détection Multi-Critères d'Usage d'IA** : Détection sur 5 dimensions objectives (incohérence d'écosystème comme `<stdio.h>` ou `printf()` interdits en L1, chronométrie anormale, syntaxe avancée hors programme, stylométrie ChatGPT) avec calcul d'un score de 0 à 100% consigné dans le Cartouche de Traçabilité.
+- **Détection de Copier-Collé & Plagiat Inter-Étudiants** : Détection globale par algorithme Winnowing et n-grams de tokens syntaxiques avec export d'une matrice de similarité (`plagiarism_matrix.csv`) et d'un rapport de cohorte (`rapport_plagiat.md`).
+- **Rédaction Socratique par IA (Optionnelle)** : Lorsqu'une clé d'API Gemini est configurée (`userdata/user.properties`), l'IA prend le relais **uniquement pour la rédaction** de la fiche individuelle d'évaluation. Elle adopte une posture d'enseignant bienveillant et socratique, formulant des questions ouvertes et des pistes d'auto-remédiation personnalisées au lieu d'asséner une correction brute.
+- **Synthèse de promotion & Export CSV** : Générés 100 % hors-ligne (0 appel réseau, exclusion automatique des comptes tuteurs et enseignants du barème étudiant).
+
+### 2. Coût en Requêtes et Tokens d'une Évaluation de Session
+Seul le diagnostic factuel JSON compact (jalons atteints, scores fixés, 2 ou 3 extraits ciblés de quelques lignes) est soumis à l'IA :
+
+| Échelle | Nombre de requêtes | Volume total de tokens | Coût estimé (`gemini-3.5-flash-lite`) |
+| :--- | :---: | :---: | :---: |
+| **Synthèse & Export CSV** | **0** | **0 token** | **0,00 €** *(100 % hors-ligne)* |
+| **1 étudiant (fiche individuelle)** | **1** | ~2 500 tokens (1 500 in / 1 000 out) | **< 0,001 €** *(négligeable)* |
+| **Groupe TP (35 étudiants)** | **35** | ~87 500 tokens | **0,00 €** *(Free Tier)* ou **~0,01 €** |
+| **Promotion complète (100 étudiants)** | **100** | ~250 000 tokens | **0,00 €** *(Free Tier)* ou **~0,04 €** |
+
+> 💡 **Zéro dépense inutile** :
+> - **Gratuité avec Google AI Studio** : Les quotas gratuits (15 req/min, 1 500 req/jour) couvrent sans aucun frais plusieurs promotions complètes.
+> - **Cache local persistant (`AI_CACHE`)** : Les fiches générées sont archivées par empreinte SHA-256 dans `userdata/ai_cache/`. Réévaluer une session sans modification de code consomme **0 requête et 0 token**. Le cache s'invalide automatiquement dès qu'un élève modifie son code. Pour forcer une réévaluation complète après modification du prompt ou du barème, videz simplement `userdata/ai_cache/` (`rm -rf ~/codelab.files/userdata/ai_cache/*`) ou définissez `AI_CACHE = false`.
+>
+> 📖 Pour en savoir plus sur l'architecture, le cycle de vie du cache, la création de nouvelles compétences d'évaluation et la personnalisation des barèmes, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
 
 <br>
 
@@ -256,12 +288,12 @@ Le binaire résultant est généré dans `client/hidden/codelab/codelab.jar`.
 
 Pour construire les distributions autonomes prêtes à l'emploi (embarquant leur propre JVM sans dépendance pour l'utilisateur final), téléchargez au préalable les archives **JDK 17 LTS** officielles sur [Adoptium Temurin Releases](https://adoptium.net/fr/temurin/releases/?version=17) et décompressez-les dans les dossiers correspondants :
 
-| Plateforme | Archive officielle Adoptium | Format | Dossier cible dans `client/` |
-| :--- | :--- | :--- | :--- |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **Mac Silicon** | [macOS aarch64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=aarch64&package=jdk) | `.tar.gz` | `mac-app-arm/Contents/Java/jdk-17.0.20.1+1/` |
-| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> **Mac Intel** | [macOS x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=x64&package=jdk) | `.tar.gz` | `mac-app-x64/Contents/Java/jdk-17.0.8.1+1/` |
-| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> **Windows** | [Windows x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=windows&arch=x64&package=jdk) | `.zip` | `java/windows_64/JDK-17.0.8.1+1/` |
-| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> **Linux** | [Linux x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=linux&arch=x64&package=jdk) | `.tar.gz` | `java/linux_64/JDK-17.0.8.1+1/` |
+| OS | Archive officielle | Format | Dossier cible dans `client/` |
+| :--: | :--: | :--: | :--- |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> | [macOS aarch64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=aarch64&package=jdk) | `.tar.gz` | `mac-app-arm/Contents/Java/jdk-17.0.20.1+1/` |
+| <img src="client/images/macos.png" alt="macOS" height="18" valign="middle"> | [macOS x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=mac&arch=x64&package=jdk) | `.tar.gz` | `mac-app-x64/Contents/Java/jdk-17.0.8.1+1/` |
+| <img src="client/images/windows.png" alt="Windows" height="18" valign="middle"> | [Windows x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=windows&arch=x64&package=jdk) | `.zip` | `java/windows_64/JDK-17.0.8.1+1/` |
+| <img src="client/images/linux.png" alt="Linux" height="18" valign="middle"> | [Linux x64 (JDK 17)](https://adoptium.net/fr/temurin/releases/?version=17&os=linux&arch=x64&package=jdk) | `.tar.gz` | `java/linux_64/JDK-17.0.8.1+1/` |
 
 > [!TIP]
 > Si vous téléchargez une mise à jour mineure plus récente de Temurin 17 (ex: `jdk-17.0.14+7`), renommez simplement le dossier extrait avec le nom attendu dans le tableau ci-dessus (ou créez un lien symbolique) afin que les lanceurs et scripts de packaging le détectent automatiquement.

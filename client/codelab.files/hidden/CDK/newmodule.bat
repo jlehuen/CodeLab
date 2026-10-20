@@ -10,7 +10,7 @@
 IF [%~1]==[] GOTO blank
 
 ECHO    Unzipping the plugin template...
-bin\unzip.exe -q newmodule.zip
+bin\unzip.exe -qo newmodule.zip
 
 SET NAME=%1
 SET PACKAGE=%1
@@ -26,6 +26,8 @@ SET HELLO_GO=YourModule\templates\hello.go
 SET HELLO_PY=YourModule\templates\hello.py
 SET HELLO_CLP=YourModule\templates\hello.clp
 SET HELLO_JAVA=YourModule\templates\hello.java
+
+SET MAN_MD=YourModule\man\YourModule.md
 
 :: #########################################################
 :: # Replace some strings in files
@@ -57,6 +59,10 @@ bin\fart.exe -q "%HELLO_PY%" yourAPI %NAME%API
 bin\fart.exe -q "%HELLO_CLP%" yourAPI %NAME%API
 bin\fart.exe -q "%HELLO_JAVA%" yourAPI %NAME%API
 
+bin\fart.exe -q "%MAN_MD%" PluginModule %NAME%
+bin\fart.exe -q "%MAN_MD%" YourModule %NAME%
+bin\fart.exe -q "%MAN_MD%" yourmodule %PACKAGE%
+
 :: #########################################################
 :: # Rename the project files
 :: #########################################################
@@ -66,6 +72,8 @@ ECHO    Renaming the files...
 RENAME %MODULEPATH%\YourModule.java %NAME%.java
 RENAME %MODULEPATH%\YourToolbar.java %NAME%Toolbar.java
 RENAME %MODULEPATH% %PACKAGE%
+
+RENAME "%MAN_MD%" %NAME%.md
 
 RENAME YourModule\includes\yourAPI.xml %NAME%API.xml
 MOVE YourModule ..\..\modules\%NAME% >nul
@@ -78,6 +86,7 @@ ECHO       Package name : codelab.modules.%PACKAGE%
 ECHO       Module file  : %NAME%.java
 ECHO       Toolbar file : %NAME%Toolbar.java
 ECHO       API file     : %NAME%API.xml
+ECHO       Manual file  : %NAME%.md
 EXIT
 
 :tolower

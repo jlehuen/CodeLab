@@ -83,6 +83,7 @@ cp launchers/windows/kill-codelab.bat "$PAYLOAD/"
 cp launchers/windows/patch-codelab.bat "$PAYLOAD/"
 cp launchers/icon/codelab.ico "$PAYLOAD/"
 cp launchers/README.TXT "$PAYLOAD/"
+cp data/report.css "$PAYLOAD/report.css"
 
 echo "   - Compression de codelab.files..."
 cp -r codelab.files "$PAYLOAD/.hidden/codelab/"

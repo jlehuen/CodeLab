@@ -203,6 +203,7 @@ public class NewFileDialog extends JDialog {
 		languagePanel.add(new LanguageRadioButton(LABEL("NewFileDialog_Java"), ".java"));
 		languagePanel.add(new LanguageRadioButton(LABEL("NewFileDialog_Haskell"), ".hs"));
 		languagePanel.add(new LanguageRadioButton(LABEL("NewFileDialog_Python"), ".py"));
+		languagePanel.add(new LanguageRadioButton(LABEL("NewFileDialog_Jupyter"), ".ipynb"));
 		languagePanel.add(new LanguageRadioButton(LABEL("NewFileDialog_CLIPS"), ".clp"));
 		languagePanel.add(new LanguageRadioButton(LABEL("NewFileDialog_Blocs"), ".blocs"));
 		languagePanel.add(new LanguageRadioButton(LABEL("NewFileDialog_Process"), ".pde"));
