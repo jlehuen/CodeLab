@@ -62,7 +62,6 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 <a id="telechargements" name="telechargements"></a>
 <a id="téléchargements" name="téléchargements"></a>
-<a id="téléchargements-version-150" name="téléchargements-version-150"></a>
 
 ## Téléchargements (version 1.5.1)
 
