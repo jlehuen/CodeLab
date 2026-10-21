@@ -9,17 +9,17 @@
   },
   "anti_triche": {
     "assistance_ia": {
-      "malus_eleve": 2.0,
-      "plafond_note_eleve": 13.5,
-      "malus_modere": 1.0,
-      "plafond_note_modere": 15.5
+      "malus_eleve": 5.0,
+      "plafond_note_eleve": 10.0,
+      "malus_modere": 2.0,
+      "plafond_note_modere": 14.0
     },
     "similarite": {
-      "seuil_detection_pct": 85.0,
-      "malus_1_fichier": 0.5,
-      "malus_2_fichiers": 1.5,
-      "malus_3_fichiers_ou_plus": 2.5,
-      "malus_max_total": 2.5
+      "seuil_detection_pct": 75.0,
+      "malus_1_fichier": 1.0,
+      "malus_2_fichiers": 2.5,
+      "malus_3_fichiers_ou_plus": 4.0,
+      "malus_max_total": 4.0
     }
   },
   "profils": {

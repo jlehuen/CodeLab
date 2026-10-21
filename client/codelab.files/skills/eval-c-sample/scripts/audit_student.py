@@ -145,13 +145,14 @@ def format_lines(lines, start_idx, end_idx, highlight_line=None, note=None):
     return '\n'.join(res)
 
 
-def detect_ai_markers(c_files):
+def detect_ai_markers(c_files, student_dir=None):
     """
     Analyse statique et stylométrique multi-dimensionnelle des signatures d'assistance IA en C :
-    1. Syntaxe anachronique ou sur-ingénierie (pointeurs de fonctions, structures anonymes imbriquées).
+    1. Syntaxe anachronique ou sur-ingénierie (pointeurs de fonctions, structures anonymes imbriquées, sleep/usleep).
     2. Stylométrie didactique Chatbot (commentaires verbeux de prompt, docstrings Doxygen artificielles, étapes numérotées).
-    3. Chronométrie CodeLab : fichiers complexes créés en moins de 60s (copier-coller de prompt).
-    Applique des plafonds par catégorie et requiert au moins 2 catégories distinctes pour le seuil Élevé.
+    3. Rupture d'indentation intra-copie ou globale (4 espaces vs tabulations natives CodeLab).
+    4. Chronométrie CodeLab : fichiers complexes créés en moins de 60s/300s ou rafale en séance unique sans historique .bak.
+    Note : les bibliothèques standards C (<stdio.h>, <stdlib.h>, <stdbool.h>, <math.h>) sont tolérées sans pénalité.
     """
     markers = []
     category_weights = {}
@@ -161,8 +162,8 @@ def detect_ai_markers(c_files):
         'stylometrie_chatbot': 0.35,
         'sur_documentation': 0.25,
         'langue_incoherente': 0.25,
-        'variance_stylometrique': 0.35,
-        'chronometrie_anormale': 0.35,
+        'variance_stylometrique': 0.45,
+        'chronometrie_anormale': 0.45,
         'mention_explicite': 1.0,
     }
 
@@ -170,6 +171,7 @@ def detect_ai_markers(c_files):
         markers.append({
             'file': rel_path,
             'category': category,
+            'subtype': subtype,
             'description': description
         })
         cnt = subtype_counts.get(subtype, 0)
@@ -183,6 +185,12 @@ def detect_ai_markers(c_files):
     file_indent = {}
     total_tabs = 0
     total_spaces = 0
+    bak_count = 0
+    if student_dir:
+        try:
+            bak_count = len(list(Path(student_dir).rglob("*.bak"))) + len(list(Path(student_dir).rglob("*_bak.c")))
+        except Exception:
+            pass
 
     for fpath in c_files:
         rel_path = fpath.name
@@ -211,12 +219,15 @@ def detect_ai_markers(c_files):
             except Exception:
                 pass
 
-        # 1. Syntaxe avancée (vérifiée hors commentaires)
+        # 1. Syntaxe avancée ou fonctions non-CodeLab (vérifiée hors commentaires)
         if re.search(r'\(\s*\*\s*[a-zA-Z_]\w*\s*\)\s*\(', code_nc):
             add_marker(rel_path, 'syntaxe_avancee', 'fn_ptr', "Pointeurs de fonctions avancés (inhabituel pour un travail d'initiation)", 0.25)
 
         if re.search(r'struct\s*\{[^}]*\}\s*[a-zA-Z_]\w*\s*;', code_nc):
             add_marker(rel_path, 'syntaxe_avancee', 'anon_struct', "Structures anonymes imbriquées", 0.18)
+
+        if re.search(r'\b(?:sleep|usleep)\s*\(', code_nc):
+            add_marker(rel_path, 'syntaxe_avancee', 'posix_sleep', "Appel POSIX sleep()/usleep() au lieu de waitFor() CodeLab", 0.30)
 
         # 2. Stylométrie Chatbot
         chatbot_phrases = [
@@ -251,20 +262,37 @@ def detect_ai_markers(c_files):
         if re.search(r'(?://|/\*)\s*(?:ChatGPT|Copilot|Claude|OpenAI|DeepSeek|AI generated|Prompt)', content, re.I):
             add_marker(rel_path, 'mention_explicite', 'explicit_ai', "Mention textuelle explicite d'outil IA dans les commentaires", 1.0)
 
-    # 3. Rupture d'indentation intra-copie Tab ➔ 4 Espaces
+    # 3. Rupture d'indentation intra-copie ou globale Tab ➔ 4 Espaces
     for f_rel, ind in file_indent.items():
         if 'primitive' in f_rel.lower():
             continue
         other_tabs = total_tabs - ind['tabs']
         other_spaces = total_spaces - ind['spaces']
-        if ind['spaces'] >= 25 and (ind['spaces'] > ind['tabs'] * 3 or ind['tabs'] <= 3):
-            if other_tabs >= 30 and other_tabs > other_spaces * 2:
+        if ind['spaces'] >= 20 and (ind['spaces'] > ind['tabs'] * 3 or ind['tabs'] <= 3):
+            if other_tabs >= 25 and other_tabs > other_spaces * 1.5:
                 add_marker(f_rel, 'variance_stylometrique', 'indentation_spaces_rupture',
                            f"Rupture d'indentation intra-copie : {ind['spaces']} lignes en 4 espaces contre {ind['tabs']} tabulation(s), en contraste avec le style natif CodeLab ({other_tabs} tabulations dans le reste de la copie)", 0.35)
+    if total_spaces >= 35 and total_spaces > total_tabs * 2:
+        add_marker("Ensemble des fichiers", 'variance_stylometrique', 'indentation_spaces_rupture',
+                   f"Indentation dominante en 4 espaces ({total_spaces} lignes en 4 espaces vs {total_tabs} tabulations natives CodeLab) caractéristique d'un copier-coller externe / LLM", 0.35)
 
-    # 4. Chronométrie anormale (< 300s pour projets complexes, < 60s pour fichiers standards)
-    if len(created_timestamps) >= 2:
+    # 4. Chronométrie anormale (< 300s pour projets complexes, < 60s pour fichiers standards, ou rafale sans .bak)
+    dates_info = {}
+    if created_timestamps:
         created_timestamps.sort(key=lambda x: x[0])
+        distinct_days = len(set(x[0].date() for x in created_timestamps))
+        span_days = (created_timestamps[-1][0].date() - created_timestamps[0][0].date()).days
+        dates_info = {
+            "distinct_days": distinct_days,
+            "span_days": span_days,
+            "first_date": created_timestamps[0][0].strftime("%d/%m/%Y"),
+            "last_date": created_timestamps[-1][0].strftime("%d/%m/%Y")
+        }
+        if distinct_days == 1 and len(created_timestamps) >= 6 and bak_count == 0:
+            add_marker(created_timestamps[-1][1], 'chronometrie_anormale', 'single_session_dump',
+                       f"Dépôt massif de {len(created_timestamps)} fichiers sur une seule séance sans aucun historique .bak", 0.40)
+
+    if len(created_timestamps) >= 2:
         for i in range(len(created_timestamps) - 1):
             t1, f1, loc1 = created_timestamps[i]
             t2, f2, loc2 = created_timestamps[i+1]
@@ -287,7 +315,7 @@ def detect_ai_markers(c_files):
         level = f"Élevé ({score_pct}% - Forte présomption d'assistance IA)"
         verdict = f"⚠️ Usage IA très probable ({score_pct}% de marqueurs)"
         confidence = "Élevée"
-    elif score_pct >= 25:
+    elif score_pct >= 30:
         level = f"Modéré ({score_pct}% - Idiomes atypiques détectés)"
         verdict = f"⚠️ Signaux d'assistance IA modérés ({score_pct}% de marqueurs)"
         confidence = "Moyenne"
@@ -307,7 +335,13 @@ def detect_ai_markers(c_files):
         "confidence": confidence,
         "verdict": verdict,
         "markers_count": len(markers),
-        "markers": markers
+        "markers": markers,
+        "indentation_stats": {
+            "total_tabs": total_tabs,
+            "total_spaces": total_spaces,
+            "files": file_indent
+        },
+        "dates_info": dates_info
     }
 
 
@@ -344,8 +378,12 @@ def audit_student(folder_path, sessions_xml_path=None):
             "architecture": 0.0,
             "style": 0.0,
             "tests": 0.0,
+            "note_technique_brute": 0.0,
+            "note_apres_ia": 0.0,
             "total": 0.0
         },
+        "indentation_stats": {"total_tabs": 0, "total_spaces": 0, "files": {}},
+        "dates_info": {"distinct_days": 0, "span_days": 0, "first_date": "N/A", "last_date": "N/A"},
         "c_files": [f.name for f in c_files],
         "total_files": len(c_files),
         "valid_c_count": 0,
@@ -497,29 +535,34 @@ def audit_student(folder_path, sessions_xml_path=None):
         test_pts = 0.4
     results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
 
-    ai_info = detect_ai_markers(c_files)
+    ai_info = detect_ai_markers(c_files, student_dir=p)
     results["ai_detection"] = ai_info
     results["ai_analysis"] = ai_info
+    results["dates_info"] = ai_info.get("dates_info", {})
     ai_prob = ai_info.get("probability_pct", 0)
 
-    if ai_prob >= 60:
-        results["scores"]["tests"] = min(results["scores"]["tests"], 0.2)
-        results["scores"]["architecture"] = max(0.0, round(results["scores"]["architecture"] - 1.5, 1))
-        results["scores"]["style"] = max(0.2, round(results["scores"]["style"] - 0.5, 1))
-        cur_tot = results["scores"]["syntax"] + results["scores"]["architecture"] + results["scores"]["style"] + results["scores"]["tests"]
-        if cur_tot > 13.5:
-            results["scores"]["architecture"] = max(0.0, round(13.5 - results["scores"]["syntax"] - results["scores"]["style"] - results["scores"]["tests"], 1))
-    elif ai_prob >= 30:
-        results["scores"]["tests"] = min(results["scores"]["tests"], 0.6)
-        results["scores"]["architecture"] = max(0.0, round(results["scores"]["architecture"] - 0.5, 1))
-        cur_tot = results["scores"]["syntax"] + results["scores"]["architecture"] + results["scores"]["style"] + results["scores"]["tests"]
-        if cur_tot > 16.0:
-            results["scores"]["architecture"] = max(0.0, round(16.0 - results["scores"]["syntax"] - results["scores"]["style"] - results["scores"]["tests"], 1))
-
-    results["scores"]["total"] = round(
+    # Note sans malus (somme technique pure des 4 axes)
+    note_sans_malus = round(
         results["scores"]["syntax"] + results["scores"]["architecture"] + results["scores"]["style"] + results["scores"]["tests"],
         1
     )
+    results["scores"]["note_technique_brute"] = note_sans_malus
+
+    # Application du malus IA uniquement sur la note avec malus (total)
+    anti_ia = weights.get("anti_triche", {}).get("assistance_ia", {})
+    malus_eleve = float(anti_ia.get("malus_eleve", 5.0))
+    plafond_eleve = float(anti_ia.get("plafond_note_eleve", 10.0))
+    malus_modere = float(anti_ia.get("malus_modere", 2.0))
+    plafond_modere = float(anti_ia.get("plafond_note_modere", 14.0))
+
+    total_note = note_sans_malus
+    if ai_prob >= 60:
+        total_note = min(plafond_eleve, max(0.0, round(total_note - malus_eleve, 1)))
+    elif ai_prob >= 30:
+        total_note = min(plafond_modere, max(0.0, round(total_note - malus_modere, 1)))
+
+    results["scores"]["note_apres_ia"] = total_note
+    results["scores"]["total"] = total_note
 
     return results
 

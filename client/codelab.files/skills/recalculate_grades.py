@@ -35,17 +35,17 @@ DEFAULT_WEIGHTS = {
     },
     "anti_triche": {
         "assistance_ia": {
-            "malus_eleve": 2.0,
-            "plafond_note_eleve": 13.5,
-            "malus_modere": 1.0,
-            "plafond_note_modere": 15.5
+            "malus_eleve": 5.0,
+            "plafond_note_eleve": 10.0,
+            "malus_modere": 2.0,
+            "plafond_note_modere": 14.0
         },
         "similarite": {
-            "seuil_detection_pct": 85.0,
-            "malus_1_fichier": 0.5,
-            "malus_2_fichiers": 1.5,
-            "malus_3_fichiers_ou_plus": 2.5,
-            "malus_max_total": 2.5
+            "seuil_detection_pct": 75.0,
+            "malus_1_fichier": 1.0,
+            "malus_2_fichiers": 2.5,
+            "malus_3_fichiers_ou_plus": 4.0,
+            "malus_max_total": 4.0
         }
     },
     "profils": {
@@ -91,8 +91,8 @@ def count_similar_files(sim_alert_str):
     """Compte le nombre de fichiers uniques impliqués dans une alerte de similarité."""
     if not sim_alert_str:
         return 0
-    # Recherche les motifs type 'sur TP2E2a.c, TP1E3.c' ou 'TP2E2b.c'
-    files = set(re.findall(r'[a-zA-Z0-9_\-\.]+\.c', sim_alert_str))
+    # Recherche les motifs type 'sur TP2E2a.c, TP1E3.c' ou '.py' ou '.java'
+    files = set(re.findall(r'[a-zA-Z0-9_\-\.]+\.(?:c|h|py|java)', sim_alert_str))
     return len(files)
 
 def update_student_report_markdown(report_file, st_info, a1_max=10.0, a2_max=8.0, a3_max=2.0, a4_max=0.0):
@@ -143,15 +143,17 @@ def update_student_report_markdown(report_file, st_info, a1_max=10.0, a2_max=8.0
                 if m3 and m3.group(1).strip() and not m3.group(1).strip().startswith('/'):
                     app_a3 = m3.group(1).strip()
 
+            note_sans_malus = st_info.get('raw_subtotal', round(st_info['a1'] + st_info['a2'] + st_info['a3'], 1))
             new_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
 | :--- | :---: | :---: | :--- |
 | **Axe 1 : Progression & Couverture des TP** | **{st_info['a1']:.1f}** | / {a1_max:.1f} | {app_a1} |
 | **Axe 2 : Architecture & Qualité Algorithmique** | **{st_info['a2']:.1f}** | / {a2_max:.1f} | {app_a2} |
 | **Axe 3 : Style, Rigueur & Bonnes Pratiques** | **{st_info['a3']:.1f}** | / {a3_max:.1f} | {app_a3} |
-| **TOTAL GÉNÉRAL** | **{st_info['new']:.1f}** | **/ 20.0** | **{s_profil}** |"""
+| **Note sans malus (IA / Similarité)** | **{note_sans_malus:.1f}** | / 20.0 | Somme technique brute des 3 axes |
+| **TOTAL GÉNÉRAL (Avec malus)** | **{st_info['new']:.1f}** | **/ 20.0** | **{s_profil}** |"""
 
             content = re.sub(
-                r'\|[ \t]*(?:Axe[ \t]*d[’\']?[EÉeé]valuation|Axe)[ \t]*\|[\s\S]*?\|\s*\*\*(?:TOTAL GÉNÉRAL|Total Global|NOTE FINALE)\*\*[^\n]*\|',
+                r'\|[ \t]*(?:Axe[ \t]*d[’\']?[EÉeé]valuation|Axe)[ \t]*\|[\s\S]*?\|\s*\*\*(?:TOTAL GÉNÉRAL|Total Global|NOTE FINALE)[^\n]*\|',
                 new_table,
                 content,
                 flags=re.IGNORECASE
@@ -271,6 +273,7 @@ def recalculate_session(session_dir, weights_path=None):
             calc_a2 = 0.0
             calc_a3 = 0.0
             calc_a4 = 0.0
+            raw_subtotal = 0.0
             ia_malus = 0.0
             sim_malus = 0.0
             final_total = 0.0
@@ -286,6 +289,7 @@ def recalculate_session(session_dir, weights_path=None):
             subtotal = calc_a1 + calc_a2 + calc_a3 + calc_a4
             if normalisation_factor != 1.0:
                 subtotal = subtotal * normalisation_factor
+            raw_subtotal = round(max(0.0, min(20.0, subtotal)), 1)
 
             # 2. Détection et application du malus Assistance IA
             ai_level = get_col(row, 'Indice_Assistance_IA', 'Faible')
@@ -310,10 +314,11 @@ def recalculate_session(session_dir, weights_path=None):
                 sim_malus = sim_m1
             sim_malus = min(sim_malus, sim_max_total)
 
-            # 4. Calcul de la note totale finale
-            adjusted_total = subtotal - ia_malus - sim_malus
+            # 4. Calcul de la note totale finale (IA plafonnée puis similarité déduite)
+            note_after_ia = raw_subtotal - ia_malus
             if applied_ia_cap is not None:
-                adjusted_total = min(adjusted_total, applied_ia_cap)
+                note_after_ia = min(note_after_ia, applied_ia_cap)
+            adjusted_total = note_after_ia - sim_malus
 
             final_total = round(max(0.0, min(20.0, adjusted_total)), 1)
             new_notes.append(final_total)
@@ -341,6 +346,7 @@ def recalculate_session(session_dir, weights_path=None):
         if 'Axe2_Architecture_sur_8' in col_idx: new_row[col_idx['Axe2_Architecture_sur_8']] = f"{calc_a2:.1f}"
         if 'Axe3_Style_sur_2' in col_idx: new_row[col_idx['Axe3_Style_sur_2']] = f"{calc_a3:.1f}"
         if 'Axe4_Tests_sur_2' in col_idx: new_row[col_idx['Axe4_Tests_sur_2']] = f"{calc_a4:.1f}"
+        if 'Note_Sans_Malus_sur_20' in col_idx: new_row[col_idx['Note_Sans_Malus_sur_20']] = f"{raw_subtotal:.1f}"
         if 'Note_Finale_sur_20' in col_idx: new_row[col_idx['Note_Finale_sur_20']] = f"{final_total:.1f}"
         if 'Profil' in col_idx: new_row[col_idx['Profil']] = new_profil
 
@@ -350,6 +356,7 @@ def recalculate_session(session_dir, weights_path=None):
             'name': nom,
             'old': old_total,
             'new': final_total,
+            'raw_subtotal': raw_subtotal,
             'a1': calc_a1,
             'a2': calc_a2,
             'a3': calc_a3,
@@ -432,20 +439,20 @@ def recalculate_session(session_dir, weights_path=None):
                     s_content
                 )
                 s_content = re.sub(
-                    r'\|\s*Login\s*\|\s*Nom[^\n]*Axe 4[^\n]*',
-                    '| Login | Nom de l\'Étudiant | Jalons (/31) | Axe 1 (Prog /10) | Axe 2 (Algo /8) | Axe 3 (Style /2) | Note /20 | Profil Identifié | Compilation | Alerte / Remarque |',
+                    r'\|\s*Login\s*\|\s*Nom[^\n]*\|',
+                    '| Login | Nom de l\'Étudiant | Jalons (/31) | Axe 1 (Prog /10) | Axe 2 (Algo /8) | Axe 3 (Style /2) | Note sans malus /20 | Note avec malus /20 | Profil Identifié | Compilation | Alerte / Remarque |',
                     s_content
                 )
                 s_content = re.sub(
-                    r'\|\s*:---\s*\|\s*:---\s*\|\s*:---:\s*\|\s*:---:\s*\|\s*:---:\s*\|\s*:---:\s*\|\s*:---:\s*\|\s*:---:\s*\|\s*:---\s*\|\s*:---:\s*\|\s*:---\s*\|',
-                    '| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- | :---: | :--- |',
+                    r'\|\s*:---\s*\|\s*:---\s*\|(?:\s*:---:\s*\|){4,7}\s*:---\s*\|\s*:---:\s*\|\s*:---\s*\|',
+                    '| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :---: | :--- |',
                     s_content
                 )
 
             # Mise à jour des lignes de tableau dans la synthèse
             for st in students_updated:
-                pat = rf'(\|\s*`{re.escape(st["login"])}`\s*\|\s*\*\*[^*]+\*\*\s*\|\s*[0-9]+\s*\|)[^|]+(?:\|[^|]+){{2,3}}\|\s*\**[0-9]+(?:\.[0-9]+)?\**\s*(\|\s*[^|]+\|\s*[^|]+\|\s*[^|\n]*\|)'
-                repl = rf'\g<1> {st["a1"]:.1f} | **{st["a2"]:.1f}** | {st["a3"]:.1f} | **{st["new"]:.1f}** \g<2>'
+                pat = rf'(\|\s*`{re.escape(st["login"])}`\s*\|\s*\*\*[^*]+\*\*\s*\|\s*[0-9]+\s*\|)[^|]+(?:\|[^|]+){{2,4}}\|\s*\**[0-9]+(?:\.[0-9]+)?\**\s*(\|\s*[^|]+\|\s*[^|]+\|\s*[^|\n]*\|)'
+                repl = rf'\g<1> {st["a1"]:.1f} | **{st["a2"]:.1f}** | {st["a3"]:.1f} | {st["raw_subtotal"]:.1f} | **{st["new"]:.1f}** \g<2>'
                 s_content = re.sub(pat, repl, s_content)
 
             synthese_md.write_text(s_content, encoding='utf-8')

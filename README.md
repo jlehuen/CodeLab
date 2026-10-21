@@ -60,16 +60,16 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 <br>
 
-## Téléchargements (version 1.5.0)
+## Téléchargements (version 1.5.1)
 
 <br>
 
 <p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.0.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.1.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.0-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.1-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.0.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.1.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
 </p>
 
 Toutes les versions disponibles sont dans la section [Releases](https://github.com/jlehuen/CodeLab/releases) de CodeLab.

@@ -845,28 +845,42 @@ def find_single_student_plagiarism(student_dir, student_id, audit_cohort_mod=Non
                 audit_cohort_mod = audit_cohort
             if hasattr(audit_cohort_mod, "detect_cohort_plagiarism"):
                 suspicions = audit_cohort_mod.detect_cohort_plagiarism(str(parent_p))
-                if isinstance(suspicions, tuple) and len(suspicions) == 2 and isinstance(suspicions[1], dict):
-                    if student_id in suspicions[1]:
+                if isinstance(suspicions, tuple):
+                    if len(suspicions) == 2 and isinstance(suspicions[1], dict) and student_id in suspicions[1]:
                         return suspicions[1][student_id]
                     suspicions = suspicions[0]
                 if isinstance(suspicions, list):
+                    agg = None
+                    existing_files = set()
                     for sp in suspicions:
+                        partner = None
+                        partner_id = None
                         if sp.get('s1') == student_id:
-                            return {
-                                'partner': sp.get('name2', sp.get('s2')),
-                                'partner_id': sp.get('s2'),
-                                'max_sim': sp.get('max_sim', 0),
-                                'files': sp.get('similar_files', []),
-                                'severity': sp.get('severity', '')
-                            }
+                            partner = sp.get('name2', sp.get('s2'))
+                            partner_id = sp.get('s2')
                         elif sp.get('s2') == student_id:
-                            return {
-                                'partner': sp.get('name1', sp.get('s1')),
-                                'partner_id': sp.get('s1'),
-                                'max_sim': sp.get('max_sim', 0),
-                                'files': sp.get('similar_files', []),
-                                'severity': sp.get('severity', '')
-                            }
+                            partner = sp.get('name1', sp.get('s1'))
+                            partner_id = sp.get('s1')
+                        if partner_id:
+                            if agg is None:
+                                agg = {
+                                    'partner': partner,
+                                    'partner_id': partner_id,
+                                    'max_sim': sp.get('max_sim', 0),
+                                    'files': [],
+                                    'severity': sp.get('severity', '')
+                                }
+                            for sf in sp.get('similar_files', []):
+                                if sf not in existing_files:
+                                    agg['files'].append(sf)
+                                    existing_files.add(sf)
+                            if sp.get('max_sim', 0) > agg['max_sim']:
+                                agg['max_sim'] = sp.get('max_sim', 0)
+                                agg['partner'] = partner
+                                agg['partner_id'] = partner_id
+                                agg['severity'] = sp.get('severity', '')
+                    if agg is not None:
+                        return agg
     except Exception:
         pass
     return None
@@ -894,12 +908,14 @@ def build_generic_scores_table(scores, data, profil):
         "| :--- | :---: | :---: | :--- |"
     ]
     has_custom_axes = False
+    raw_sum = 0.0
     for k, v in scores.items():
-        if k in ("total", "total_note"):
+        if k in ("total", "total_note", "note_technique_brute", "note_apres_ia", "malus_similarite", "malus_saut", "axe2_details"):
             continue
         try:
             val_f = float(v)
             val_str = f"{val_f:.1f}"
+            raw_sum += val_f
         except (ValueError, TypeError):
             val_str = str(v)
         lbl, bareme, desc = axis_labels.get(k, (f"Axe : {k.replace('_', ' ').capitalize()}", "", "Évaluation spécifique"))
@@ -912,10 +928,18 @@ def build_generic_scores_table(scores, data, profil):
     except (ValueError, TypeError):
         tot_str = str(total)
 
+    note_sans_malus = scores.get("note_technique_brute", data.get("note_technique_brute", round(raw_sum, 1) if has_custom_axes else total))
+    try:
+        nsm_str = f"{float(note_sans_malus):.1f}"
+    except (ValueError, TypeError):
+        nsm_str = str(note_sans_malus)
+
     if not has_custom_axes:
-        rows.append(f"| **Note Globale** | **{tot_str}** | / 20.0 | Bilan global de l'évaluation |")
+        rows.append(f"| **Note sans malus (IA / Similarité)** | **{nsm_str}** | / 20.0 | Note technique brute |")
+        rows.append(f"| **Note Globale (Avec malus)** | **{tot_str}** | / 20.0 | Bilan global de l'évaluation |")
     else:
-        rows.append(f"| **TOTAL GÉNÉRAL** | **{tot_str}** | **/ 20.0** | **{profil}** |")
+        rows.append(f"| **Note sans malus (IA / Similarité)** | **{nsm_str}** | **/ 20.0** | **Somme technique brute des axes** |")
+        rows.append(f"| **TOTAL GÉNÉRAL (Avec malus)** | **{tot_str}** | **/ 20.0** | **{profil}** |")
     return "\n".join(rows)
 
 def build_deterministic_pedagogical_sections(skill_name, data, identity):
@@ -997,6 +1021,7 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
     a1 = float(sc.get("axe1_progression", 0.0))
     a2 = float(sc.get("axe2_architecture", 0.0))
     a3 = float(sc.get("axe3_style", 0.0))
+    note_sans_malus = float(sc.get("note_technique_brute", round(a1 + a2 + a3, 1)))
     tot = float(sc.get("total_note", 0.0))
     profil = res.get("profil", "Standard")
 
@@ -1012,7 +1037,7 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
     integ = extract_integrity_indicators(res, plagiarism_info=plagiarism_info)
 
     # Appréciations synthétiques du tableau
-    if res.get("valid_files", 0) == 0 or tot == 0.0:
+    if res.get("valid_files", 0) == 0 or (tot == 0.0 and note_sans_malus == 0.0):
         app_a1 = "Aucun travail rendu sur CodeLab."
         app_a2 = "Aucun programme soumis."
         app_a3 = "Aucun code source à analyser."
@@ -1052,22 +1077,108 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         if m_comm:
             sec_commentaire = re.sub(r'^###[^\n]*\n+', '', m_comm.group(0)).strip()
 
-    # Si extraction incomplète, fallbacks bienveillants
+    # Construction déterministe riche et pédagogique si l'évaluation est exécutée sans IA (--no-ai)
+    snippets = res.get("snippets", {})
+    dinfo = res.get("dates_info", {})
+    milestones_details = res.get("milestones_details", [])
     if not sec_bilan:
-        sec_bilan = f"Vous avez validé **{res.get('milestones_present', 0)} jalons sur 31** avec un taux de compilation de **{res.get('compilation_rate', 0.0)}%** ({res.get('compiled_files', 0)}/{res.get('valid_files', 0)} fichiers valides)."
+        bilan_lines = [
+            f"- **Volume réalisé** : **{res.get('milestones_present', 0)} / {res.get('milestones_total', 31)}** jalons validés ({res.get('total_files', 0)} fichiers C dont {res.get('valid_files', 0)} actifs, {res.get('total_lines', 0)} lignes de code).",
+            f"- **Contrôle de compilation Clang** : **{res.get('compiled_files', 0)} / {res.get('valid_files', 0)}** fichiers valides compilés avec succès ({res.get('compilation_rate', 0.0)}%) *(forme `void main()` et bibliothèques standards C tolérées sans malus)*."
+        ]
+        if dinfo.get("distinct_days"):
+            bilan_lines.append(f"- **Régularité du travail** : {dinfo['distinct_days']} jours d'activité sur CodeLab étalés sur {dinfo.get('span_days', 0)} jours (du {dinfo.get('first_date', '')} au {dinfo.get('last_date', '')}).")
+        bilan_lines.append(f"- **Fonctions écrites** : {res.get('total_functions', 0)} fonctions (dont {res.get('documented_functions', 0)} formellement documentées, soit {res.get('doc_ratio', 0.0)}%).")
+        if res.get("compilation_errors"):
+            bilan_lines.append(f"\n> [!WARNING]\n> **Erreurs de syntaxe / compilation C détectées ({len(res['compilation_errors'])} fichier(s))** :")
+            for err_info in res["compilation_errors"]:
+                bilan_lines.append(f"> - `{err_info['file']}` : `{err_info['error']}`")
+            if snippets.get("compilation_errors"):
+                bilan_lines.append(">\n> **Extrait(s) du code concerné :**")
+                for c_err in snippets["compilation_errors"]:
+                    code_quoted = "\n".join(f"> {l}" for l in c_err["code"].splitlines())
+                    bilan_lines.append(f"> ```c\n> // {c_err['file']} (ligne {c_err['line']})\n{code_quoted}\n> ```")
+        if res.get("critical_skips"):
+            bilan_lines.append("\n> [!CAUTION]\n> **Activités majeures sautées détectées** :")
+            for sk in res["critical_skips"]:
+                bilan_lines.append(f"> - `{sk['tp']}` : **{sk['id']}** ({sk['description']})")
+        if milestones_details:
+            bilan_lines.append("\n#### Détail par Activité :")
+            tp_status = {}
+            for m in milestones_details:
+                tp_status.setdefault(m["tp"], []).append(m)
+            for tp, m_list in tp_status.items():
+                done_cnt = sum(1 for m in m_list if m.get("present"))
+                tot_cnt = len(m_list)
+                symb = "✅" if done_cnt == tot_cnt else ("🟡" if done_cnt > 0 else "⚪")
+                bilan_lines.append(f"- **{tp}** [{done_cnt}/{tot_cnt}] {symb} : " + ", ".join(f"`{m['id']}` {'✓' if m.get('present') else '✗'}" for m in m_list))
+        sec_bilan = "\n".join(bilan_lines)
+
     if not sec_points_forts:
-        sec_points_forts = "Votre démarche montre un investissement sur les exercices fondamentaux du semestre."
+        forts_lines = []
+        if a2 >= 7.0:
+            forts_lines.append("- **Conception architecturale solide** : décomposition modulaire pertinente, fonctions ciblées et bonne logique d'automate.")
+        elif a2 >= 5.0:
+            forts_lines.append("- **Bonne structuration modulaire** : utilisation pertinente des fonctions et des primitives de déplacement.")
+        if any(m.get("id") == "fangio" and m.get("present") for m in milestones_details):
+            forts_lines.append("- **Projet Fangio validé** : intégration réussie du suivi de piste, du contournement d'obstacle et du chronométrage.")
+        if any(m.get("id") == "knossos1" and m.get("present") for m in milestones_details):
+            forts_lines.append("- **Projet Knossos 1 validé** : lecture d'un plan d'ordres et navigation autonome dans le labyrinthe (`B09` / `B09bis`).")
+        if any(m.get("id") == "knossos2" and m.get("present") for m in milestones_details):
+            forts_lines.append("- **Projet Knossos 2 validé** : mémorisation des déplacements par tableaux de compteurs et trajet retour optimisé.")
+        if res.get("has_div_zero_check"):
+            forts_lines.append("- **Programmation défensive** : protection explicite contre la division par zéro dans le calcul de moyenne pondérée (`TP6E2`).")
+        if res.get("doc_ratio", 0.0) >= 50.0:
+            forts_lines.append(f"- **Documentation soignée** : {res.get('doc_ratio', 0.0)}% des fonctions disposent d'un cartouche descriptif.")
+        if snippets.get("highlights"):
+            forts_lines.append("\n#### Extraits remarquables observés dans votre code :")
+            for hl in snippets["highlights"]:
+                forts_lines.append(f"- **{hl['title']}** (`{hl['file']}`, ligne {hl['line']}) :\n```c\n{hl['code']}\n```")
+        if not forts_lines:
+            forts_lines.append("- Votre démarche montre un investissement sur les exercices fondamentaux abordés durant les séances.")
+        sec_points_forts = "\n".join(forts_lines)
+
     if not sec_ameliorations:
-        sec_ameliorations = "Poursuivez vos efforts en veillant à tester systématiquement vos programmes et à soigner la documentation de chaque fonction."
+        amel_lines = []
+        if not res.get("has_div_zero_check") and res.get("milestones_present", 0) >= 24:
+            amel_lines.append("- **Programmation défensive (division par zéro)** : dans `TP6E2` (`moyennePosition`), si tous les capteurs lisent du blanc, la somme des pondérations vaut `0`. Pensez à vérifier `if (somme > 0)` avant de diviser.")
+        if res.get("doc_ratio", 0.0) < 40.0:
+            amel_lines.append("- **Documenter systématiquement chaque fonction** : indiquez en commentaire le rôle de la fonction, ses paramètres et sa valeur de retour.")
+        if res.get("const_lowercase_count", 0) > 0:
+            amel_lines.append(f"- **Conventions de nommage** : {res['const_lowercase_count']} constante(s) sont en minuscules (`const int`). Utilisez `MAJUSCULES_AVEC_UNDERSCORE` pour les constantes et `camelCase` pour les variables/fonctions.")
+        if res.get("compilation_errors"):
+            amel_lines.append(f"- **Corriger les erreurs de compilation ({len(res['compilation_errors'])} fichier(s))** : testez chaque programme dans CodeLab avant de passer à l'exercice suivant.")
+        if res.get("critical_skips"):
+            amel_lines.append("- **Compléter les jalons intermédiaires sautés** : chaque activité prépare les concepts nécessaires aux projets intégrateurs (*Fangio*, *Knossos*).")
+        if snippets.get("anti_patterns"):
+            amel_lines.append("\n#### Extraits à retravailler méthodologiquement :")
+            for ap in snippets["anti_patterns"]:
+                amel_lines.append(f"- **{ap['title']}** (`{ap['file']}`, ligne {ap['line']}) :\n```c\n{ap['code']}\n```")
+        if not amel_lines:
+            amel_lines.append("- Poursuivez vos efforts en veillant à tester systématiquement vos programmes aux cas limites et à maintenir une documentation régulière.")
+        sec_ameliorations = "\n".join(amel_lines)
+
     if not sec_commentaire:
-        sec_commentaire = f"Bon travail dans l'ensemble {s_name}. Continuez à progresser avec rigueur pour aborder sereinement les modules d'informatique du semestre 2."
+        if note_sans_malus >= 17.5:
+            sec_commentaire = f"Excellent parcours {s_name} (note technique hors malus : {note_sans_malus:.1f}/20). L'architecture du code et les projets intégrateurs jusqu'à Knossos 2 sont très bien maîtrisés."
+        elif note_sans_malus >= 15.0:
+            sec_commentaire = f"Très bon travail {s_name} (note technique hors malus : {note_sans_malus:.1f}/20). Les compétences de programmation impérative et les projets jusqu'à Knossos 1 sont solidement acquis."
+        elif note_sans_malus >= 13.0:
+            sec_commentaire = f"Bon travail {s_name} (note technique hors malus : {note_sans_malus:.1f}/20). Le parcours jusqu'au projet Fangio est bien réalisé ; poursuivez vers la maîtrise complète des tableaux (TP6)."
+        elif note_sans_malus >= 10.0:
+            sec_commentaire = f"Ensemble correct {s_name} ({note_sans_malus:.1f}/20 hors malus), mais certains jalons ou projets de fin de semestre demandent encore à être consolidés."
+        else:
+            sec_commentaire = f"Des notions fondamentales restent fragiles ou incomplètes {s_name} ({note_sans_malus:.1f}/20). Une reprise méthodique des exercices de base est recommandée."
+        if tot < note_sans_malus:
+            sec_commentaire += f" Attention : la note finale avec malus est ajustée à **{tot:.1f}/20** en raison des alertes d'intégrité (similarité inter-étudiants et/ou suspicion d'aide IA)."
 
     scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
 | :--- | :---: | :---: | :--- |
 | **Axe 1 : Progression & Couverture des TP** | **{a1:.1f}** | / 10.0 | {app_a1} |
 | **Axe 2 : Architecture & Qualité Algorithmique** | **{a2:.1f}** | / 8.0 | {app_a2} |
 | **Axe 3 : Style, Rigueur & Bonnes Pratiques** | **{a3:.1f}** | / 2.0 | {app_a3} |
-| **TOTAL GÉNÉRAL** | **{tot:.1f}** | **/ 20.0** | **{profil}** |"""
+| **Note sans malus (IA / Similarité)** | **{note_sans_malus:.1f}** | **/ 20.0** | **Somme technique brute des 3 axes** |
+| **TOTAL GÉNÉRAL (Avec malus)** | **{tot:.1f}** | **/ 20.0** | **{profil}** |"""
 
     template_vars = {
         "nom": s_name,
@@ -1094,6 +1205,7 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         "axe3_note": f"{a3:.1f}",
         "axe3_max": "2.0",
         "axe3_app": app_a3,
+        "note_sans_malus": f"{note_sans_malus:.1f}",
         "total_note": f"{tot:.1f}",
         "note_totale": f"{tot:.1f}",
         "chronometrie": integ["chronometrie"],
@@ -1208,21 +1320,35 @@ def evaluate_single_c_folder(student_dir, output_file, sessions_xml=None, ai_pro
 
     if plagiarism_info:
         res["plagiarism_alert"] = plagiarism_info
-        if plagiarism_info.get("max_sim", 0) >= 85.0:
-            sc_p = res.get("scores", {})
-            a1_p = float(sc_p.get("axe1_progression", 0.0))
-            a2_p = max(0.0, round(float(sc_p.get("axe2_architecture", 0.0)) - 1.5, 1))
-            a3_p = float(sc_p.get("axe3_style", 0.0))
-            if a1_p + a2_p + a3_p > 13.5:
-                a2_p = max(0.0, round(13.5 - a1_p - a3_p, 1))
-            sc_p["axe2_architecture"] = a2_p
-            sc_p["total_note"] = round(a1_p + a2_p + a3_p, 1)
-            res["profil"] = "Suspicion de partage de code (Travail personnel requis)"
+        sc_p = res.get("scores", {})
+        if "note_apres_ia" not in sc_p:
+            sc_p["note_apres_ia"] = float(sc_p.get("total_note", 0.0))
+        if "note_technique_brute" not in sc_p:
+            sc_p["note_technique_brute"] = round(
+                float(sc_p.get("axe1_progression", 0.0))
+                + float(sc_p.get("axe2_architecture", 0.0))
+                + float(sc_p.get("axe3_style", 0.0)), 1
+            )
+        nb_sim = len(plagiarism_info.get("files", []))
+        max_sim = float(plagiarism_info.get("max_sim", 0.0))
+        sim_malus = 0.0
+        if nb_sim >= 5 or max_sim >= 95.0:
+            sim_malus = 4.0
+        elif nb_sim >= 3 or max_sim >= 85.0:
+            sim_malus = 2.5
+        elif nb_sim >= 1 and max_sim >= 70.0:
+            sim_malus = 1.0
+        if sim_malus > 0.0:
+            sc_p["malus_similarite"] = sim_malus
+            sc_p["total_note"] = max(0.0, round(float(sc_p["note_apres_ia"]) - sim_malus, 1))
+            if "Suspicion de partage" not in res.get("profil", ""):
+                res["profil"] = f"{res.get('profil', 'Standard')} (Malus Similarité -{sim_malus:.1f}pt)"
 
     sc = res.get('scores', {})
+    note_sans_malus = sc.get('note_technique_brute', sc.get('total_note', 'N/A'))
     note = sc.get('total_note', 'N/A')
     jalons = f"{res.get('milestones_present', 0)}/{res.get('milestones_total', 31)}"
-    print(f"[DONE] Audit statique comptable : {jalons} jalons validés | Score estimé brut : {note}/20", flush=True)
+    print(f"[DONE] Audit statique comptable : {jalons} jalons validés | Note sans malus : {note_sans_malus}/20 | Note avec malus : {note}/20", flush=True)
 
     # 1.2 Affichage des analyses d'intégrité à la console
     integ = extract_integrity_indicators(res, plagiarism_info=plagiarism_info)
@@ -1339,33 +1465,28 @@ Ne sur-note JAMAIS un simple empilement de fichiers d'exercices guidés sans com
 Calibre la note finale /20 sur les 3 axes officiels en appliquant des règles d'exigence académique et de discernement :
 
 - Axe 1 : Progression & Couverture des TP (sur 10.0 pts)
-  ATTENTION AUX PLAFONDS D'ACHÈVEMENT DU SEMESTRE :
-  • Le semestre culmine avec les projets intégrateurs : TP5 (Fangio : pilotage réactif et chronométré) et TP6 (Knossos 1 & 2 : navigation dans un labyrinthe et tableaux).
-  • Si TP6 (Knossos 1 & 2) n'est pas abordé ou absent : Axe 1 NE PEUT EN AUCUN CAS DÉPASSER 5.5 / 10.0.
-  • Si en plus TP5 (Fangio / E3 / E4) est incomplet, absent ou vide : Axe 1 NE PEUT EN AUCUN CAS DÉPASSER 4.0 / 10.0.
-  • Un étudiant qui s'est arrêté aux exercices guidés d'initiation (TP1 à TP4) et n'a pas réalisé les projets d'intégration a seulement validé le socle élémentaire (entre 3.0 et 4.0 / 10.0 max).
+  BARÈME D'ACHÈVEMENT DU SEMESTRE CALIBRÉ :
+  • Repères cibles pour un étudiant ayant bien travaillé :
+    - Jusqu'à Fangio inclus (TP1 à TP5 complets) ≈ 14 / 20 au total (Axe 1 ≈ 6.8 à 7.2 / 10).
+    - Jusqu'à Knossos 1 inclus (TP1 à TP6E4, carte "B09" ou "B09bis") ≈ 16 / 20 au total (Axe 1 ≈ 8.5 à 8.8 / 10).
+    - Jusqu'à Knossos 2 inclus (TP1 à TP6E5, carte "B09" ou "B09bis") ≈ 18+ / 20 au total (Axe 1 ≈ 9.6 à 10.0 / 10).
+  • "B09" et "B09bis" sont acceptés indifféremment pour Knossos 1 et Knossos 2.
 
 - Axe 2 : Architecture & Qualité Algorithmique (sur 8.0 pts)
   Examine la compréhension réelle plutôt que l'alignement de syntaxe :
-  • Découpage modulaire : fonctions pertinentes, paramètres, valeur de retour utile (et non découpage artificiel).
+  • Découpage modulaire : fonctions pertinentes, paramètres, valeur de retour utile.
   • Logique algorithmique et compréhension réelle des concepts :
     - Vérifie la maîtrise réelle du temps (ex: dans TP5E1, calcul d'une vraie durée écoulée `t2 - t1`).
-    - Vérifie la gestion de l'aléa (ex: `initRandom()` appelé une seule fois au début).
-    - Détecte le code mort, le code plaqué sans lien avec l'algorithme ou copié d'Internet.
-    - L'absence de tableaux et structures de données (TP6 non abordé) limite mécaniquement la note d'architecture à 4.5 / 8.0 maximum.
-  • Remarque : Le fichier `primitives.c` est guidé par le sujet du TP2 ; son écriture est requise mais ne constitue pas une innovation personnelle.
+    - Vérifie la gestion de l'aléa (`initRandom()` appelé une seule fois au début).
+    - Vérifie l'usage des tableaux et de la moyenne pondérée (`float`) dans TP6.
 
 - Axe 3 : Style, Rigueur & Bonnes Pratiques (sur 2.0 pts)
   Lisibilité, nommage clair des variables et constantes en MAJUSCULES, documentation des fonctions, indentation propre.
   Vérifie l'absence d'anti-patterns : waitFor bloquant moteur allumé, waitNumpad sans relâchement, troncature de float.
-  Note : 'void main()' est toléré sans pénalité.
-  PÉNALITÉ : L'inclusion de bibliothèques externes interdites en L1 (<stdio.h>, printf, etc.) trahit une aide extérieure non conforme et doit entraîner un malus sévère sur cet axe (-0.8 à -1.2 pt).
+  Note : 'void main()' ainsi que les bibliothèques standards C (<stdio.h>, printf, <stdlib.h>, <stdbool.h>, <math.h>) sont TOLÉRÉS SANS AUCUNE PÉNALITÉ.
 
-- Note Totale /20 = Axe 1 + Axe 2 + Axe 3.
-  RÈGLES D'ÉTALONNAGE ACADÉMIQUE :
-  • La note de 18+/20 est STRICTEMENT RÉSERVÉE à un travail exceptionnel : code authentique sans alerte, parfaite maîtrise, zéro bibliothèque interdite, projets Fangio et Knossos 2 brillamment validés en autonomie.
-  • Un travail ordinaire complet tourne autour de 12 à 15/20.
-  • Un travail sous assistance IA ou partagé ne peut dépasser 13.5/20.
+- Note sans malus /20 = Axe 1 + Axe 2 + Axe 3 (évaluation purement technique hors malus IA / similarité).
+  La Note finale avec malus sera calculée automatiquement à partir des pénalités d'intégrité.
 
 FORMAT DE SORTIE IMPÉRATIF :
 1. Au tout début de ta réponse (avant tout autre texte ou titre), insère OBLIGATOIREMENT le bloc JSON suivant délimité exactement par ```eval_scores ... ``` :
@@ -1374,7 +1495,7 @@ FORMAT DE SORTIE IMPÉRATIF :
   "axe1_progression": <float sur 10.0>,
   "axe2_architecture": <float sur 8.0>,
   "axe3_style": <float sur 2.0>,
-  "total_note": <float sur 20.0, somme des 3 axes>,
+  "total_note": <float sur 20.0, somme technique des 3 axes>,
   "ai_assistance": {{
     "level": "<Faible / Modéré / Élevé>",
     "justification": "<Explication factuelle basée sur le code de l'élève>"
@@ -1411,36 +1532,25 @@ FORMAT DE SORTIE IMPÉRATIF :
                     llm_a2 = float(scores_data.get("axe2_architecture", det_a2))
                     llm_a3 = float(scores_data.get("axe3_style", det_a3))
 
-                    a2 = max(0.0, min(8.0, max(det_a2 - 2.0, min(det_a2 + 0.2, llm_a2))))
-                    a3 = max(0.0, min(2.0, max(det_a3 - 0.6, min(det_a3 + 0.1, llm_a3))))
+                    a2 = max(0.0, min(8.0, max(det_a2 - 1.0, min(det_a2 + 0.4, llm_a2))))
+                    a3 = max(0.0, min(2.0, max(det_a3 - 0.4, min(det_a3 + 0.2, llm_a3))))
 
-                    # Garde-fous et plafonds d'avancement si TP6 ou Fangio absents
-                    milestones_list = res.get('milestones_details') or res.get('milestones_status') or []
-                    milestones_map = {m.get('id'): m.get('present', False) for m in milestones_list}
-                    has_tp6 = any(m.get('tp') == 'TP6' and m.get('present', False) for m in milestones_list)
-                    has_fangio = milestones_map.get('fangio', False)
-                    nb_tp5_valides = sum(1 for m in milestones_list if m.get('tp') == 'TP5' and m.get('present', False))
+                    note_sans_malus = round(a1 + a2 + a3, 1)
+                    t_note = note_sans_malus
 
-                    if not has_tp6:
-                        if not has_fangio and nb_tp5_valides <= 1:
-                            a1 = min(a1, 4.0)
-                            a2 = min(a2, 4.5)
-                        else:
-                            a1 = min(a1, 5.5)
-                            a2 = min(a2, 5.5)
-
-                    # Plafonds stricts d'intégrité (IA suspectée ou partage de code inter-étudiants)
+                    # Application des malus d'intégrité (IA + Similarité) uniquement sur la note avec malus (total_note)
                     ai_prob = res.get("ai_analysis", {}).get("probability_pct", 0)
-                    has_plag = bool(res.get("plagiarism_alert") and res["plagiarism_alert"].get("max_sim", 0) >= 85.0)
-                    if ai_prob >= 60 or has_plag:
-                        if a1 + a2 + a3 > 13.5:
-                            a2 = max(0.0, round(13.5 - a1 - a3, 1))
+                    if ai_prob >= 60:
+                        t_note = min(10.0, max(0.0, round(t_note - 5.0, 1)))
                     elif ai_prob >= 30:
-                        if a1 + a2 + a3 > 16.0:
-                            a2 = max(0.0, round(16.0 - a1 - a3, 1))
+                        t_note = min(14.0, max(0.0, round(t_note - 2.0, 1)))
 
-                    t_note = round(a1 + a2 + a3, 1)
+                    res["scores"]["note_apres_ia"] = round(t_note, 1)
+                    sim_malus = float(res["scores"].get("malus_similarite", 0.0))
+                    if sim_malus > 0.0:
+                        t_note = max(0.0, round(t_note - sim_malus, 1))
 
+                    res["scores"]["note_technique_brute"] = note_sans_malus
                     res["scores"]["total_note"] = round(t_note, 1)
                     res["scores"]["axe1_progression"] = round(a1, 1)
                     res["scores"]["axe2_architecture"] = round(a2, 1)
@@ -1453,7 +1563,7 @@ FORMAT DE SORTIE IMPÉRATIF :
                         ai_obj = scores_data["ai_assistance"]
                         res.setdefault("ai_analysis", {})["level"] = ai_obj.get("level", res.get("ai_analysis", {}).get("level", "Faible"))
                         res["ai_analysis"]["justification"] = ai_obj.get("justification", "")
-                    print(f"[DONE] Note finale calibrée par Gemini : {res['scores']['total_note']}/20 (Axe1={res['scores']['axe1_progression']}/10, Axe2={res['scores']['axe2_architecture']}/8, Axe3={res['scores']['axe3_style']}/2)", flush=True)
+                    print(f"[DONE] Note calibrée par Gemini : Sans malus={note_sans_malus}/20 | Avec malus={res['scores']['total_note']}/20 (Axe1={res['scores']['axe1_progression']}/10, Axe2={res['scores']['axe2_architecture']}/8, Axe3={res['scores']['axe3_style']}/2)", flush=True)
                 except Exception as e:
                     print(f"[WARN] Impossible de parser les scores calibrés : {e}", flush=True)
 
@@ -1509,11 +1619,28 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
         plagiarism_info = find_single_student_plagiarism(student_dir, identity['student_id'])
     if plagiarism_info:
         data["plagiarism_alert"] = plagiarism_info
+        if "note_technique_brute" not in data:
+            data["note_technique_brute"] = round(float(data.get("score_p1", 0.0)) + float(data.get("score_p2", 0.0)) + float(data.get("score_transversal", 0.0)), 2)
+        if "note_apres_ia" not in data:
+            data["note_apres_ia"] = float(data.get("total", data["note_technique_brute"]))
+        nb_sim = len(plagiarism_info.get("files", []))
+        max_sim = float(plagiarism_info.get("max_sim", 0.0))
+        sim_malus = 0.0
+        if nb_sim >= 2 or max_sim >= 95.0:
+            sim_malus = 4.0
+        elif max_sim >= 85.0:
+            sim_malus = 2.5
+        elif max_sim >= 75.0:
+            sim_malus = 1.0
+        if sim_malus > 0.0:
+            data["malus_similarite"] = sim_malus
+            data["total"] = max(0.0, round(float(data["note_apres_ia"]) - sim_malus, 2))
 
     note = data.get('total', 'N/A')
+    note_sans_malus = data.get('note_technique_brute', note)
     p1 = data.get('score_p1', 0)
     p2 = data.get('score_p2', 0)
-    print(f"[DONE] Audit statique achevé : P1={p1}/8 | P2={p2}/10 | Total={note}/20", flush=True)
+    print(f"[DONE] Audit statique achevé : P1={p1}/8 | P2={p2}/10 | Sans malus={note_sans_malus}/20 | Avec malus={note}/20", flush=True)
 
     # Affichage des 3 piliers d'intégrité académique à la console
     integ = extract_integrity_indicators(data, plagiarism_info=plagiarism_info)
@@ -1537,9 +1664,11 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
     group_line = f"\n- **Groupe :** {s_group}" if s_group else ""
     try:
         note_f = float(note)
+        nsm_f = float(note_sans_malus)
         profil = "Remarquable / Excellent" if note_f >= 16 else ("Bien" if note_f >= 13 else ("Passable" if note_f >= 10 else "Insuffisant"))
     except Exception:
         note_f = 0.0
+        nsm_f = 0.0
         profil = "Standard"
 
     scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
@@ -1547,7 +1676,8 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
 | **Partie 1 : Flux & Regex** | **{p1:.2f}** | / 8.0 | Traitement des flux de données et expressions régulières |
 | **Partie 2 : Numpy & Matplotlib** | **{p2:.2f}** | / 10.0 | Calculs matriciels vectorisés et visualisations |
 | **Transversal : Style Pythonique** | **{data.get('score_transversal', 0.0):.2f}** | / 2.0 | Idiomes Python, propreté et bonnes pratiques |
-| **TOTAL GÉNÉRAL** | **{note_f:.2f}** | **/ 20.0** | **{profil}** |"""
+| **Note sans malus (IA / Similarité)** | **{nsm_f:.2f}** | **/ 20.0** | **Somme technique brute des 3 axes** |
+| **TOTAL GÉNÉRAL (Avec malus)** | **{note_f:.2f}** | **/ 20.0** | **{profil}** |"""
 
     api_key = ai_props.get("GEMINI_API_KEY") if ai_props else None
     model = ai_props.get("GEMINI_MODEL", "gemini-3.5-flash-lite") if ai_props else "gemini-3.5-flash-lite"
@@ -1733,10 +1863,26 @@ def evaluate_generic_folder(student_dir, output_file, sessions_xml=None, ai_prop
         plagiarism_info = find_single_student_plagiarism(student_dir, identity['student_id'])
     if plagiarism_info:
         data["plagiarism_alert"] = plagiarism_info
+        sc_g = data.get("scores", {})
+        if "note_apres_ia" not in sc_g:
+            sc_g["note_apres_ia"] = float(sc_g.get("total", data.get("total", 0.0)))
+        nb_sim = len(plagiarism_info.get("files", []))
+        max_sim = float(plagiarism_info.get("max_sim", 0.0))
+        sim_malus = 0.0
+        if nb_sim >= 3 or max_sim >= 95.0:
+            sim_malus = 4.0
+        elif nb_sim >= 2 or max_sim >= 85.0:
+            sim_malus = 2.5
+        elif nb_sim >= 1 and max_sim >= 75.0:
+            sim_malus = 1.0
+        if sim_malus > 0.0:
+            sc_g["malus_similarite"] = sim_malus
+            sc_g["total"] = max(0.0, round(float(sc_g["note_apres_ia"]) - sim_malus, 1))
 
     scores = data.get("scores", {})
     total = scores.get("total", data.get("total", "N/A"))
-    print(f"[DONE] Audit achevé | Score estimé : {total}/20", flush=True)
+    note_sans_malus = scores.get("note_technique_brute", total)
+    print(f"[DONE] Audit achevé | Note sans malus : {note_sans_malus}/20 | Note avec malus : {total}/20", flush=True)
 
     # Affichage des 3 piliers d'intégrité académique à la console
     integ = extract_integrity_indicators(data, plagiarism_info=plagiarism_info)
@@ -1955,18 +2101,33 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
             import audit_cohort
             if hasattr(audit_cohort, "detect_cohort_plagiarism"):
                 plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p), users_db=users_db)
-                if isinstance(plag_res, tuple) and len(plag_res) == 2 and isinstance(plag_res[1], dict):
-                    plag_map = plag_res[1]
-                elif isinstance(plag_res, list):
+                if isinstance(plag_res, tuple):
+                    if len(plag_res) == 2 and isinstance(plag_res[1], dict):
+                        plag_map = plag_res[1]
+                    else:
+                        plag_res = plag_res[0]
+                if not plag_map and isinstance(plag_res, list):
                     for sp in plag_res:
                         for sid, partner in ((sp.get("s1"), sp.get("s2")), (sp.get("s2"), sp.get("s1"))):
-                            if sid and sp.get("max_sim", 0) > plag_map.get(sid, {}).get("max_sim", 0):
+                            if not sid:
+                                continue
+                            if sid not in plag_map:
                                 plag_map[sid] = {
                                     "partner": partner,
                                     "max_sim": sp.get("max_sim", 0),
-                                    "files": sp.get("similar_files", []),
+                                    "files": list(sp.get("similar_files", [])),
                                     "severity": sp.get("severity", "")
                                 }
+                            else:
+                                existing_files = set(plag_map[sid].get("files", []))
+                                for sf in sp.get("similar_files", []):
+                                    if sf not in existing_files:
+                                        plag_map[sid]["files"].append(sf)
+                                        existing_files.add(sf)
+                                if sp.get("max_sim", 0) > plag_map[sid].get("max_sim", 0):
+                                    plag_map[sid]["max_sim"] = sp.get("max_sim", 0)
+                                    plag_map[sid]["partner"] = partner
+                                    plag_map[sid]["severity"] = sp.get("severity", "")
         except Exception:
             pass
         evaluated_results = []
@@ -2011,18 +2172,33 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
             import audit_cohort
             if hasattr(audit_cohort, "detect_cohort_plagiarism"):
                 plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p))
-                if isinstance(plag_res, tuple) and len(plag_res) == 2 and isinstance(plag_res[1], dict):
-                    plag_map = plag_res[1]
-                elif isinstance(plag_res, list):
+                if isinstance(plag_res, tuple):
+                    if len(plag_res) == 2 and isinstance(plag_res[1], dict):
+                        plag_map = plag_res[1]
+                    else:
+                        plag_res = plag_res[0]
+                if not plag_map and isinstance(plag_res, list):
                     for sp in plag_res:
                         for sid, partner in ((sp.get("s1"), sp.get("s2")), (sp.get("s2"), sp.get("s1"))):
-                            if sid and sp.get("max_sim", 0) > plag_map.get(sid, {}).get("max_sim", 0):
+                            if not sid:
+                                continue
+                            if sid not in plag_map:
                                 plag_map[sid] = {
                                     "partner": partner,
                                     "max_sim": sp.get("max_sim", 0),
-                                    "files": sp.get("similar_files", []),
+                                    "files": list(sp.get("similar_files", [])),
                                     "severity": sp.get("severity", "")
                                 }
+                            else:
+                                existing_files = set(plag_map[sid].get("files", []))
+                                for sf in sp.get("similar_files", []):
+                                    if sf not in existing_files:
+                                        plag_map[sid]["files"].append(sf)
+                                        existing_files.add(sf)
+                                if sp.get("max_sim", 0) > plag_map[sid].get("max_sim", 0):
+                                    plag_map[sid]["max_sim"] = sp.get("max_sim", 0)
+                                    plag_map[sid]["partner"] = partner
+                                    plag_map[sid]["severity"] = sp.get("severity", "")
         except Exception:
             pass
         from audit_cohort import analyze_cohort, export_csv, export_summary_markdown
@@ -2051,18 +2227,33 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
             import audit_cohort
             if hasattr(audit_cohort, "detect_cohort_plagiarism"):
                 plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p))
-                if isinstance(plag_res, tuple) and len(plag_res) == 2 and isinstance(plag_res[1], dict):
-                    plag_map = plag_res[1]
-                elif isinstance(plag_res, list):
+                if isinstance(plag_res, tuple):
+                    if len(plag_res) == 2 and isinstance(plag_res[1], dict):
+                        plag_map = plag_res[1]
+                    else:
+                        plag_res = plag_res[0]
+                if not plag_map and isinstance(plag_res, list):
                     for sp in plag_res:
                         for sid, partner in ((sp.get("s1"), sp.get("s2")), (sp.get("s2"), sp.get("s1"))):
-                            if sid and sp.get("max_sim", 0) > plag_map.get(sid, {}).get("max_sim", 0):
+                            if not sid:
+                                continue
+                            if sid not in plag_map:
                                 plag_map[sid] = {
                                     "partner": partner,
                                     "max_sim": sp.get("max_sim", 0),
-                                    "files": sp.get("similar_files", []),
+                                    "files": list(sp.get("similar_files", [])),
                                     "severity": sp.get("severity", "")
                                 }
+                            else:
+                                existing_files = set(plag_map[sid].get("files", []))
+                                for sf in sp.get("similar_files", []):
+                                    if sf not in existing_files:
+                                        plag_map[sid]["files"].append(sf)
+                                        existing_files.add(sf)
+                                if sp.get("max_sim", 0) > plag_map[sid].get("max_sim", 0):
+                                    plag_map[sid]["max_sim"] = sp.get("max_sim", 0)
+                                    plag_map[sid]["partner"] = partner
+                                    plag_map[sid]["severity"] = sp.get("severity", "")
         except Exception:
             pass
         import audit_cohort
@@ -2108,9 +2299,13 @@ def main():
     parser.add_argument("--out", help="Fichier de sortie spécifique (.md)")
     parser.add_argument("--props", help="Chemin vers user.properties (optionnel)")
     parser.add_argument("--skill", help="ID du skill à appliquer (ex: eval-introprog, eval-c-sample, eval-python-sample, eval-java-sample ou auto)")
+    parser.add_argument("--no-ai", "--deterministic", action="store_true", dest="no_ai", help="Exécuter l'évaluation en mode 100%% déterministe (0 crédit IA)")
     
     args = parser.parse_args()
     ai_props = load_ai_properties(args.props)
+    if args.no_ai:
+        ai_props["GEMINI_API_KEY"] = ""
+        print("[INFO] Mode d'évaluation : Déterministe local (Sans IA — 0 crédit consommé)", flush=True)
     
     # 1. Mode dossier unique (Explorateur FileManager)
     if args.folder:

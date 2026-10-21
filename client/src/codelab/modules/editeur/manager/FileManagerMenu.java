@@ -173,7 +173,7 @@ public class FileManagerMenu {
 			if (fd.isDirectory()) {
 				if (!FileManager.isEvaluation(fd.getFile())) {
 					JMenu subMenuEval = new JMenu(LABEL("menuEvalFolder"));
-					SessionEvaluator.populateSkillsSubmenu(subMenuEval, skill -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill));
+					SessionEvaluator.populateSkillsSubmenu(subMenuEval, (skill, useAi) -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill, useAi));
 					menu.add(subMenuEval);
 					menu.add(new JSeparator());
 				}
@@ -258,7 +258,7 @@ public class FileManagerMenu {
 
 					if (!codelab.isConnected()) {
 						JMenu menuEvalFolder = new JMenu(LABEL("menuEvalFolder"));
-						SessionEvaluator.populateSkillsSubmenu(menuEvalFolder, skill -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill));
+						SessionEvaluator.populateSkillsSubmenu(menuEvalFolder, (skill, useAi) -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill, useAi));
 						menu.add(menuEvalFolder);
 						menu.add(new JSeparator());
 					}

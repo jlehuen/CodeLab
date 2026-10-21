@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -151,9 +152,19 @@ public class SessionEvaluator {
 	}
 
 	/**
-	 * Remplit dynamiquement un JMenu avec tous les skills disponibles + détection automatique.
+	 * Remplit dynamiquement un JMenu avec tous les skills disponibles + détection automatique
+	 * (compatibilité Consumer simple : mode avec IA par défaut).
 	 */
 	public static void populateSkillsSubmenu(JMenu parentMenu, Consumer<SkillDescr> onSelect) {
+		populateSkillsSubmenu(parentMenu, (skill, useAi) -> onSelect.accept(skill));
+	}
+
+	/**
+	 * Remplit dynamiquement un JMenu avec les deux modes d'évaluation :
+	 * 1) Mode Déterministe (Sans IA — 0 crédit)
+	 * 2) Mode Hybride IA (Avec Gemini)
+	 */
+	public static void populateSkillsSubmenu(JMenu parentMenu, BiConsumer<SkillDescr, Boolean> onSelect) {
 		parentMenu.removeAll();
 		if (availableSkills.isEmpty()) {
 			scanSkills();
@@ -165,15 +176,32 @@ public class SessionEvaluator {
 			return;
 		}
 
-		JMenuItem itemAuto = new JMenuItem(CodeLab.LABEL("evalSkillAuto"));
-		itemAuto.addActionListener(e -> onSelect.accept(null));
-		parentMenu.add(itemAuto);
-		parentMenu.add(new JSeparator());
+		String suffixNoAi = " " + CodeLab.LABEL("evalSkillSuffixNoAi");
+		String suffixAi = " " + CodeLab.LABEL("evalSkillSuffixAi");
+
+		// 1. Section Sans IA (Déterministe — 0 crédit)
+		JMenuItem itemAutoNoAi = new JMenuItem(CodeLab.LABEL("evalSkillAutoNoAi"));
+		itemAutoNoAi.addActionListener(e -> onSelect.accept(null, false));
+		parentMenu.add(itemAutoNoAi);
 
 		for (SkillDescr skill : availableSkills) {
-			JMenuItem item = new JMenuItem(skill.getTitle());
-			item.setToolTipText(skill.getDescription());
-			item.addActionListener(e -> onSelect.accept(skill));
+			JMenuItem item = new JMenuItem("⚡ " + skill.getTitle() + suffixNoAi);
+			item.setToolTipText(skill.getDescription() + " [Mode déterministe local — 0 crédit IA]");
+			item.addActionListener(e -> onSelect.accept(skill, false));
+			parentMenu.add(item);
+		}
+
+		parentMenu.add(new JSeparator());
+
+		// 2. Section Avec IA (Hybride Gemini)
+		JMenuItem itemAutoAi = new JMenuItem(CodeLab.LABEL("evalSkillAutoAi"));
+		itemAutoAi.addActionListener(e -> onSelect.accept(null, true));
+		parentMenu.add(itemAutoAi);
+
+		for (SkillDescr skill : availableSkills) {
+			JMenuItem item = new JMenuItem("🤖 " + skill.getTitle() + suffixAi);
+			item.setToolTipText(skill.getDescription() + " [Mode hybride avec synthèse narrative IA Gemini]");
+			item.addActionListener(e -> onSelect.accept(skill, true));
 			parentMenu.add(item);
 		}
 	}
@@ -276,6 +304,13 @@ public class SessionEvaluator {
 	 * Évalue un dossier unique d'étudiant (depuis l'explorateur FileManager) avec un skill spécifique.
 	 */
 	public static void evaluateFolder(CodeLab codelab, File folder, SkillDescr skill) {
+		evaluateFolder(codelab, folder, skill, true);
+	}
+
+	/**
+	 * Évalue un dossier unique d'étudiant (depuis l'explorateur FileManager) avec un skill spécifique et choix du mode IA.
+	 */
+	public static void evaluateFolder(CodeLab codelab, File folder, SkillDescr skill, boolean useAi) {
 		if (folder == null || !folder.exists() || !folder.isDirectory()) {
 			Utils.showWarningDialog("CodeLab", "Dossier invalide ou inexistant.");
 			return;
@@ -315,6 +350,10 @@ public class SessionEvaluator {
 		args.add("--out");
 		args.add(reportFile.getAbsolutePath());
 
+		if (!useAi) {
+			args.add("--no-ai");
+		}
+
 		if (codelab.isConnected()) {
 			args.add("--dir");
 			args.add(codelab.getProgramDir());
@@ -341,9 +380,10 @@ public class SessionEvaluator {
 			args.add(skill.getId());
 		}
 
+		String modeLabel = useAi ? " [Avec IA]" : " [Sans IA]";
 		String skillLabel = (skill != null) ? " (" + skill.getTitle() + ")" : "";
 		String who = (studentName != null && !studentName.isBlank()) ? studentName + " (" + folder.getName() + ")" : folder.getName();
-		String waitingMsg = String.format("Évaluation de %s%s...", who, skillLabel);
+		String waitingMsg = String.format("Évaluation%s de %s%s...", modeLabel, who, skillLabel);
 		runEvaluation(codelab, args, waitingMsg);
 	}
 
@@ -351,13 +391,20 @@ public class SessionEvaluator {
 	 * Évalue un étudiant spécifique au sein de la session active (depuis UserTable) en mode auto.
 	 */
 	public static void evaluateStudent(CodeLab codelab, String studentLogin, String studentName) {
-		evaluateStudent(codelab, studentLogin, studentName, null);
+		evaluateStudent(codelab, studentLogin, studentName, null, true);
 	}
 
 	/**
 	 * Évalue un étudiant spécifique au sein de la session active (depuis UserTable) avec un skill donné.
 	 */
 	public static void evaluateStudent(CodeLab codelab, String studentLogin, String studentName, SkillDescr skill) {
+		evaluateStudent(codelab, studentLogin, studentName, skill, true);
+	}
+
+	/**
+	 * Évalue un étudiant spécifique au sein de la session active (depuis UserTable) avec un skill donné et choix du mode IA.
+	 */
+	public static void evaluateStudent(CodeLab codelab, String studentLogin, String studentName, SkillDescr skill, boolean useAi) {
 		if (studentLogin == null || studentLogin.isBlank()) return;
 
 		File sessionDir = new File(codelab.getProgramDir());
@@ -390,6 +437,10 @@ public class SessionEvaluator {
 		args.add("--out");
 		args.add(reportFile.getAbsolutePath());
 
+		if (!useAi) {
+			args.add("--no-ai");
+		}
+
 		File sessionsXml = new File(sessionDir, "sessions.xml");
 		if (sessionsXml.exists()) {
 			args.add("--sessions");
@@ -401,8 +452,9 @@ public class SessionEvaluator {
 			args.add(skill.getId());
 		}
 
+		String modeLabel = useAi ? " [Avec IA]" : " [Sans IA]";
 		String skillLabel = (skill != null) ? " (" + skill.getTitle() + ")" : "";
-		String waitingMsg = String.format("Évaluation de %s (%s)%s...", studentName, studentLogin, skillLabel);
+		String waitingMsg = String.format("Évaluation%s de %s (%s)%s...", modeLabel, studentName, studentLogin, skillLabel);
 		runEvaluation(codelab, args, waitingMsg);
 	}
 
@@ -410,13 +462,20 @@ public class SessionEvaluator {
 	 * Évalue toute la session active de la promotion (depuis UserTable) en mode auto.
 	 */
 	public static void evaluateSession(CodeLab codelab, String sessionId) {
-		evaluateSession(codelab, sessionId, null);
+		evaluateSession(codelab, sessionId, null, true);
 	}
 
 	/**
 	 * Évalue toute la session active de la promotion (depuis UserTable) avec un skill donné.
 	 */
 	public static void evaluateSession(CodeLab codelab, String sessionId, SkillDescr skill) {
+		evaluateSession(codelab, sessionId, skill, true);
+	}
+
+	/**
+	 * Évalue toute la session active de la promotion (depuis UserTable) avec un skill donné et choix du mode IA.
+	 */
+	public static void evaluateSession(CodeLab codelab, String sessionId, SkillDescr skill, boolean useAi) {
 		File sessionDir = new File(codelab.getProgramDir());
 		if (!sessionDir.exists()) {
 			Utils.showWarningDialog("CodeLab", "Répertoire de session introuvable.");
@@ -437,6 +496,10 @@ public class SessionEvaluator {
 		args.add("--eval-dir");
 		args.add(sessionEvalDir.getAbsolutePath());
 
+		if (!useAi) {
+			args.add("--no-ai");
+		}
+
 		File sessionsXml = new File(sessionDir, "sessions.xml");
 		if (sessionsXml.exists()) {
 			args.add("--sessions");
@@ -448,8 +511,9 @@ public class SessionEvaluator {
 			args.add(skill.getId());
 		}
 
+		String modeLabel = useAi ? " [Avec IA]" : " [Sans IA]";
 		String skillLabel = (skill != null) ? " (" + skill.getTitle() + ")" : "";
-		String waitingMsg = String.format("Évaluation complète de la session %s%s...", sessId, skillLabel);
+		String waitingMsg = String.format("Évaluation complète%s de la session %s%s...", modeLabel, sessId, skillLabel);
 		runEvaluation(codelab, args, waitingMsg);
 	}
 

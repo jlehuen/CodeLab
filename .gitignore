@@ -84,6 +84,7 @@ client/codelab.files/userdata/ai_cache/
 # Cache Python des skills d'évaluation
 **/skills/**/__pycache__/
 **/skills/**/*.pyc
+**/skills/**/includes/
 
 # Skills d'évaluation pédagogiques spécifiques (sujets & corrigés d'enseignements)
 **/skills/eval-introprog/

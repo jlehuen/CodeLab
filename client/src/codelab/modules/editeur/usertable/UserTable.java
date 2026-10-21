@@ -378,10 +378,10 @@ public class UserTable extends JScrollPane {
 		menuStudent.setText(String.format(CodeLab.LABEL("UserTable_menuStudent"), udata));
 		itemControl.setText(String.format(label2, udata));
 		menuEvalSession.setText(String.format(CodeLab.LABEL("menuEvalSession"), sessionId));
-		SessionEvaluator.populateSkillsSubmenu(menuEvalSession, skill -> SessionEvaluator.evaluateSession(codelab, sessionId, skill));
+		SessionEvaluator.populateSkillsSubmenu(menuEvalSession, (skill, useAi) -> SessionEvaluator.evaluateSession(codelab, sessionId, skill, useAi));
 		itemTchat.setText(String.format(CodeLab.LABEL("UserTable_4"), udata));
 		menuEvalStudent.setText(String.format(CodeLab.LABEL("menuEvalStudent"), udata.getName()));
-		SessionEvaluator.populateSkillsSubmenu(menuEvalStudent, skill -> SessionEvaluator.evaluateStudent(codelab, udata.getLogin(), udata.getName(), skill));
+		SessionEvaluator.populateSkillsSubmenu(menuEvalStudent, (skill, useAi) -> SessionEvaluator.evaluateStudent(codelab, udata.getLogin(), udata.getName(), skill, useAi));
 		itemDeconnexion.setText(String.format(CodeLab.LABEL("UserTable_5"), udata));
 		itemResetPasswd.setText(String.format(CodeLab.LABEL("UserTable_6"), udata));
 		itemResetHelpFlag.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));

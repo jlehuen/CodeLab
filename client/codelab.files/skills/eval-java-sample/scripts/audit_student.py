@@ -118,7 +118,7 @@ def format_lines(lines, start_idx, end_idx, highlight_line=None, note=None):
             res.append(f"{l_num:3d} | {line_str}")
     return '\n'.join(res)
 
-def detect_ai_markers(java_files):
+def detect_ai_markers(java_files, student_dir=None):
     """
     Analyse statique et stylométrique multi-dimensionnelle des signatures d'assistance IA en Java :
     1. Streams API & Lambdas avancées hors L1/L2 (.stream(), ->, .filter(), .map(), .collect()).
@@ -126,8 +126,8 @@ def detect_ai_markers(java_files):
     3. Optional & Concurrency / NIO avancés (Optional<T>, java.util.concurrent, java.nio.file).
     4. Javadoc industrielle et sur-documentation (@param, @return, @throws formels).
     5. Phrasé didactique Chatbot & Commentaires en anglais.
-    6. Chronométrie CodeLab : classes complexes créées en moins de 60s (copier-coller de prompt).
-    Applique des plafonds par catégorie et requiert au moins 2 catégories distinctes pour le seuil Élevé.
+    6. Rupture d'indentation intra-copie ou globale (4 espaces vs tabulations natives CodeLab).
+    7. Chronométrie CodeLab : classes complexes créées en moins de 60s/300s ou rafale en séance unique sans historique .bak.
     """
     markers = []
     category_weights = {}
@@ -137,8 +137,8 @@ def detect_ai_markers(java_files):
         'syntaxe_moderne': 0.30,
         'bibliotheque_avancee': 0.30,
         'stylometrie_ia': 0.35,
-        'variance_stylometrique': 0.35,
-        'chronometrie_instantanee': 0.35,
+        'variance_stylometrique': 0.45,
+        'chronometrie_instantanee': 0.45,
         'mention_explicite': 1.0,
     }
 
@@ -146,6 +146,7 @@ def detect_ai_markers(java_files):
         markers.append({
             'file': rel_path,
             'category': category,
+            'subtype': subtype,
             'description': description
         })
         cnt = subtype_counts.get(subtype, 0)
@@ -159,6 +160,12 @@ def detect_ai_markers(java_files):
     file_indent = {}
     total_tabs = 0
     total_spaces = 0
+    bak_count = 0
+    if student_dir:
+        try:
+            bak_count = len(list(Path(student_dir).rglob("*.bak"))) + len(list(Path(student_dir).rglob("*_bak.java")))
+        except Exception:
+            pass
 
     for fpath in java_files:
         rel_path = fpath.name
@@ -227,17 +234,34 @@ def detect_ai_markers(java_files):
         if re.search(r'(?://|/\*)\s*(?:ChatGPT|Copilot|Claude|OpenAI|DeepSeek|AI generated|Prompt)', content, re.I):
             add_marker(rel_path, 'mention_explicite', 'explicit_ai', "Mention textuelle d'outil IA dans les commentaires", 1.0)
 
-    # Rupture d'indentation intra-copie Tab ➔ 4 Espaces
+    # Rupture d'indentation intra-copie ou globale Tab ➔ 4 Espaces
     for f_rel, ind in file_indent.items():
         other_tabs = total_tabs - ind['tabs']
         other_spaces = total_spaces - ind['spaces']
-        if ind['spaces'] >= 25 and (ind['spaces'] > ind['tabs'] * 3 or ind['tabs'] <= 3):
-            if other_tabs >= 30 and other_tabs > other_spaces * 2:
+        if ind['spaces'] >= 20 and (ind['spaces'] > ind['tabs'] * 3 or ind['tabs'] <= 3):
+            if other_tabs >= 25 and other_tabs > other_spaces * 1.5:
                 add_marker(f_rel, 'variance_stylometrique', 'indentation_spaces_rupture',
                            f"Rupture d'indentation intra-copie : {ind['spaces']} lignes en 4 espaces contre {ind['tabs']} tabulation(s), en contraste avec le style natif CodeLab ({other_tabs} tabulations dans le reste de la copie)", 0.35)
+    if total_spaces >= 35 and total_spaces > total_tabs * 2:
+        add_marker("Ensemble des fichiers", 'variance_stylometrique', 'indentation_spaces_rupture',
+                   f"Indentation dominante en 4 espaces ({total_spaces} lignes en 4 espaces vs {total_tabs} tabulations natives CodeLab) caractéristique d'un copier-coller externe / LLM", 0.35)
 
-    # Chronométrie (< 300s pour classes complexes, < 60s pour fichiers standards)
-    created_timestamps.sort(key=lambda x: x[0])
+    # Chronométrie (< 300s pour classes complexes, < 60s pour fichiers standards, ou rafale sans .bak)
+    dates_info = {}
+    if created_timestamps:
+        created_timestamps.sort(key=lambda x: x[0])
+        distinct_days = len(set(x[0].date() for x in created_timestamps))
+        span_days = (created_timestamps[-1][0].date() - created_timestamps[0][0].date()).days
+        dates_info = {
+            "distinct_days": distinct_days,
+            "span_days": span_days,
+            "first_date": created_timestamps[0][0].strftime("%d/%m/%Y"),
+            "last_date": created_timestamps[-1][0].strftime("%d/%m/%Y")
+        }
+        if distinct_days == 1 and len(created_timestamps) >= 5 and bak_count == 0:
+            add_marker(created_timestamps[-1][1], 'chronometrie_instantanee', 'single_session_dump',
+                       f"Dépôt massif de {len(created_timestamps)} classes sur une seule séance sans aucun historique .bak", 0.40)
+
     for i in range(1, len(created_timestamps)):
         dt_prev, f_prev, loc_prev = created_timestamps[i - 1]
         dt_curr, f_curr, loc_curr = created_timestamps[i]
@@ -256,7 +280,7 @@ def detect_ai_markers(java_files):
     score = min(1.0, round(total_weight, 2))
     if score_pct >= 60:
         level = f"Élevé ({score_pct}% - Forte présomption d'assistance IA)"
-    elif score_pct >= 25:
+    elif score_pct >= 30:
         level = f"Modéré ({score_pct}% - Idiomes atypiques détectés)"
     else:
         level = f"Faible ({score_pct}% - Code étudiant authentique)"
@@ -268,7 +292,13 @@ def detect_ai_markers(java_files):
         'probability_pct': score_pct,
         'count': len(markers),
         'markers': markers,
-        'details': "; ".join(descriptions) if descriptions else "Aucune signature d'IA détectée"
+        'details': "; ".join(descriptions) if descriptions else "Aucune signature d'IA détectée",
+        'indentation_stats': {
+            'total_tabs': total_tabs,
+            'total_spaces': total_spaces,
+            'files': file_indent
+        },
+        'dates_info': dates_info
     }
 
 def audit_student(folder_path, sessions_xml_path=None):
@@ -349,8 +379,14 @@ def audit_student(folder_path, sessions_xml_path=None):
             "architecture": 0.0,
             "style": 0.0,
             "tests": 0.0,
+            "note_technique_brute": 0.0,
+            "note_apres_ia": 0.0,
             "total": 0.0
         },
+        "indentation_stats": {"total_tabs": 0, "total_spaces": 0, "files": {}},
+        "dates_info": {"distinct_days": 0, "span_days": 0, "first_date": "N/A", "last_date": "N/A"},
+        "ai_detection": {"level": "Faible (0%)", "score": 0.0, "probability_pct": 0, "count": 0, "markers": []},
+        "ai_analysis": {"level": "Faible (0%)", "score": 0.0, "probability_pct": 0, "count": 0, "markers": []},
         "feedback": []
     }
 
@@ -542,28 +578,31 @@ def audit_student(folder_path, sessions_xml_path=None):
         test_pts = 0.0
     results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
 
-    ai_info = detect_ai_markers(java_files)
+    ai_info = detect_ai_markers(java_files, student_dir=folder)
     results["ai_analysis"] = ai_info
+    results["dates_info"] = ai_info.get("dates_info", {})
     ai_prob = ai_info.get("probability_pct", 0)
 
-    if ai_prob >= 60:
-        results["scores"]["tests"] = min(results["scores"]["tests"], 0.2)
-        results["scores"]["architecture"] = max(0.0, round(results["scores"]["architecture"] - 1.5, 1))
-        results["scores"]["style"] = max(0.2, round(results["scores"]["style"] - 0.5, 1))
-        cur_tot = results["scores"]["compilation"] + results["scores"]["architecture"] + results["scores"]["style"] + results["scores"]["tests"]
-        if cur_tot > 13.5:
-            results["scores"]["architecture"] = max(0.0, round(13.5 - results["scores"]["compilation"] - results["scores"]["style"] - results["scores"]["tests"], 1))
-    elif ai_prob >= 30:
-        results["scores"]["tests"] = min(results["scores"]["tests"], 0.6)
-        results["scores"]["architecture"] = max(0.0, round(results["scores"]["architecture"] - 0.5, 1))
-        cur_tot = results["scores"]["compilation"] + results["scores"]["architecture"] + results["scores"]["style"] + results["scores"]["tests"]
-        if cur_tot > 16.0:
-            results["scores"]["architecture"] = max(0.0, round(16.0 - results["scores"]["compilation"] - results["scores"]["style"] - results["scores"]["tests"], 1))
-
-    results["scores"]["total"] = round(
+    note_sans_malus = round(
         results["scores"]["compilation"] + results["scores"]["architecture"] + results["scores"]["style"] + results["scores"]["tests"],
         1
     )
+    results["scores"]["note_technique_brute"] = note_sans_malus
+
+    anti_ia = weights.get("anti_triche", {}).get("assistance_ia", {})
+    malus_eleve = float(anti_ia.get("malus_eleve", 5.0))
+    plafond_eleve = float(anti_ia.get("plafond_note_eleve", 10.0))
+    malus_modere = float(anti_ia.get("malus_modere", 2.0))
+    plafond_modere = float(anti_ia.get("plafond_note_modere", 14.0))
+
+    total_note = note_sans_malus
+    if ai_prob >= 60:
+        total_note = min(plafond_eleve, max(0.0, round(total_note - malus_eleve, 1)))
+    elif ai_prob >= 30:
+        total_note = min(plafond_modere, max(0.0, round(total_note - malus_modere, 1)))
+
+    results["scores"]["note_apres_ia"] = total_note
+    results["scores"]["total"] = total_note
     return results
 
 def main():
