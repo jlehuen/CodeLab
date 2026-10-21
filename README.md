@@ -22,7 +22,7 @@
   <br>
   <br>Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
   <br><br>
-  <a href="#téléchargements-version-150"><img src="client/images/download.png" alt="Téléchargements" width="160"></a>
+  <a href="#téléchargements"><img src="client/images/download.png" alt="Téléchargements" width="160"></a>
 </p>
 
 **CodeLab** est un environnement pédagogique dédié à l'apprentissage de la programmation en collège, lycée et premières années d'études supérieures. Son originalité est qu'il propose des alternatives ludiques ou techniques aux traditionnelles interactions écran-clavier pour la conception des activités pédagogiques, au travers de l'utilisation de "modules applicatifs". Ces modules, disponibles sous la forme de plugins, peuvent être des **visualisations**, des **panneaux de contrôle**, des **simulateurs**, et autres systèmes temps-réel. Chaque module est l'association d'une **IHM** (Interface Homme-Machine) et d'une interface de programmation applicative (souvent désignée par le terme **API** pour Application Programming Interface), disponible pour chacun des langages supportés par CodeLab. Les apprenants peuvent ainsi se focaliser sur les aspects algorithmiques et sur le codage, tout en travaillant sur des applications qui possèdent des caractéristiques riches et motivantes :
@@ -48,7 +48,7 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 ## Sommaire
 
-- [Téléchargements](#téléchargements-version-150)
+- [Téléchargements](#téléchargements)
 - [Installation des langages](#installation-des-langages)
 - [Installation des modules applicatifs](#installation-des-modules-applicatifs)
 - [Évaluation pédagogique automatisée & IA](#évaluation-pédagogique-automatisée--ia)
@@ -59,6 +59,10 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 - [Licence & Propriété Intellectuelle](#licence--propriété-intellectuelle)
 
 <br>
+
+<a id="telechargements" name="telechargements"></a>
+<a id="téléchargements" name="téléchargements"></a>
+<a id="téléchargements-version-150" name="téléchargements-version-150"></a>
 
 ## Téléchargements (version 1.5.1)
 
