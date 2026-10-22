@@ -53,7 +53,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.5.1"; // Attribué automatiquement par ant
-	public static final String BUILD = "2610221509"; // Attribué automatiquement par ant
+	public static final String BUILD = "2610222004"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -447,12 +447,17 @@ public abstract class AbstractCodeLab extends JFrame {
 	}
 
 	protected void updateSizeProperties() {
-		// Sauvegarder la position de la fenêtre
-		Point point = getLocationOnScreen();
-		CodeLab.WINDOW_POS = String.format("%d+%d", point.x, point.y);
-		// Sauvegarder la taille de la fenêtre
-		Dimension size = getSize();
-		CodeLab.WINDOW_SIZE = String.format("%dx%d", size.width, size.height);
+		if (!SwingUtilities.isEventDispatchThread()) return;
+		try {
+			if (isShowing()) {
+				// Sauvegarder la position de la fenêtre
+				Point point = getLocationOnScreen();
+				CodeLab.WINDOW_POS = String.format("%d+%d", point.x, point.y);
+				// Sauvegarder la taille de la fenêtre
+				Dimension size = getSize();
+				CodeLab.WINDOW_SIZE = String.format("%dx%d", size.width, size.height);
+			}
+		} catch (Throwable ignored) {}
 	}
 
 	///////////////////////////////////////////////////

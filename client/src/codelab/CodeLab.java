@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import javax.swing.ImageIcon;
@@ -132,6 +133,24 @@ public class CodeLab extends AbstractCodeLab {
 					});
 					logger("Desktop OpenURIHandler registered");
 				}
+
+				if (desktop.isSupported(Desktop.Action.APP_QUIT_HANDLER)) {
+					desktop.setQuitHandler((e, response) -> {
+						logger("Desktop quit request received");
+						SwingUtilities.invokeLater(() -> {
+							try {
+								if (INSTANCE != null) {
+									INSTANCE.things_to_do_before_exiting();
+								}
+								response.performQuit();
+							} catch (Throwable t) {
+								logger("Desktop QuitHandler error: " + t.getMessage());
+								response.cancelQuit();
+							}
+						});
+					});
+					logger("Desktop QuitHandler registered");
+				}
 			} else {
 				logger("Desktop is not supported on this platform");
 			}
@@ -208,6 +227,16 @@ public class CodeLab extends AbstractCodeLab {
 			public void componentResized(ComponentEvent e) {
 				for (AbstractModule module : module_list)
 					module.updateDividersLocation();
+			}
+		});
+
+		// Enregistrement continu de la position et de la taille de la fenêtre
+		addComponentListener(new ComponentAdapter() {
+			public void componentMoved(ComponentEvent e) {
+				updateSizeProperties();
+			}
+			public void componentResized(ComponentEvent e) {
+				updateSizeProperties();
 			}
 		});
 
@@ -656,13 +685,20 @@ public class CodeLab extends AbstractCodeLab {
 	// Terminateurs
 	///////////////////////////////////////////////////
 
+	private static final AtomicBoolean HAS_EXITED = new AtomicBoolean(false);
+
 	public void things_to_do_before_exiting() {
+		if (!HAS_EXITED.compareAndSet(false, true)) {
+			return; // Déjà exécuté
+		}
 		CodeLab.logger("Things to do before exiting CodeLab...");
 		if (isRunning()) halt(); // Stopper exécution en cours
-		editor.saveAllFiles(); // Sauvegarde de tous les onglets ouverts
-		editor.saveCurrentFile(); // Sauvegarde en local et à distance
-		if (!isTutor() && !isAdmin()) {
-			editor.backupCurrentFile(); // Backup daté du fichier courant
+		if (editor != null) {
+			editor.saveAllFiles(); // Sauvegarde de tous les onglets ouverts
+			editor.saveCurrentFile(); // Sauvegarde en local et à distance
+			if (!isTutor() && !isAdmin()) {
+				editor.backupCurrentFile(); // Backup daté du fichier courant
+			}
 		}
 		//executionMonitor.shutdown(); // Arrêter le moniteur d'exécution
 		updateSizeProperties(); // Actualisation de la taille de la fenêtre

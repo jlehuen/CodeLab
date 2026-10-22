@@ -227,8 +227,17 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
         suspicious_logins.add(susp['s1'])
         suspicious_logins.add(susp['s2'])
 
+    cohort_name = ""
+    if cohort_dir:
+        cohort_name = os.path.basename(str(cohort_dir).rstrip("/\\"))
+    if not cohort_name or cohort_name in (".", "evaluations"):
+        if out_path:
+            cohort_name = Path(out_path).stem.replace("synthese_", "")
+    if not cohort_name:
+        cohort_name = "Session"
+
     md = []
-    md.append("# Synthèse de Promotion — Évaluation C / Algorithmique")
+    md.append(f"# Synthèse de la Cohorte : {cohort_name}")
     md.append("")
     md.append(f"- **Nombre d'étudiants évalués** : {len(results)}")
     if results:

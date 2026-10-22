@@ -418,6 +418,14 @@ def recalculate_session(session_dir, weights_path=None):
     if synthese_md.exists():
         try:
             s_content = synthese_md.read_text(encoding='utf-8', errors='ignore')
+            # Mise à jour du titre principal
+            s_content = re.sub(
+                r'^#\s*Synthèse[^\r\n]*',
+                f'# Synthèse de la Cohorte : {s_path.name}',
+                s_content,
+                count=1,
+                flags=re.M
+            )
             # Mise à jour du cartouche d'en-tête de synthèse
             s_content = re.sub(
                 r'(\*\*Moyenne\*\*\s*:\s*\*\*)[0-9]+(?:\.[0-9]+)?(/20\*\*)',
