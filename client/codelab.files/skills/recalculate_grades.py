@@ -476,14 +476,24 @@ def recalculate_session(session_dir, weights_path=None):
             )
 
             # Mise à jour ou insertion de la ligne d'information sur l'algorithme d'évaluation
-            w_str = str(w_source).replace(str(Path.home()), "~") if w_source else "weights.json"
             parent_name = Path(w_source).parent.name if w_source else ""
             skill_name = parent_name if parent_name.startswith("eval-") else "eval-introprog"
             
             has_ia = any(st.get('ia_malus', 0) > 0 for st in students_updated)
-            ia_status = "Active (Gemini)" if has_ia else "Inactive (Mode statique local)"
-            bareme_str = f"Barème {a1_max:.0f}+{a2_max:.0f}+{a3_max:.0f}{f'+{a4_max:.0f}' if a4_max > 0 else ''}=20 pts"
-            algo_line = f"**Algorithme d'évaluation** : Compétence : `{skill_name}` | Analyse IA : {ia_status} | Pondérations : `{w_str}` ({bareme_str})"
+            ia_status = "Active (Gemini)" if has_ia else "Inactive"
+            
+            if "intropython" in skill_name:
+                bareme_str = f"{a1_max:.0f} (Logs & Regex) + {a2_max:.0f} (Numpy & Visualisation) + {a3_max:.0f} (Style) = 20 pts"
+            elif "java" in skill_name:
+                bareme_str = f"{a1_max:.0f} (Compilation) + {a2_max:.0f} (Conception) + {a3_max:.0f} (Javadoc) + {a4_max:.0f} (Tests) = 20 pts"
+            elif "python" in skill_name:
+                bareme_str = f"{a1_max:.0f} (Syntaxe) + {a2_max:.0f} (Architecture) + {a3_max:.0f} (Style) + {a4_max:.0f} (Tests) = 20 pts"
+            elif a4_max > 0:
+                bareme_str = f"{a1_max:.0f} (Compilation) + {a2_max:.0f} (Architecture) + {a3_max:.0f} (Style) + {a4_max:.0f} (Tests) = 20 pts"
+            else:
+                bareme_str = f"{a1_max:.0f} (Progression) + {a2_max:.0f} (Architecture) + {a3_max:.0f} (Style) = 20 pts"
+            
+            algo_line = f"**Algorithme d'évaluation** : Compétence : `{skill_name}` | Analyse IA : {ia_status} | Barème : {bareme_str}"
 
             if "**Algorithme d'évaluation**" in s_content:
                 s_content = re.sub(

@@ -342,16 +342,11 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
     if not cohort_name:
         cohort_name = "Session"
 
-    w_cand = Path(cohort_dir) / "weights.json" if cohort_dir else None
-    if not w_cand or not w_cand.exists():
-        w_cand = Path(__file__).resolve().parent.parent / "weights.json"
-    w_str = str(w_cand).replace(str(Path.home()), "~") if w_cand else "weights.json"
-
     has_ia = any(
         float((r.get('ai_detection') or {}).get('ai_probability', 0.0)) >= 30.0
         for r in results
     )
-    ia_status = "Active (Gemini)" if has_ia else "Inactive (Mode statique local)"
+    ia_status = "Active (Gemini)" if has_ia else "Inactive"
 
     md = []
     md.append(f"# Synthèse de la Cohorte : {cohort_name}")
@@ -359,7 +354,7 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
     moyenne = (sum(notes) / len(notes)) if notes else 0.0
     md.append(f"**Effectif audité** : {len(results)} étudiants | **Moyenne** : **{moyenne:.2f}/20**")
     md.append("")
-    md.append(f"**Algorithme d'évaluation** : Compétence : `eval-c-sample` | Analyse IA : {ia_status} | Pondérations : `{w_str}` (Barème 6+8+4+2=20 pts)\n")
+    md.append(f"**Algorithme d'évaluation** : Compétence : `eval-c-sample` | Analyse IA : {ia_status} | Barème : 6 (Compilation) + 8 (Conception) + 4 (Style) + 2 (Validation) = 20 pts\n")
     md.append("---")
     md.append("")
 
