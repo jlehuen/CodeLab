@@ -89,8 +89,8 @@ def get_skill_metadata(skill_dir_or_name):
 
     return meta
 
-INTROPROG_DIR = get_skill_dir("eval-introprog") or (SCRIPT_DIR / "eval-introprog")
-INTROYTHON_DIR = get_skill_dir("eval-intropython") or (SCRIPT_DIR / "eval-intropython")
+INTROPROG_DIR = get_skill_dir("eval-introprog")
+INTROYTHON_DIR = get_skill_dir("eval-intropython")
 
 def resolve_skill(skill_name=None, target_dir=None):
     """Résout le dossier de skill demandé ou auto-détecté."""
@@ -102,13 +102,13 @@ def resolve_skill(skill_name=None, target_dir=None):
 
     lang = detect_language(target_dir) if target_dir else "c"
     if lang == "c":
-        candidates = ["eval-introprog", "eval-c-sample"]
+        candidates = ["eval-c-sample"]
     elif lang == "python":
-        candidates = ["eval-intropython", "eval-python-sample"]
+        candidates = ["eval-python-sample"]
     elif lang == "java":
         candidates = ["eval-java-sample"]
     else:
-        candidates = ["eval-c-sample", "eval-python-sample", "eval-java-sample", "eval-introprog", "eval-intropython"]
+        candidates = ["eval-c-sample", "eval-python-sample", "eval-java-sample"]
 
     for name in candidates:
         sdir = get_skill_dir(name)
@@ -1225,8 +1225,7 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
     intro_dir = get_skill_dir("eval-introprog") or INTROPROG_DIR
     template_candidates = [
         intro_dir / "report_template.md" if intro_dir else None,
-        Path("/Users/lehuen/codelab.files/skills/eval-introprog/report_template.md"),
-        INTROPROG_DIR / "report_template.md"
+        (Path.home() / "codelab.files" / "skills" / "eval-introprog" / "report_template.md")
     ]
     rendered = render_template_if_exists(template_candidates, template_vars)
     if rendered:
@@ -1752,7 +1751,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
 
     template_candidates = [
         intropython_dir / "report_template.md" if intropython_dir else None,
-        Path("/Users/lehuen/codelab.files/skills/eval-intropython/report_template.md")
+        (Path.home() / "codelab.files" / "skills" / "eval-intropython" / "report_template.md")
     ]
     report_text = render_template_if_exists(template_candidates, template_vars)
     if not report_text:
@@ -1993,7 +1992,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 
     template_candidates = [
         skill_dir / "report_template.md" if skill_dir else None,
-        Path(f"/Users/lehuen/codelab.files/skills/{skill_name}/report_template.md")
+        (Path.home() / "codelab.files" / "skills" / skill_name / "report_template.md")
     ]
     report_text = render_template_if_exists(template_candidates, template_vars)
     if not report_text:
@@ -2298,7 +2297,7 @@ def main():
     parser.add_argument("--sessions", help="Chemin vers sessions.xml (optionnel)")
     parser.add_argument("--out", help="Fichier de sortie spécifique (.md)")
     parser.add_argument("--props", help="Chemin vers user.properties (optionnel)")
-    parser.add_argument("--skill", help="ID du skill à appliquer (ex: eval-introprog, eval-c-sample, eval-python-sample, eval-java-sample ou auto)")
+    parser.add_argument("--skill", help="ID du skill à appliquer (ex: eval-c-sample, eval-python-sample, eval-java-sample ou auto)")
     parser.add_argument("--no-ai", "--deterministic", action="store_true", dest="no_ai", help="Exécuter l'évaluation en mode 100%% déterministe (0 crédit IA)")
     
     args = parser.parse_args()

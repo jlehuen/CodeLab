@@ -741,8 +741,8 @@ public class SessionEvaluator {
 			if (w.exists()) return w;
 		}
 
-		File introprogWeights = new File(new File(CodeLab.SKILLS_FOLDER, "eval-introprog"), "weights.json");
-		if (introprogWeights.exists()) return introprogWeights;
+		File defaultSampleWeights = new File(new File(CodeLab.SKILLS_FOLDER, "eval-c-sample"), "weights.json");
+		if (defaultSampleWeights.exists()) return defaultSampleWeights;
 
 		File globalWeights = new File(CodeLab.SKILLS_FOLDER, "weights.json");
 		if (globalWeights.exists()) return globalWeights;
@@ -750,7 +750,7 @@ public class SessionEvaluator {
 		File projectSampleWeights = new File(CodeLab.BASE, "client/codelab.files/skills/eval-c-sample/weights.json");
 		if (projectSampleWeights.exists()) return projectSampleWeights;
 
-		return introprogWeights;
+		return defaultSampleWeights;
 	}
 
 	/**
@@ -769,14 +769,6 @@ public class SessionEvaluator {
 					+ "    \"axe2_architecture_max\": 8.0,\n"
 					+ "    \"axe3_style_max\": 2.0,\n"
 					+ "    \"axe4_tests_max\": 2.0\n"
-					+ "  },\n"
-					+ "  \"progression\": {\n"
-					+ "    \"socle_max\": 2.5,\n"
-					+ "    \"tp5_fangio_max\": 2.5,\n"
-					+ "    \"tp6_knossos_max\": 3.0,\n"
-					+ "    \"malus_saut_etape\": 2.0,\n"
-					+ "    \"plafond_sans_tp6\": 4.5,\n"
-					+ "    \"plafond_sans_tp5_tp6\": 3.5\n"
 					+ "  },\n"
 					+ "  \"anti_triche\": {\n"
 					+ "    \"assistance_ia\": {\n"
@@ -814,14 +806,11 @@ public class SessionEvaluator {
 	 * Localise le script recalculate_grades.py.
 	 */
 	public static File getRecalculateScript() {
-		File script1 = new File(new File(CodeLab.SKILLS_FOLDER, "eval-introprog"), "scripts/recalculate_grades.py");
+		File script1 = new File(CodeLab.SKILLS_FOLDER, "recalculate_grades.py");
 		if (script1.exists()) return script1;
 
-		File script2 = new File(CodeLab.SKILLS_FOLDER, "recalculate_grades.py");
+		File script2 = new File(CodeLab.BASE, "client/codelab.files/skills/recalculate_grades.py");
 		if (script2.exists()) return script2;
-
-		File script3 = new File(CodeLab.BASE, "client/codelab.files/skills/recalculate_grades.py");
-		if (script3.exists()) return script3;
 
 		return script1;
 	}

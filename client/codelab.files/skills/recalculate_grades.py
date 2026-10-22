@@ -65,9 +65,8 @@ def load_weights(session_eval_dir, custom_weights_path=None):
     # 1. Dans le dossier de session d'évaluation
     candidates.append(s_dir / "weights.json")
 
-    # 2. Dans le dossier du skill eval-introprog
-    user_skill = Path.home() / "codelab.files" / "skills" / "eval-introprog" / "weights.json"
-    candidates.append(user_skill)
+    # 2. Dans le dossier du skill par défaut ou à la racine des skills
+    candidates.append(Path.home() / "codelab.files" / "skills" / "eval-c-sample" / "weights.json")
     candidates.append(Path.home() / "codelab.files" / "skills" / "weights.json")
 
     # 3. Dans le dossier parent du présent script
