@@ -205,17 +205,28 @@ Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (
 
 ## Évaluation pédagogique automatisée & IA
 
-CodeLab intègre un système d'**évaluation formative continue** modulaire (*skills*), conçu pour assister les enseignants dans le suivi et la correction des séances de programmation.
+CodeLab intègre un système modulaire d'**évaluation formative continue** (*skills*), articulé autour d'une méthodologie hybride alliant la rigueur de l'analyse statique locale à la personnalisation du retour pédagogique.
 
-### Points clés
+### 1. Une Méthodologie Hybride & Déterministe
+- **Analyse statique locale (100 % hors-ligne)** : Le code étudiant est d'abord analysé localement sans appel réseau (contrôle de syntaxe, analyse d'arbre syntaxique AST, validation des jalons pédagogiques et détection d'anti-patterns de programmation).
+- **Intégrité absolue de la notation** : La note sur 20 points est calculée de manière déterministe par des règles objectives locales. **Elle est rigoureusement identique avec ou sans IA**.
+- **Calibration réaliste** : Le barème évite les notes de complaisance : la progression est évaluée selon l'autonomie démontrée et les étapes franchies, garantissant une note juste et représentative du niveau réel de l'étudiant.
 
-- **Double mode d'évaluation** :
-  - ⚡ **Sans IA (100 % local & immédiat)** : analyse statique du code (syntaxe, structure, respect des consignes), calcul déterministe de la note sur 20 points, détection de plagiat inter-étudiants et génération d'un export CSV de promotion.
-  - 🤖 **Avec IA (Google Gemini)** : enrichit l'analyse d'un retour pédagogique individualisé et socratique (questions ouvertes, encouragements et pistes de remédiation sans délivrer la solution brute).
-- **Intégrité de la notation** : La note est calculée localement par l'analyseur déterministe ; elle est strictement identique avec ou sans IA.
-- **Léger et économique** : Compatible avec le quota gratuit de Google AI Studio (Free Tier) et doté d'un cache local persistant (réévaluer une session sans modification de code consomme 0 requête).
+### 2. Détection d'Authenticité & Contrôle du Plagiat
+- **Détection d'assistance IA** : Analyse multi-critères croisant la conformité de l'écosystème (détection de bibliothèques ou syntaxes hors programme), la chronométrie de développement et les ruptures stylométriques d'indentation.
+- **Similarités inter-étudiants** : Détection automatique des copier-coller entre étudiants (algorithme Winnowing et n-grams syntaxiques), avec génération d'une matrice de similarité et d'un rapport de cohorte.
 
-> 📖 Pour en savoir plus sur l'architecture, la configuration de l'API Gemini et la création de nouvelles compétences d'évaluation, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
+### 3. Rôle de l'IA : Guidance Socratique Bienveillante
+Lorsqu'une clé d'API (Google Gemini) est configurée :
+- **Diagnostic ciblé** : L'IA ne reçoit que le bilan factuel (scores fixés, jalons validés et courts extraits de code ciblés).
+- **Posture socratique** : L'IA n'attribue pas la note, elle se charge uniquement de rédiger la fiche individuelle en adoptant une posture d'enseignant bienveillant. Elle formule des questions ouvertes et guide l'étudiant vers l'auto-remédiation plutôt que de fournir une solution brute.
+- **Performance & Cache** : Fonctionne dans le quota gratuit de Google AI Studio (Free Tier). Un cache local persistant évite toute consommation de requêtes si le code de l'étudiant n'a pas été modifié.
+
+### 4. Restitution Enseignant
+- **Fiches individuelles Markdown** consultables directement dans CodeLab ou dans le navigateur.
+- **Synthèse de promotion & Export CSV** générés instantanément pour les relevés de notes.
+
+> 📖 Pour en savoir plus sur l'architecture, la configuration de l'API et la création de nouvelles grilles d'évaluation, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
 
 <br>
 
