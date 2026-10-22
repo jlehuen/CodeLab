@@ -126,7 +126,7 @@ CodeLab prend en charge un certain nombre de langages : certains sont intégrés
 [codelab] Vérification du langage CLIPS...OK -> CLIPS version 6.31 - CodeLab build (04/12/23)
 ```
 
-> 🔍 **Recherche automatique des langages** : CodeLab intègre une fonctionnalité de **recherche automatique des compilateurs et interpréteurs** installés sur votre machine hôte (C/Clang/GCC, Python, Go, Haskell/GHC). Si un langage déjà présent sur votre machine est indiqué comme indisponible (par exemple si son chemin n'est pas déclaré dans votre variable d'environnement `PATH` ou s'il se trouve dans un environnement virtuel), rendez-vous simplement dans le menu **Configuration > Rechercher un langage** : CodeLab effectue un scan intelligent des emplacements standards multiplateformes (macOS, Linux, Windows), vérifie la compatibilité de l'exécutable et enregistre automatiquement le chemin validé dans votre profil utilisateur (`user.properties`), sans saisie manuelle.
+> 💡 **Recherche automatique** : Si un langage déjà installé sur votre machine est indiqué comme indisponible, utilisez le menu **Configuration > Rechercher un langage** pour le détecter et le configurer automatiquement.
 
 Si un langage est totalement absent de votre machine, vous pouvez l'installer selon les instructions ci-dessous :
 
