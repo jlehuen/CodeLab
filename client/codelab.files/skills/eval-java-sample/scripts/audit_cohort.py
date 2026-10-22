@@ -104,7 +104,7 @@ def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
 
         if similar_files:
             max_sim = max(sim for _, sim in similar_files)
-            severity = "[ALERTE] Forte suspicion" if max_sim >= 85.0 or len(similar_files) >= 3 else "[ATTENTION] Suspicion modérée"
+            severity = "Forte suspicion" if max_sim >= 85.0 or len(similar_files) >= 3 else "Suspicion modérée"
             suspicions.append({
                 's1': s1,
                 's2': s2,
@@ -416,7 +416,7 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
 
     if suspicions:
         md.append("## Analyse de Similarités & Copier-Collé Inter-Étudiants")
-        md.append(f"> **[ATTENTION] {len(suspicions)} paire(s) d'étudiants présentent une similarité suspecte** :\n")
+        md.append(f"> **{len(suspicions)} paire(s) d'étudiants présentent une similarité suspecte** :\n")
         md.append("| Étudiant 1 | Étudiant 2 | Fichiers Suspects | Similarité Max | Gravité |")
         md.append("| :--- | :--- | :--- | :---: | :--- |")
         for susp in suspicions:

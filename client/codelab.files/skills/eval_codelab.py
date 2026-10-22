@@ -754,11 +754,11 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         p_name = plag.get("partner") or plag.get("partner_id") or "Camarade"
         p_id = plag.get("partner_id", "")
         max_s = plag.get("max_sim", 0)
-        sev = plag.get("severity") or "⚠️ Suspicion de similarité"
+        sev = (plag.get("severity") or "Suspicion de similarité").replace("[ALERTE] ", "").replace("[ATTENTION] ", "").replace("⚠️ ", "").strip()
         files = plag.get("files", [])
         files_str = ", ".join(f"`{f}` ({sim}%)" for f, sim in files) if files else "Exercices libres"
         
-        similarite_courte = f"🚨 Partage avec {p_id or p_name} ({max_s}%)"
+        similarite_courte = f"Partage avec {p_id or p_name} ({max_s}%)"
         sim_lines = [
             "> [!CAUTION]",
             f"> **{sev} de partage de code inter-étudiants** :",
@@ -769,8 +769,8 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         ]
         similarite_md = "\n".join(sim_lines)
     else:
-        similarite_courte = "✅ Original (0% partage)"
-        similarite_md = "✅ **Travail original authentique** : Analyse croisée de cohorte par n-grams syntaxiques (Jaccard) réalisée sans aucune similarité suspecte détectée sur les exercices à code libre."
+        similarite_courte = "Original (0% partage)"
+        similarite_md = "**Travail original authentique** : Analyse croisée de cohorte par n-grams syntaxiques (Jaccard) réalisée sans aucune similarité suspecte détectée sur les exercices à code libre."
 
     # Bloc combiné complet
     analyse_integrite_block = f"""### 🔬 Analyses d'Intégrité Pédagogique
