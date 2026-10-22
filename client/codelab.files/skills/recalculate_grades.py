@@ -418,6 +418,38 @@ def recalculate_session(session_dir, weights_path=None):
     if synthese_md.exists():
         try:
             s_content = synthese_md.read_text(encoding='utf-8', errors='ignore')
+
+            # Éradication de tous les émojis Unicode (évite les rectangles / tofu dans le viewer CodeLab)
+            emoji_cleanups = {
+                '## 👥 Typologies & Clusters': '## Typologies & Clusters',
+                '## 🔍 Analyse de Similarités': '## Analyse de Similarités',
+                '## 2. 🔍 Analyse de Similarités': '## 2. Analyse de Similarités',
+                '🚨 Forte suspicion': '[ALERTE] Forte suspicion',
+                '⚠️ Suspicion modérée': '[ATTENTION] Suspicion modérée',
+                '> ⚠️ **': '> **[ATTENTION] ',
+                '✅ **Aucune similarité': '**Aucune similarité',
+                '👥 Similarité forte': 'Similarite forte',
+                '🤖 IA suspectée': 'IA suspectee',
+                '⚠️ Marqueurs IA': 'Marqueurs IA',
+                '⚠️ Idiomes IA': 'Idiomes IA',
+                '⚠️ Saut:': 'Saut:',
+                '🌟 Auto-remédiation': 'Auto-remediation',
+                '⭐ Très solide': 'Tres solide',
+                '🚀 3D': '[3D]',
+                '🎮 IHM': '[IHM]',
+                '🛡️ DivZero': '[DivZero]',
+                '👑 **Les Boss**': '**Les Boss**',
+                '🔨 **Les Artisans**': '**Les Artisans**',
+                '⚡ **Les Casse-cou**': '**Les Casse-cou**',
+                '🛟 **Les Décrocheurs**': '**Les Décrocheurs**',
+                '🏴‍☠️ **Les Pirates**': '**Les Pirates**',
+                '🤖 **Les Cyborgs**': '**Les Cyborgs**'
+            }
+            for e_old, e_new in emoji_cleanups.items():
+                s_content = s_content.replace(e_old, e_new)
+            s_content = re.sub(r'[\U00010000-\U0010ffff]', '', s_content)
+            s_content = re.sub(r'[⚠️✅👑🔨⚡🛟🏴🤖👥🚨🚀🎮🛡⭐🌟🔍]', '', s_content)
+
             # Mise à jour du titre principal
             s_content = re.sub(
                 r'^#\s*Synthèse[^\r\n]*',
@@ -472,35 +504,35 @@ def recalculate_session(session_dir, weights_path=None):
             clusters = [
                 {
                     'id': 'boss',
-                    'label': '👑 **Les Boss**',
+                    'label': '**Les Boss**',
                     'sub': 'Excellence & Autonomie',
                     'desc': 'Note $\\ge$ 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
                     'members': []
                 },
                 {
                     'id': 'artisans',
-                    'label': '🔨 **Les Artisans**',
+                    'label': '**Les Artisans**',
                     'sub': 'Pratique Régulière & Socle en Consolidation',
                     'desc': 'Note entre 10 et 13.9. Socle technique acquis, travail appliqué et régulier. Poursuivre la consolidation sur la modularité et les tests.',
                     'members': []
                 },
                 {
                     'id': 'casse_cou',
-                    'label': '⚡ **Les Casse-cou**',
+                    'label': '**Les Casse-cou**',
                     'sub': 'Raccourcis & Architecture Fragile',
                     'desc': 'Sauts de jalons intermédiaires ou code précipité sans structuration fonctionnelle. Recadrer sur la rigueur de modélisation.',
                     'members': []
                 },
                 {
                     'id': 'decrocheurs',
-                    'label': '🛟 **Les Décrocheurs**',
+                    'label': '**Les Décrocheurs**',
                     'sub': 'Difficultés Méthodologiques ou Décrochage',
                     'desc': 'Note < 10. Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise rapidement sur les fondamentaux.',
                     'members': []
                 },
                 {
                     'id': 'pirates',
-                    'label': '🏴‍☠️ **Les Pirates**',
+                    'label': '**Les Pirates**',
                     'sub': 'Code Partagé & Copier-Coller',
                     'desc': 'Similarité directe (≥ 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
                     'members': []
@@ -510,7 +542,7 @@ def recalculate_session(session_dir, weights_path=None):
             if has_any_ia:
                 clusters.append({
                     'id': 'cyborgs',
-                    'label': '🤖 **Les Cyborgs**',
+                    'label': '**Les Cyborgs**',
                     'sub': 'Recours IA Extérieur & Rupture Stylométrique',
                     'desc': 'Forte présomption de code généré par IA ou ruptures de style. Entretien oral conseillé pour vérifier l\'autonomie conceptuelle.',
                     'members': []
@@ -542,7 +574,7 @@ def recalculate_session(session_dir, weights_path=None):
                     c_map['artisans']['members'].append(member_entry)
 
             cluster_lines = [
-                "## 👥 Typologies & Clusters d'Étudiants Types\n",
+                "## Typologies & Clusters d'Étudiants Types\n",
                 "| Cluster Typologique | Profil Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
                 "| :--- | :--- | :---: | :---: | :--- | :--- |"
             ]
@@ -554,10 +586,10 @@ def recalculate_session(session_dir, weights_path=None):
             cluster_lines.append("")
             cluster_section_str = "\n".join(cluster_lines)
 
-            if "## 👥 Typologies & Clusters d'Étudiants Types" in s_content:
+            if "## Typologies & Clusters d'Étudiants Types" in s_content:
                 s_content = re.sub(
-                    r"## 👥 Typologies & Clusters d'Étudiants Types[\s\S]*?(?=\n## |\Z)",
-                    lambda m: cluster_section_str.rstrip(),
+                    r"## Typologies & Clusters d'Étudiants Types[\s\S]*\Z",
+                    lambda m: cluster_section_str.rstrip() + "\n",
                     s_content
                 )
             else:

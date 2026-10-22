@@ -104,7 +104,7 @@ def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
 
         if similar_files:
             max_sim = max(sim for _, sim in similar_files)
-            severity = "🚨 Forte suspicion" if max_sim >= 85.0 or len(similar_files) >= 3 else "⚠️ Suspicion modérée"
+            severity = "[ALERTE] Forte suspicion" if max_sim >= 85.0 or len(similar_files) >= 3 else "[ATTENTION] Suspicion modérée"
             suspicions.append({
                 's1': s1,
                 's2': s2,
@@ -224,35 +224,35 @@ def build_cohort_clusters(results, suspicious_logins):
     clusters = [
         {
             'id': 'boss',
-            'label': '👑 **Les Boss**',
+            'label': '**Les Boss**',
             'sub': 'Excellence & Autonomie',
             'desc': 'Note $\\ge$ 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
             'members': []
         },
         {
             'id': 'artisans',
-            'label': '🔨 **Les Artisans**',
+            'label': '**Les Artisans**',
             'sub': 'Pratique Régulière & Socle en Consolidation',
             'desc': 'Note entre 10 et 13.9. Socle technique acquis, travail appliqué et régulier. Poursuivre la consolidation sur la modularité et les tests.',
             'members': []
         },
         {
             'id': 'casse_cou',
-            'label': '⚡ **Les Casse-cou**',
+            'label': '**Les Casse-cou**',
             'sub': 'Raccourcis & Architecture Fragile',
             'desc': 'Sauts de jalons intermédiaires ou code précipité sans structuration fonctionnelle. Recadrer sur la rigueur de modélisation.',
             'members': []
         },
         {
             'id': 'decrocheurs',
-            'label': '🛟 **Les Décrocheurs**',
+            'label': '**Les Décrocheurs**',
             'sub': 'Difficultés Méthodologiques ou Décrochage',
             'desc': 'Note < 10. Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise rapidement sur les fondamentaux.',
             'members': []
         },
         {
             'id': 'pirates',
-            'label': '🏴‍☠️ **Les Pirates**',
+            'label': '**Les Pirates**',
             'sub': 'Code Partagé & Copier-Coller',
             'desc': 'Similarité directe (≥ 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
             'members': []
@@ -262,7 +262,7 @@ def build_cohort_clusters(results, suspicious_logins):
     if has_any_ai:
         clusters.append({
             'id': 'cyborgs',
-            'label': '🤖 **Les Cyborgs**',
+            'label': '**Les Cyborgs**',
             'sub': 'Recours IA Extérieur & Rupture Stylométrique',
             'desc': 'Forte présomption de code généré par IA ou ruptures de style. Entretien oral conseillé pour vérifier l\'autonomie conceptuelle.',
             'members': []
@@ -304,7 +304,7 @@ def build_cohort_clusters(results, suspicious_logins):
             c_map['artisans']['members'].append(member_entry)
 
     lines = [
-        "## 👥 Typologies & Clusters d'Étudiants Types\n",
+        "## Typologies & Clusters d'Étudiants Types\n",
         "| Cluster Typologique | Profil Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
         "| :--- | :--- | :---: | :---: | :--- | :--- |"
     ]
@@ -348,8 +348,8 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
     md.append("")
 
     if suspicions:
-        md.append("## 🔍 Analyse de Similarités & Copier-Collé Inter-Étudiants")
-        md.append(f"> ⚠️ **{len(suspicions)} paire(s) d'étudiants présentent une similarité suspecte** :\n")
+        md.append("## Analyse de Similarités & Copier-Collé Inter-Étudiants")
+        md.append(f"> **[ATTENTION] {len(suspicions)} paire(s) d'étudiants présentent une similarité suspecte** :\n")
         md.append("| Étudiant 1 | Étudiant 2 | Fichiers Suspects | Similarité Max | Gravité |")
         md.append("| :--- | :--- | :--- | :---: | :--- |")
         for susp in suspicions:
@@ -367,13 +367,13 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
         login = r.get('student_id', '')
         alerts = []
         if login in suspicious_logins:
-            alerts.append("👥 Similarité forte")
+            alerts.append("Similarite forte")
         ai_data = r.get('ai_analysis', {})
         ai_level = ai_data.get('level', 'Faible')
         if ai_level.startswith('Élevé'):
-            alerts.append("🤖 IA suspectée")
+            alerts.append("IA suspectee")
         elif ai_level.startswith('Modéré'):
-            alerts.append("⚠️ Idiomes IA")
+            alerts.append("Idiomes IA")
         alert_str = " | ".join(alerts) if alerts else "Aucune"
         md.append(f"| `{login}` | {sc.get('compilation', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | {note_sans_malus:.1f} | **{sc.get('total', 0):.1f}** | {ai_level} | {alert_str} |")
     md.append("")
