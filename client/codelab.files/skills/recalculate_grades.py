@@ -468,38 +468,54 @@ def recalculate_session(session_dir, weights_path=None):
                 s_content = re.sub(pat, repl, s_content)
 
             # Mise à jour ou ajout de la section des typologies / clusters
+            has_any_ia = any(st.get('ia_malus', 0) > 0 for st in students_updated)
             clusters = [
                 {
-                    'id': 'mastery',
-                    'label': '🌟 **Autonomie & Maîtrise Avancée**',
-                    'desc': 'Progression complète, code personnel et rigoureux. Excellente autonomie conceptuelle. À mobiliser sur des défis ou du tutorat de pairs.',
+                    'id': 'boss',
+                    'label': '👑 **Les Boss**',
+                    'sub': 'Excellence & Autonomie',
+                    'desc': 'Note $\\ge$ 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
                     'members': []
                 },
                 {
-                    'id': 'solid_progress',
-                    'label': '🛠️ **Pratique Régulière & Socle en Consolidation**',
-                    'desc': 'Fondamentaux acquis et démarche fonctionnelle. Quelques fragilités sur la modularité ou les cas limites. Poursuivre la consolidation.',
+                    'id': 'artisans',
+                    'label': '🔨 **Les Artisans**',
+                    'sub': 'Pratique Régulière & Socle en Consolidation',
+                    'desc': 'Note entre 10 et 13.9. Socle technique acquis, travail appliqué et régulier. Poursuivre la consolidation sur la modularité et les tests.',
                     'members': []
                 },
                 {
-                    'id': 'struggling',
-                    'label': '⚠️ **Difficultés Méthodologiques ou Décrochage**',
-                    'desc': 'Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise sur la syntaxe de base et la structure algorithmique.',
+                    'id': 'casse_cou',
+                    'label': '⚡ **Les Casse-cou**',
+                    'sub': 'Raccourcis & Architecture Fragile',
+                    'desc': 'Sauts de jalons intermédiaires ou code précipité sans structuration fonctionnelle. Recadrer sur la rigueur de modélisation.',
                     'members': []
                 },
                 {
-                    'id': 'ai_assisted',
-                    'label': '🤖 **Recours Extérieur & Rupture Stylométrique**',
-                    'desc': 'Empreinte IA ou idiomes atypiques non enseignés. Contrôle de l\'appropriation orale conseillé pour vérifier l\'autonomie.',
+                    'id': 'decrocheurs',
+                    'label': '🛟 **Les Décrocheurs**',
+                    'sub': 'Difficultés Méthodologiques ou Décrochage',
+                    'desc': 'Note < 10. Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise rapidement sur les fondamentaux.',
                     'members': []
                 },
                 {
-                    'id': 'shared_code',
-                    'label': '👥 **Code Partagé & Entraide Non Différenciée**',
-                    'desc': 'Similarités structurelles directes sur du code libre. Rappel des consignes d\'intégrité et évaluation orale de la compréhension.',
+                    'id': 'pirates',
+                    'label': '🏴‍☠️ **Les Pirates**',
+                    'sub': 'Code Partagé & Copier-Coller',
+                    'desc': 'Similarité directe (≥ 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
                     'members': []
                 }
             ]
+
+            if has_any_ia:
+                clusters.append({
+                    'id': 'cyborgs',
+                    'label': '🤖 **Les Cyborgs**',
+                    'sub': 'Recours IA Extérieur & Rupture Stylométrique',
+                    'desc': 'Forte présomption de code généré par IA ou ruptures de style. Entretien oral conseillé pour vérifier l\'autonomie conceptuelle.',
+                    'members': []
+                })
+
             c_map = {c['id']: c for c in clusters}
             total_st = len(students_updated)
 
@@ -509,36 +525,39 @@ def recalculate_session(session_dir, weights_path=None):
                 note = st['new']
                 is_susp = st.get('sim_malus', 0) > 0
                 is_ia = st.get('ia_malus', 0) > 0
+                has_skips = ('Saut' in st.get('profil', ''))
                 member_entry = f"`{lid}` ({nom})" if (nom and nom != lid) else f"`{lid}`"
 
                 if is_susp:
-                    c_map['shared_code']['members'].append(member_entry)
-                elif is_ia:
-                    c_map['ai_assisted']['members'].append(member_entry)
+                    c_map['pirates']['members'].append(member_entry)
+                elif is_ia and 'cyborgs' in c_map:
+                    c_map['cyborgs']['members'].append(member_entry)
+                elif has_skips and note >= 8.0:
+                    c_map['casse_cou']['members'].append(member_entry)
                 elif note < 10.0:
-                    c_map['struggling']['members'].append(member_entry)
+                    c_map['decrocheurs']['members'].append(member_entry)
                 elif note >= 14.0:
-                    c_map['mastery']['members'].append(member_entry)
+                    c_map['boss']['members'].append(member_entry)
                 else:
-                    c_map['solid_progress']['members'].append(member_entry)
+                    c_map['artisans']['members'].append(member_entry)
 
             cluster_lines = [
                 "## 👥 Typologies & Clusters d'Étudiants Types\n",
-                "| Cluster Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
-                "| :--- | :---: | :---: | :--- | :--- |"
+                "| Cluster Typologique | Profil Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
+                "| :--- | :--- | :---: | :---: | :--- | :--- |"
             ]
             for c in clusters:
                 cnt = len(c['members'])
                 pct = (cnt / total_st * 100.0) if total_st > 0 else 0.0
                 m_str = ", ".join(c['members']) if c['members'] else "—"
-                cluster_lines.append(f"| {c['label']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
+                cluster_lines.append(f"| {c['label']} | {c['sub']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
             cluster_lines.append("")
             cluster_section_str = "\n".join(cluster_lines)
 
             if "## 👥 Typologies & Clusters d'Étudiants Types" in s_content:
                 s_content = re.sub(
                     r"## 👥 Typologies & Clusters d'Étudiants Types[\s\S]*?(?=\n## |\Z)",
-                    cluster_section_str.rstrip(),
+                    lambda m: cluster_section_str.rstrip(),
                     s_content
                 )
             else:

@@ -208,40 +208,63 @@ def export_csv(results, csv_path, cohort_dir=None):
             ])
 
 def build_cohort_clusters(results, suspicious_logins):
-    """Classe les étudiants en 5 typologies/clusters pédagogiques exclusifs."""
+    """Classe les étudiants en typologies/clusters pédagogiques exclusifs (mode sans IA + IA optionnelle)."""
     total_st = len(results)
+    
+    # Détection si des alertes IA existent au sein de la cohorte
+    has_any_ai = any(
+        str((r.get('ai_analysis') or r.get('ai_detection') or {}).get('level', '')).startswith(('Élevé', 'Modéré')) or
+        float((r.get('ai_analysis') or r.get('ai_detection') or {}).get('ai_probability', 0.0)) >= 30.0
+        for r in results
+    )
+
     clusters = [
         {
-            'id': 'mastery',
-            'label': '🌟 **Autonomie & Maîtrise Avancée**',
-            'desc': 'Progression complète, code personnel et rigoureux. Excellente autonomie conceptuelle. À mobiliser sur des défis ou du tutorat de pairs.',
+            'id': 'boss',
+            'label': '👑 **Les Boss**',
+            'sub': 'Excellence & Autonomie',
+            'desc': 'Note $\\ge$ 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
             'members': []
         },
         {
-            'id': 'solid_progress',
-            'label': '🛠️ **Pratique Régulière & Socle en Consolidation**',
-            'desc': 'Fondamentaux acquis et démarche fonctionnelle. Quelques fragilités sur la modularité ou les cas limites. Poursuivre la consolidation.',
+            'id': 'artisans',
+            'label': '🔨 **Les Artisans**',
+            'sub': 'Pratique Régulière & Socle en Consolidation',
+            'desc': 'Note entre 10 et 13.9. Socle technique acquis, travail appliqué et régulier. Poursuivre la consolidation sur la modularité et les tests.',
             'members': []
         },
         {
-            'id': 'struggling',
-            'label': '⚠️ **Difficultés Méthodologiques ou Décrochage**',
-            'desc': 'Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise sur la syntaxe de base et la structure algorithmique.',
+            'id': 'casse_cou',
+            'label': '⚡ **Les Casse-cou**',
+            'sub': 'Raccourcis & Architecture Fragile',
+            'desc': 'Sauts de jalons intermédiaires ou code précipité sans structuration fonctionnelle. Recadrer sur la rigueur de modélisation.',
             'members': []
         },
         {
-            'id': 'ai_assisted',
-            'label': '🤖 **Recours Extérieur & Rupture Stylométrique**',
-            'desc': 'Empreinte IA ou idiomes atypiques non enseignés. Contrôle de l\'appropriation orale conseillé pour vérifier l\'autonomie.',
+            'id': 'decrocheurs',
+            'label': '🛟 **Les Décrocheurs**',
+            'sub': 'Difficultés Méthodologiques ou Décrochage',
+            'desc': 'Note < 10. Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise rapidement sur les fondamentaux.',
             'members': []
         },
         {
-            'id': 'shared_code',
-            'label': '👥 **Code Partagé & Entraide Non Différenciée**',
-            'desc': 'Similarités structurelles directes sur du code libre. Rappel des consignes d\'intégrité et évaluation orale de la compréhension.',
+            'id': 'pirates',
+            'label': '🏴‍☠️ **Les Pirates**',
+            'sub': 'Code Partagé & Copier-Coller',
+            'desc': 'Similarité directe (≥ 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
             'members': []
         }
     ]
+
+    if has_any_ai:
+        clusters.append({
+            'id': 'cyborgs',
+            'label': '🤖 **Les Cyborgs**',
+            'sub': 'Recours IA Extérieur & Rupture Stylométrique',
+            'desc': 'Forte présomption de code généré par IA ou ruptures de style. Entretien oral conseillé pour vérifier l\'autonomie conceptuelle.',
+            'members': []
+        })
+
     c_map = {c['id']: c for c in clusters}
 
     for r in results:
@@ -254,29 +277,39 @@ def build_cohort_clusters(results, suspicious_logins):
         is_ai = ai_level.startswith(('Élevé', 'Modéré')) or ai_prob >= 30.0
         is_susp = lid in suspicious_logins
 
+        # Détection Casse-cou / Sauts d'étapes (100% statique sans IA)
+        has_skips = bool(r.get('critical_skips')) or (float(r.get('scores', {}).get('malus_saut', 0.0) or 0.0) > 0)
+        if not has_skips and 'architecture' in r.get('scores', {}):
+            arch = float(r['scores'].get('architecture', 0.0))
+            synt = float(r['scores'].get('syntax', r['scores'].get('compilation', 0.0)))
+            if arch < 3.5 and synt >= 4.5:
+                has_skips = True
+
         member_entry = f"`{lid}` ({name})" if (name and name != lid) else f"`{lid}`"
 
         if is_susp:
-            c_map['shared_code']['members'].append(member_entry)
-        elif is_ai:
-            c_map['ai_assisted']['members'].append(member_entry)
+            c_map['pirates']['members'].append(member_entry)
+        elif is_ai and 'cyborgs' in c_map:
+            c_map['cyborgs']['members'].append(member_entry)
+        elif has_skips and note >= 8.0:
+            c_map['casse_cou']['members'].append(member_entry)
         elif note < 10.0:
-            c_map['struggling']['members'].append(member_entry)
+            c_map['decrocheurs']['members'].append(member_entry)
         elif note >= 14.0:
-            c_map['mastery']['members'].append(member_entry)
+            c_map['boss']['members'].append(member_entry)
         else:
-            c_map['solid_progress']['members'].append(member_entry)
+            c_map['artisans']['members'].append(member_entry)
 
     lines = [
         "## 👥 Typologies & Clusters d'Étudiants Types\n",
-        "| Cluster Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
-        "| :--- | :---: | :---: | :--- | :--- |"
+        "| Cluster Typologique | Profil Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
+        "| :--- | :--- | :---: | :---: | :--- | :--- |"
     ]
     for c in clusters:
         cnt = len(c['members'])
         pct = (cnt / total_st * 100.0) if total_st > 0 else 0.0
         m_str = ", ".join(c['members']) if c['members'] else "—"
-        lines.append(f"| {c['label']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
+        lines.append(f"| {c['label']} | {c['sub']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
     lines.append("")
     return "\n".join(lines)
 
