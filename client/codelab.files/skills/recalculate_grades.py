@@ -453,7 +453,9 @@ def recalculate_session(session_dir, weights_path=None):
                 '$\\ge$': '>=',
                 '$\\le$': '<=',
                 '≥': '>=',
-                '≤': '<='
+                '≤': '<=',
+                ' (sans malus void main)': '',
+                '(sans malus void main)': ''
             }
             for e_old, e_new in emoji_cleanups.items():
                 s_content = s_content.replace(e_old, e_new)
