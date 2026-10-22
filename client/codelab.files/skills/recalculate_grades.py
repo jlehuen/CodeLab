@@ -80,12 +80,12 @@ def load_weights(session_eval_dir, custom_weights_path=None):
             try:
                 with open(c, 'r', encoding='utf-8') as fp:
                     data = json.load(fp)
-                    print(f"[INFO] Pondérations chargées depuis : {c}")
+                    print(f"ℹ️ [INFO] Pondérations chargées depuis : {c}")
                     return data, str(c)
             except Exception as e:
-                print(f"[WARN] Erreur lors de la lecture de {c}: {e}", file=sys.stderr)
+                print(f"⚠️ [WARN] Erreur lors de la lecture de {c}: {e}", file=sys.stderr)
 
-    print("[INFO] Utilisation des pondérations par défaut intégrées.")
+    print("ℹ️ [INFO] Utilisation des pondérations par défaut intégrées.")
     return DEFAULT_WEIGHTS, "(défaut en mémoire)"
 
 def count_similar_files(sim_alert_str):
@@ -184,12 +184,12 @@ def recalculate_session(session_dir, weights_path=None):
     normalisation_factor = 20.0 / sum_axes if sum_axes > 0 else 1.0
 
     if abs(sum_axes - 20.0) > 0.01:
-        print(f"[INFO] Somme des axes = {sum_axes} pts. Facteur de normalisation automatique vers 20 pts : {normalisation_factor:.4f}")
+        print(f"⚖️ [INFO] Somme des axes = {sum_axes} pts. Facteur de normalisation automatique vers 20 pts : {normalisation_factor:.4f}")
     else:
         if a4_max > 0:
-            print(f"[INFO] Barème standard sur 20 pts (Axe1: {a1_max}, Axe2: {a2_max}, Axe3: {a3_max}, Axe4: {a4_max}).")
+            print(f"⚖️ [INFO] Barème standard sur 20 pts (Axe1: {a1_max}, Axe2: {a2_max}, Axe3: {a3_max}, Axe4: {a4_max}).")
         else:
-            print(f"[INFO] Barème standard direct sur 20 pts (Axe1: {a1_max}, Axe2: {a2_max}, Axe3: {a3_max}).")
+            print(f"⚖️ [INFO] Barème standard direct sur 20 pts (Axe1: {a1_max}, Axe2: {a2_max}, Axe3: {a3_max}).")
 
     # Anti-triche
     anti = weights.get("anti_triche", {})
@@ -221,7 +221,7 @@ def recalculate_session(session_dir, weights_path=None):
         return False
 
     csv_file = csv_candidates[0]
-    print(f"[INFO] Traitement du fichier de notes : {csv_file.name}")
+    print(f"📄 [INFO] Traitement du fichier de notes : {csv_file.name}")
 
     rows = []
     with open(csv_file, 'r', encoding='utf-8') as fp:
@@ -621,21 +621,21 @@ def recalculate_session(session_dir, weights_path=None):
 
             synthese_md.write_text(s_content, encoding='utf-8')
         except Exception as e:
-            print(f"[WARN] Impossible de mettre à jour {synthese_md}: {e}", file=sys.stderr)
+            print(f"⚠️ [WARN] Impossible de mettre à jour {synthese_md}: {e}", file=sys.stderr)
 
     # Affichage du bilan final structuré
     print("=" * 60)
     print(f"✅ RECALCUL TERMINÉ AVEC SUCCÈS POUR {len(students_updated)} ÉTUDIANTS")
-    print(f"Source barème : {w_source}")
-    print(f"Moyenne promo : {avg_old:.2f}/20 -> {avg_new:.2f}/20 (Médiane : {med_old:.1f} -> {med_new:.1f})")
-    print(f"Écart-type    : {stdev_new:.2f} (Min : {min(new_notes):.1f}, Max : {max(new_notes):.1f})")
+    print(f"⚖️ Source barème : {w_source}")
+    print(f"📊 Moyenne promo : {avg_old:.2f}/20 -> {avg_new:.2f}/20 (Médiane : {med_old:.1f} -> {med_new:.1f})")
+    print(f"📐 Écart-type    : {stdev_new:.2f} (Min : {min(new_notes):.1f}, Max : {max(new_notes):.1f})")
     print("-" * 60)
     for st in students_updated:
         diff = st['new'] - st['old']
         diff_str = f"{diff:+.1f}" if diff != 0.0 else "="
         malus_str = ""
-        if st['ia_malus'] > 0: malus_str += f" [IA: -{st['ia_malus']}pt]"
-        if st['sim_malus'] > 0: malus_str += f" [Sim: -{st['sim_malus']}pt]"
+        if st['ia_malus'] > 0: malus_str += f" [🤖 IA: -{st['ia_malus']}pt]"
+        if st['sim_malus'] > 0: malus_str += f" [👥 Sim: -{st['sim_malus']}pt]"
         print(f"  • {st['login']:10s} {st['name']:20s} : {st['old']:4.1f} -> {st['new']:4.1f}/20 ({diff_str}){malus_str}")
     print("=" * 60)
     print(f"RECALCULATE_RESULT:SUCCESS|students={len(students_updated)}|old_avg={avg_old:.2f}|new_avg={avg_new:.2f}|median={med_new:.1f}|min={min(new_notes):.1f}|max={max(new_notes):.1f}")
