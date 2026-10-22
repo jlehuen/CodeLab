@@ -361,11 +361,11 @@ public class CodeLab extends AbstractCodeLab {
 		initStylesFolder();
 
 		// 1. Style sélectionné pour les fichiers ipynb
-		String styleName = IPYNB_STYLE != null ? IPYNB_STYLE : "Markdown";
+		String styleName = IPYNB_STYLE != null ? IPYNB_STYLE : "markdown.css";
 		File f = getReportStyleFile(styleName);
 		if (f != null && f.exists() && f.length() > 0) return f;
 
-		// 2. Fichier Markdown.css dans STYLES_FOLDER (~/codelab.files/styles/Markdown.css)
+		// 2. Fichier markdown.css dans STYLES_FOLDER (~/codelab.files/.hidden/styles/markdown.css)
 		File userFile = new File(MARKDOWN_CSS_FILE);
 		if (userFile.exists() && userFile.length() > 0) {
 			return userFile;
@@ -414,7 +414,7 @@ public class CodeLab extends AbstractCodeLab {
 		initStylesFolder();
 		java.util.Set<String> styles = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
-		// 1. Scan des styles dans le dossier STYLES_FOLDER (~/codelab.files/styles)
+		// 1. Scan des styles dans le dossier STYLES_FOLDER (~/codelab.files/.hidden/styles)
 		File target = new File(STYLES_FOLDER);
 		if (target.exists() && target.isDirectory()) {
 			File[] files = target.listFiles((dir, name) -> name.endsWith(".css"));
@@ -426,8 +426,8 @@ public class CodeLab extends AbstractCodeLab {
 			}
 		}
 
-		// 2. Mode dev : client/codelab.files/styles
-		File devDir = new File("client/codelab.files/styles");
+		// 2. Mode dev : client/codelab.files/hidden/styles
+		File devDir = new File("client/codelab.files/hidden/styles");
 		if (devDir.exists() && devDir.isDirectory()) {
 			File[] files = devDir.listFiles((dir, name) -> name.endsWith(".css"));
 			if (files != null) {
@@ -454,11 +454,11 @@ public class CodeLab extends AbstractCodeLab {
 
 	public static File getReportStyleFile(String styleName) {
 		if (styleName == null || styleName.trim().isEmpty()) {
-			styleName = REPORT_STYLE != null ? REPORT_STYLE : "Basic";
+			styleName = REPORT_STYLE != null ? REPORT_STYLE : "report.css";
 		}
-		final String targetCssName = styleName + ".css";
+		final String targetCssName = styleName.endsWith(".css") ? styleName : styleName + ".css";
 
-		// 1. Chercher dans STYLES_FOLDER (~/codelab.files/styles)
+		// 1. Chercher dans STYLES_FOLDER (~/codelab.files/.hidden/styles)
 		File f = new File(STYLES_FOLDER, targetCssName);
 		if (f.exists() && f.length() > 0) return f;
 
@@ -468,10 +468,10 @@ public class CodeLab extends AbstractCodeLab {
 			if (files != null && files.length > 0 && files[0].length() > 0) return files[0];
 		}
 
-		// 2. Mode dev : client/codelab.files/styles
-		File dev = new File("client/codelab.files/styles", targetCssName);
+		// 2. Mode dev : client/codelab.files/hidden/styles
+		File dev = new File("client/codelab.files/hidden/styles", targetCssName);
 		if (dev.exists() && dev.length() > 0) return dev;
-		File devDir = new File("client/codelab.files/styles");
+		File devDir = new File("client/codelab.files/hidden/styles");
 		if (devDir.exists() && devDir.isDirectory()) {
 			File[] files = devDir.listFiles((dir, name) -> name.equalsIgnoreCase(targetCssName));
 			if (files != null && files.length > 0 && files[0].length() > 0) return files[0];
@@ -2243,6 +2243,12 @@ public class CodeLab extends AbstractCodeLab {
 		PropertyBase.load();
 		loadHiddenProperties(); // Les pptés cachées dans .hidden
 		if (first_run) saveHiddenProperties();
+
+		// Styles CSS Markdown et rapports (depuis sysconfig.properties)
+		String rStyle = CodeLab.PROP("REPORT_STYLE");
+		if (!rStyle.equals(UNDEFINED) && !rStyle.isBlank()) REPORT_STYLE = rStyle;
+		String iStyle = CodeLab.PROP("IPYNB_STYLE");
+		if (!iStyle.equals(UNDEFINED) && !iStyle.isBlank()) IPYNB_STYLE = iStyle;
 
 		// Initialiser et synchroniser le dossier des styles de rapports CSS
 		initStylesFolder();

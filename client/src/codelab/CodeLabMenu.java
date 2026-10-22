@@ -404,6 +404,7 @@ public class CodeLabMenu extends JPopupMenu {
 		// Styles CSS Markdown (rapports d'évaluation & carnets ipynb)
 		// ---------------------------------------
 
+		/*
 		JMenu menuMarkdownStyles = new JMenu(CodeLab.LABEL("menuMarkdownStyles"));
 		buildMarkdownStylesMenu(menuMarkdownStyles);
 		menuMarkdownStyles.addMenuListener(new MenuListener() {
@@ -413,6 +414,7 @@ public class CodeLabMenu extends JPopupMenu {
 			public void menuDeselected(MenuEvent e) {}
 			public void menuCanceled(MenuEvent e) {}
 		});
+		*/
 
 		// ---------------------------------------
 		// Site web de CodeLab
@@ -533,7 +535,7 @@ public class CodeLabMenu extends JPopupMenu {
 		menuEditor.add(itemCodeFolding);
 		menuEditor.add(itemInvisibles);
 		menuEditor.add(itemFontButton);
-		menuEditor.add(menuMarkdownStyles);
+		// menuEditor.add(menuMarkdownStyles);
 
 		JMenu menuConsole = new JMenu(CodeLab.LABEL("Btn_term"));
 		menuConsole.add(itemAutoconsole);

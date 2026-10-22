@@ -53,7 +53,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.5.1"; // Attribué automatiquement par ant
-	public static final String BUILD = "2610222139"; // Attribué automatiquement par ant
+	public static final String BUILD = "2610222332"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -105,20 +105,20 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static final String INFOFILE = CODELAB_FILES_HIDDEN + "/infos.txt"; // Trucs à transmettre (à chaque exécution de CodeLab)
 	public static final String DATAFILE = CODELAB_FILES_HIDDEN + "/data.properties"; // Propriétés cachées
 	public static final String RECOVERY_FOLDER = CODELAB_FILES_HIDDEN + "/recovery"; // Dossier des sauvegardes de secours
+	public static final String STYLES_FOLDER = CODELAB_FILES_HIDDEN + "/styles"; // Le dossier des styles CSS Markdown et rapports
+	public static final String MARKDOWN_CSS_FILE = STYLES_FOLDER + "/markdown.css"; // La feuille de style Markdown par défaut
+	public static final String REPORT_CSS_FILE = STYLES_FOLDER + "/report.css"; // Feuille de style CSS pour les rapports
 
 	// Ressources utilisateur dans le dossier codelab.files
 
 	public static final String MODULES_FOLDER = CODELAB_FILES + "/modules"; // Le dossier où déposer les plugins
 	public static final String SKILLS_FOLDER = CODELAB_FILES + "/skills"; // Le dossier des skills pédagogiques et d'évaluation
 	public static final String EVALUATIONS_FOLDER = CODELAB_FILES + "/evaluations"; // Le dossier permanent des comptes-rendus d'évaluation
-	public static final String STYLES_FOLDER = CODELAB_FILES + "/styles"; // Le dossier des styles CSS Markdown et rapports
 	public static final String USER_DATA_FOLDER = CODELAB_FILES + "/userdata"; // Le dossier de données utilisateur
 	public static final String USER_MEDIA_FOLDER = USER_DATA_FOLDER + "/media"; // Le dossier où déposer les médias (wav, etc.)
 	public static final String USER_GRAPH_FOLDER = USER_DATA_FOLDER + "/mod_graphics"; // Le dossier mod_graphics
 	public static final String USER_ROBOT_FOLDER = USER_DATA_FOLDER + "/mod_robotics"; // Le dossier mod_robotics
 	public static final String USER_PROP_FILE = USER_DATA_FOLDER + "/user.properties"; // Le fichier de configuration utilisateur
-	public static final String MARKDOWN_CSS_FILE = STYLES_FOLDER + "/Markdown.css"; // La feuille de style Markdown par défaut
-	public static final String REPORT_CSS_FILE = STYLES_FOLDER + "/report.css"; // Feuille de style CSS de secours pour les rapports
 
 	// Quelques autres constantes finales
 
@@ -154,8 +154,8 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static boolean REPORT_EXCEPTIONS; // Mode reporting ou non
 	public static boolean RETE_FLAG; // Activation du moteur d'inférences
 	public static boolean PRINT_FACTS; // Affichage de la BDF dans le log
-	public static String REPORT_STYLE = "Basic"; // Style CSS sélectionné pour les rapports d'évaluation IA
-	public static String IPYNB_STYLE = "Markdown"; // Style CSS sélectionné pour les fichiers ipynb
+	public static String REPORT_STYLE = "report.css"; // Style CSS sélectionné pour les rapports d'évaluation IA
+	public static String IPYNB_STYLE = "markdown.css"; // Style CSS sélectionné pour les fichiers ipynb
 
 	public static boolean WRK_SERVER_OK;
 	public static boolean ERR_SERVER_OK;
@@ -334,14 +334,6 @@ public abstract class AbstractCodeLab extends JFrame {
 
 			// Autres infos
 			DATA_VERSION = getStringData("DATA_VERSION");
-			REPORT_STYLE = getStringData("REPORT_STYLE");
-			if (REPORT_STYLE == null || REPORT_STYLE.trim().isEmpty() || REPORT_STYLE.equals(UNDEFINED)) {
-				REPORT_STYLE = "Basic";
-			}
-			IPYNB_STYLE = getStringData("IPYNB_STYLE");
-			if (IPYNB_STYLE == null || IPYNB_STYLE.trim().isEmpty() || IPYNB_STYLE.equals(UNDEFINED)) {
-				IPYNB_STYLE = "Markdown";
-			}
 
 			return true;
 		}
@@ -378,8 +370,6 @@ public abstract class AbstractCodeLab extends JFrame {
 
 			// Autres infos
 			setStringData("DATA_VERSION", VERSION); // Version actuelle de CodeLab
-			setStringData("REPORT_STYLE", REPORT_STYLE != null ? REPORT_STYLE : "Basic");
-			setStringData("IPYNB_STYLE", IPYNB_STYLE != null ? IPYNB_STYLE : "Markdown");
 
 			HIDDEN_DATA.store(new FileWriter(DATAFILE), null);
 		}
