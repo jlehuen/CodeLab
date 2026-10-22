@@ -2166,12 +2166,19 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
                 import audit_cohort
                 export_csv = getattr(audit_cohort, "export_csv", None)
                 export_summary_markdown = getattr(audit_cohort, "export_summary_markdown", None)
+                use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
                 if export_csv and export_summary_markdown:
                     export_csv(evaluated_results, str(csv_file), cohort_dir=str(session_p))
-                    export_summary_markdown(evaluated_results, str(synthese_file), str(session_p))
+                    try:
+                        export_summary_markdown(evaluated_results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag)
+                    except TypeError:
+                        export_summary_markdown(evaluated_results, str(synthese_file), str(session_p))
                     print(f"[DONE] Synthèse de session et export CSV générés avec les notes calibrées et détection de similarités !", flush=True)
                 else:
-                    audit_cohort.audit_cohort(str(session_dir), output_csv=str(csv_file), output_md=str(synthese_file), sessions_xml=sessions_xml)
+                    try:
+                        audit_cohort.audit_cohort(str(session_dir), output_csv=str(csv_file), output_md=str(synthese_file), sessions_xml=sessions_xml, use_ai=use_ai_flag)
+                    except TypeError:
+                        audit_cohort.audit_cohort(str(session_dir), output_csv=str(csv_file), output_md=str(synthese_file), sessions_xml=sessions_xml)
             except Exception as e:
                 print(f"[WARN] Erreur lors de la génération de synthèse : {e}", flush=True)
     elif skill_dir.name == "eval-intropython":
@@ -2214,7 +2221,11 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
         from audit_cohort import analyze_cohort, export_csv, export_summary_markdown
         results = analyze_cohort(str(session_dir))
         export_csv(results, str(csv_file), cohort_dir=str(session_p))
-        export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p))
+        use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
+        try:
+            export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag)
+        except TypeError:
+            export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p))
         eligible_items = [
             item for item in sorted(session_p.iterdir())
             if item.is_dir() and item.name not in ("evaluations", ".hidden", "recovery", "codelab")
@@ -2275,10 +2286,14 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
                 except TypeError:
                     audit_cohort.export_csv(results, str(csv_file))
             if hasattr(audit_cohort, "export_summary_markdown"):
+                use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
                 try:
-                    audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p))
+                    audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag)
                 except TypeError:
-                    audit_cohort.export_summary_markdown(results, str(synthese_file))
+                    try:
+                        audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p))
+                    except TypeError:
+                        audit_cohort.export_summary_markdown(results, str(synthese_file))
         eligible_items = [
             item for item in sorted(session_p.iterdir())
             if item.is_dir() and item.name not in ("evaluations", ".hidden", "recovery", "codelab")

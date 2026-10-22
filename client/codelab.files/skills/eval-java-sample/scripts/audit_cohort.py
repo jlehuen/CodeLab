@@ -316,7 +316,7 @@ def build_cohort_clusters(results, suspicious_logins):
     lines.append("")
     return "\n".join(lines)
 
-def export_summary_markdown(results, out_path, cohort_dir=None):
+def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None):
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     suspicions = detect_cohort_plagiarism(cohort_dir) if cohort_dir else []
     if suspicions:
@@ -335,10 +335,37 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
     if not cohort_name:
         cohort_name = "Session"
 
-    has_ia = any(
-        str((r.get('ai_analysis') or {}).get('level', '')).startswith(('Élevé', 'Modéré'))
-        for r in results
-    )
+    # Résolution des paramètres d'évaluation
+    if use_ai is not None:
+        has_ia = bool(use_ai)
+    elif "--no-ai" in sys.argv or "--deterministic" in sys.argv:
+        has_ia = False
+    elif any("gemini" in str(r.get("eval_engine", "")).lower() for r in results):
+        has_ia = True
+    elif any("déterministe" in str(r.get("eval_engine", "")).lower() for r in results):
+        has_ia = False
+    else:
+        # Vérification sur les fiches de rapport individuelles si présentes sur disque
+        has_ia = False
+        search_dirs = []
+        if out_path:
+            search_dirs.append(Path(out_path).parent)
+        if cohort_dir:
+            search_dirs.append(Path(cohort_dir) / "evaluations")
+            search_dirs.append(Path(cohort_dir))
+        for sdir in search_dirs:
+            if sdir.is_dir():
+                for rep in sdir.glob("**/*_rapport.md"):
+                    try:
+                        content = rep.read_text(encoding="utf-8", errors="ignore")
+                        if "Moteur d'évaluation :** LLM Gemini" in content or "LLM Gemini" in content:
+                            has_ia = True
+                            break
+                    except Exception:
+                        pass
+            if has_ia:
+                break
+
     ia_status = "Active (Gemini)" if has_ia else "Inactive"
 
     md = []

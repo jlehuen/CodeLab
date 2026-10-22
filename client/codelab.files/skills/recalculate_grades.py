@@ -479,7 +479,22 @@ def recalculate_session(session_dir, weights_path=None):
             parent_name = Path(w_source).parent.name if w_source else ""
             skill_name = parent_name if parent_name.startswith("eval-") else "eval-introprog"
             
-            has_ia = any(st.get('ia_malus', 0) > 0 for st in students_updated)
+            # Détection de l'utilisation effective de Gemini IA lors de l'évaluation
+            has_ia = False
+            for st in students_updated:
+                s_login = st.get('login')
+                st_report = s_path / s_login / f"{s_login}_rapport.md"
+                if not st_report.exists():
+                    st_report = s_path / f"{s_login}_rapport.md"
+                if st_report.exists():
+                    try:
+                        txt = st_report.read_text(encoding="utf-8", errors="ignore")
+                        if "Moteur d'évaluation :** LLM Gemini" in txt or "LLM Gemini" in txt:
+                            has_ia = True
+                            break
+                    except Exception:
+                        pass
+
             ia_status = "Active (Gemini)" if has_ia else "Inactive"
             
             if "intropython" in skill_name:
