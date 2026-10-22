@@ -487,14 +487,15 @@ def recalculate_session(session_dir, weights_path=None):
 
             if "**Algorithme d'évaluation**" in s_content:
                 s_content = re.sub(
-                    r'\*\*Algorithme d\'évaluation\*\*[^\n]*',
-                    lambda m: algo_line,
-                    s_content
+                    r'(?:\n+)?\*\*Algorithme d\'évaluation\*\*[^\n]*',
+                    lambda m: "\n\n" + algo_line,
+                    s_content,
+                    count=1
                 )
             else:
                 s_content = re.sub(
-                    r'(\*\*Effectif audité\*\*[^\n]*)\n+',
-                    lambda m: m.group(1) + "\n" + algo_line + "\n\n",
+                    r'(\*\*Effectif audité\*\*[^\n]*)',
+                    lambda m: m.group(1) + "\n\n" + algo_line,
                     s_content,
                     count=1
                 )

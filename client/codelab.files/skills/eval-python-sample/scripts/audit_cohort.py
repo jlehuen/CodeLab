@@ -348,6 +348,7 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
     notes = [r.get("scores", {}).get("total", 0) for r in results]
     moyenne = (sum(notes) / len(notes)) if notes else 0.0
     md.append(f"**Effectif audité** : {len(results)} étudiants | **Moyenne** : **{moyenne:.2f}/20**")
+    md.append("")
     md.append(f"**Algorithme d'évaluation** : Compétence : `eval-python-sample` | Analyse IA : {ia_status} | Pondérations : `{w_str}` (Barème 6+8+4+2=20 pts)\n")
     md.append("---")
     md.append("")
