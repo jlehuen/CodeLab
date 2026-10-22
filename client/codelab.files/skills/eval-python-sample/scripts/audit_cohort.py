@@ -223,7 +223,7 @@ def build_cohort_clusters(results, suspicious_logins):
             'id': 'boss',
             'label': '**Les Boss**',
             'sub': 'Excellence & Autonomie',
-            'desc': 'Note $\\ge$ 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
+            'desc': 'Note >= 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
             'members': []
         },
         {
@@ -251,7 +251,7 @@ def build_cohort_clusters(results, suspicious_logins):
             'id': 'pirates',
             'label': '**Les Pirates**',
             'sub': 'Code Partagé & Copier-Coller',
-            'desc': 'Similarité directe (≥ 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
+            'desc': 'Similarité directe (>= 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
             'members': []
         }
     ]

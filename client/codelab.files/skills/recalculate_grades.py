@@ -443,7 +443,13 @@ def recalculate_session(session_dir, weights_path=None):
                 '⚡ **Les Casse-cou**': '**Les Casse-cou**',
                 '🛟 **Les Décrocheurs**': '**Les Décrocheurs**',
                 '🏴‍☠️ **Les Pirates**': '**Les Pirates**',
-                '🤖 **Les Cyborgs**': '**Les Cyborgs**'
+                '🤖 **Les Cyborgs**': '**Les Cyborgs**',
+                'Note $\\ge$ 14': 'Note >= 14',
+                'Note $\\le$': 'Note <=',
+                '$\\ge$': '>=',
+                '$\\le$': '<=',
+                '≥': '>=',
+                '≤': '<='
             }
             for e_old, e_new in emoji_cleanups.items():
                 s_content = s_content.replace(e_old, e_new)
@@ -556,7 +562,7 @@ def recalculate_session(session_dir, weights_path=None):
                     'id': 'boss',
                     'label': '**Les Boss**',
                     'sub': 'Excellence & Autonomie',
-                    'desc': 'Note $\\ge$ 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
+                    'desc': 'Note >= 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
                     'members': []
                 },
                 {
@@ -584,7 +590,7 @@ def recalculate_session(session_dir, weights_path=None):
                     'id': 'pirates',
                     'label': '**Les Pirates**',
                     'sub': 'Code Partagé & Copier-Coller',
-                    'desc': 'Similarité directe (≥ 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
+                    'desc': 'Similarité directe (>= 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
                     'members': []
                 }
             ]
