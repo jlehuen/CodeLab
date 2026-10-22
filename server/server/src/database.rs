@@ -989,6 +989,8 @@ pub fn simulate_group_change(
     new_group: &str,
     is_connected: bool,
 ) -> Result<GroupChangeSimulation, String> {
+    let is_empty_old = old_group.is_empty() || old_group == "--" || old_group == "none" || old_group == "(aucun)";
+
     // 1. Vérification de l'étudiant
     let (fullname, current_groups) = {
         let dico = USERS_DICO.read().unwrap();
@@ -996,7 +998,7 @@ pub fn simulate_group_change(
         if client.status != UserStatus::STUDENT {
             return Err(format!("L'utilisateur '{}' n'est pas un étudiant ({:?})", login, client.status));
         }
-        if !client.groups.contains(&old_group.to_string()) {
+        if !is_empty_old && !client.groups.contains(&old_group.to_string()) {
             return Err(format!("L'étudiant '{}' n'appartient pas au groupe '{}'", login, old_group));
         }
         (client.fullname.clone(), client.groups.clone())
@@ -1010,14 +1012,23 @@ pub fn simulate_group_change(
         }
     }
 
-    if old_group == new_group {
+    if !is_empty_old && old_group == new_group {
         return Err("Le nouveau groupe doit être différent de l'ancien groupe".to_string());
+    }
+    if is_empty_old && current_groups.contains(&new_group.to_string()) {
+        return Err(format!("L'étudiant '{}' appartient déjà au groupe '{}'", login, new_group));
     }
 
     // 3. Calcul des nouveaux groupes
     let mut resulting_groups = current_groups.clone();
-    if let Some(pos) = resulting_groups.iter().position(|g| g == old_group) {
-        resulting_groups[pos] = new_group.to_string();
+    if !is_empty_old {
+        if let Some(pos) = resulting_groups.iter().position(|g| g == old_group) {
+            resulting_groups[pos] = new_group.to_string();
+        } else {
+            resulting_groups.push(new_group.to_string());
+        }
+    } else {
+        resulting_groups.push(new_group.to_string());
     }
     resulting_groups.sort();
     resulting_groups.dedup();
@@ -1029,16 +1040,30 @@ pub fn simulate_group_change(
         let mut departed = Vec::new();
         let mut arrived = Vec::new();
 
-        let has_student = |session: &Session, groups: &[String]| -> bool {
-            if session.users.contains(&login.to_string()) {
+        let has_student = |session: &Session, groups: &[String], is_initial: bool| -> bool {
+            let in_groups = session.groups.iter().any(|g| groups.contains(g));
+            if in_groups {
                 return true;
             }
-            session.groups.iter().any(|g| groups.contains(g))
+            if session.users.contains(&login.to_string()) {
+                // Si l'étudiant était directement dans session.users sans groupe initial :
+                // - à l'état initial (is_initial), la session lui est rattachée
+                // - au nouvel état, si la session n'appartient pas au nouveau groupe,
+                //   elle devient "departed" pour proposer le déplacement des fichiers vers le groupe
+                if is_initial {
+                    return true;
+                } else if current_groups.is_empty() && is_empty_old {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+            false
         };
 
         for session in sessions_dico.values() {
-            let in_before = has_student(session, &current_groups);
-            let in_after = has_student(session, &resulting_groups);
+            let in_before = has_student(session, &current_groups, true);
+            let in_after = has_student(session, &resulting_groups, false);
 
             if in_before && in_after {
                 unchanged.push(session.id.clone());
@@ -1149,6 +1174,8 @@ pub fn apply_group_change(
     new_group: &str,
     moves: Vec<SessionMoveInput>,
 ) -> Result<GroupChangeResult, String> {
+    let is_empty_old = old_group.is_empty() || old_group == "--" || old_group == "none" || old_group == "(aucun)";
+
     // 1. Vérification de l'étudiant
     let resulting_groups = {
         let dico = USERS_DICO.read().unwrap();
@@ -1156,12 +1183,18 @@ pub fn apply_group_change(
         if client.status != UserStatus::STUDENT {
             return Err(format!("L'utilisateur '{}' n'est pas un étudiant", login));
         }
-        if !client.groups.contains(&old_group.to_string()) {
+        if !is_empty_old && !client.groups.contains(&old_group.to_string()) {
             return Err(format!("L'étudiant '{}' n'appartient pas au groupe '{}'", login, old_group));
         }
         let mut groups = client.groups.clone();
-        if let Some(pos) = groups.iter().position(|g| g == old_group) {
-            groups[pos] = new_group.to_string();
+        if !is_empty_old {
+            if let Some(pos) = groups.iter().position(|g| g == old_group) {
+                groups[pos] = new_group.to_string();
+            } else {
+                groups.push(new_group.to_string());
+            }
+        } else {
+            groups.push(new_group.to_string());
         }
         groups.sort();
         groups.dedup();
@@ -1267,6 +1300,12 @@ pub fn apply_group_change(
         login, old_group, new_group, CONFIG_XML
     );
 
+    let msg = if is_empty_old {
+        format!("Affectation au groupe {} réalisée avec succès pour l'étudiant {}", new_group, login)
+    } else {
+        format!("Groupe mis à jour avec succès ({} ➔ {}) et dossiers déplacés pour l'étudiant {}", old_group, new_group, login)
+    };
+
     Ok(GroupChangeResult {
         status: "success".to_string(),
         login: login.to_string(),
@@ -1276,11 +1315,144 @@ pub fn apply_group_change(
         moves: execution_results,
         disconnected: false,
         xml_saved: true,
-        message: format!(
-            "Groupe mis à jour avec succès ({} ➔ {}) et dossiers déplacés pour l'étudiant {}",
-            old_group, new_group, login
-        ),
+        message: msg,
     })
+}
+
+// Modifie l'état d'ouverture d'une session et persiste dans sessions.xml
+pub fn toggle_session_state(session_id: &str, openned: bool) -> Result<bool, String> {
+    {
+        let mut dico = SESSIONS_DICO.write().unwrap();
+        if let Some(session) = dico.get_mut(session_id) {
+            session.set_openned(&openned);
+        } else {
+            return Err(format!("Session '{}' introuvable", session_id));
+        }
+    }
+    save_database(CONFIG_XML);
+    log::info!("Session '{}' is now {}", session_id, if openned { "OPEN" } else { "CLOSED" });
+    Ok(openned)
+}
+
+// Ajoute un nouvel utilisateur et persiste dans sessions.xml
+pub fn add_user(
+    login: &str,
+    fullname: &str,
+    status_str: &str,
+    groups: Vec<String>,
+    mail: &str,
+) -> Result<UserDataAdmin, String> {
+    let clean_login = login.trim();
+    if clean_login.is_empty() {
+        return Err("Le login ne peut pas être vide".to_string());
+    }
+    if clean_login.contains(|c: char| !c.is_alphanumeric() && c != '_' && c != '-' && c != '.') {
+        return Err("Le login ne doit contenir que des lettres, chiffres, tirets, underscores ou points".to_string());
+    }
+
+    {
+        let dico = USERS_DICO.read().unwrap();
+        if dico.contains_key(clean_login) {
+            return Err(format!("Un utilisateur avec le login '{}' existe déjà", clean_login));
+        }
+    }
+
+    let status = match status_str.to_uppercase().as_str() {
+        "ADMIN" => UserStatus::ADMIN,
+        "TUTOR" => UserStatus::TUTOR,
+        "STUDENT" => UserStatus::STUDENT,
+        _ => return Err(format!("Statut invalide : '{}' (attendu: STUDENT, TUTOR ou ADMIN)", status_str)),
+    };
+
+    // Vérifier les groupes
+    {
+        let valid_groups = GROUPS_LIST.read().unwrap();
+        for g in &groups {
+            if !valid_groups.contains(g) {
+                return Err(format!("Le groupe '{}' n'existe pas", g));
+            }
+        }
+    }
+
+    let clean_fullname = if fullname.trim().is_empty() {
+        clean_login.to_string()
+    } else {
+        fullname.trim().to_string()
+    };
+
+    let clean_mail = if mail.trim().is_empty() {
+        "--".to_string()
+    } else {
+        mail.trim().to_string()
+    };
+
+    let new_client = ClientData {
+        login: clean_login.to_string(),
+        status: status.clone(),
+        groups: groups.clone(),
+        fullname: clean_fullname.clone(),
+        mail: clean_mail.clone(),
+        date: "--".to_string(),
+        addr: "--".to_string(),
+        session_id: "--".to_string(),
+        passwd: clean_login.to_string(), // Mot de passe initial = login
+        work_time: HashMap::new(),
+    };
+
+    {
+        let mut dico = USERS_DICO.write().unwrap();
+        dico.insert(clean_login.to_string(), new_client);
+    }
+
+    save_database(CONFIG_XML);
+    log::info!("Admin added user '{}' ({}) with status {:?}", clean_login, clean_fullname, status);
+
+    Ok(UserDataAdmin {
+        login: clean_login.to_string(),
+        fullname: clean_fullname,
+        status: status.to_string(),
+        groups: groups.join(", "),
+        mail: clean_mail,
+        date: "--".to_string(),
+        addr: "--".to_string(),
+        session_id: "--".to_string(),
+    })
+}
+
+// Supprime un utilisateur et met à jour sessions.xml
+pub fn delete_user(login: &str) -> Result<String, String> {
+    let clean_login = login.trim();
+    if clean_login.is_empty() {
+        return Err("Le login ne peut pas être vide".to_string());
+    }
+
+    // 1. Vérifier si l'utilisateur existe et n'est pas ADMIN
+    {
+        let dico = USERS_DICO.read().unwrap();
+        let user = dico.get(clean_login).ok_or_else(|| format!("Utilisateur '{}' introuvable", clean_login))?;
+        if user.status == UserStatus::ADMIN {
+            return Err("Impossible de supprimer un compte administrateur".to_string());
+        }
+    }
+
+    // 2. Retirer de USERS_DICO
+    {
+        let mut dico = USERS_DICO.write().unwrap();
+        dico.remove(clean_login);
+    }
+
+    // 3. Retirer des sessions où il était explicitement nommé
+    {
+        let mut sess_dico = SESSIONS_DICO.write().unwrap();
+        for session in sess_dico.values_mut() {
+            session.users.retain(|u| u != clean_login);
+        }
+    }
+
+    save_database(CONFIG_XML);
+    log::info!("Admin deleted user '{}'", clean_login);
+
+    Ok(format!("Utilisateur '{}' supprimé avec succès", clean_login))
 }
 
 #[cfg(test)]
@@ -1390,6 +1562,38 @@ mod tests {
         assert_eq!(sim.moves.len(), 1);
         assert_eq!(sim.moves[0].from_session, "Session_A");
         assert_eq!(sim.moves[0].to_session, Some("Session_C".to_string()));
+
+        // Test étudiant sans groupe (initialement rattaché directement à Session_A via users)
+        {
+            let mut users = USERS_DICO.write().unwrap();
+            users.insert("student_nogroup".to_string(), ClientData {
+                login: "student_nogroup".to_string(),
+                status: UserStatus::STUDENT,
+                groups: vec![],
+                fullname: "No Group Student".to_string(),
+                mail: "--".to_string(),
+                date: "--".to_string(),
+                addr: "--".to_string(),
+                passwd: "pass".to_string(),
+                session_id: "--".to_string(),
+                work_time: HashMap::new(),
+            });
+            let mut sessions = SESSIONS_DICO.write().unwrap();
+            if let Some(sess_a) = sessions.get_mut("Session_A") {
+                sess_a.users.push("student_nogroup".to_string());
+            }
+        }
+
+        // Affecter le groupe Group_2 à cet étudiant sans groupe
+        let sim_nogroup = simulate_group_change("student_nogroup", "", "Group_2", false).unwrap();
+        assert_eq!(sim_nogroup.login, "student_nogroup");
+        assert_eq!(sim_nogroup.new_group, "Group_2");
+        assert_eq!(sim_nogroup.resulting_groups, vec!["Group_2"]);
+        assert_eq!(sim_nogroup.departed_sessions, vec!["Session_A"]);
+        assert_eq!(sim_nogroup.arrived_sessions, vec!["Session_B"]);
+        assert_eq!(sim_nogroup.moves.len(), 1);
+        assert_eq!(sim_nogroup.moves[0].from_session, "Session_A");
+        assert_eq!(sim_nogroup.moves[0].to_session, Some("Session_B".to_string()));
     }
 
     #[test]
@@ -1534,5 +1738,56 @@ mod tests {
         // Nettoyage
         let _ = fs::remove_dir_all(format!("{}/Session_Dst", PROG_DIR));
         let _ = fs::remove_dir_all(format!("{}/Session_Src", PROG_DIR));
+    }
+
+    #[test]
+    fn test_toggle_session_state() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        {
+            let mut sessions = SESSIONS_DICO.write().unwrap();
+            sessions.insert("Session_Toggle".to_string(), Session {
+                id: "Session_Toggle".to_string(),
+                openned: false,
+                groups: vec![],
+                users: vec![],
+            });
+        }
+
+        let res = toggle_session_state("Session_Toggle", true).unwrap();
+        assert!(res);
+        assert!(SESSIONS_DICO.read().unwrap().get("Session_Toggle").unwrap().openned);
+
+        let res = toggle_session_state("Session_Toggle", false).unwrap();
+        assert!(!res);
+        assert!(!SESSIONS_DICO.read().unwrap().get("Session_Toggle").unwrap().openned);
+    }
+
+    #[test]
+    fn test_add_and_delete_user() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        {
+            let mut groups = GROUPS_LIST.write().unwrap();
+            if !groups.contains(&"Group_Test".to_string()) {
+                groups.push("Group_Test".to_string());
+            }
+        }
+
+        // 1. Ajouter un utilisateur
+        let user = add_user("new_student_test", "Alice Test", "STUDENT", vec!["Group_Test".to_string()], "alice@test.fr").unwrap();
+        assert_eq!(user.login, "new_student_test");
+        assert_eq!(user.fullname, "Alice Test");
+        assert_eq!(user.status, "STUDENT");
+
+        // Vérifier dans le dictionnaire
+        assert!(check_login("new_student_test"));
+
+        // 2. Erreur si login doublon
+        let err = add_user("new_student_test", "Alice Bis", "STUDENT", vec![], "");
+        assert!(err.is_err());
+
+        // 3. Supprimer l'utilisateur
+        let del_res = delete_user("new_student_test").unwrap();
+        assert!(del_res.contains("supprimé avec succès"));
+        assert!(!check_login("new_student_test"));
     }
 }

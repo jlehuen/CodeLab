@@ -377,6 +377,7 @@ La liste des groupes, sessions et utilisateurs autorisés est déclarée dans `s
 Depuis le dossier `server/` :
 - `./run-server.sh` : démarrage du serveur en tâche de fond avec contrôle de port.
 - `./kill-server.sh` : arrêt propre du service avec finalisation des écritures sur disque et déconnexion ordonnée des clients.
+- `./update-server.sh` : synchronisation incrémentale sécurisée des fichiers modifiés vers le serveur distant avec préservation stricte des bases de données, des fichiers XML et des sessions étudiantes.
 
 > 📖 **Documentation complète** : Pour les détails techniques avancés (architecture asynchrone Tokio, configuration SMTP des alertes, gestion des timeouts, rotation automatique des sauvegardes et conformité RGPD), consultez le [manuel complet du serveur](server/README.md).
 

@@ -130,3 +130,78 @@ pub fn print_properties() {
         println!("No configuration loaded");
     }
 }
+
+// ----------------------------------------------------------------------------
+// Modification du mot de passe administrateur (mise à jour RAM + persistance)
+// ----------------------------------------------------------------------------
+
+pub fn set_admin_password_hash(new_hash: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // 1. Mise à jour dans CONFIG en mémoire vive
+    {
+        let mut config_guard = CONFIG.write().unwrap();
+        if let Some(ref mut toml_val) = *config_guard {
+            if let Some(table) = toml_val.as_table_mut() {
+                if let Some(admin_val) = table.get_mut("admin") {
+                    if let Some(admin_table) = admin_val.as_table_mut() {
+                        admin_table.insert("password_hash".to_string(), toml::Value::String(new_hash.to_string()));
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Persistance dans config/server.properties
+    let config_path = crate::constants::CONFIG_FILE;
+    let file_path = if std::path::Path::new(config_path).exists() {
+        config_path
+    } else if std::path::Path::new(crate::constants::CONFIG_FILE_EXAMPLE).exists() {
+        crate::constants::CONFIG_FILE_EXAMPLE
+    } else {
+        config_path
+    };
+
+    let content = fs::read_to_string(file_path)?;
+    let mut in_admin_section = false;
+    let mut replaced = false;
+    let mut new_lines = Vec::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            in_admin_section = trimmed == "[admin]";
+        }
+        if in_admin_section && trimmed.starts_with("password_hash") && trimmed.contains('=') {
+            new_lines.push(format!("password_hash = \"{}\"", new_hash));
+            replaced = true;
+        } else {
+            new_lines.push(line.to_string());
+        }
+    }
+
+    if !replaced {
+        let mut final_lines = Vec::new();
+        let mut inserted = false;
+        for line in new_lines {
+            let trimmed = line.trim();
+            if trimmed.starts_with('[') && trimmed.ends_with(']') && trimmed == "[admin]" {
+                final_lines.push(line);
+                final_lines.push(format!("password_hash = \"{}\"", new_hash));
+                inserted = true;
+            } else {
+                final_lines.push(line);
+            }
+        }
+        if !inserted {
+            final_lines.push("\n[admin]".to_string());
+            final_lines.push(format!("password_hash = \"{}\"", new_hash));
+        }
+        new_lines = final_lines;
+    }
+
+    // Backup daté ou .bak
+    let _ = fs::copy(file_path, format!("{}.bak", file_path));
+    fs::write(file_path, new_lines.join("\n") + "\n")?;
+    log::info!("Admin password hash updated successfully in {} and in memory", file_path);
+
+    Ok(())
+}

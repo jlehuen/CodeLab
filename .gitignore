@@ -55,7 +55,6 @@ server/compile-server.sh
 server/get-log.command
 server/install-univ.sh
 server/update-server.sh
-server/scripts-server/
 server/README.TXT
 server/server/archive/
 

@@ -335,7 +335,7 @@ function updateSessionsTable() {
     const tbody = document.querySelector('#sessionsTable tbody');
     if (!tbody || allData.sessions.length === 0) {
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #7f8c8d;">Aucune session trouvée</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #7f8c8d;">Aucune session trouvée</td></tr>';
         }
         return;
     }
@@ -347,6 +347,10 @@ function updateSessionsTable() {
     tbody.innerHTML = sortedSessions.map(session => {
         const statusClass = session.openned ? 'session-open' : 'session-closed';
         const statusText = session.openned ? 'Ouverte' : 'Fermée';
+        const toggleBtnClass = session.openned ? 'btn-close-session' : 'btn-open-session';
+        const toggleBtnText = session.openned ? 'Fermer' : 'Ouvrir';
+        const toggleBtnIcon = session.openned ? '🔒' : '🔓';
+        const escapedSessionId = (session.id || '').replace(/'/g, "\\'");
         
         const groupsBadges = session.groups && session.groups.trim()
             ? session.groups.split(' ').filter(g => g.trim())
@@ -360,13 +364,67 @@ function updateSessionsTable() {
         
         return `<tr>
             <td><strong>${session.id}</strong></td>
-            <td><span class="${statusClass}">${statusText}</span></td>
+            <td><span class="${statusClass} clickable-status" onclick="toggleSessionState('${escapedSessionId}', ${session.openned})" title="Cliquer pour basculer l'état">${statusText}</span></td>
             <td>${groupsBadges}</td>
             <td>${usersBadges}</td>
             <td>${session.total_users || 0}</td>
             <td>${session.connected_users || 0}</td>
+            <td class="action-cell">
+                <button class="btn ${toggleBtnClass}" 
+                        onclick="toggleSessionState('${escapedSessionId}', ${session.openned})"
+                        ${serverStopped ? 'disabled' : ''}
+                        title="${session.openned ? 'Fermer la session aux étudiants' : 'Ouvrir la session aux étudiants'}">
+                    ${toggleBtnIcon} ${toggleBtnText}
+                </button>
+            </td>
         </tr>`;
     }).join('');
+}
+
+// Bascule l'état ouvert/fermé d'une session
+async function toggleSessionState(sessionId, currentState) {
+    if (serverStopped) return;
+    
+    const targetState = !currentState;
+    const actionLabel = targetState ? "ouvrir" : "fermer";
+    
+    if (!confirm(`Voulez-vous vraiment ${actionLabel} la session '${sessionId}' ?`)) {
+        return;
+    }
+    
+    debugLog(`Demande de basculement de la session ${sessionId} vers ${targetState ? 'OUVERTE' : 'FERMÉE'}...`, 'info');
+    
+    try {
+        const response = await fetch('/api/sessions/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                openned: targetState
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'success') {
+            debugLog(`Session ${sessionId} : ${result.message}`, 'success');
+            // Mettre à jour localement la session
+            const sess = allData.sessions.find(s => s.id === sessionId);
+            if (sess) {
+                sess.openned = targetState;
+            }
+            updateSessionsTable();
+            // Recharger aussi le dashboard
+            await updateDashboard();
+        } else {
+            const err = result.message || 'Erreur inconnue';
+            alert(`Erreur : ${err}`);
+            debugLog(`Erreur basculement session ${sessionId}: ${err}`, 'error');
+        }
+    } catch (e) {
+        alert(`Exception réseau : ${e.message}`);
+        debugLog(`Exception basculement session: ${e.message}`, 'error');
+    }
 }
 
 // Mise à jour de la table des clients connectés
@@ -678,6 +736,14 @@ function updateUsersTable() {
                 Groupe
             </button>` : '';
 
+        const deleteBtnHtml = user.status !== 'ADMIN' ? `
+            <button class="btn btn-delete-user" 
+                    onclick="deleteUserAccount('${escapedLogin}', '${escapedFullname}')" 
+                    ${serverStopped ? 'disabled' : ''} 
+                    title="Supprimer définitivement cet utilisateur">
+                🗑️
+            </button>` : '';
+
         return `<tr>
             <td><strong>${user.login}</strong></td>
             <td>${user.fullname || user.login}</td>
@@ -695,6 +761,7 @@ function updateUsersTable() {
                     Reset
                 </button>
                 ${groupBtnHtml}
+                ${deleteBtnHtml}
             </td>
         </tr>`;
     }).join('');
@@ -746,25 +813,55 @@ async function openChangeGroupModal(login) {
 
     // Déterminer la liste des groupes actuels de l'étudiant
     let studentGroups = [];
-    if (student.groups && student.groups !== '--') {
+    if (student.groups && student.groups !== '--' && student.groups.trim() !== '') {
         studentGroups = student.groups.split(',').map(g => g.trim()).filter(g => g);
     }
+    const hasCurrentGroups = studentGroups.length > 0;
     
     // Badges de groupes actuels
-    const groupsBadges = studentGroups.length > 0 
+    const groupsBadges = hasCurrentGroups 
         ? studentGroups.map(g => `<span class="badge">${g}</span>`).join(' ')
-        : '<em>Aucun groupe assigné</em>';
+        : '<em>Aucun groupe assigné (ajout direct dans session)</em>';
     document.getElementById('modalCurrentGroups').innerHTML = groupsBadges;
+
+    // Adapter les libellés de la modale
+    const modalTitleElem = document.getElementById('modalTitleText');
+    const oldGroupLabel = document.getElementById('oldGroupLabel');
+    const newGroupLabel = document.getElementById('newGroupLabel');
+    if (modalTitleElem) {
+        modalTitleElem.textContent = hasCurrentGroups 
+            ? "Changement de groupe d'un étudiant" 
+            : "Affectation d'un groupe à l'étudiant";
+    }
+    if (oldGroupLabel) {
+        oldGroupLabel.textContent = hasCurrentGroups 
+            ? "Groupe à remplacer :" 
+            : "Groupe d'origine :";
+    }
+    if (newGroupLabel) {
+        newGroupLabel.textContent = hasCurrentGroups 
+            ? "Remplacer par le nouveau groupe :" 
+            : "Affecter au groupe :";
+    }
 
     // Remplir le sélecteur du groupe d'origine à remplacer
     const oldGroupSelect = document.getElementById('oldGroupSelect');
     oldGroupSelect.innerHTML = '';
-    studentGroups.forEach(g => {
+    if (hasCurrentGroups) {
+        oldGroupSelect.disabled = false;
+        studentGroups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.textContent = g;
+            oldGroupSelect.appendChild(opt);
+        });
+    } else {
+        oldGroupSelect.disabled = true;
         const opt = document.createElement('option');
-        opt.value = g;
-        opt.textContent = g;
+        opt.value = '';
+        opt.textContent = '(aucun groupe actuellement)';
         oldGroupSelect.appendChild(opt);
-    });
+    }
 
     // Remplir le sélecteur du nouveau groupe cible
     const newGroupSelect = document.getElementById('newGroupSelect');
@@ -777,13 +874,15 @@ async function openChangeGroupModal(login) {
     });
 
     // Sélectionner par défaut le premier groupe cible différent du groupe actuel
-    if (oldGroupSelect.value && newGroupSelect.options.length > 0) {
+    if (hasCurrentGroups && oldGroupSelect.value && newGroupSelect.options.length > 0) {
         for (let i = 0; i < newGroupSelect.options.length; i++) {
             if (newGroupSelect.options[i].value !== oldGroupSelect.value) {
                 newGroupSelect.selectedIndex = i;
                 break;
             }
         }
+    } else if (!hasCurrentGroups && newGroupSelect.options.length > 0) {
+        newGroupSelect.selectedIndex = 0;
     }
 
     // Réinitialiser la zone de simulation
@@ -815,13 +914,19 @@ async function onGroupSelectionChange() {
     const container = document.getElementById('simulationContainer');
     const loading = document.getElementById('simulationLoading');
 
-    if (!oldGroup || !newGroup) {
+    let studentGroups = [];
+    if (currentModalStudent.groups && currentModalStudent.groups !== '--' && currentModalStudent.groups.trim() !== '') {
+        studentGroups = currentModalStudent.groups.split(',').map(g => g.trim()).filter(g => g);
+    }
+    const hasCurrentGroups = studentGroups.length > 0;
+
+    if (!newGroup || (hasCurrentGroups && !oldGroup)) {
         container.style.display = 'none';
         applyBtn.disabled = true;
         return;
     }
 
-    if (oldGroup === newGroup) {
+    if (hasCurrentGroups && oldGroup === newGroup) {
         container.style.display = 'block';
         alertBox.className = 'alert-box alert-warning';
         alertBox.textContent = '⚠️ Le nouveau groupe doit être différent du groupe d\'origine.';
@@ -1024,8 +1129,13 @@ async function applyGroupChange() {
         ? moves.map(m => `• ${m.from} ➔ ${m.to}`).join('\n')
         : '• Aucun dossier à déplacer';
 
-    const confirmMsg = `Confirmez-vous le changement de groupe pour ${currentModalStudent.fullname || currentModalStudent.login} (${currentModalStudent.login}) ?\n\n` +
-        `Remplacement : ${oldGroup} ➔ ${newGroup}\n\n` +
+    const isNewAssignment = !oldGroup;
+    const actionDesc = isNewAssignment 
+        ? `Affectation au groupe : ${newGroup}` 
+        : `Remplacement : ${oldGroup} ➔ ${newGroup}`;
+
+    const confirmMsg = `Confirmez-vous l'opération pour ${currentModalStudent.fullname || currentModalStudent.login} (${currentModalStudent.login}) ?\n\n` +
+        `${actionDesc}\n\n` +
         `Déplacement des dossiers :\n${movesSummary}\n\n` +
         `Le fichier sessions.xml sera mis à jour avec une sauvegarde datée (.bak).`;
 
@@ -1132,6 +1242,243 @@ function confirmShutdown() {
 function testDashboardLive() {
     debugLog('Test Dashboard Live démarré', 'info');
     updateDashboard();
+}
+
+// ============================================================================
+// Gestion de la modale d'ajout d'utilisateur
+// ============================================================================
+
+async function openAddUserModal() {
+    debugLog("Ouverture de la modale d'ajout d'utilisateur", 'info');
+    
+    // Réinitialiser le formulaire
+    document.getElementById('addUserForm').reset();
+    document.getElementById('addUserError').style.display = 'none';
+    document.getElementById('submitAddUserBtn').disabled = false;
+    document.getElementById('submitAddUserBtn').textContent = "Créer l'utilisateur";
+
+    // Charger les groupes si besoin
+    if (!allData.groups || allData.groups.length === 0) {
+        await loadGroupsData();
+    }
+
+    // Peupler les cases à cocher des groupes
+    const groupsContainer = document.getElementById('newUserGroupsList');
+    if (groupsContainer) {
+        groupsContainer.innerHTML = '';
+        if (allData.groups && allData.groups.length > 0) {
+            allData.groups.forEach(g => {
+                const label = document.createElement('label');
+                label.className = 'group-checkbox-item';
+                label.innerHTML = `<input type="checkbox" name="newUserGroup" value="${g}"> <span>${g}</span>`;
+                groupsContainer.appendChild(label);
+            });
+        } else {
+            groupsContainer.innerHTML = '<span style="color: #7f8c8d; font-size: 12px;">Aucun groupe disponible</span>';
+        }
+    }
+
+    onNewUserStatusChange();
+    document.getElementById('addUserModal').style.display = 'flex';
+}
+
+function closeAddUserModal() {
+    document.getElementById('addUserModal').style.display = 'none';
+}
+
+function onNewUserStatusChange() {
+    const status = document.getElementById('new_user_status').value;
+    const groupsRow = document.getElementById('newUserGroupsRow');
+    if (groupsRow) {
+        groupsRow.style.display = 'block';
+    }
+}
+
+async function submitAddUser() {
+    const login = document.getElementById('new_user_login').value.trim();
+    const fullname = document.getElementById('new_user_fullname').value.trim();
+    const status = document.getElementById('new_user_status').value;
+    const mail = document.getElementById('new_user_mail').value.trim();
+    const errBox = document.getElementById('addUserError');
+    const submitBtn = document.getElementById('submitAddUserBtn');
+
+    if (!login) {
+        errBox.textContent = "Le login est obligatoire.";
+        errBox.style.display = 'block';
+        return;
+    }
+
+    // Récupérer les groupes cochés
+    const checkedGroups = [];
+    document.querySelectorAll('input[name="newUserGroup"]:checked').forEach(cb => {
+        checkedGroups.push(cb.value);
+    });
+
+    errBox.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Création en cours...";
+
+    try {
+        const response = await fetch('/api/users/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                login: login,
+                fullname: fullname,
+                status: status,
+                groups: checkedGroups,
+                mail: mail
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            debugLog(`Utilisateur '${login}' créé avec succès`, 'success');
+            alert(`✅ ${result.message}`);
+            closeAddUserModal();
+            // Recharger les données
+            await loadUsersData();
+            await loadSessionsData();
+            await updateDashboard();
+        } else {
+            const err = result.message || 'Erreur lors de la création';
+            errBox.textContent = `Erreur : ${err}`;
+            errBox.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Créer l'utilisateur";
+        }
+    } catch (e) {
+        errBox.textContent = `Exception réseau : ${e.message}`;
+        errBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Créer l'utilisateur";
+    }
+}
+
+// Supprime un compte utilisateur
+async function deleteUserAccount(login, fullname) {
+    if (serverStopped) return;
+
+    const displayName = fullname && fullname !== login ? `${fullname} (${login})` : login;
+    if (!confirm(`⚠️ Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur '${displayName}' ?\n\nCette action retirera le compte de sessions.xml (un backup daté .bak sera créé sur le serveur).\nLes fichiers de l'étudiant dans sessions/ sont conservés.`)) {
+        return;
+    }
+
+    debugLog(`Demande de suppression de l'utilisateur ${login}...`, 'info');
+
+    try {
+        const response = await fetch('/api/users/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login: login })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            debugLog(`Utilisateur ${login} supprimé : ${result.message}`, 'success');
+            alert(`✅ ${result.message}`);
+            // Recharger les données
+            await loadUsersData();
+            await loadSessionsData();
+            await updateDashboard();
+        } else {
+            const err = result.message || 'Erreur inconnue';
+            alert(`Erreur lors de la suppression : ${err}`);
+            debugLog(`Erreur suppression ${login}: ${err}`, 'error');
+        }
+    } catch (e) {
+        alert(`Exception réseau : ${e.message}`);
+        debugLog(`Exception suppression: ${e.message}`, 'error');
+    }
+}
+
+// ============================================================================
+// Gestion de la modale de modification du mot de passe administrateur
+// ============================================================================
+
+function openChangeAdminPasswordModal() {
+    debugLog("Ouverture de la modale de modification du mot de passe admin", 'info');
+    document.getElementById('changeAdminPasswordForm').reset();
+    document.getElementById('changeAdminPasswordError').style.display = 'none';
+    document.getElementById('toggleShowAdminPasswords').checked = false;
+    toggleAdminPasswordVisibility();
+    document.getElementById('submitAdminPasswordBtn').disabled = false;
+    document.getElementById('submitAdminPasswordBtn').textContent = "Enregistrer le nouveau mot de passe";
+    document.getElementById('changeAdminPasswordModal').style.display = 'flex';
+}
+
+function closeChangeAdminPasswordModal() {
+    document.getElementById('changeAdminPasswordModal').style.display = 'none';
+}
+
+function toggleAdminPasswordVisibility() {
+    const show = document.getElementById('toggleShowAdminPasswords').checked;
+    const type = show ? 'text' : 'password';
+    document.getElementById('current_admin_password').type = type;
+    document.getElementById('new_admin_password').type = type;
+    document.getElementById('confirm_admin_password').type = type;
+}
+
+async function submitChangeAdminPassword() {
+    const currentPass = document.getElementById('current_admin_password').value;
+    const newPass = document.getElementById('new_admin_password').value;
+    const confirmPass = document.getElementById('confirm_admin_password').value;
+    const errBox = document.getElementById('changeAdminPasswordError');
+    const submitBtn = document.getElementById('submitAdminPasswordBtn');
+
+    if (!currentPass) {
+        errBox.textContent = "Veuillez saisir votre mot de passe administrateur actuel.";
+        errBox.style.display = 'block';
+        return;
+    }
+
+    if (!newPass || newPass.length < 4) {
+        errBox.textContent = "Le nouveau mot de passe doit comporter au moins 4 caractères.";
+        errBox.style.display = 'block';
+        return;
+    }
+
+    if (newPass !== confirmPass) {
+        errBox.textContent = "La confirmation ne correspond pas au nouveau mot de passe.";
+        errBox.style.display = 'block';
+        return;
+    }
+
+    errBox.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Mise à jour en cours...";
+
+    try {
+        const response = await fetch('/api/admin/change_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                current_password: currentPass,
+                new_password: newPass
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            debugLog("Mot de passe administrateur mis à jour avec succès", 'success');
+            alert(`✅ ${result.message}\n\nPensez à utiliser votre nouveau mot de passe lors de vos prochaines connexions.`);
+            closeChangeAdminPasswordModal();
+        } else {
+            const err = result.message || 'Erreur lors de la modification du mot de passe';
+            errBox.textContent = `Erreur : ${err}`;
+            errBox.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Enregistrer le nouveau mot de passe";
+        }
+    } catch (e) {
+        errBox.textContent = `Exception réseau : ${e.message}`;
+        errBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Enregistrer le nouveau mot de passe";
+    }
 }
 
 // Initialisation

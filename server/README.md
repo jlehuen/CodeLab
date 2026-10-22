@@ -18,6 +18,7 @@ Le **serveur CodeLab** est un service réseau haute performance écrit en **Rust
    - [Lancement et arrêt](#lancement-et-arrêt)
 6. [Tableau de Bord d'Administration Web](#6-tableau-de-bord-dadministration-web)
 7. [Sauvegardes, Logs et Sécurité RGPD](#7-sauvegardes-logs-et-sécurité-rgpd)
+8. [Déploiement et Mise à Jour Distante (`update-server.sh`)](#8-déploiement-et-mise-à-jour-distante-update-serversh)
 
 ---
 
@@ -320,3 +321,71 @@ Le niveau de verbosité et la rotation des journaux sont gérés via le moteur `
 > Les listes contenant des noms réels, matricules ou emails institutionnels d'étudiants relèvent de la réglementation RGPD.
 > - Le fichier `.gitignore` du projet est configuré pour **exclure automatiquement** les dossiers contenant des données sensibles (notamment `server/config/data_*/` et les logs).
 > - Seul le dossier [server/config/data/](file:///Users/lehuen/dev/codelab/server/server/config/data/) avec des étudiants fictifs (`test01`, `test02`...) doit être conservé dans le dépôt public à titre d'exemple et de test.
+
+---
+
+## 8. Déploiement et Mise à Jour Distante (`update-server.sh`)
+
+Le script [update-server.sh](file:///Users/lehuen/dev/codelab/server/update-server.sh), situé directement dans le dossier `server/`, permet de synchroniser de façon incrémentale et sécurisée l'ensemble des fichiers modifiés depuis votre environnement local vers le serveur distant universitaire (`codelab@codelab-serv.univ-lemans.fr:~/codelab-server`).
+
+### Principe et Sécurités Absolues
+
+Le script s'appuie sur `rsync` avec des règles d'exclusion strictes garantissant qu'aucune donnée de production ne puisse être altérée :
+
+- 🔒 **Bases de données sanctuarisées** : exclusion totale de `*.db`, `*.sqlite*`.
+- 🔒 **Fichiers XML préservés** : exclusion de tous les fichiers `*.xml` et `*.xml.bak` (notamment `sessions.xml` contenant les comptes actifs, sessions et tokens du serveur).
+- 🔒 **Production des étudiants protégée** : exclusion complète du dossier `sessions/` (aucun code ou dossier étudiant n'est touché ni supprimé).
+- 🔒 **Configuration de production intacte** : exclusion de `server.properties` et `*.properties.local` pour conserver les ports, mots de passe maîtres et paramétrages SMTP de production.
+- 🔒 **Artefacts de build exclus** : exclusion de `target/` (évite d'envoyer des gigaoctets de binaires macOS incompatibles avec l'environnement Linux du serveur), ainsi que de `logs/`, `temp/`, `.DS_Store` et `.git*`.
+
+### Périmètre des fichiers synchronisés
+
+Dès qu'un fichier est modifié en local, il est automatiquement pris en charge :
+1. **Application Rust (`server/`)** vers `~/codelab-server/server/` :
+   - Fichiers sources Rust (`src/**/*.rs`)
+   - Manifestes Cargo (`Cargo.toml`, `Cargo.lock`)
+   - Interface Web d'administration (`templates/**/*.{html,css,js}`)
+   - Fichiers statiques (`static/**`)
+   - Définition de structure XML (`config/sessions.dtd`)
+   - Scripts d'administration et de validation (`config/xml-validator.sh`, `config/data/**`)
+2. **Scripts de contrôle (`scripts-server/`)** vers `~/codelab-server/` :
+   - Scripts de gestion du service (`compile-server.sh`, `run-server.sh`, `kill-server.sh`, `install-server.sh`, `get-log.sh`).
+
+### Utilisation et Options
+
+```bash
+cd /Users/lehuen/dev/codelab/server
+
+# Mise à jour standard (synchronise puis ouvre la session SSH)
+./update-server.sh
+
+# Simulation / Dry-run (affiche les fichiers sans rien transférer)
+./update-server.sh --dry-run
+# ou
+./update-server.sh -n
+
+# Mise à jour sans ouvrir de session SSH interactive
+./update-server.sh --no-ssh
+# ou
+./update-server.sh -s
+
+# Afficher l'aide
+./update-server.sh --help
+```
+
+### Workflow recommandé de mise à jour
+
+1. **Vérifier les modifications à envoyer (simulation)** :
+   ```bash
+   ./update-server.sh -n
+   ```
+2. **Lancer la mise à jour** :
+   ```bash
+   ./update-server.sh
+   ```
+3. **Recompiler et redémarrer sur le serveur** (dans la session SSH ouverte automatiquement) :
+   ```bash
+   ./compile-server.sh
+   ./kill-server.sh
+   ./run-server.sh
+   ```

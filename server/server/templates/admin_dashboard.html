@@ -26,7 +26,11 @@
             <div class="status-info">
                 <span id="lastRefresh">Initialisation...</span>
             </div>
-            <div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button type="button" class="btn btn-secondary" onclick="openChangeAdminPasswordModal()" style="font-size: 13px; padding: 5px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>🔑</span>
+                    <span>Mot de passe admin</span>
+                </button>
                 <span id="connectionStatus" class="connection-status">🔄 Connexion...</span>
             </div>
         </div>
@@ -95,8 +99,12 @@
         
         <!-- Tab USERS_DICO -->
 		<div id="users" class="tab-content">
-			<div class="search-filter">
-				<input type="text" class="search-input" id="userSearch" placeholder="🔍 Rechercher un utilisateur...">
+			<div class="search-filter" style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+				<input type="text" class="search-input" id="userSearch" placeholder="🔍 Rechercher un utilisateur..." style="flex: 1;">
+				<button type="button" class="btn btn-success" onclick="openAddUserModal()" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
+					<span>➕</span>
+					<span>Nouvel utilisateur</span>
+				</button>
 			</div>
 			
 			<div class="data-table">
@@ -137,10 +145,11 @@
                             <th class="sortable" data-column="users">Utilisateurs spécifiques</th>
                             <th class="sortable" data-column="total_users">Total utilisateurs</th>
                             <th class="sortable" data-column="connected_users">Connectés maintenant</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="6" style="text-align: center; padding: 20px;">Chargement automatique...</td></tr>
+                        <tr><td colspan="7" style="text-align: center; padding: 20px;">Chargement automatique...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -178,6 +187,7 @@
                 <button class="btn btn-warning" onclick="testDashboardLive()"> Test Dashboard Live</button>
                 <button class="btn btn-refresh" onclick="updateDashboard()">Forcer la mise à jour</button>
                 <button class="btn btn-success" id="autoRefreshBtn" onclick="toggleAutoRefresh()">Démarrer auto-refresh</button>
+                <button class="btn btn-primary" onclick="openChangeAdminPasswordModal()" style="background: #8e44ad; color: white;">🔑 Changer le mot de passe admin</button>
                 <button class="btn btn-danger" id="shutdownBtn" onclick="confirmShutdown()">Arrêter le serveur</button>
             </div>
         </div>
@@ -189,7 +199,7 @@
             <div class="modal-header">
                 <h3 id="modalTitle">
                     <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <span>Changement de groupe d'un étudiant</span>
+                    <span id="modalTitleText">Changement de groupe d'un étudiant</span>
                 </h3>
                 <button class="modal-close-btn" onclick="closeChangeGroupModal()">&times;</button>
             </div>
@@ -200,16 +210,16 @@
                     <div style="margin-top: 6px;"><strong>Groupes actuels :</strong> <span id="modalCurrentGroups">-</span></div>
                 </div>
 
-                <!-- Formulaire Option A : Remplacer un groupe existant -->
+                <!-- Formulaire Option A : Remplacer un groupe existant ou affecter un groupe -->
                 <div class="group-select-form">
                     <div class="form-row">
-                        <label for="oldGroupSelect"><strong>Groupe à remplacer :</strong></label>
+                        <label for="oldGroupSelect"><strong id="oldGroupLabel">Groupe à remplacer :</strong></label>
                         <select id="oldGroupSelect" onchange="onGroupSelectionChange()">
                             <!-- Rempli dynamiquement -->
                         </select>
                     </div>
                     <div class="form-row">
-                        <label for="newGroupSelect"><strong>Remplacer par le nouveau groupe :</strong></label>
+                        <label for="newGroupSelect"><strong id="newGroupLabel">Remplacer par le nouveau groupe :</strong></label>
                         <select id="newGroupSelect" onchange="onGroupSelectionChange()">
                             <!-- Rempli dynamiquement -->
                         </select>
@@ -278,6 +288,98 @@
                 <button class="btn btn-primary" id="applyGroupChangeBtn" onclick="applyGroupChange()" disabled>
                     Valider le transfert
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boîte de dialogue Modale : Ajout d'un nouvel utilisateur -->
+    <div id="addUserModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-card" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3>
+                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Ajouter un nouvel utilisateur</span>
+                </h3>
+                <button class="modal-close-btn" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm" onsubmit="event.preventDefault(); submitAddUser();">
+                    <div class="form-row">
+                        <label for="new_user_login"><strong>Login * :</strong></label>
+                        <input type="text" id="new_user_login" required placeholder="ex: pdupont ou 26001234" class="search-input" style="width: 100%;">
+                    </div>
+                    <div class="form-row" style="margin-top: 12px;">
+                        <label for="new_user_fullname"><strong>Nom complet :</strong></label>
+                        <input type="text" id="new_user_fullname" placeholder="ex: Pierre Dupont" class="search-input" style="width: 100%;">
+                    </div>
+                    <div class="form-row" style="margin-top: 12px;">
+                        <label for="new_user_status"><strong>Statut * :</strong></label>
+                        <select id="new_user_status" class="search-input" style="width: 100%;" onchange="onNewUserStatusChange()">
+                            <option value="STUDENT" selected>Étudiant (STUDENT)</option>
+                            <option value="TUTOR">Tuteur / Enseignant (TUTOR)</option>
+                            <option value="ADMIN">Administrateur (ADMIN)</option>
+                        </select>
+                    </div>
+                    <div class="form-row" id="newUserGroupsRow" style="margin-top: 12px;">
+                        <label><strong>Groupes autorisés :</strong></label>
+                        <div id="newUserGroupsList" style="max-height: 120px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 8px; background: #fafafa; display: flex; flex-wrap: wrap; gap: 8px;">
+                            <!-- Cases à cocher des groupes générées dynamiquement -->
+                        </div>
+                    </div>
+                    <div class="form-row" style="margin-top: 12px;">
+                        <label for="new_user_mail"><strong>Email :</strong></label>
+                        <input type="email" id="new_user_mail" placeholder="ex: pierre.dupont@univ-lemans.fr" class="search-input" style="width: 100%;">
+                    </div>
+                    <div style="margin-top: 12px; font-size: 12px; color: #7f8c8d; background: #eef2f7; padding: 8px; border-radius: 4px;">
+                        ℹ️ <strong>Mot de passe initial :</strong> par défaut, le mot de passe sera identique au login (l'utilisateur pourra le modifier à sa première connexion).
+                    </div>
+                    <div id="addUserError" class="alert-box alert-danger" style="display: none; margin-top: 10px;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Annuler</button>
+                <button type="button" class="btn btn-success" id="submitAddUserBtn" onclick="submitAddUser()">Créer l'utilisateur</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boîte de dialogue Modale : Modification du mot de passe admin -->
+    <div id="changeAdminPasswordModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>
+                    <span>🔑</span>
+                    <span>Modifier le mot de passe administrateur</span>
+                </h3>
+                <button class="modal-close-btn" onclick="closeChangeAdminPasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="changeAdminPasswordForm" onsubmit="event.preventDefault(); submitChangeAdminPassword();">
+                    <div class="form-row">
+                        <label for="current_admin_password"><strong>Mot de passe actuel * :</strong></label>
+                        <input type="password" id="current_admin_password" required placeholder="Mot de passe actuel" class="search-input" style="width: 100%;">
+                    </div>
+                    <div class="form-row" style="margin-top: 12px;">
+                        <label for="new_admin_password"><strong>Nouveau mot de passe * :</strong></label>
+                        <input type="password" id="new_admin_password" required minlength="4" placeholder="Minimum 4 caractères" class="search-input" style="width: 100%;">
+                    </div>
+                    <div class="form-row" style="margin-top: 12px;">
+                        <label for="confirm_admin_password"><strong>Confirmer le nouveau mot de passe * :</strong></label>
+                        <input type="password" id="confirm_admin_password" required minlength="4" placeholder="Retapez le nouveau mot de passe" class="search-input" style="width: 100%;">
+                    </div>
+                    <div style="margin-top: 12px; display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555;">
+                        <input type="checkbox" id="toggleShowAdminPasswords" onchange="toggleAdminPasswordVisibility()" style="cursor: pointer;">
+                        <label for="toggleShowAdminPasswords" style="cursor: pointer;">Afficher les mots de passe</label>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 12px; color: #7f8c8d; background: #eef2f7; padding: 8px; border-radius: 4px;">
+                        ℹ️ <strong>Persistance :</strong> le mot de passe sera immédiatement haché en SHA-256 et sauvegardé dans <code>server.properties</code> (avec sauvegarde automatique <code>.bak</code>).
+                    </div>
+                    <div id="changeAdminPasswordError" class="alert-box alert-danger" style="display: none; margin-top: 10px;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeChangeAdminPasswordModal()">Annuler</button>
+                <button type="button" class="btn btn-primary" id="submitAdminPasswordBtn" onclick="submitChangeAdminPassword()" style="background: #8e44ad; color: white;">Enregistrer le nouveau mot de passe</button>
             </div>
         </div>
     </div>

@@ -940,3 +940,82 @@ body {
 .help-tooltip-content li {
     margin-bottom: 3px;
 }
+
+/* Boutons gestion sessions */
+.btn-open-session {
+    background: #27ae60;
+    color: white;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+}
+.btn-open-session:hover {
+    background: #219150;
+}
+
+.btn-close-session {
+    background: #e74c3c;
+    color: white;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+}
+.btn-close-session:hover {
+    background: #c0392b;
+}
+
+.clickable-status {
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s, transform 0.1s;
+    display: inline-block;
+}
+.clickable-status:hover {
+    opacity: 0.85;
+    transform: scale(1.04);
+}
+
+/* Bouton suppression utilisateur */
+.btn-delete-user {
+    background: #e74c3c;
+    color: white;
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-left: 4px;
+}
+.btn-delete-user:hover {
+    background: #c0392b;
+}
+
+/* Items case à cocher groupes */
+.group-checkbox-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    background: #ffffff;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+}
+.group-checkbox-item:hover {
+    background: #f0f7ff;
+    border-color: #3498db;
+}
+.group-checkbox-item input[type="checkbox"] {
+    cursor: pointer;
+}

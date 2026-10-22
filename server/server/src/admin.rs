@@ -26,6 +26,7 @@ use sha2::{Digest, Sha256};
 use crate::connected::{get_all_clients, is_connected, force_disconnect};
 use crate::database::{
     get_groups_all, simulate_group_change, apply_group_change, SessionMoveInput, UserStatus,
+    toggle_session_state, add_user, delete_user,
 };
 use crate::constants::*;
 use crate::properties::*;
@@ -225,6 +226,22 @@ async fn handle_admin_request(
             let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
             handle_apply_group_change(&body_content).await
         },
+        ("POST", "/api/sessions/toggle") => {
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
+            handle_toggle_session(&body_content).await
+        },
+        ("POST", "/api/users/add") => {
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
+            handle_add_user(&body_content).await
+        },
+        ("POST", "/api/users/delete") => {
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
+            handle_delete_user(&body_content).await
+        },
+        ("POST", "/api/admin/change_password") => {
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
+            handle_change_admin_password(&body_content).await
+        },
         ("POST", "/api/disconnect") => {
             let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
             if let Some(login) = extract_login_from_json(&body_content) {
@@ -382,6 +399,169 @@ async fn handle_apply_group_change(body_content: &str) -> String {
                 escape_json(&err_msg)
             )
         }
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Gestion de l'ouverture / fermeture des sessions
+// ----------------------------------------------------------------------------
+
+#[derive(serde::Deserialize)]
+struct ToggleSessionRequest {
+    session_id: String,
+    openned: bool,
+}
+
+async fn handle_toggle_session(body_content: &str) -> String {
+    let req: ToggleSessionRequest = match serde_json::from_str(body_content) {
+        Ok(r) => r,
+        Err(e) => return generate_error_json(&format!("JSON invalide : {}", e)),
+    };
+
+    match toggle_session_state(&req.session_id, req.openned) {
+        Ok(new_state) => {
+            // Notifier tous les clients connectés
+            let clients = get_all_clients().await;
+            for client in clients {
+                let _ = client.open_session(&req.session_id, &new_state).await;
+            }
+            format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: application/json; charset=utf-8\r\n\
+                 Connection: close\r\n\
+                 \r\n\
+                 {{\"status\": \"success\", \"session_id\": \"{}\", \"openned\": {}, \"message\": \"Session {} avec succès\"}}",
+                escape_json(&req.session_id),
+                new_state,
+                if new_state { "ouverte" } else { "fermée" }
+            )
+        },
+        Err(e) => generate_error_json(&e),
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Gestion de l'ajout et suppression des utilisateurs
+// ----------------------------------------------------------------------------
+
+fn default_student_status() -> String {
+    "STUDENT".to_string()
+}
+
+#[derive(serde::Deserialize)]
+struct AddUserRequest {
+    login: String,
+    #[serde(default)]
+    fullname: String,
+    #[serde(default = "default_student_status")]
+    status: String,
+    #[serde(default)]
+    groups: Vec<String>,
+    #[serde(default)]
+    mail: String,
+}
+
+async fn handle_add_user(body_content: &str) -> String {
+    let req: AddUserRequest = match serde_json::from_str(body_content) {
+        Ok(r) => r,
+        Err(e) => return generate_error_json(&format!("JSON invalide : {}", e)),
+    };
+
+    match add_user(&req.login, &req.fullname, &req.status, req.groups, &req.mail) {
+        Ok(user) => {
+            format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: application/json; charset=utf-8\r\n\
+                 Connection: close\r\n\
+                 \r\n\
+                 {{\"status\": \"success\", \"message\": \"Utilisateur '{}' créé avec succès\", \"login\": \"{}\"}}",
+                escape_json(&user.login),
+                escape_json(&user.login)
+            )
+        },
+        Err(e) => generate_error_json(&e),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DeleteUserRequest {
+    login: String,
+}
+
+async fn handle_delete_user(body_content: &str) -> String {
+    let req: DeleteUserRequest = match serde_json::from_str(body_content) {
+        Ok(r) => r,
+        Err(e) => return generate_error_json(&format!("JSON invalide : {}", e)),
+    };
+
+    let clean_login = req.login.trim();
+    if is_connected(clean_login).await {
+        let _ = force_disconnect(clean_login).await;
+    }
+
+    match delete_user(clean_login) {
+        Ok(msg) => {
+            format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: application/json; charset=utf-8\r\n\
+                 Connection: close\r\n\
+                 \r\n\
+                 {{\"status\": \"success\", \"message\": \"{}\", \"login\": \"{}\"}}",
+                escape_json(&msg),
+                escape_json(clean_login)
+            )
+        },
+        Err(e) => generate_error_json(&e),
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Modification du mot de passe administrateur
+// ----------------------------------------------------------------------------
+
+#[derive(serde::Deserialize)]
+struct ChangeAdminPasswordRequest {
+    current_password: String,
+    new_password: String,
+}
+
+async fn handle_change_admin_password(body_content: &str) -> String {
+    let req: ChangeAdminPasswordRequest = match serde_json::from_str(body_content) {
+        Ok(r) => r,
+        Err(e) => return generate_error_json(&format!("JSON invalide : {}", e)),
+    };
+
+    if req.new_password.trim().len() < 4 {
+        return generate_error_json("Le nouveau mot de passe doit comporter au moins 4 caractères.");
+    }
+
+    // Vérifier l'ancien mot de passe
+    let current_hash = hash_password(&req.current_password);
+    let expected_password_hash = match get_property(ADMIN_PASSWORD_HASH) {
+        val if !val.is_empty() && val != "ERROR" => val,
+        _ => DEFAULT_ADMIN_PASSWORD_HASH.to_string(),
+    };
+
+    if current_hash != expected_password_hash {
+        log::warn!("Admin password change rejected: incorrect current password");
+        return generate_error_json("Le mot de passe administrateur actuel est incorrect.");
+    }
+
+    // Calculer le nouveau hash
+    let new_hash = hash_password(&req.new_password);
+
+    match set_admin_password_hash(&new_hash) {
+        Ok(()) => {
+            log::info!("Admin password changed successfully via web interface");
+            format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: application/json; charset=utf-8\r\n\
+                 Connection: close\r\n\
+                 \r\n\
+                 {{\"status\": \"success\", \"message\": \"Le mot de passe administrateur a été modifié avec succès.\"}}"
+            )
+        },
+        Err(e) => generate_error_json(&format!("Erreur lors de la sauvegarde : {}", e)),
     }
 }
 
