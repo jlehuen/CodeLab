@@ -474,6 +474,30 @@ def recalculate_session(session_dir, weights_path=None):
                 rf'\g<1>{stdev_new:.2f}\g<2>',
                 s_content
             )
+
+            # Mise à jour ou insertion de la ligne d'information sur l'algorithme d'évaluation
+            w_str = str(w_source).replace(str(Path.home()), "~") if w_source else "weights.json"
+            parent_name = Path(w_source).parent.name if w_source else ""
+            skill_name = parent_name if parent_name.startswith("eval-") else "eval-introprog"
+            
+            has_ia = any(st.get('ia_malus', 0) > 0 for st in students_updated)
+            ia_status = "Active (Gemini)" if has_ia else "Inactive (Mode statique local)"
+            bareme_str = f"Barème {a1_max:.0f}+{a2_max:.0f}+{a3_max:.0f}{f'+{a4_max:.0f}' if a4_max > 0 else ''}=20 pts"
+            algo_line = f"**Algorithme d'évaluation** : Compétence : `{skill_name}` | Analyse IA : {ia_status} | Pondérations : `{w_str}` ({bareme_str})"
+
+            if "**Algorithme d'évaluation**" in s_content:
+                s_content = re.sub(
+                    r'\*\*Algorithme d\'évaluation\*\*[^\n]*',
+                    lambda m: algo_line,
+                    s_content
+                )
+            else:
+                s_content = re.sub(
+                    r'(\*\*Effectif audité\*\*[^\n]*)\n+',
+                    lambda m: m.group(1) + "\n" + algo_line + "\n\n",
+                    s_content,
+                    count=1
+                )
             
             # Mise à jour de l'en-tête du tableau de synthèse
             if a4_max <= 0:

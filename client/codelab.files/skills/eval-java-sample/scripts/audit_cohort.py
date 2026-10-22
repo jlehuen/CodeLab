@@ -335,15 +335,23 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
     if not cohort_name:
         cohort_name = "Session"
 
+    w_cand = Path(cohort_dir) / "weights.json" if cohort_dir else None
+    if not w_cand or not w_cand.exists():
+        w_cand = Path(__file__).resolve().parent.parent / "weights.json"
+    w_str = str(w_cand).replace(str(Path.home()), "~") if w_cand else "weights.json"
+
+    has_ia = any(
+        str((r.get('ai_analysis') or {}).get('level', '')).startswith(('Élevé', 'Modéré'))
+        for r in results
+    )
+    ia_status = "Active (Gemini)" if has_ia else "Inactive (Mode statique local)"
+
     md = []
     md.append(f"# Synthèse de la Cohorte : {cohort_name}")
-    md.append("")
-    md.append(f"- **Nombre d'étudiants évalués** : {len(results)}")
-    if results:
-        notes = [r.get("scores", {}).get("total", 0) for r in results]
-        moyenne = sum(notes) / len(notes)
-        md.append(f"- **Moyenne générale (avec malus)** : {moyenne:.2f} / 20")
-    md.append("")
+    notes = [r.get("scores", {}).get("total", 0) for r in results]
+    moyenne = (sum(notes) / len(notes)) if notes else 0.0
+    md.append(f"**Effectif audité** : {len(results)} étudiants | **Moyenne** : **{moyenne:.2f}/20**")
+    md.append(f"**Algorithme d'évaluation** : Compétence : `eval-java-sample` | Analyse IA : {ia_status} | Pondérations : `{w_str}` (Barème 6+8+4+2=20 pts)\n")
     md.append("---")
     md.append("")
 
