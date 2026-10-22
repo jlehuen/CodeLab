@@ -491,6 +491,11 @@ def recalculate_session(session_dir, weights_path=None):
                 rf'\g<1>{stdev_new:.2f}\g<2>',
                 s_content
             )
+            s_content = re.sub(
+                r'(\*\*Taux global de compilation Clang\*\*\s*:\s*)\*\*([0-9.]+%)\*\*',
+                r'\g<1>\g<2>',
+                s_content
+            )
 
             # Mise à jour ou insertion de la ligne d'information sur l'algorithme d'évaluation
             parent_name = Path(w_source).parent.name if w_source else ""
