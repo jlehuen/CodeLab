@@ -217,7 +217,7 @@ CodeLab intègre un système modulaire d'**évaluation formative continue** (*sk
 - **Similarités inter-étudiants** : Détection automatique des copier-coller entre étudiants (algorithme Winnowing et n-grams syntaxiques), avec génération d'une matrice de similarité et d'un rapport de cohorte.
 
 ### 3. Rôle de l'IA : Guidance Socratique Bienveillante
-Lorsqu'une clé d'API (Google Gemini) est configurée :
+Pour l'instant, seul le LLM **Google Gemini** est implémenté. Lorsqu'une clé d'API est configurée :
 - **Diagnostic ciblé** : L'IA ne reçoit que le bilan factuel (scores fixés, jalons validés et courts extraits de code ciblés).
 - **Posture socratique** : L'IA n'attribue pas la note, elle se charge uniquement de rédiger la fiche individuelle en adoptant une posture d'enseignant bienveillant. Elle formule des questions ouvertes et guide l'étudiant vers l'auto-remédiation plutôt que de fournir une solution brute.
 - **Performance & Cache** : Fonctionne dans le quota gratuit de Google AI Studio (Free Tier). Un cache local persistant évite toute consommation de requêtes si le code de l'étudiant n'a pas été modifié.
