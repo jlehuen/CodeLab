@@ -108,7 +108,10 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 
 </details>
 
-<br>
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
 ## Installation des langages
 
@@ -181,7 +184,10 @@ import matplotlib.pyplot as plt
 ```
 </details>
 
-<br>
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
 ## Installation des modules applicatifs
 
@@ -201,7 +207,10 @@ Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (
 
 > 📖 Consultez le [manuel des plugins](plugins/README.md) pour les instructions détaillées d'installation, de compilation et de création via le CDK (*CodeLab Development Kit*).
 
-<br>
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
 ## Évaluation pédagogique automatisée & IA
 
@@ -228,7 +237,10 @@ Pour l'instant, seul le LLM **Google Gemini** est implémenté. Lorsqu'une clé 
 
 > 📖 Pour en savoir plus sur l'architecture, la configuration de l'API et la création de nouvelles grilles d'évaluation, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
 
-<br>
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
 ## Compilation du client et du serveur
 
@@ -385,7 +397,10 @@ Depuis le dossier `server/` :
 
 > 📖 **Documentation complète** : Pour les détails techniques avancés (architecture asynchrone Tokio, configuration SMTP des alertes, gestion des timeouts, rotation automatique des sauvegardes et conformité RGPD), consultez le [manuel complet du serveur](server/README.md).
 
-<br>
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
 
 ## Licence & Propriété Intellectuelle
  
@@ -398,9 +413,4 @@ Depuis le dossier `server/` :
 <p align="center">
   <img src="client/data/mentions/app.png" alt="app.png">
   <br/>IDDN-FR-001-260031-000-SC-2022-000-10000
-</p>
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
 </p>
