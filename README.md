@@ -112,7 +112,7 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 
 ## Installation des langages
 
-CodeLab prend en charge un certain nombre de langages : certains sont intégrés à CodeLab (Java, Processing, CLIPS), certains sont peut-être déjà installés sur votre machine (comme C ou Python), d'autre seront à installer. Lorsque vous lancez CodeLab, la console affiche un état des langages installés ou non :
+CodeLab prend en charge un certain nombre de langages : certains sont intégrés à CodeLab (Java, Processing, CLIPS), certains sont peut-être déjà installés sur votre machine (comme C ou Python), d'autres seront à installer. Lorsque vous lancez CodeLab, la console affiche un état des langages installés ou non :
 
 ```
 [codelab] Vérification du langage C...OK -> Apple clang version 21.0.0 (clang-2100.1.1.101)
@@ -126,7 +126,9 @@ CodeLab prend en charge un certain nombre de langages : certains sont intégrés
 [codelab] Vérification du langage CLIPS...OK -> CLIPS version 6.31 - CodeLab build (04/12/23)
 ```
 
-Il se peut que votre PATH ne comporte pas les bons chemins ou qu'un chemin soit absent. Vous pouvez demander à CodeLab de rechercher le chemin d'un langage via l'item "Rechercher un langage" du menu Configuration. Enfin, il se peut que vous ayez besoin d'installer un langage absent de votre machine :
+> 🔍 **Recherche automatique des langages** : CodeLab intègre une fonctionnalité de **recherche automatique des compilateurs et interpréteurs** installés sur votre machine hôte (C/Clang/GCC, Python, Go, Haskell/GHC). Si un langage déjà présent sur votre machine est indiqué comme indisponible (par exemple si son chemin n'est pas déclaré dans votre variable d'environnement `PATH` ou s'il se trouve dans un environnement virtuel), rendez-vous simplement dans le menu **Configuration > Rechercher un langage** : CodeLab effectue un scan intelligent des emplacements standards multiplateformes (macOS, Linux, Windows), vérifie la compatibilité de l'exécutable et enregistre automatiquement le chemin validé dans votre profil utilisateur (`user.properties`), sans saisie manuelle.
+
+Si un langage est totalement absent de votre machine, vous pouvez l'installer selon les instructions ci-dessous :
 
 <details>
 <summary><b>Installer un compilateur C</b></summary>
