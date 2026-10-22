@@ -27,11 +27,11 @@ DEFAULT_WEIGHTS = {
     },
     "progression": {
         "socle_max": 3.0,
-        "tp5_fangio_max": 3.0,
-        "tp6_knossos_max": 4.0,
+        "intermediaire_max": 3.0,
+        "avance_max": 4.0,
         "malus_saut_etape": 2.0,
-        "plafond_sans_tp6": 5.5,
-        "plafond_sans_tp5_tp6": 4.0
+        "plafond_sans_avance": 5.5,
+        "plafond_sans_intermediaire": 4.0
     },
     "anti_triche": {
         "assistance_ia": {
@@ -117,8 +117,8 @@ def update_student_report_markdown(report_file, st_info, a1_max=10.0, a2_max=8.0
         if a4_max <= 0:
             app_a1 = "Parcours séquentiel régulier."
             if st_info['a1'] == 0.0: app_a1 = "Aucun travail rendu sur CodeLab."
-            elif st_info['a1'] >= 8.5: app_a1 = "Parcours séquentiel complet jusqu'à Knossos."
-            elif st_info['a1'] >= 5.5: app_a1 = "Socle validé et projet Fangio atteint."
+            elif st_info['a1'] >= 8.5: app_a1 = "Parcours complet et excellente autonomie."
+            elif st_info['a1'] >= 5.5: app_a1 = "Socle validé et étapes clés atteintes."
 
             app_a2 = "Modularité et qualité algorithmique."
             if st_info['a2'] == 0.0: app_a2 = "Aucun programme soumis."
