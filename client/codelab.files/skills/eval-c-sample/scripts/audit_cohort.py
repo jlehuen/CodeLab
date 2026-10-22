@@ -323,7 +323,50 @@ def build_cohort_clusters(results, suspicious_logins):
     lines.append("")
     return "\n".join(lines)
 
-def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None):
+def resolve_cohort_name(cohort_dir=None, output_md=None, session_id=None):
+    """Détermine le nom en clair de la session/cohorte en ignorant les dossiers techniques comme 'dist'."""
+    GENERIC_NAMES = {".", "dist", "distant", "local", "programs", "evaluations", "synthese", ""}
+    if session_id and str(session_id).strip() not in GENERIC_NAMES:
+        return str(session_id).strip()
+
+    # 1. Nom extrait du fichier Markdown (ex: synthese_<session>.md)
+    if output_md:
+        cand = Path(output_md).stem.replace("synthese_", "").strip()
+        if cand and cand not in GENERIC_NAMES:
+            return cand
+
+    # 2. Nom extrait de sessions.xml si présent
+    for s_xml in [
+        Path(cohort_dir) / "sessions.xml" if cohort_dir else None,
+        Path(output_md).parent / "sessions.xml" if output_md else None
+    ]:
+        if s_xml and s_xml.is_file():
+            try:
+                import xml.etree.ElementTree as ET
+                tree = ET.parse(s_xml)
+                root = tree.getroot()
+                if root.tag == "session" and root.get("id"):
+                    sid = root.get("id").strip()
+                    if sid and sid not in GENERIC_NAMES:
+                        return sid
+            except Exception:
+                pass
+
+    # 3. Dossier parent de output_md (ex: evaluations/<session>/synthese_...)
+    if output_md:
+        p_name = Path(output_md).parent.name.strip()
+        if p_name and p_name not in GENERIC_NAMES:
+            return p_name
+
+    # 4. Nom du dossier cohort_dir si non générique
+    if cohort_dir:
+        base = os.path.basename(str(cohort_dir).rstrip("/\\")).strip()
+        if base and base not in GENERIC_NAMES:
+            return base
+
+    return "Session"
+
+def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, session_id=None, **kwargs):
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     suspicions, _ = detect_cohort_plagiarism(cohort_dir) if cohort_dir else ([], [])
     if suspicions:
@@ -333,14 +376,7 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None):
         suspicious_logins.add(susp['s1'])
         suspicious_logins.add(susp['s2'])
 
-    cohort_name = ""
-    if cohort_dir:
-        cohort_name = os.path.basename(str(cohort_dir).rstrip("/\\"))
-    if not cohort_name or cohort_name in (".", "evaluations"):
-        if out_path:
-            cohort_name = Path(out_path).stem.replace("synthese_", "")
-    if not cohort_name:
-        cohort_name = "Session"
+    cohort_name = resolve_cohort_name(cohort_dir, out_path, session_id or kwargs.get("session"))
 
     # Résolution des paramètres d'évaluation
     if use_ai is not None:

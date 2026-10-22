@@ -2170,7 +2170,7 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
                 if export_csv and export_summary_markdown:
                     export_csv(evaluated_results, str(csv_file), cohort_dir=str(session_p))
                     try:
-                        export_summary_markdown(evaluated_results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag)
+                        export_summary_markdown(evaluated_results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag, session_id=session_id)
                     except TypeError:
                         export_summary_markdown(evaluated_results, str(synthese_file), str(session_p))
                     print(f"[DONE] Synthèse de session et export CSV générés avec les notes calibrées et détection de similarités !", flush=True)
@@ -2223,7 +2223,7 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
         export_csv(results, str(csv_file), cohort_dir=str(session_p))
         use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
         try:
-            export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag)
+            export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag, session_id=session_id)
         except TypeError:
             export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p))
         eligible_items = [
@@ -2288,7 +2288,7 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
             if hasattr(audit_cohort, "export_summary_markdown"):
                 use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
                 try:
-                    audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag)
+                    audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag, session_id=session_id)
                 except TypeError:
                     try:
                         audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p))

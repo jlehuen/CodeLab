@@ -457,9 +457,14 @@ def recalculate_session(session_dir, weights_path=None):
             s_content = re.sub(r'[⚠️✅👑🔨⚡🛟🏴🤖👥🚨🚀🎮🛡⭐🌟🔍]', '', s_content)
 
             # Mise à jour du titre principal
+            s_name = s_path.name
+            if s_name in (".", "dist", "distant", "local", "programs", "evaluations", "synthese") and synthese_md:
+                cand = synthese_md.stem.replace("synthese_", "").strip()
+                if cand and cand not in (".", "dist", "distant", "local", "programs", "evaluations"):
+                    s_name = cand
             s_content = re.sub(
                 r'^#\s*Synthèse[^\r\n]*',
-                f'# Synthèse de la Cohorte : {s_path.name}',
+                f'# Synthèse de la Cohorte : {s_name}',
                 s_content,
                 count=1,
                 flags=re.M
