@@ -646,8 +646,10 @@ public class SessionEvaluator {
 
 			@Override
 			protected void process(List<String> chunks) {
-				for (String line : chunks) {
-					if (line.startsWith("REPORT_FILE:")) continue;
+				for (String rawLine : chunks) {
+					if (rawLine == null || rawLine.startsWith("REPORT_FILE:")) continue;
+					// Suppression préventive de tous les émojis/symboles pour la console CodeLab
+					String line = rawLine.replaceAll("[\\p{So}\\p{Cn}\\u2600-\\u27bf\\u2300-\\u23ff\\u2b50-\\u2b55\\u2139\\u2696\\u26a0\\u2705\\u274c]", "");
 					Color color;
 					if (line.startsWith("[FAIL]") || line.startsWith("[ERROR]")) color = Console.COLOR_ERROR;
 					else if (line.startsWith("[WARN]")) color = new Color(220, 120, 0);
