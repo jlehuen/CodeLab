@@ -63,7 +63,7 @@ Ce skill intègre un moteur de contrôle garantissant l'authenticité des travau
 ### 3. 👥 Détection de Copier-Collé Inter-Étudiants (Plagiat)
 - Analyse croisée de l'ensemble de la promotion par n-grams syntaxiques (algorithme de Jaccard normalisé).
 - Détecte les similitudes structurelles même après renommage des variables ou réorganisation de surface.
-- Identifie le binôme suspect et liste les fichiers présentant un taux de similarité élevé ($\ge 80\%$).
+- Identifie le binôme suspect et liste les fichiers présentant un taux de similarité élevé ($\ge 75\%$).
 
 ---
 

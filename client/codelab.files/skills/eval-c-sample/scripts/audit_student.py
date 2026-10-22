@@ -550,9 +550,9 @@ def audit_student(folder_path, sessions_xml_path=None):
 
     # Application du malus IA uniquement sur la note avec malus (total)
     anti_ia = weights.get("anti_triche", {}).get("assistance_ia", {})
-    malus_eleve = float(anti_ia.get("malus_eleve", 5.0))
-    plafond_eleve = float(anti_ia.get("plafond_note_eleve", 10.0))
-    malus_modere = float(anti_ia.get("malus_modere", 2.0))
+    malus_eleve = float(anti_ia.get("malus_eleve", 2.0))
+    plafond_eleve = float(anti_ia.get("plafond_note_eleve", 12.0))
+    malus_modere = float(anti_ia.get("malus_modere", 1.0))
     plafond_modere = float(anti_ia.get("plafond_note_modere", 14.0))
 
     total_note = note_sans_malus
