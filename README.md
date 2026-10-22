@@ -55,7 +55,7 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 - [Compilation du client et du serveur](#compilation-du-client-et-du-serveur)
   - [1. Compilation du client Java](#1-compilation-du-client-java)
   - [2. Compilation du serveur Rust](#2-compilation-du-serveur-rust)
-  - [3. Administration du serveur](#3-administration-du-serveur)
+- [Administration du serveur](#administration-du-serveur)
 - [Licence & Propriété Intellectuelle](#licence--propriété-intellectuelle)
 
 <br>
@@ -364,7 +364,12 @@ Des scripts de service sont également disponibles dans le dossier `server/` :
 - `./run-server.sh` : Démarrage du serveur en arrière-plan.
 - `./kill-server.sh` : Arrêt propre du processus serveur.
 
-### 3. Administration du serveur
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
+
+## Administration du serveur
 
 Le serveur CodeLab intègre nativement une console web d'administration et des outils automatisés pour préparer et piloter les classes virtuelles sans dépendance externe :
 
@@ -373,7 +378,7 @@ Le serveur CodeLab intègre nativement une console web d'administration et des o
   <img src="client/images/admin.png" alt="admin.png">
 </p>
 
-#### Tableau de bord d'administration Web
+### Tableau de bord d'administration Web
 - **Accès** : `http://localhost:9989` *(ou adresse IP du serveur)*.
 - **Authentification** : HTTP Basic (compte défini dans `server.properties` avec mot de passe haché en SHA-256).
 - **Fonctionnalités clés** :
@@ -382,14 +387,14 @@ Le serveur CodeLab intègre nativement une console web d'administration et des o
   - **Changement de groupe à chaud** : transfert immédiat d'un étudiant d'un groupe à un autre en mémoire vive sans coupure ni perte de code.
   - **Contrôle et déconnexion forcée** des sessions bloquées.
 
-#### Préparation des utilisateurs et des sessions (`sessions.xml`)
+### Préparation des utilisateurs et des sessions (`sessions.xml`)
 La liste des groupes, sessions et utilisateurs autorisés est déclarée dans `sessions.xml` (validé par `sessions.dtd`). Pour convertir automatiquement vos listes d'étudiants (fichiers `.xlsx` ou `.csv`) en fragments XML prêts à être insérés :
 - **macOS / Linux** : lancez `./build-xml.sh` dans `server/server/config/data/` (mode interactif).
 - **Windows** : glissez-déposez simplement votre fichier `users.xlsx` sur l'icône de `build-xml.bat`.
 - **Multiplateforme** : `python build-xml.py [source.xlsx|csv]`.
 - **Validation DTD** : vérifiez la conformité de votre fichier via `./xml-validator.sh sessions.xml`.
 
-#### Scripts de service
+### Scripts de service
 Depuis le dossier `server/` :
 - `./run-server.sh` : démarrage du serveur en tâche de fond avec contrôle de port.
 - `./kill-server.sh` : arrêt propre du service avec finalisation des écritures sur disque et déconnexion ordonnée des clients.
