@@ -8,7 +8,7 @@
 
 ---
 
-### Cartouche de Traçabilité & Synthèse d'Intégrité
+### 📋 Cartouche de Traçabilité & Synthèse d'Intégrité
 
 - **Date de l'évaluation :** {eval_date}
 - **Skill appliqué :** `{skill_name}` (dernière modification : {skill_last_modified})
@@ -17,7 +17,7 @@
 - **Stylométrie d'indentation :** {stylometrie_courte}
 - **Test de similarité (Plagiat) :** {similarite_courte}
 - **Indice d'assistance IA :** {ai_level}
-- **Environnement :** CodeLab v1.5.1
+- **Environnement :** CodeLab v1.5.0
 
 ---
 

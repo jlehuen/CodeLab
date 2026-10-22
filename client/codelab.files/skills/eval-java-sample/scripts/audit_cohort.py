@@ -104,7 +104,7 @@ def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
 
         if similar_files:
             max_sim = max(sim for _, sim in similar_files)
-            severity = "Forte suspicion" if max_sim >= 85.0 or len(similar_files) >= 3 else "Suspicion modérée"
+            severity = "🚨 Forte suspicion" if max_sim >= 85.0 or len(similar_files) >= 3 else "⚠️ Suspicion modérée"
             suspicions.append({
                 's1': s1,
                 's2': s2,
@@ -144,13 +144,16 @@ def apply_similarity_penalties(results, suspicions):
         max_sim = sim_by_student[sid]['max_sim']
         malus = 0.0
         if nb_files >= 3 or max_sim >= 95.0:
-            malus = 4.0
+            malus = 2.0
         elif nb_files >= 2 or max_sim >= 85.0:
-            malus = 2.5
-        elif nb_files >= 1 and max_sim >= 75.0:
             malus = 1.0
+        elif nb_files >= 1 and max_sim >= 75.0:
+            malus = 0.5
         sc["malus_similarite"] = malus
-        sc["total"] = max(0.0, round(sc["note_apres_ia"] - malus, 1))
+        tot = sc["note_apres_ia"] - malus
+        if "note_technique_brute" in sc:
+            tot = max(tot, sc["note_technique_brute"] - 3.5)
+        sc["total"] = max(0.0, round(tot, 1))
 
 def analyze_cohort(session_dir):
     p = Path(session_dir).resolve()
@@ -230,8 +233,8 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
     md.append("")
 
     if suspicions:
-        md.append("## Analyse de Similarités & Copier-Collé Inter-Étudiants")
-        md.append(f"> **Attention : {len(suspicions)} paire(s) d'étudiants présentent une similarité suspecte** :\n")
+        md.append("## 🔍 Analyse de Similarités & Copier-Collé Inter-Étudiants")
+        md.append(f"> ⚠️ **{len(suspicions)} paire(s) d'étudiants présentent une similarité suspecte** :\n")
         md.append("| Étudiant 1 | Étudiant 2 | Fichiers Suspects | Similarité Max | Gravité |")
         md.append("| :--- | :--- | :--- | :---: | :--- |")
         for susp in suspicions:
@@ -249,13 +252,13 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
         login = r.get('student_id', '')
         alerts = []
         if login in suspicious_logins:
-            alerts.append("Similarité forte")
+            alerts.append("👥 Similarité forte")
         ai_data = r.get('ai_analysis', {})
         ai_level = ai_data.get('level', 'Faible')
         if ai_level.startswith('Élevé'):
-            alerts.append("IA suspectée")
+            alerts.append("🤖 IA suspectée")
         elif ai_level.startswith('Modéré'):
-            alerts.append("Idiomes IA")
+            alerts.append("⚠️ Idiomes IA")
         alert_str = " | ".join(alerts) if alerts else "Aucune"
         md.append(f"| `{login}` | {sc.get('compilation', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | {note_sans_malus:.1f} | **{sc.get('total', 0):.1f}** | {ai_level} | {alert_str} |")
     md.append("")

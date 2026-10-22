@@ -9,25 +9,31 @@ Ce répertoire rassemble les compétences (*skills*) et scripts d'évaluation au
 ```
 skills/
 ├── eval_codelab.py         # Moteur universel CLI & CodeLab (SessionEvaluator)
-├── recalculate_grades.py   # Moteur de recalcul dynamique des notes sans réévaluation
 ├── README.md               # Guide d'architecture et de référence globale (ce fichier)
+├── eval-introprog/         # C / Robotique L1 Informatique (Progression /10, Architecture /8, Style /2)
+│   ├── README.md           # Documentation complète du cursus L1 et grille critériée
+│   ├── report_template.md  # Gabarit canonique des fiches d'évaluation individuelles
+│   ├── SKILL.md            # Spécification formelle du skill
+│   └── scripts/            # Scripts d'analyse (audit_student, audit_cohort, generate_report)
+├── eval-intropython/       # Python scientifique & Numpy L2 (Flux /8, Numpy /10, Transversal /2)
+│   ├── README.md           # Documentation complète du TP4 sommatif (Sujets 1 et 2)
+│   ├── report_template.md  # Gabarit canonique des fiches d'évaluation individuelles
+│   ├── SKILL.md            # Spécification formelle du skill
+│   └── scripts/            # Scripts d'analyse (audit_student, audit_cohort, generate_report)
 ├── eval-c-sample/          # Exemple générique C (Compilation /6, Architecture /8, Style /4, Tests /2)
 │   ├── README.md           # Documentation end-user pour projets C
 │   ├── report_template.md  # Gabarit canonique des fiches d'évaluation individuelles
 │   ├── SKILL.md            # Spécification formelle du skill
-│   ├── weights.json        # Grille de pondération critériée
 │   └── scripts/            # Scripts d'analyse (audit_student, audit_cohort, generate_report)
 ├── eval-python-sample/     # Exemple générique Python (Syntaxe AST /6, Conception /8, Style PEP8 /4, Tests /2)
 │   ├── README.md           # Documentation end-user pour projets Python
 │   ├── report_template.md  # Gabarit canonique des fiches d'évaluation individuelles
 │   ├── SKILL.md            # Spécification formelle du skill
-│   ├── weights.json        # Grille de pondération critériée
 │   └── scripts/            # Scripts d'analyse (audit_student, audit_cohort, generate_report)
 └── eval-java-sample/       # Exemple générique Java (Compilation /6, Modélisation Objet /8, Javadoc /4, Tests /2)
     ├── README.md           # Documentation end-user pour projets Java POO
     ├── report_template.md  # Gabarit canonique des fiches d'évaluation individuelles
     ├── SKILL.md            # Spécification formelle du skill
-    ├── weights.json        # Grille de pondération critériée
     └── scripts/            # Scripts d'analyse (audit_student, audit_cohort, generate_report)
 ```
 

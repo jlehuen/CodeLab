@@ -27,26 +27,27 @@ DEFAULT_WEIGHTS = {
     },
     "progression": {
         "socle_max": 3.0,
-        "intermediaire_max": 3.0,
-        "avance_max": 4.0,
+        "tp5_fangio_max": 3.0,
+        "tp6_knossos_max": 4.0,
         "malus_saut_etape": 2.0,
-        "plafond_sans_avance": 5.5,
-        "plafond_sans_intermediaire": 4.0
+        "plafond_sans_tp6": 5.5,
+        "plafond_sans_tp5_tp6": 4.0
     },
     "anti_triche": {
         "assistance_ia": {
-            "malus_eleve": 5.0,
-            "plafond_note_eleve": 10.0,
-            "malus_modere": 2.0,
+            "malus_eleve": 2.0,
+            "plafond_note_eleve": 12.0,
+            "malus_modere": 1.0,
             "plafond_note_modere": 14.0
         },
         "similarite": {
             "seuil_detection_pct": 75.0,
-            "malus_1_fichier": 1.0,
-            "malus_2_fichiers": 2.5,
-            "malus_3_fichiers_ou_plus": 4.0,
-            "malus_max_total": 4.0
-        }
+            "malus_1_fichier": 0.5,
+            "malus_2_fichiers": 1.0,
+            "malus_3_fichiers_ou_plus": 2.0,
+            "malus_max_total": 2.0
+        },
+        "malus_max_cumule_global": 3.5
     },
     "profils": {
         "note_min_excellence": 16.0,
@@ -65,8 +66,9 @@ def load_weights(session_eval_dir, custom_weights_path=None):
     # 1. Dans le dossier de session d'évaluation
     candidates.append(s_dir / "weights.json")
 
-    # 2. Dans le dossier du skill par défaut ou à la racine des skills
-    candidates.append(Path.home() / "codelab.files" / "skills" / "eval-c-sample" / "weights.json")
+    # 2. Dans le dossier du skill eval-introprog
+    user_skill = Path.home() / "codelab.files" / "skills" / "eval-introprog" / "weights.json"
+    candidates.append(user_skill)
     candidates.append(Path.home() / "codelab.files" / "skills" / "weights.json")
 
     # 3. Dans le dossier parent du présent script
@@ -117,8 +119,8 @@ def update_student_report_markdown(report_file, st_info, a1_max=10.0, a2_max=8.0
         if a4_max <= 0:
             app_a1 = "Parcours séquentiel régulier."
             if st_info['a1'] == 0.0: app_a1 = "Aucun travail rendu sur CodeLab."
-            elif st_info['a1'] >= 8.5: app_a1 = "Parcours complet et excellente autonomie."
-            elif st_info['a1'] >= 5.5: app_a1 = "Socle validé et étapes clés atteintes."
+            elif st_info['a1'] >= 8.5: app_a1 = "Parcours séquentiel complet jusqu'à Knossos."
+            elif st_info['a1'] >= 5.5: app_a1 = "Socle validé et projet Fangio atteint."
 
             app_a2 = "Modularité et qualité algorithmique."
             if st_info['a2'] == 0.0: app_a2 = "Aucun programme soumis."
@@ -193,15 +195,16 @@ def recalculate_session(session_dir, weights_path=None):
     anti = weights.get("anti_triche", {})
     ia_cfg = anti.get("assistance_ia", {})
     ia_malus_eleve = float(ia_cfg.get("malus_eleve", 2.0))
-    ia_plafond_eleve = float(ia_cfg.get("plafond_note_eleve", 13.5))
+    ia_plafond_eleve = float(ia_cfg.get("plafond_note_eleve", 12.0))
     ia_malus_modere = float(ia_cfg.get("malus_modere", 1.0))
-    ia_plafond_modere = float(ia_cfg.get("plafond_note_modere", 15.5))
+    ia_plafond_modere = float(ia_cfg.get("plafond_note_modere", 14.0))
 
     sim_cfg = anti.get("similarite", {})
     sim_m1 = float(sim_cfg.get("malus_1_fichier", 0.5))
-    sim_m2 = float(sim_cfg.get("malus_2_fichiers", 1.5))
-    sim_m3 = float(sim_cfg.get("malus_3_fichiers_ou_plus", 2.5))
-    sim_max_total = float(sim_cfg.get("malus_max_total", 2.5))
+    sim_m2 = float(sim_cfg.get("malus_2_fichiers", 1.0))
+    sim_m3 = float(sim_cfg.get("malus_3_fichiers_ou_plus", 2.0))
+    sim_max_total = float(sim_cfg.get("malus_max_total", 2.0))
+    malus_cumule_max = float(anti.get("malus_max_cumule_global", 3.5))
 
     prof_cfg = weights.get("profils", {})
     note_min_excell = float(prof_cfg.get("note_min_excellence", 16.0))
@@ -318,6 +321,8 @@ def recalculate_session(session_dir, weights_path=None):
             if applied_ia_cap is not None:
                 note_after_ia = min(note_after_ia, applied_ia_cap)
             adjusted_total = note_after_ia - sim_malus
+            if malus_cumule_max > 0.0:
+                adjusted_total = max(adjusted_total, raw_subtotal - malus_cumule_max)
 
             final_total = round(max(0.0, min(20.0, adjusted_total)), 1)
             new_notes.append(final_total)
@@ -460,7 +465,7 @@ def recalculate_session(session_dir, weights_path=None):
 
     # Affichage du bilan final structuré
     print("=" * 60)
-    print(f"[OK] RECALCUL TERMINÉ AVEC SUCCÈS POUR {len(students_updated)} ÉTUDIANTS")
+    print(f"✅ RECALCUL TERMINÉ AVEC SUCCÈS POUR {len(students_updated)} ÉTUDIANTS")
     print(f"Source barème : {w_source}")
     print(f"Moyenne promo : {avg_old:.2f}/20 -> {avg_new:.2f}/20 (Médiane : {med_old:.1f} -> {med_new:.1f})")
     print(f"Écart-type    : {stdev_new:.2f} (Min : {min(new_notes):.1f}, Max : {max(new_notes):.1f})")
