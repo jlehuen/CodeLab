@@ -38,7 +38,7 @@ def format_report_markdown(results):
     ai_data = results.get("ai_analysis") or {}
     ai_level = ai_data.get("level", "Faible (0% - Code authentique)")
 
-    md.append("### 📋 Cartouche de Traçabilité")
+    md.append("### Cartouche de Traçabilité")
     md.append(f"- **Date de l'évaluation :** {eval_date}")
     md.append(f"- **Skill appliqué :** `eval-python-sample` (dernière modification : {skill_date})")
     md.append(f"- **Moteur d'évaluation :** {engine_name}")
@@ -66,7 +66,7 @@ def format_report_markdown(results):
     snippets = results.get("snippets", {})
 
     if results.get("syntax_errors"):
-        md.append("### ⚠️ Erreurs de syntaxe relevées :")
+        md.append("### Erreurs de syntaxe relevées :")
         md.append("")
         for fname, err in results["syntax_errors"].items():
             md.append(f"- `{fname}` : {err}")
@@ -85,7 +85,7 @@ def format_report_markdown(results):
         md.append("")
 
     if snippets.get("highlights"):
-        md.append("### 🌟 Points Forts Observés (Extraits de code) :")
+        md.append("### Points Forts Observés (Extraits de code) :")
         md.append("")
         for hl in snippets["highlights"]:
             md.append(f"- **{hl['title']}** (`{hl['file']}`, ligne {hl['line']}) :")

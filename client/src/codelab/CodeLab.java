@@ -661,7 +661,9 @@ public class CodeLab extends AbstractCodeLab {
 		if (isRunning()) halt(); // Stopper exécution en cours
 		editor.saveAllFiles(); // Sauvegarde de tous les onglets ouverts
 		editor.saveCurrentFile(); // Sauvegarde en local et à distance
-		editor.backupCurrentFile(); // Backup daté du fichier courant
+		if (!isTutor() && !isAdmin()) {
+			editor.backupCurrentFile(); // Backup daté du fichier courant
+		}
 		//executionMonitor.shutdown(); // Arrêter le moniteur d'exécution
 		updateSizeProperties(); // Actualisation de la taille de la fenêtre
 		saveHiddenProperties(); // Sauvegarde des hidden properties
@@ -1763,6 +1765,10 @@ public class CodeLab extends AbstractCodeLab {
 	// -----------------------------------------------------------
 
 	public boolean createManualRecoveryBackup() {
+		if (isConnected() && (isTutor() || isAdmin())) {
+			Utils.showWarningDialog(LABEL("WARNING"), LABEL("noBackupForTutorAdmin"));
+			return false;
+		}
 		try {
 			String progDir = getProgramDir();
 			File srcDir = new File(progDir);
@@ -1815,6 +1821,10 @@ public class CodeLab extends AbstractCodeLab {
 	}
 
 	public void restoreRecoveryBackup() {
+		if (isConnected() && (isTutor() || isAdmin())) {
+			Utils.showWarningDialog(LABEL("WARNING"), LABEL("noBackupForTutorAdmin"));
+			return;
+		}
 		File recoveryFolder = new File(RECOVERY_FOLDER);
 		if (!recoveryFolder.exists()) {
 			JOptionPane.showMessageDialog(FRAME, LABEL("noRecoveryBackupAvailable"), LABEL("menuBackups"), JOptionPane.INFORMATION_MESSAGE, ICON);

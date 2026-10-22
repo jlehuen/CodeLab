@@ -54,15 +54,15 @@ Par défaut, l'évaluation repose sur une répartition équilibrée en 4 axes :
 
 Ce skill intègre un moteur de contrôle garantissant l'authenticité des travaux étudiants :
 
-### 1. ⏱️ Analyse Chronométrique
+### 1. Analyse Chronométrique
 - Mesure l'étalement des séances de développement sur le serveur CodeLab.
 - Détecte l'apparition instantanée de codes volumineux en moins de 60 secondes (indicateur de copier-coller ou de génération IA non assimilée).
 
-### 2. 📐 Stylométrie d'Indentation & Détection IA
+### 2. Stylométrie d'Indentation & Détection IA
 - Vérifie l'homogénéité du style d'indentation : respect des tabulations de l'éditeur CodeLab vs insertions sauvages de blocs indentés en 4 espaces provenant d'Internet.
 - Détecte les marqueurs typiques des LLM (ChatGPT/Claude) : commentaires didactiques formatés, annotations de types complexes (`typing`), imports interdits (`sys`, `os`, `subprocess`).
 
-### 3. 👥 Détection de Copier-Collé Inter-Étudiants (Plagiat)
+### 3. Détection de Copier-Collé Inter-Étudiants (Plagiat)
 - Analyse croisée de l'ensemble de la promotion par n-grams syntaxiques (algorithme de Jaccard normalisé).
 - Détecte les similitudes structurelles même après renommage des variables ou réorganisation de surface.
 - Identifie le binôme suspect et liste les fichiers présentant un taux de similarité élevé ($\ge 80\%$).

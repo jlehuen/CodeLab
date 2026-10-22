@@ -38,7 +38,7 @@ def format_report_markdown(results):
     ai_data = results.get("ai_analysis") or {}
     ai_level = ai_data.get("level", "Faible (0% - Code authentique)")
 
-    md.append("### 📋 Cartouche de Traçabilité")
+    md.append("### Cartouche de Traçabilité")
     md.append(f"- **Date de l'évaluation :** {eval_date}")
     md.append(f"- **Skill appliqué :** `eval-java-sample` (dernière modification : {skill_date})")
     md.append(f"- **Moteur d'évaluation :** {engine_name}")
@@ -66,7 +66,7 @@ def format_report_markdown(results):
     snippets = results.get("snippets", {})
 
     if not results.get("compilation_ok"):
-        md.append("### ⚠️ Erreurs de compilation `javac` :")
+        md.append("### Erreurs de compilation `javac` :")
         md.append("")
         md.append("```text")
         md.append(results.get("compilation_error", ""))
@@ -86,7 +86,7 @@ def format_report_markdown(results):
         md.append("")
 
     if snippets.get("highlights"):
-        md.append("### 🌟 Points Forts Observés (Extraits de code) :")
+        md.append("### Points Forts Observés (Extraits de code) :")
         md.append("")
         for hl in snippets["highlights"]:
             md.append(f"- **{hl['title']}** (`{hl['file']}`, ligne {hl['line']}) :")

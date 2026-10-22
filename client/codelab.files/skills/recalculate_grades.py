@@ -460,7 +460,7 @@ def recalculate_session(session_dir, weights_path=None):
 
     # Affichage du bilan final structuré
     print("=" * 60)
-    print(f"✅ RECALCUL TERMINÉ AVEC SUCCÈS POUR {len(students_updated)} ÉTUDIANTS")
+    print(f"[OK] RECALCUL TERMINÉ AVEC SUCCÈS POUR {len(students_updated)} ÉTUDIANTS")
     print(f"Source barème : {w_source}")
     print(f"Moyenne promo : {avg_old:.2f}/20 -> {avg_new:.2f}/20 (Médiane : {med_old:.1f} -> {med_new:.1f})")
     print(f"Écart-type    : {stdev_new:.2f} (Min : {min(new_notes):.1f}, Max : {max(new_notes):.1f})")

@@ -39,7 +39,7 @@ def format_report_markdown(results):
     md.append(f"- **Commentaires & Documentation** : {results.get('comments_count', 0)} bloc(s)")
     md.append(f"- **Assertions & Tests** : {results.get('asserts_count', 0)} élément(s)")
     md.append("")
-    md.append("### 📋 Cartouche de Traçabilité")
+    md.append("### Cartouche de Traçabilité")
     md.append(f"- **Date de l'évaluation :** {eval_date}")
     md.append(f"- **Skill appliqué :** `eval-c-sample` (dernière modification : {skill_date})")
     md.append(f"- **Moteur d'évaluation :** {engine_name}")
@@ -67,7 +67,7 @@ def format_report_markdown(results):
     snippets = results.get("snippets", {})
 
     if results.get("syntax_errors"):
-        md.append("### ⚠️ Erreurs de compilation relevées :")
+        md.append("### Erreurs de compilation relevées :")
         md.append("")
         for fname, err in results["syntax_errors"].items():
             md.append(f"- `{fname}` : {err}")
@@ -82,11 +82,11 @@ def format_report_markdown(results):
                 md.append("```")
                 md.append("")
     else:
-        md.append("### ✅ Compilation : Tous les fichiers C sont syntaxiquement valides.")
+        md.append("### Compilation : Tous les fichiers C sont syntaxiquement valides.")
         md.append("")
 
     if snippets.get("highlights"):
-        md.append("### 🌟 Fonctions et initiatives remarquées :")
+        md.append("### Fonctions et initiatives remarquées :")
         md.append("")
         for sh in snippets["highlights"]:
             md.append(f"**Fonction `{sh['function']}` dans `{sh['file']}`** :")
@@ -96,7 +96,7 @@ def format_report_markdown(results):
             md.append("")
 
     if ai_det.get("markers"):
-        md.append("### 🔍 Marqueurs d'authenticité / IA observés :")
+        md.append("### Marqueurs d'authenticité / IA observés :")
         md.append("")
         for m in ai_det["markers"]:
             md.append(f"- `{m['file']}` : **{m['category']}** — {m['description']}")

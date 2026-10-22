@@ -36,6 +36,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import java.util.Arrays;
 
+import codelab.utils.CleanListView;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.SearchContext;
@@ -96,6 +97,9 @@ public class MarkdownViewer extends AbstractEditor {
 				Object o = attrs.getAttribute(StyleConstants.NameAttribute);
 				if (o instanceof HTML.Tag) {
 					HTML.Tag kind = (HTML.Tag) o;
+					if (kind == HTML.Tag.UL) {
+						return new CleanListView(elem);
+					}
 					if (kind == HTML.Tag.HTML || kind == HTML.Tag.BODY || kind == HTML.Tag.PRE) {
 						// Permet au document et blocs préformatés de s'adapter fluidement à toute largeur sans buter sur un minimumSpan
 						return new BlockView(elem, View.Y_AXIS) {
@@ -307,6 +311,10 @@ public class MarkdownViewer extends AbstractEditor {
 		// Nettoyage des commentaires CSS pour préserver le parseur Swing
 		String css = rawCss.replaceAll("/\\*[\\s\\S]*?\\*/", "");
 
+		// Swing ne gère pas les listes de polices avec virgules (ex: "Inter, -apple-system, sans-serif")
+		// et retombe silencieusement sur SansSerif logique non lissée. On simplifie vers la police principale.
+		css = css.replaceAll("(?i)font-family\\s*:\\s*Inter\\s*,[^;]+;", "font-family: Inter;");
+
 		if (css.contains("${FONT_SIZE}")) {
 			css = css.replace("${FONT_SIZE}", String.valueOf(fontSize));
 		}
@@ -411,7 +419,12 @@ public class MarkdownViewer extends AbstractEditor {
 		text = java.util.regex.Pattern.compile("(?m)^([ \t]*[0-9]+\\.\\s+\\*\\*[^*\n]+?\\*\\*:?)[ \t]*\r?\n[ \t]*\r?\n([ \t]{0,2})([^\n\r#\\s`].*)$")
 					  .matcher(text).replaceAll("$1\n\n   $3");
 
-		// 3. Restaurer les blocs de code
+		// 4. Nettoyage des emojis et symboles décoratifs qui n'ont pas de glyphes dans les polices
+		// système de bureau (notamment sous Linux/Ubuntu) et provoquent l'affichage de rectangles vides ("tofu").
+		// Les blocs de code clôturés étant isolés à l'étape 1, ils ne sont pas altérés.
+		text = text.replaceAll("[\\p{So}\\x{FE00}-\\x{FE0F}]\\s*", "");
+
+		// 5. Restaurer les blocs de code
 		for (int i = 0; i < codeBlocks.size(); i++) {
 			text = text.replace("@@@CODELAB_CODE_BLOCK_" + i + "@@@", codeBlocks.get(i));
 		}

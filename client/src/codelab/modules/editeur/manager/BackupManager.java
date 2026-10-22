@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
+import codelab.CodeLab;
 import codelab.utils.MyFileUtils;
 
 /**
@@ -38,6 +39,9 @@ public class BackupManager {
 	// ----------------------------------------------------------------------------
 
 	public synchronized static File backup(File file) {
+		if (CodeLab.INSTANCE != null && (CodeLab.INSTANCE.isTutor() || CodeLab.INSTANCE.isAdmin())) {
+			return null;
+		}
 
 		if (isBackup(file)) return null; // Déjà une sauvegarde
 

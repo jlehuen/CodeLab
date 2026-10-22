@@ -321,7 +321,7 @@ def detect_ai_markers(c_files, student_dir=None):
         confidence = "Moyenne"
     else:
         level = f"Faible ({score_pct}% - Code étudiant authentique)"
-        verdict = "✅ Code authentique d'apprenant" if score_pct == 0 else f"ℹ️ Faible présence de marqueurs ({score_pct}%)"
+        verdict = "Code authentique d'apprenant" if score_pct == 0 else f"Faible présence de marqueurs ({score_pct}%)"
         confidence = "Très élevée" if score_pct == 0 else "Faible"
 
     descriptions = [f"{m['file']}: {m['description']}" for m in markers[:8]]

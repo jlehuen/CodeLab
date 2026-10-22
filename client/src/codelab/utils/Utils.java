@@ -574,12 +574,12 @@ public class Utils {
 		scrollPane.setPreferredSize(new Dimension(650, 320));
 
 		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-		JButton copyBtn = new JButton("📋 Copier tout le texte");
+		JButton copyBtn = new JButton("Copier tout le texte");
 		copyBtn.addActionListener(e -> {
 			try {
 				StringSelection selection = new StringSelection(texte);
 				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-				copyBtn.setText("✅ Copié !");
+				copyBtn.setText("Copié !");
 			} catch (Exception ex) {
 				// ignore
 			}
@@ -719,23 +719,57 @@ public class Utils {
 	///////////////////////////////////////////////////
 
 	public static void openBrowser(String url) {
-		if (url == null) {
-			System.err.println("ERROR: Exception #1 in openBrowser");
+		if (url == null || url.isBlank()) {
+			System.err.println("ERROR: Exception #1 in openBrowser (URL is null or blank)");
+			return;
 		}
-		else if (!Desktop.isDesktopSupported()) {
-			System.err.println("ERROR: Exception #2 in openBrowser");
+
+		final String os = getOperatingSystem();
+
+		// 1. Sous Linux, l'API java.awt.Desktop d'OpenJDK échoue très fréquemment
+		// (Desktop.isDesktopSupported() / isSupported(BROWSE) renvoient false ou échouent silencieusement).
+		// On tente en priorité absolue xdg-open qui est le standard universel sur les bureaux Linux.
+		if ("Linux".equals(os)) {
+			if (openCommand("xdg-open", url)) return;
+			if (openCommand("sensible-browser", url)) return;
+			if (openCommand("x-www-browser", url)) return;
 		}
-		else if (!Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-			System.err.println("ERROR: Exception #3 in openBrowser");
+
+		// 2. Tentative avec l'API standard java.awt.Desktop
+		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+			try {
+				Desktop.getDesktop().browse(new URI(url));
+				return;
+			}
+			catch (Exception e) {
+				System.err.println("WARNING: Desktop.getDesktop().browse() failed: " + e.getMessage());
+			}
 		}
-		else try {
-			Desktop.getDesktop().browse(new URI(url));
+
+		// 3. Fallbacks selon le système d'exploitation
+		if ("Mac".equals(os)) {
+			if (openCommand("open", url)) return;
 		}
-		catch (IOException e) {
-			System.err.println("ERROR: Exception #4 in openBrowser");
+		else if ("Windows".equals(os)) {
+			if (openCommand("rundll32", "url.dll,FileProtocolHandler", url)) return;
 		}
-		catch (URISyntaxException e) {
-			System.err.println("ERROR: Exception #5 in openBrowser");
+		else if ("Linux".equals(os)) {
+			if (openCommand("firefox", url)) return;
+			if (openCommand("google-chrome", url)) return;
+			if (openCommand("chromium-browser", url)) return;
+		}
+
+		System.err.println("ERROR: Could not open browser for URL: " + url);
+	}
+
+	private static boolean openCommand(String... cmd) {
+		try {
+			ProcessBuilder pb = new ProcessBuilder(cmd);
+			pb.start();
+			return true;
+		}
+		catch (Exception e) {
+			return false;
 		}
 	}
 

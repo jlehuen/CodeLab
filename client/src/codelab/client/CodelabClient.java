@@ -272,7 +272,7 @@ public class CodelabClient {
 	}
 
 	private void safetyBackup(String destination, String sessionId) {
-		if (!isStudent()) return; // Aucun recovery pour les tuteurs et admins
+		if (!isStudent() || isTutor() || isAdmin()) return; // Aucun recovery pour les tuteurs et admins
 		try {
 			File destDir = new File(destination);
 			if (!destDir.exists() || !destDir.isDirectory()) return;

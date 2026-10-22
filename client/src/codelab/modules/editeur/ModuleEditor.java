@@ -215,6 +215,8 @@ public class ModuleEditor extends AbstractModule {
 	}
 
 	public synchronized void backupCurrentFile() {
+		if (codelab.isTutor() || codelab.isAdmin()) return;
+
 		File file1 = getCurrentFile();
 		if (file1 == null) return; // Si édition du fichier de configuration
 		if (FileManager.isEvaluation(file1)) return; // Pas de backup serveur pour les évaluations
@@ -480,8 +482,10 @@ public class ModuleEditor extends AbstractModule {
 		// Modifie le flag compilation_ok de AbstractEditor
 		boolean ok = editor.compile_file();
 		if (ok) {
-			backupCurrentFile();
-			CodeLab.logger("Automatic backup created after successful compilation for: " + getCurrentFilename());
+			if (!codelab.isTutor() && !codelab.isAdmin()) {
+				backupCurrentFile();
+				CodeLab.logger("Automatic backup created after successful compilation for: " + getCurrentFilename());
+			}
 		}
 		return ok;
 	}

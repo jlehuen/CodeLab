@@ -185,7 +185,7 @@ public class SessionEvaluator {
 		parentMenu.add(itemAutoNoAi);
 
 		for (SkillDescr skill : availableSkills) {
-			JMenuItem item = new JMenuItem("⚡ " + skill.getTitle() + suffixNoAi);
+			JMenuItem item = new JMenuItem(skill.getTitle() + suffixNoAi);
 			item.setToolTipText(skill.getDescription() + " [Mode déterministe local — 0 crédit IA]");
 			item.addActionListener(e -> onSelect.accept(skill, false));
 			parentMenu.add(item);
@@ -199,7 +199,7 @@ public class SessionEvaluator {
 		parentMenu.add(itemAutoAi);
 
 		for (SkillDescr skill : availableSkills) {
-			JMenuItem item = new JMenuItem("🤖 " + skill.getTitle() + suffixAi);
+			JMenuItem item = new JMenuItem(skill.getTitle() + suffixAi);
 			item.setToolTipText(skill.getDescription() + " [Mode hybride avec synthèse narrative IA Gemini]");
 			item.addActionListener(e -> onSelect.accept(skill, true));
 			parentMenu.add(item);
@@ -913,7 +913,7 @@ public class SessionEvaluator {
 		String pythonCmd = getPythonCommand();
 
 		codelab.showConsole();
-		codelab.printlnToConsole("[codelab] ⚖️ Recalcul des notes de la session : " + actualSessionDir.getName() + "...", Console.COLOR_LOG);
+		codelab.printlnToConsole("[codelab] Recalcul des notes de la session : " + actualSessionDir.getName() + "...", Console.COLOR_LOG);
 
 		final File finalSessionDir = actualSessionDir;
 		final java.util.concurrent.atomic.AtomicReference<Process> procRef = new java.util.concurrent.atomic.AtomicReference<>();
@@ -984,7 +984,7 @@ public class SessionEvaluator {
 				for (String line : chunks) {
 					if (line.startsWith("RECALCULATE_RESULT:")) continue;
 					Color color = Console.COLOR_PRINT;
-					if (line.startsWith("✅") || line.startsWith("[DONE]") || line.startsWith("[OK]")) color = new Color(34, 139, 34);
+					if (line.startsWith("[DONE]") || line.startsWith("[OK]")) color = new Color(34, 139, 34);
 					else if (line.startsWith("[WARN]")) color = new Color(220, 120, 0);
 					else if (line.startsWith("[PROGRESS]")) color = new Color(0, 140, 200);
 					else if (line.startsWith("[FAIL]") || line.startsWith("[ERREUR]") || line.startsWith("[ERROR]")) color = Console.COLOR_ERROR;

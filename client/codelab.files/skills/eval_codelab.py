@@ -605,7 +605,7 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         chrono_base = "Aucun horodatage significatif tracé sur CodeLab"
         
     if chrono_markers:
-        chrono_courte = f"⚠️ {len(chrono_markers)} anomalie(s) temporelle(s)"
+        chrono_courte = f"{len(chrono_markers)} anomalie(s) temporelle(s)"
         chrono_lines = [
             "> [!WARNING]",
             f"> **Anomalies chronométriques détectées ({len(chrono_markers)} événement(s))** :",
@@ -616,7 +616,7 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         chrono_md = "\n".join(chrono_lines)
     else:
         chrono_courte = f"Régulière ({distinct_days} séances / {span_days}j)" if distinct_days > 0 else "Neutre (sans trace)"
-        chrono_md = f"✅ **Rythme régulier et authentique** : {chrono_base}. Aucun pic de création instantané suspect (< 60s ou < 5 min)."
+        chrono_md = f"**Rythme régulier et authentique** : {chrono_base}. Aucun pic de création instantané suspect (< 60s ou < 5 min)."
 
     # 2. Stylométrie & Analyse d'Indentation
     tot_tabs = ind_stats.get("total_tabs", 0)
@@ -625,9 +625,9 @@ def extract_integrity_indicators(res, plagiarism_info=None):
     indent_markers = [m for m in style_markers if m.get("subtype") == "indentation_spaces_rupture"]
     
     if indent_markers:
-        style_courte = f"⚠️ Rupture 4 espaces ({tot_spaces} espaces vs {tot_tabs} tabs)"
+        style_courte = f"Rupture 4 espaces ({tot_spaces} espaces vs {tot_tabs} tabs)"
     elif style_markers:
-        style_courte = f"⚠️ Idiomes IA ({len(style_markers)} marqueur(s))"
+        style_courte = f"Idiomes IA ({len(style_markers)} marqueur(s))"
     else:
         style_courte = f"Conforme CodeLab ({tot_tabs} tabs)" if tot_tabs > 0 else "Standard"
 
@@ -642,7 +642,7 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         style_md = "\n".join(style_lines)
     else:
         tab_str = f" ({tot_tabs} tabulations, 0 rupture en 4 espaces)" if tot_tabs > 0 else ""
-        style_md = f"✅ **Style et indentation homogènes** : Utilisation exclusive des tabulations natives de l'éditeur CodeLab{tab_str}. Conventions de fonctions et de casse conformes aux exigences du module."
+        style_md = f"**Style et indentation homogènes** : Utilisation exclusive des tabulations natives de l'éditeur CodeLab{tab_str}. Conventions de fonctions et de casse conformes aux exigences du module."
 
     # 3. Contrôle de Similarité Inter-Étudiants (Plagiat)
     plag = res.get("plagiarism_alert") or plagiarism_info
@@ -650,11 +650,11 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         p_name = plag.get("partner") or plag.get("partner_id") or "Camarade"
         p_id = plag.get("partner_id", "")
         max_s = plag.get("max_sim", 0)
-        sev = plag.get("severity") or "⚠️ Suspicion de similarité"
+        sev = plag.get("severity") or "Suspicion de similarité"
         files = plag.get("files", [])
         files_str = ", ".join(f"`{f}` ({sim}%)" for f, sim in files) if files else "Exercices libres"
         
-        similarite_courte = f"🚨 Partage avec {p_id or p_name} ({max_s}%)"
+        similarite_courte = f"Partage avec {p_id or p_name} ({max_s}%)"
         sim_lines = [
             "> [!CAUTION]",
             f"> **{sev} de partage de code inter-étudiants** :",
@@ -665,19 +665,19 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         ]
         similarite_md = "\n".join(sim_lines)
     else:
-        similarite_courte = "✅ Original (0% partage)"
-        similarite_md = "✅ **Travail original authentique** : Analyse croisée de cohorte par n-grams syntaxiques (Jaccard) réalisée sans aucune similarité suspecte détectée sur les exercices à code libre."
+        similarite_courte = "Original (0% partage)"
+        similarite_md = "**Travail original authentique** : Analyse croisée de cohorte par n-grams syntaxiques (Jaccard) réalisée sans aucune similarité suspecte détectée sur les exercices à code libre."
 
     # Bloc combiné complet
-    analyse_integrite_block = f"""### 🔬 Analyses d'Intégrité Pédagogique
+    analyse_integrite_block = f"""### Analyses d'Intégrité Pédagogique
 
-#### ⏱️ Analyse Chronométrique & Dynamique de Travail
+#### Analyse Chronométrique & Dynamique de Travail
 {chrono_md}
 
-#### 📐 Stylométrie & Respect des Conventions d'Indentation
+#### Stylométrie & Respect des Conventions d'Indentation
 {style_md}
 
-#### 👥 Contrôle de Similarité Inter-Étudiants (Détection de Plagiat)
+#### Contrôle de Similarité Inter-Étudiants (Détection de Plagiat)
 {similarite_md}"""
 
     return {
@@ -868,7 +868,7 @@ def build_deterministic_pedagogical_sections(skill_name, data, identity):
     if antipatterns:
         amel_parts.append("Certains points de méthode et anti-patterns méritent une attention particulière :")
         for ap in antipatterns[:3]:
-            amel_parts.append(f"- ⚠️ **{ap}**")
+            amel_parts.append(f"- **{ap}**")
     if snippets.get("compilation_errors"):
         amel_parts.append("Erreurs relevées lors du contrôle syntaxique :")
         for ce in snippets["compilation_errors"][:2]:
@@ -968,7 +968,7 @@ def evaluate_generic_folder(student_dir, output_file, sessions_xml=None, ai_prop
     integ = extract_integrity_indicators(data, plagiarism_info=plagiarism_info)
     print(f"[INFO] Chronométrie : {integ['chronometrie_courte']}", flush=True)
     print(f"[INFO] Stylométrie : {integ['stylometrie_courte']}", flush=True)
-    if "🚨" in integ['similarite_courte'] or "⚠️" in integ['similarite_courte']:
+    if "Partage" in integ['similarite_courte'] or "anomalie" in integ['chronometrie_courte'] or "Rupture" in integ['stylometrie_courte']:
         print(f"[WARN] Similarité / Plagiat : {integ['similarite_courte']}", flush=True)
     else:
         print(f"[DONE] Similarité / Plagiat : {integ['similarite_courte']}", flush=True)
@@ -1032,9 +1032,12 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 
 ### Commentaire de l'Enseignant
 (mot personnalisé et encourageant de l'enseignant pour la progression de l'étudiant)
+
+Important : Rédige dans un style sobre, académique et professionnel. N'utilise AUCUN emoji Unicode (aucun symbole ou émoticône), uniquement un formatage Markdown standard (titres, puces, texte en gras).
 """
         llm_text = call_gemini_api(api_key, model, prompt, ai_props=ai_props)
         if llm_text:
+            llm_text = re.sub(r'[\U00010000-\U0010ffff\u2600-\u27bf\ufe0f]', '', llm_text)
             sec_bilan, sec_points_forts, sec_ameliorations, sec_commentaire = extract_pedagogical_sections(llm_text)
 
     if not sec_bilan:
@@ -1087,7 +1090,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 
 ---
 
-### 📋 Cartouche de Traçabilité & Synthèse d'Intégrité
+### Cartouche de Traçabilité & Synthèse d'Intégrité
 
 - **Date de l'évaluation :** {eval_date_str}
 - **Skill appliqué :** `{skill_meta['name']}` (dernière modification : {skill_meta['last_modified']})
@@ -1096,7 +1099,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 - **Stylométrie d'indentation :** {integ['stylometrie_courte']}
 - **Test de similarité (Plagiat) :** {integ['similarite_courte']}
 - **Indice d'assistance IA :** {data.get('ai_analysis', {}).get('level', 'Faible (0% - Code authentique)')}
-- **Environnement :** CodeLab v1.5.0
+- **Environnement :** CodeLab v1.5.1
 
 ---
 

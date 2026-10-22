@@ -35,6 +35,8 @@ import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import codelab.utils.CleanListView;
+
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.InputMap;
@@ -129,6 +131,9 @@ public class NotebookCellPane extends JPanel {
 				Object o = attrs.getAttribute(StyleConstants.NameAttribute);
 				if (o instanceof HTML.Tag) {
 					HTML.Tag kind = (HTML.Tag) o;
+					if (kind == HTML.Tag.UL) {
+						return new CleanListView(elem);
+					}
 					if (kind == HTML.Tag.HTML || kind == HTML.Tag.BODY || kind == HTML.Tag.PRE || kind == HTML.Tag.TABLE) {
 						// Permet au document, tableaux et blocs préformatés de s'adapter fluidement à toute largeur sans buter sur un minimumSpan
 						return new BlockView(elem, View.Y_AXIS) {
@@ -882,7 +887,8 @@ public class NotebookCellPane extends JPanel {
 			// Diagrammes Mermaid en premier (avant LaTeX, pour que d'éventuels "$" du diagramme ne soient pas interprétés)
 			int viewW = mdHtmlView.getWidth() > 0 ? mdHtmlView.getWidth() : 700;
 			int maxDiagramW = Math.max(200, viewW - 40);
-			String withDiagrams = MermaidRenderer.renderMarkdownMermaid(MarkdownUtils.underline(raw), maxDiagramW, mermaidScale, this, this::refreshHtmlView);
+			String preprocessed = codelab.modules.editeur.markdown.MarkdownViewer.preprocessMarkdown(raw);
+			String withDiagrams = MermaidRenderer.renderMarkdownMermaid(MarkdownUtils.underline(preprocessed), maxDiagramW, mermaidScale, this, this::refreshHtmlView);
 
 			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, inlineScale, displayScale);
 			Node document = MD_PARSER.parse(processed);
