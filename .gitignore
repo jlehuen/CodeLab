@@ -47,6 +47,7 @@ client/CODELAB.md
 client/distrib-ic2.sh
 git-*
 release.sh
+github-release.sh
 client/release.sh
 client/update-version.sh
 client/refresh-icon.command
