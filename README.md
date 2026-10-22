@@ -354,7 +354,12 @@ Des scripts de service sont également disponibles dans le dossier `server/` :
 
 ### 3. Administration du serveur
 
-Le serveur CodeLab intègre nativement une console web d'administration et des outils automatisés pour préparer et piloter les classes virtuelles sans dépendance externe.
+Le serveur CodeLab intègre nativement une console web d'administration et des outils automatisés pour préparer et piloter les classes virtuelles sans dépendance externe :
+
+<p align="center">
+  <br>
+  <img src="client/images/admin.png" alt="admin.png">
+</p>
 
 #### Tableau de bord d'administration Web
 - **Accès** : `http://localhost:9989` *(ou adresse IP du serveur)*.
