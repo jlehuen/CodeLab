@@ -210,6 +210,79 @@ def export_csv(results, csv_path, cohort_dir=None):
                 sim_str
             ])
 
+def build_cohort_clusters(results, suspicious_logins):
+    """Classe les étudiants en 5 typologies/clusters pédagogiques exclusifs."""
+    total_st = len(results)
+    clusters = [
+        {
+            'id': 'mastery',
+            'label': '🌟 **Autonomie & Maîtrise Avancée**',
+            'desc': 'Progression complète, code personnel et rigoureux. Excellente autonomie conceptuelle. À mobiliser sur des défis ou du tutorat de pairs.',
+            'members': []
+        },
+        {
+            'id': 'solid_progress',
+            'label': '🛠️ **Pratique Régulière & Socle en Consolidation**',
+            'desc': 'Fondamentaux acquis et démarche fonctionnelle. Quelques fragilités sur la modularité ou les cas limites. Poursuivre la consolidation.',
+            'members': []
+        },
+        {
+            'id': 'struggling',
+            'label': '⚠️ **Difficultés Méthodologiques ou Décrochage**',
+            'desc': 'Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise sur la syntaxe de base et la structure algorithmique.',
+            'members': []
+        },
+        {
+            'id': 'ai_assisted',
+            'label': '🤖 **Recours Extérieur & Rupture Stylométrique**',
+            'desc': 'Empreinte IA ou idiomes atypiques non enseignés. Contrôle de l\'appropriation orale conseillé pour vérifier l\'autonomie.',
+            'members': []
+        },
+        {
+            'id': 'shared_code',
+            'label': '👥 **Code Partagé & Entraide Non Différenciée**',
+            'desc': 'Similarités structurelles directes sur du code libre. Rappel des consignes d\'intégrité et évaluation orale de la compréhension.',
+            'members': []
+        }
+    ]
+    c_map = {c['id']: c for c in clusters}
+
+    for r in results:
+        lid = r.get('student_id') or r.get('login', '')
+        name = r.get('student_name') or r.get('name', '')
+        note = r.get('scores', {}).get('total_note', r.get('scores', {}).get('total', r.get('total', 0.0)))
+        ai_data = r.get('ai_analysis') or r.get('ai_detection', {})
+        ai_level = str(ai_data.get('level', ''))
+        ai_prob = float(ai_data.get('ai_probability', 0.0))
+        is_ai = ai_level.startswith(('Élevé', 'Modéré')) or ai_prob >= 30.0
+        is_susp = lid in suspicious_logins
+
+        member_entry = f"`{lid}` ({name})" if (name and name != lid) else f"`{lid}`"
+
+        if is_susp:
+            c_map['shared_code']['members'].append(member_entry)
+        elif is_ai:
+            c_map['ai_assisted']['members'].append(member_entry)
+        elif note < 10.0:
+            c_map['struggling']['members'].append(member_entry)
+        elif note >= 14.0:
+            c_map['mastery']['members'].append(member_entry)
+        else:
+            c_map['solid_progress']['members'].append(member_entry)
+
+    lines = [
+        "## 👥 Typologies & Clusters d'Étudiants Types\n",
+        "| Cluster Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
+        "| :--- | :---: | :---: | :--- | :--- |"
+    ]
+    for c in clusters:
+        cnt = len(c['members'])
+        pct = (cnt / total_st * 100.0) if total_st > 0 else 0.0
+        m_str = ", ".join(c['members']) if c['members'] else "—"
+        lines.append(f"| {c['label']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
+    lines.append("")
+    return "\n".join(lines)
+
 def export_summary_markdown(results, out_path, cohort_dir=None):
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     suspicions = detect_cohort_plagiarism(cohort_dir) if cohort_dir else []
@@ -271,5 +344,6 @@ def export_summary_markdown(results, out_path, cohort_dir=None):
         alert_str = " | ".join(alerts) if alerts else "Aucune"
         md.append(f"| `{login}` | {sc.get('compilation', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | {note_sans_malus:.1f} | **{sc.get('total', 0):.1f}** | {ai_level} | {alert_str} |")
     md.append("")
+    md.append(build_cohort_clusters(results, suspicious_logins))
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md))

@@ -467,6 +467,83 @@ def recalculate_session(session_dir, weights_path=None):
                 repl = rf'\g<1> {st["a1"]:.1f} | **{st["a2"]:.1f}** | {st["a3"]:.1f} | {st["raw_subtotal"]:.1f} | **{st["new"]:.1f}** \g<2>'
                 s_content = re.sub(pat, repl, s_content)
 
+            # Mise à jour ou ajout de la section des typologies / clusters
+            clusters = [
+                {
+                    'id': 'mastery',
+                    'label': '🌟 **Autonomie & Maîtrise Avancée**',
+                    'desc': 'Progression complète, code personnel et rigoureux. Excellente autonomie conceptuelle. À mobiliser sur des défis ou du tutorat de pairs.',
+                    'members': []
+                },
+                {
+                    'id': 'solid_progress',
+                    'label': '🛠️ **Pratique Régulière & Socle en Consolidation**',
+                    'desc': 'Fondamentaux acquis et démarche fonctionnelle. Quelques fragilités sur la modularité ou les cas limites. Poursuivre la consolidation.',
+                    'members': []
+                },
+                {
+                    'id': 'struggling',
+                    'label': '⚠️ **Difficultés Méthodologiques ou Décrochage**',
+                    'desc': 'Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise sur la syntaxe de base et la structure algorithmique.',
+                    'members': []
+                },
+                {
+                    'id': 'ai_assisted',
+                    'label': '🤖 **Recours Extérieur & Rupture Stylométrique**',
+                    'desc': 'Empreinte IA ou idiomes atypiques non enseignés. Contrôle de l\'appropriation orale conseillé pour vérifier l\'autonomie.',
+                    'members': []
+                },
+                {
+                    'id': 'shared_code',
+                    'label': '👥 **Code Partagé & Entraide Non Différenciée**',
+                    'desc': 'Similarités structurelles directes sur du code libre. Rappel des consignes d\'intégrité et évaluation orale de la compréhension.',
+                    'members': []
+                }
+            ]
+            c_map = {c['id']: c for c in clusters}
+            total_st = len(students_updated)
+
+            for st in students_updated:
+                lid = st['login']
+                nom = st.get('name', '')
+                note = st['new']
+                is_susp = st.get('sim_malus', 0) > 0
+                is_ia = st.get('ia_malus', 0) > 0
+                member_entry = f"`{lid}` ({nom})" if (nom and nom != lid) else f"`{lid}`"
+
+                if is_susp:
+                    c_map['shared_code']['members'].append(member_entry)
+                elif is_ia:
+                    c_map['ai_assisted']['members'].append(member_entry)
+                elif note < 10.0:
+                    c_map['struggling']['members'].append(member_entry)
+                elif note >= 14.0:
+                    c_map['mastery']['members'].append(member_entry)
+                else:
+                    c_map['solid_progress']['members'].append(member_entry)
+
+            cluster_lines = [
+                "## 👥 Typologies & Clusters d'Étudiants Types\n",
+                "| Cluster Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
+                "| :--- | :---: | :---: | :--- | :--- |"
+            ]
+            for c in clusters:
+                cnt = len(c['members'])
+                pct = (cnt / total_st * 100.0) if total_st > 0 else 0.0
+                m_str = ", ".join(c['members']) if c['members'] else "—"
+                cluster_lines.append(f"| {c['label']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
+            cluster_lines.append("")
+            cluster_section_str = "\n".join(cluster_lines)
+
+            if "## 👥 Typologies & Clusters d'Étudiants Types" in s_content:
+                s_content = re.sub(
+                    r"## 👥 Typologies & Clusters d'Étudiants Types[\s\S]*?(?=\n## |\Z)",
+                    cluster_section_str.rstrip(),
+                    s_content
+                )
+            else:
+                s_content = s_content.rstrip() + "\n\n" + cluster_section_str
+
             synthese_md.write_text(s_content, encoding='utf-8')
         except Exception as e:
             print(f"[WARN] Impossible de mettre à jour {synthese_md}: {e}", file=sys.stderr)
