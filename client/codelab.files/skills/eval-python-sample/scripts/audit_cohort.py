@@ -371,7 +371,7 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None):
     moyenne = (sum(notes) / len(notes)) if notes else 0.0
     md.append(f"**Effectif audité** : {len(results)} étudiants | **Moyenne** : **{moyenne:.2f}/20**")
     md.append("")
-    md.append(f"**Algorithme d'évaluation** : Compétence : `eval-python-sample` | Analyse IA : {ia_status} | Barème : 6 (Syntaxe) + 8 (Architecture) + 4 (Style) + 2 (Tests) = 20 pts\n")
+    md.append(f"**Algorithme d'évaluation** : `eval-python-sample` | Analyse IA : {ia_status} | Barème : 6 (Syntaxe) + 8 (Architecture) + 4 (Style) + 2 (Tests) = 20 pts\n")
     md.append("---")
     md.append("")
 

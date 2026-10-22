@@ -514,7 +514,7 @@ def recalculate_session(session_dir, weights_path=None):
             else:
                 bareme_str = f"{a1_max:.0f} (Progression) + {a2_max:.0f} (Architecture) + {a3_max:.0f} (Style) = 20 pts"
             
-            algo_line = f"**Algorithme d'évaluation** : Compétence : `{skill_name}` | Analyse IA : {ia_status} | Barème : {bareme_str}"
+            algo_line = f"**Algorithme d'évaluation** : `{skill_name}` | Analyse IA : {ia_status} | Barème : {bareme_str}"
 
             if "**Algorithme d'évaluation**" in s_content:
                 s_content = re.sub(
