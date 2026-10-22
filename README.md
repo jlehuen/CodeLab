@@ -205,31 +205,17 @@ Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (
 
 ## Évaluation pédagogique automatisée & IA
 
-CodeLab intègre un système d'**évaluation automatisée assistée par IA** modulaire, basé sur des compétences spécialisées (*skills*) découverts dynamiquement au démarrage (ex: `eval-introprog` en C, `eval-intropython`, etc.).
+CodeLab intègre un système d'**évaluation formative continue** modulaire (*skills*), conçu pour assister les enseignants dans le suivi et la correction des séances de programmation.
 
-### 1. Fonctionnement Hybride & Intégrité des Notes
-- **Calcul 100 % Déterministe Hors-Ligne** : L'analyse statique du code (AST, expressions régulières, détection des 31 jalons de TP, anti-patterns comme les attentes actives bloquantes ou les troncatures de flottants), le contrôle syntaxique Clang (`-fsyntax-only`) et le calcul des notes sur 20 points ($8 + 8 + 2 + 2$) sont exécutés **localement sur la machine**. **La note finale est rigoureusement identique avec ou sans IA**.
-- **Calibration Réaliste & Plafonds d'Étape** : Fin des notes de complaisance. Un étudiant débutant bloqué prématurément (ex: au TP4 sans aborder les projets intégrateurs) voit sa note fidèlement plafonnée autour de 10–11/20 sans dévaloriser les étudiants ayant atteint l'autonomie complète (17–19/20).
-- **Détection Multi-Critères d'Usage d'IA** : Détection sur 5 dimensions objectives (incohérence d'écosystème comme `<stdio.h>` ou `printf()` interdits en L1, chronométrie anormale, syntaxe avancée hors programme, stylométrie ChatGPT) avec calcul d'un score de 0 à 100% consigné dans le Cartouche de Traçabilité.
-- **Détection de Copier-Collé & Plagiat Inter-Étudiants** : Détection globale par algorithme Winnowing et n-grams de tokens syntaxiques avec export d'une matrice de similarité (`plagiarism_matrix.csv`) et d'un rapport de cohorte (`rapport_plagiat.md`).
-- **Rédaction Socratique par IA (Optionnelle)** : Lorsqu'une clé d'API Gemini est configurée (`userdata/user.properties`), l'IA prend le relais **uniquement pour la rédaction** de la fiche individuelle d'évaluation. Elle adopte une posture d'enseignant bienveillant et socratique, formulant des questions ouvertes et des pistes d'auto-remédiation personnalisées au lieu d'asséner une correction brute.
-- **Synthèse de promotion & Export CSV** : Générés 100 % hors-ligne (0 appel réseau, exclusion automatique des comptes tuteurs et enseignants du barème étudiant).
+### Points clés
 
-### 2. Coût en Requêtes et Tokens d'une Évaluation de Session
-Seul le diagnostic factuel JSON compact (jalons atteints, scores fixés, 2 ou 3 extraits ciblés de quelques lignes) est soumis à l'IA :
+- **Double mode d'évaluation** :
+  - ⚡ **Sans IA (100 % local & immédiat)** : analyse statique du code (syntaxe, structure, respect des consignes), calcul déterministe de la note sur 20 points, détection de plagiat inter-étudiants et génération d'un export CSV de promotion.
+  - 🤖 **Avec IA (Google Gemini)** : enrichit l'analyse d'un retour pédagogique individualisé et socratique (questions ouvertes, encouragements et pistes de remédiation sans délivrer la solution brute).
+- **Intégrité de la notation** : La note est calculée localement par l'analyseur déterministe ; elle est strictement identique avec ou sans IA.
+- **Léger et économique** : Compatible avec le quota gratuit de Google AI Studio (Free Tier) et doté d'un cache local persistant (réévaluer une session sans modification de code consomme 0 requête).
 
-| Échelle | Nombre de requêtes | Volume total de tokens | Coût estimé (`gemini-3.5-flash-lite`) |
-| :--- | :---: | :---: | :---: |
-| **Synthèse & Export CSV** | **0** | **0 token** | **0,00 €** *(100 % hors-ligne)* |
-| **1 étudiant (fiche individuelle)** | **1** | ~2 500 tokens (1 500 in / 1 000 out) | **< 0,001 €** *(négligeable)* |
-| **Groupe TP (35 étudiants)** | **35** | ~87 500 tokens | **0,00 €** *(Free Tier)* ou **~0,01 €** |
-| **Promotion complète (100 étudiants)** | **100** | ~250 000 tokens | **0,00 €** *(Free Tier)* ou **~0,04 €** |
-
-> 💡 **Zéro dépense inutile** :
-> - **Gratuité avec Google AI Studio** : Les quotas gratuits (15 req/min, 1 500 req/jour) couvrent sans aucun frais plusieurs promotions complètes.
-> - **Cache local persistant (`AI_CACHE`)** : Les fiches générées sont archivées par empreinte SHA-256 dans `userdata/ai_cache/`. Réévaluer une session sans modification de code consomme **0 requête et 0 token**. Le cache s'invalide automatiquement dès qu'un élève modifie son code. Pour forcer une réévaluation complète après modification du prompt ou du barème, videz simplement `userdata/ai_cache/` (`rm -rf ~/codelab.files/userdata/ai_cache/*`) ou définissez `AI_CACHE = false`.
->
-> 📖 Pour en savoir plus sur l'architecture, le cycle de vie du cache, la création de nouvelles compétences d'évaluation et la personnalisation des barèmes, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
+> 📖 Pour en savoir plus sur l'architecture, la configuration de l'API Gemini et la création de nouvelles compétences d'évaluation, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
 
 <br>
 
