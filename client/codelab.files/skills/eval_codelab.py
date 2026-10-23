@@ -886,7 +886,16 @@ def extract_pedagogical_sections(markdown_text):
     if m_bilan: sec_bilan = re.sub(r'^###?[^\n]*\n+', '', m_bilan.group(0)).strip()
     if m_forts: sec_points_forts = re.sub(r'^###?[^\n]*\n+', '', m_forts.group(0)).strip()
     if m_amel: sec_ameliorations = re.sub(r'^###?[^\n]*\n+', '', m_amel.group(0)).strip()
-    if m_comm: sec_commentaire = re.sub(r'^###?[^\n]*\n+', '', m_comm.group(0)).strip()
+    if m_comm:
+        sec_commentaire = re.sub(r'^###?[^\n]*\n+', '', m_comm.group(0)).strip()
+        # Suppression des signatures résiduelles de l'IA (ex: Jérôme Lehuen / Enseignant-chercheur)
+        sec_commentaire = re.sub(
+            r'\n+\s*(?:[-—*_\s]*)?(?:Jérôme\s+Lehuen|Enseignant-chercheur)[\s\S]*$',
+            '',
+            sec_commentaire,
+            flags=re.IGNORECASE
+        ).strip()
+        sec_commentaire = re.sub(r'[,;\s—–-]+$', '.', sec_commentaire).strip()
 
     return sec_bilan, sec_points_forts, sec_ameliorations, sec_commentaire
 
@@ -1492,8 +1501,7 @@ def evaluate_single_c_folder(student_dir, output_file, sessions_xml=None, ai_pro
             student_code_parts.append(f"#### Programme Étudiant `{rel_path}` ({status_str}) :\n```c\n{code_str}\n```")
         student_code_text = "\n\n".join(student_code_parts) if student_code_parts else "(Aucun code source C significatif trouvé)"
 
-        prompt = f"""Tu es Jérôme Lehuen, enseignant-chercheur en informatique à Le Mans Université et concepteur de CodeLab.
-Tu évalues les travaux pratiques d'un étudiant pour le module 'Introduction à la programmation' (L1 Informatique).
+        prompt = f"""Tu es un enseignant bienveillant et rigoureux évaluant les travaux d'un étudiant pour le module 'Introduction à la programmation' (L1 Informatique).
 
 Ton rôle est d'effectuer une ÉVALUATION PÉDAGOGIQUE HYBRIDE APPROFONDIE :
 Tu ne te reposes PAS uniquement sur un comptage rigide de regex ou de patterns python.
@@ -1579,7 +1587,7 @@ FORMAT DE SORTIE IMPÉRATIF :
 (expliquer de façon socratique sans donner la solution brute, cibler les erreurs de compilation ou anti-patterns avec blocs ```c ... ```, et rappeler l'importance du travail personnel si IA ou similarité détectée)
 
 ### Commentaire de l'Enseignant
-(mot personnalisé et encourageant de l'enseignant pour la progression de l'étudiant)
+(mot personnalisé et encourageant de l'enseignant pour la progression de l'étudiant. IMPORTANT : ne signe PAS avec un nom propre ou un titre comme 'Jérôme Lehuen' ou 'Enseignant-chercheur', termine directement sur le mot d'encouragement.)
 """
 
         llm_text = call_gemini_api(api_key, model, prompt, ai_props=ai_props)
@@ -1757,8 +1765,7 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
     if api_key:
         data["eval_engine"] = f"LLM Gemini ({model})"
         print(f"[INFO] Rédaction socratique personnalisée par LLM ({model})...", flush=True)
-        prompt = f"""Tu es Jérôme Lehuen, enseignant-chercheur à Le Mans Université.
-Tu évalues les travaux pratiques du TP4 sommatif pour le module 'Introduction à Python et à Numpy' (L2 Informatique).
+        prompt = f"""Tu es un enseignant bienveillant et rigoureux évaluant les travaux pratiques du TP4 sommatif pour le module 'Introduction à Python et à Numpy' (L2 Informatique).
 
 Voici le diagnostic factuel extrait par l'analyseur automatique :
 ```json
@@ -1776,7 +1783,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
 (chasse aux anti-patterns comme les boucles for Numpy inutiles ou re.compile dans une boucle, questions socratiques avec blocs ```python ... ```)
 
 ### Commentaire de l'Enseignant
-(mot personnalisé et encourageant de l'enseignant pour la poursuite d'études en L3)
+(mot personnalisé et encourageant de l'enseignant pour la poursuite d'études en L3. IMPORTANT : ne signe PAS avec un nom propre ou un titre comme 'Jérôme Lehuen' ou 'Enseignant-chercheur', termine directement sur le mot d'encouragement.)
 """
         llm_text = call_gemini_api(api_key, model, prompt, ai_props=ai_props)
         if llm_text:
@@ -2021,7 +2028,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 (conseils socratiques sans donner directement le code solution, ciblant les erreurs de compilation ou anti-patterns de snippets)
 
 ### Commentaire de l'Enseignant
-(mot personnalisé et encourageant de l'enseignant pour la progression de l'étudiant)
+(mot personnalisé et encourageant de l'enseignant pour la progression de l'étudiant. IMPORTANT : ne signe PAS avec un nom propre ou un titre comme 'Jérôme Lehuen' ou 'Enseignant-chercheur', termine directement sur le mot d'encouragement.)
 """
         llm_text = call_gemini_api(api_key, model, prompt, ai_props=ai_props)
         if llm_text:
