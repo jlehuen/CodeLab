@@ -18,7 +18,7 @@ public class ToolBarNotebook extends AbstractToolbar {
 	private final NotebookEditor editor;
 
 	private ToolButton langButton;
-	private ToolButton b1, b2, b3, b4, b5, b6, b7;
+	private ToolButton b1, b2, b3, b4, b5, b6, b7, b8;
 
 	public ToolBarNotebook(ModuleEditor module, NotebookEditor editor) {
 		super(module);
@@ -36,6 +36,7 @@ public class ToolBarNotebook extends AbstractToolbar {
 		add(b6 = new ToolButton("COMM", LABEL("Btn_com"), LABEL("Btn_com_tooltip"), icon_encom, this));
 		add(b5 = new ToolButton("UNCOM", LABEL("Btn_uncom"), LABEL("Btn_uncom_tooltip"), icon_decom, this));
 		add(b7 = new ToolButton("FIND", LABEL("Btn_find"), LABEL("Btn_find_tooltip"), icon_search, this));
+		add(b8 = new ToolButton("CLEAR_COUNTS", LABEL("Btn_clear_counts"), LABEL("Btn_clear_counts_tooltip"), icon_clear, this));
 		addSeparatorflex();
 		add(langButton = new ToolButton("LANG", "Python", CodeLab.PROP("URL_PYTHON") != null ? CodeLab.PROP("URL_PYTHON") : "https://python.org", logo_python, this));
 		endToolbar();
@@ -48,12 +49,16 @@ public class ToolBarNotebook extends AbstractToolbar {
 			b5.setEnabled(false);
 			b6.setEnabled(false);
 			b7.setEnabled(false);
+			b8.setEnabled(false);
 		}
 	}
 
 	@Override
 	public void update() {
 		super.update();
+		if (editor != null) {
+			editor.onExecutionStateChanged();
+		}
 		boolean editable_mode = (editor != null) && editor.getEditable();
 		boolean enable = (editor != null) && editable_mode;
 
@@ -64,6 +69,7 @@ public class ToolBarNotebook extends AbstractToolbar {
 		if (b5 != null) b5.setEnabled(enable);
 		if (b6 != null) b6.setEnabled(enable);
 		if (b7 != null) b7.setEnabled(enable);
+		if (b8 != null) b8.setEnabled(enable);
 		if (langButton != null) {
 			langButton.setEnabled(true);
 			NotebookCellPane active = (editor != null) ? editor.getActiveCell() : null;
@@ -100,6 +106,7 @@ public class ToolBarNotebook extends AbstractToolbar {
 			case "COMM":	if (editor != null) editor.comment(); break;
 			case "UNCOM":	if (editor != null) editor.uncomment(); break;
 			case "FIND":	if (editor != null) editor.findAndReplaceDialog(); break;
+			case "CLEAR_COUNTS":	if (editor != null) editor.resetExecutionCounts(); break;
 			case "LANG":	if (langButton != null) Utils.openBrowser(langButton.getToolTipText()); break;
 			default: super.action(ident);
 		}

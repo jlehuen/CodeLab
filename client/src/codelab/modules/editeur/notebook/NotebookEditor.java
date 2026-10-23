@@ -63,6 +63,7 @@ public class NotebookEditor extends AbstractEditor {
 	private final List<NotebookCellPane> cellPanes = new ArrayList<>();
 	private NotebookCellPane activeCell = null;
 	private ObjectNode notebookMetadata = null;
+	private int executionCounter = 0;
 
 	private static class ScrollablePanel extends JPanel implements javax.swing.Scrollable {
 		private static final long serialVersionUID = 1L;
@@ -213,6 +214,26 @@ public class NotebookEditor extends AbstractEditor {
 		addCellAfter(current, type, lang);
 	}
 
+	public void duplicateCell(NotebookCellPane cell) {
+		if (cell == null || !editable) return;
+		int index = cellPanes.indexOf(cell);
+		if (index < 0) return;
+		NotebookCellPane newCell = new NotebookCellPane(this, cell.getType(), cell.getLanguage(), cell.getSource());
+		newCell.setEditable(editable);
+		if (cell.isLocked()) {
+			newCell.setLocked(true);
+		}
+		cellPanes.add(index + 1, newCell);
+		refreshCellsDisplay();
+		setActiveCell(newCell);
+		if (cell.isCollapsed()) {
+			newCell.setCollapsed(true);
+		} else {
+			newCell.focusEditor();
+		}
+		setModified(true);
+	}
+
 	public void addCellAtEnd(String type) {
 		NotebookCellPane last = cellPanes.isEmpty() ? null : cellPanes.get(cellPanes.size() - 1);
 		String lang = (last != null) ? last.getLanguage() : (isCNotebook() ? "c" : "python");
@@ -327,10 +348,37 @@ public class NotebookEditor extends AbstractEditor {
 			return;
 		}
 
+		executionCounter++;
+		targetCell.setExecutionCount(executionCounter);
+		targetCell.setRunning(true);
+
 		if ("c".equalsIgnoreCase(targetCell.getLanguage())) {
 			runSingleCellC(targetCell);
 		} else {
 			runSingleCellPython(targetCell);
+		}
+	}
+
+	public void onExecutionStateChanged() {
+		boolean isRunning = (module != null && module.codelab != null && module.codelab.isRunning());
+		if (!isRunning) {
+			for (NotebookCellPane cp : cellPanes) {
+				if (cp.isRunning()) {
+					cp.setRunning(false);
+				}
+			}
+		}
+	}
+
+	public void resetExecutionCounts() {
+		this.executionCounter = 0;
+		for (NotebookCellPane cp : cellPanes) {
+			cp.setExecutionCount(-1);
+			cp.setRunning(false);
+		}
+		setModified(true);
+		if (module != null && module.codelab != null) {
+			module.codelab.consoleLog(CodeLab.LABEL("Reset_execution_counts_success"));
 		}
 	}
 
@@ -377,6 +425,7 @@ public class NotebookEditor extends AbstractEditor {
 		Compilateur comp = new Compilateur(module, cellScript);
 		boolean ok = comp.compile();
 		if (!ok) {
+			targetCell.setRunning(false);
 			if (module.codelab.getConsole() != null) {
 				module.codelab.getConsole().flush();
 			}
@@ -610,12 +659,24 @@ public class NotebookEditor extends AbstractEditor {
 				ObjectNode meta = mapper.createObjectNode();
 
 				if ("code".equals(cType)) {
-					c.putNull("execution_count");
-					c.putArray("outputs");
+					int ec = cp.getExecutionCount();
+					if (ec > 0) {
+						c.put("execution_count", ec);
+					} else {
+						c.putNull("execution_count");
+					}
+					if (cp.getOriginalOutputs() != null) {
+						c.set("outputs", cp.getOriginalOutputs());
+					} else {
+						c.putArray("outputs");
+					}
 					meta.put("language", cp.getLanguage());
 				}
 				if (cp.isLocked()) {
 					meta.put("editable", false);
+				}
+				if (cp.isCollapsed()) {
+					meta.put("collapsed", true);
 				}
 				c.set("metadata", meta);
 
@@ -699,6 +760,7 @@ public class NotebookEditor extends AbstractEditor {
 			int activeIndex = (this.activeCell != null) ? cellPanes.indexOf(this.activeCell) : -1;
 
 			this.activeCell = null;
+			this.executionCounter = 0;
 			cellPanes.clear();
 			JsonNode cellsNode = root.get("cells");
 			if (cellsNode != null && cellsNode.isArray()) {
@@ -723,6 +785,25 @@ public class NotebookEditor extends AbstractEditor {
 					cp.setEditable(editable);
 					if (isCellLocked) {
 						cp.setLocked(true);
+					}
+					boolean isCellCollapsed = metaNode.path("collapsed").asBoolean(false) ||
+					                          metaNode.path("jupyter").path("source_hidden").asBoolean(false);
+					if (isCellCollapsed) {
+						cp.setCollapsed(true);
+					}
+					if ("code".equals(cellType)) {
+						JsonNode ecNode = cNode.get("execution_count");
+						if (ecNode != null && !ecNode.isNull() && ecNode.isInt()) {
+							int ec = ecNode.asInt();
+							cp.setExecutionCount(ec);
+							if (ec > executionCounter) {
+								executionCounter = ec;
+							}
+						}
+						JsonNode outNode = cNode.get("outputs");
+						if (outNode != null && outNode.isArray() && outNode.size() > 0) {
+							cp.setOriginalOutputs(outNode.deepCopy());
+						}
 					}
 					cellPanes.add(cp);
 				}
@@ -793,6 +874,12 @@ public class NotebookEditor extends AbstractEditor {
 
 	@Override
 	public boolean compile_file() {
+		for (NotebookCellPane cp : cellPanes) {
+			if ("code".equals(cp.getType())) {
+				cp.setExecutionCount(++executionCounter);
+				cp.setRunning(true);
+			}
+		}
 		save_content();
 		File file = getFile();
 		if (file == null) file = extern_file;
@@ -803,8 +890,16 @@ public class NotebookEditor extends AbstractEditor {
 					JupyterUtils.extractRunnableC(file, cFile);
 					Compilateur comp = new Compilateur(module, cFile);
 					compilation_ok = comp.compile();
+					if (!compilation_ok) {
+						for (NotebookCellPane cp : cellPanes) {
+							if (cp.isRunning()) cp.setRunning(false);
+						}
+					}
 					return compilation_ok;
 				} catch (Exception e) {
+					for (NotebookCellPane cp : cellPanes) {
+						if (cp.isRunning()) cp.setRunning(false);
+					}
 					ExceptionManager.process(e);
 					compilation_ok = false;
 					return false;
@@ -814,6 +909,9 @@ public class NotebookEditor extends AbstractEditor {
 				try {
 					JupyterUtils.extractRunnablePython(file, pyFile);
 				} catch (Exception e) {
+					for (NotebookCellPane cp : cellPanes) {
+						if (cp.isRunning()) cp.setRunning(false);
+					}
 					ExceptionManager.process(e);
 					compilation_ok = false;
 					return false;

@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -36,6 +37,19 @@ public class SessionEvaluator {
 
 	private static final List<SkillDescr> availableSkills = new ArrayList<>();
 	private static final Color COLOR_WARNING = new Color(220, 120, 0);
+
+	/**
+	 * Mode d'évaluation IA global (par défaut déterministe / 0 crédit).
+	 */
+	private static boolean USE_AI = false;
+
+	public static boolean isUseAi() {
+		return USE_AI;
+	}
+
+	public static void setUseAi(boolean value) {
+		USE_AI = value;
+	}
 
 	/**
 	 * Retourne la liste immuable des compétences d'évaluation découvertes.
@@ -160,9 +174,8 @@ public class SessionEvaluator {
 	}
 
 	/**
-	 * Remplit dynamiquement un JMenu avec les deux modes d'évaluation :
-	 * 1) Mode Déterministe (Sans IA — 0 crédit)
-	 * 2) Mode Hybride IA (Avec Gemini)
+	 * Remplit dynamiquement un JMenu avec la détection automatique
+	 * et la liste épurée des compétences disponibles selon le mode IA actif.
 	 */
 	public static void populateSkillsSubmenu(JMenu parentMenu, BiConsumer<SkillDescr, Boolean> onSelect) {
 		parentMenu.removeAll();
@@ -176,32 +189,17 @@ public class SessionEvaluator {
 			return;
 		}
 
-		String suffixNoAi = " " + CodeLab.LABEL("evalSkillSuffixNoAi");
-		String suffixAi = " " + CodeLab.LABEL("evalSkillSuffixAi");
+		// 1. Détection automatique
+		JMenuItem itemAuto = new JMenuItem(CodeLab.LABEL("evalSkillAuto"));
+		itemAuto.setToolTipText("Détecte automatiquement le langage et la compétence la plus adaptée");
+		itemAuto.addActionListener(e -> onSelect.accept(null, USE_AI));
+		parentMenu.add(itemAuto);
 
-		// 1. Section Sans IA (Déterministe — 0 crédit)
-		JMenuItem itemAutoNoAi = new JMenuItem(CodeLab.LABEL("evalSkillAutoNoAi"));
-		itemAutoNoAi.addActionListener(e -> onSelect.accept(null, false));
-		parentMenu.add(itemAutoNoAi);
-
+		// 2. Compétences individuelles
 		for (SkillDescr skill : availableSkills) {
-			JMenuItem item = new JMenuItem(skill.getTitle() + suffixNoAi);
-			item.setToolTipText(skill.getDescription() + " [Mode déterministe local — 0 crédit IA]");
-			item.addActionListener(e -> onSelect.accept(skill, false));
-			parentMenu.add(item);
-		}
-
-		parentMenu.add(new JSeparator());
-
-		// 2. Section Avec IA (Hybride Gemini)
-		JMenuItem itemAutoAi = new JMenuItem(CodeLab.LABEL("evalSkillAutoAi"));
-		itemAutoAi.addActionListener(e -> onSelect.accept(null, true));
-		parentMenu.add(itemAutoAi);
-
-		for (SkillDescr skill : availableSkills) {
-			JMenuItem item = new JMenuItem(skill.getTitle() + suffixAi);
-			item.setToolTipText(skill.getDescription() + " [Mode hybride avec synthèse narrative IA Gemini]");
-			item.addActionListener(e -> onSelect.accept(skill, true));
+			JMenuItem item = new JMenuItem(skill.getTitle());
+			item.setToolTipText(skill.getDescription());
+			item.addActionListener(e -> onSelect.accept(skill, USE_AI));
 			parentMenu.add(item);
 		}
 	}
@@ -265,39 +263,43 @@ public class SessionEvaluator {
 	}
 
 	/**
-	 * Écrit un fichier sessions.xml standard dans le dossier de session pour assurer la persistance
-	 * des noms des étudiants pour les outils externes et scripts d'évaluation.
+	 * Écrit un fichier users.json standard dans le dossier d'évaluation pour transmettre
+	 * directement la liste des utilisateurs CodeLab avec leur rôle aux scripts d'évaluation.
 	 */
-	public static void ensureSessionsXml(File sessionDir, String sessionId, CodeLab codelab) {
-		if (sessionDir == null || !sessionDir.exists() || codelab == null || codelab.getClient() == null) return;
-		File target = new File(sessionDir, "sessions.xml");
-		if (target.exists()) return;
+	public static File ensureUsersJson(File dir, CodeLab codelab) {
+		if (dir == null || codelab == null || codelab.getClient() == null) return null;
 		codelab.client.UserData[] users = codelab.getClient().getUserDataArray();
-		if (users == null || users.length == 0) return;
+		if (users == null || users.length == 0) return null;
+		dir.mkdirs();
+		File target = new File(dir, "users.json");
 		try {
 			StringBuilder sb = new StringBuilder();
-			sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-			sb.append("<session id=\"").append(sessionId != null ? escapeXml(sessionId) : "session").append("\">\n");
-			sb.append("  <users>\n");
+			sb.append("[\n");
+			boolean first = true;
 			for (codelab.client.UserData u : users) {
 				if (u == null || u.getLogin() == null) continue;
-				sb.append("    <user login=\"").append(escapeXml(u.getLogin())).append("\"");
-				if (u.getName() != null) sb.append(" name=\"").append(escapeXml(u.getName())).append("\"");
-				if (u.getMail() != null) sb.append(" mail=\"").append(escapeXml(u.getMail())).append("\"");
-				if (u.getGroup() != null) sb.append(" groups=\"").append(escapeXml(u.getGroup())).append("\"");
-				if (u.isTutor()) sb.append(" role=\"tutor\"");
-				else if (u.isStudent()) sb.append(" role=\"student\"");
-				sb.append(" />\n");
+				if (!first) sb.append(",\n");
+				first = false;
+				sb.append("  {");
+				sb.append("\"login\": \"").append(escapeJson(u.getLogin())).append("\", ");
+				sb.append("\"name\": \"").append(escapeJson(u.getName() != null ? u.getName() : u.getLogin())).append("\", ");
+				sb.append("\"mail\": \"").append(escapeJson(u.getMail() != null ? u.getMail() : "")).append("\", ");
+				sb.append("\"groups\": \"").append(escapeJson(u.getGroup() != null ? u.getGroup() : "")).append("\", ");
+				sb.append("\"role\": \"").append(u.isTutor() ? "tutor" : (u.isAdmin() ? "admin" : (u.isStudent() ? "student" : "user"))).append("\", ");
+				sb.append("\"isStudent\": ").append(u.isStudent()).append(", ");
+				sb.append("\"isTutor\": ").append(u.isTutor() || u.isAdmin());
+				sb.append("}");
 			}
-			sb.append("  </users>\n");
-			sb.append("</session>\n");
+			sb.append("\n]\n");
 			FileUtils.writeStringToFile(target, sb.toString(), StandardCharsets.UTF_8);
+			return target;
 		} catch (Exception ignored) {}
+		return null;
 	}
 
-	private static String escapeXml(String s) {
+	private static String escapeJson(String s) {
 		if (s == null) return "";
-		return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+		return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
 	}
 
 	/**
@@ -324,7 +326,6 @@ public class SessionEvaluator {
 		String studentName = null;
 		if (codelab.isConnected()) {
 			File sessionDir = new File(codelab.getProgramDir());
-			ensureSessionsXml(sessionDir, sessionId, codelab);
 			try {
 				java.nio.file.Path rel = sessionDir.toPath().toAbsolutePath().normalize().relativize(folder.toPath().toAbsolutePath().normalize());
 				if (rel.getNameCount() >= 1) {
@@ -357,11 +358,10 @@ public class SessionEvaluator {
 		if (codelab.isConnected()) {
 			args.add("--dir");
 			args.add(codelab.getProgramDir());
-			File sessionDir = new File(codelab.getProgramDir());
-			File sessionsXml = new File(sessionDir, "sessions.xml");
-			if (sessionsXml.exists()) {
-				args.add("--sessions");
-				args.add(sessionsXml.getAbsolutePath());
+			File usersJson = ensureUsersJson(evalBaseDir, codelab);
+			if (usersJson != null && usersJson.exists()) {
+				args.add("--users");
+				args.add(usersJson.getAbsolutePath());
 			}
 		}
 
@@ -417,7 +417,6 @@ public class SessionEvaluator {
 
 		String sessionId = (codelab.isConnected() && codelab.getClient() != null && codelab.getClient().getSession() != null)
 				? codelab.getClient().getSession() : "local";
-		ensureSessionsXml(sessionDir, sessionId, codelab);
 		File sessionEvalDir = new File(CodeLab.EVALUATIONS_FOLDER, sessionId);
 		File studentEvalDir = new File(sessionEvalDir, studentLogin);
 		studentEvalDir.mkdirs();
@@ -441,10 +440,10 @@ public class SessionEvaluator {
 			args.add("--no-ai");
 		}
 
-		File sessionsXml = new File(sessionDir, "sessions.xml");
-		if (sessionsXml.exists()) {
-			args.add("--sessions");
-			args.add(sessionsXml.getAbsolutePath());
+		File usersJson = ensureUsersJson(sessionEvalDir, codelab);
+		if (usersJson != null && usersJson.exists()) {
+			args.add("--users");
+			args.add(usersJson.getAbsolutePath());
 		}
 
 		if (skill != null) {
@@ -484,7 +483,6 @@ public class SessionEvaluator {
 
 		String sessId = (sessionId != null && !sessionId.isBlank()) ? sessionId :
 				((codelab.getClient() != null && codelab.getClient().getSession() != null) ? codelab.getClient().getSession() : "session");
-		ensureSessionsXml(sessionDir, sessId, codelab);
 		File sessionEvalDir = new File(CodeLab.EVALUATIONS_FOLDER, sessId);
 		sessionEvalDir.mkdirs();
 
@@ -500,10 +498,10 @@ public class SessionEvaluator {
 			args.add("--no-ai");
 		}
 
-		File sessionsXml = new File(sessionDir, "sessions.xml");
-		if (sessionsXml.exists()) {
-			args.add("--sessions");
-			args.add(sessionsXml.getAbsolutePath());
+		File usersJson = ensureUsersJson(sessionEvalDir, codelab);
+		if (usersJson != null && usersJson.exists()) {
+			args.add("--users");
+			args.add(usersJson.getAbsolutePath());
 		}
 
 		if (skill != null) {

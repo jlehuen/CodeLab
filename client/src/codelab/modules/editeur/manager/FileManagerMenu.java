@@ -3,6 +3,7 @@ package codelab.modules.editeur.manager;
 import java.awt.Point;
 import java.io.File;
 import java.util.List;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -13,8 +14,10 @@ import javax.swing.tree.TreePath;
 import org.apache.commons.io.FileUtils;
 
 import codelab.CodeLab;
+import codelab.ExceptionManager;
 import codelab.eval.SessionEvaluator;
 import codelab.modules.editeur.ModuleEditor;
+import codelab.utils.JupyterUtils;
 import codelab.utils.MyFileUtils;
 import codelab.utils.Utils;
 
@@ -172,6 +175,9 @@ public class FileManagerMenu {
 
 			if (fd.isDirectory()) {
 				if (!FileManager.isEvaluation(fd.getFile())) {
+					JCheckBoxMenuItem itemUseAi = new JCheckBoxMenuItem(LABEL("evalUseAiCheckbox"), SessionEvaluator.isUseAi());
+					itemUseAi.addItemListener(e -> SessionEvaluator.setUseAi(itemUseAi.getState()));
+					menu.add(itemUseAi);
 					JMenu subMenuEval = new JMenu(LABEL("menuEvalFolder"));
 					SessionEvaluator.populateSkillsSubmenu(subMenuEval, (skill, useAi) -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill, useAi));
 					menu.add(subMenuEval);
@@ -189,6 +195,15 @@ public class FileManagerMenu {
 					itemCln.addActionListener(ev -> manager.clone_file(fd, selectedNode));
 					menu.add(itemCln);
 					menu.add(new JSeparator());
+
+					if (fd.getFilename().toLowerCase().endsWith(".ipynb")) {
+						boolean isC = JupyterUtils.isCNotebook(fd.getFile());
+						JMenuItem itemExport = new JMenuItem(isC ? LABEL("Export_notebook_c") : LABEL("Export_notebook_py"));
+						itemExport.setIcon(isC ? FileDescr.icon_c : FileDescr.icon_python);
+						itemExport.addActionListener(ev -> exportNotebookToScript(fd.getFile(), isC));
+						menu.add(itemExport);
+						menu.add(new JSeparator());
+					}
 				}
 				addNavigationControls(menu, false);
 			}
@@ -257,6 +272,9 @@ public class FileManagerMenu {
 					menu.add(new JSeparator());
 
 					if (!codelab.isConnected()) {
+						JCheckBoxMenuItem itemUseAi = new JCheckBoxMenuItem(LABEL("evalUseAiCheckbox"), SessionEvaluator.isUseAi());
+						itemUseAi.addItemListener(e -> SessionEvaluator.setUseAi(itemUseAi.getState()));
+						menu.add(itemUseAi);
 						JMenu menuEvalFolder = new JMenu(LABEL("menuEvalFolder"));
 						SessionEvaluator.populateSkillsSubmenu(menuEvalFolder, (skill, useAi) -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill, useAi));
 						menu.add(menuEvalFolder);
@@ -292,6 +310,15 @@ public class FileManagerMenu {
 					itemEvalFile.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
 					menu.add(itemEvalFile);
 					menu.add(new JSeparator());
+
+					if (filename.toLowerCase().endsWith(".ipynb")) {
+						boolean isC = JupyterUtils.isCNotebook(fd.getFile());
+						JMenuItem itemExport = new JMenuItem(isC ? LABEL("Export_notebook_c") : LABEL("Export_notebook_py"));
+						itemExport.setIcon(isC ? FileDescr.icon_c : FileDescr.icon_python);
+						itemExport.addActionListener(ev -> exportNotebookToScript(fd.getFile(), isC));
+						menu.add(itemExport);
+						menu.add(new JSeparator());
+					}
 
 					JMenuItem itemRen = new JMenuItem(String.format(LABEL("Rename_program"), filename));
 					itemRen.addActionListener(ev -> manager.rename_file());
@@ -414,6 +441,49 @@ public class FileManagerMenu {
 			} catch (Exception ex) {
 				Utils.showWarningDialog("CodeLab", "Erreur lors de la suppression : " + ex.getMessage());
 			}
+		}
+	}
+
+	private void exportNotebookToScript(File ipynbFile, boolean isC) {
+		if (ipynbFile == null || !ipynbFile.exists()) return;
+
+		// Sauvegarder le carnet si c'est le fichier en cours d'édition
+		if (editor.getCurrentFile() != null && editor.getCurrentFile().equals(ipynbFile)) {
+			editor.saveCurrentFile();
+		}
+
+		String targetExt = isC ? ".c" : ".py";
+		String baseName = ipynbFile.getName();
+		if (baseName.toLowerCase().endsWith(".ipynb")) {
+			baseName = baseName.substring(0, baseName.length() - 6);
+		}
+		File targetFile = new File(ipynbFile.getParentFile(), baseName + targetExt);
+
+		if (targetFile.exists()) {
+			int resp = JOptionPane.showConfirmDialog(
+				codelab,
+				String.format(LABEL("Confirm_export_overwrite"), targetFile.getName()),
+				LABEL("Confirm_export_title"),
+				JOptionPane.YES_NO_OPTION,
+				JOptionPane.QUESTION_MESSAGE
+			);
+			if (resp != JOptionPane.YES_OPTION) return;
+		}
+
+		try {
+			if (isC) {
+				JupyterUtils.extractRunnableC(ipynbFile, targetFile);
+			} else {
+				JupyterUtils.extractRunnablePython(ipynbFile, targetFile);
+			}
+			manager.populate();
+			manager.selectNodeFromFile(targetFile);
+			if (codelab.isConnected()) {
+				codelab.getClient().uploadFile(targetFile);
+			}
+			codelab.consoleLog(String.format(LABEL("Export_notebook_success"), targetFile.getName()));
+		} catch (Exception ex) {
+			ExceptionManager.process(ex);
 		}
 	}
 }

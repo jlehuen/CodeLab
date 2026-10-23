@@ -45,7 +45,7 @@
    -------------------------------------------------------------------------- */
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: "Inter", Arial, sans-serif;
     font-size: 12px;
     color: #606060;
     margin: 3px;
@@ -109,7 +109,7 @@ p {
 }
 
 /* --------------------------------------------------------------------------
-   5a. CODE EN LIGNE ET BLOCS DE CODE (code, pre)
+   5a. CODE EN LIGNE ET BLOCS DE CODE (code, pre, kbd, mark...)
    --------------------------------------------------------------------------
    - font-family      : Police à chasse fixe (monospace) pour le code.
    - font-size        : Taille des caractères de code (ex: 10.5px ou 0.9em).
@@ -125,6 +125,40 @@ code {
     padding: 1px 3px;
 }
 
+kbd {
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: 0.88em;
+    background-color: #f6f8fa;
+    color: #24292f;
+    border: 1px solid #d0d7de;
+    padding: 1px 5px;
+}
+
+mark {
+    background-color: #fff8c5;
+    color: #24292f;
+    padding: 1px 3px;
+}
+
+del, s {
+    text-decoration: line-through;
+    color: #8c959f;
+}
+
+u {
+    text-decoration: underline;
+}
+
+sup {
+    font-size: 0.75em;
+    vertical-align: super;
+}
+
+sub {
+    font-size: 0.75em;
+    vertical-align: sub;
+}
+
 pre {
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: 10.5px;
@@ -138,17 +172,6 @@ pre {
 pre code {
     background: #f6f8fa;
 }
-
-/*
-pre[alt=term] {
-    font-size: 11px;
-    background: #1E2832;
-    color: #7DCE10;
-    padding: 8px 12px;
-    margin: 6px 0;
-    max-width: 100%;
-}
-*/
 
 /* --------------------------------------------------------------------------
    5b. STYLES PAR LANGAGE DES BLOCS DE CODE
@@ -201,6 +224,90 @@ pre.language-c code {
     background: #f4f4fa;
 }
 
+pre.language-cpp {
+    background-color: #f4f4fa;
+    color: #24292f;
+    border-left: 3px solid #00599c;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-cpp code {
+    color: #24292f;
+    background: #f4f4fa;
+}
+
+pre.language-java {
+    background-color: #fdf6f2;
+    color: #24292f;
+    border-left: 3px solid #e76f00;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-java code {
+    color: #24292f;
+    background: #fdf6f2;
+}
+
+pre.language-bash, pre.language-sh, pre.language-shell, pre.language-zsh {
+    background-color: #f6f8fa;
+    color: #24292f;
+    border-left: 3px solid #4e5d6c;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-bash code, pre.language-sh code, pre.language-shell code, pre.language-zsh code {
+    color: #24292f;
+    background: #f6f8fa;
+}
+
+pre.language-sql {
+    background-color: #fbf6fa;
+    color: #24292f;
+    border-left: 3px solid #e38c00;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-sql code {
+    color: #24292f;
+    background: #fbf6fa;
+}
+
+pre.language-json {
+    background-color: #f8fafc;
+    color: #24292f;
+    border-left: 3px solid #0288d1;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-json code {
+    color: #24292f;
+    background: #f8fafc;
+}
+
+pre.language-html, pre.language-xml {
+    background-color: #faf5f5;
+    color: #24292f;
+    border-left: 3px solid #e44d26;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-html code, pre.language-xml code {
+    color: #24292f;
+    background: #faf5f5;
+}
+
+pre.language-text, pre.language-plain {
+    background-color: #f8f9fa;
+    color: #24292f;
+    border-left: 3px solid #8c959f;
+    padding: 4px 4px 4px 8px;
+}
+
+pre.language-text code, pre.language-plain code {
+    color: #24292f;
+    background: #f8f9fa;
+}
+
 /* --------------------------------------------------------------------------
    6. LISTES À PUCES ET LISTES NUMÉROTÉES (ul, ol, li)
    --------------------------------------------------------------------------
@@ -218,31 +325,64 @@ li {
 }
 
 /* --------------------------------------------------------------------------
-   7. CITATIONS ET ENCADRÉS REMARQUES (blockquote)
+   7. CITATIONS, ENCADRÉS REMARQUES ET ALERTES (blockquote)
    --------------------------------------------------------------------------
    Utilisé pour les textes précédés de "> " dans le Markdown.
-   - border-left  : Bandeau / barre verticale sur le côté gauche (3px de large).
-   - color        : Couleur du texte de la citation (ex: gris discret #57606a).
-   - padding-left : Retrait intérieur pour décoller le texte de la barre gauche.
+   - border-left      : Bandeau / barre verticale sur le côté gauche (3px de large).
+   - background-color : Fond légèrement teinté pour détacher la remarque.
+   - color            : Couleur du texte de la citation.
+   - padding          : Retrait intérieur pour décoller le texte du bandeau gauche.
+   Classes d'alertes disponibles :
+   - .note, .info     : Information ou note neutre (bleu).
+   - .tip             : Astuce pédagogique ou conseil (vert).
+   - .warning         : Avertissement ou point d'attention (orange ambré).
+   - .danger          : Erreur critique ou danger (rouge).
    -------------------------------------------------------------------------- */
 
 blockquote {
     font-size: 0.95em;
-    margin: 3px 0;
-    padding-left: 6px;
+    background-color: #f8f9fa;
+    margin: 4px 0;
+    padding: 4px 8px;
     border-left: 3px solid #d0d7de;
     color: #57606a;
+}
+
+blockquote.note, blockquote.info {
+    border-left: 3px solid #0969da;
+    background-color: #f0f7ff;
+    color: #1a4971;
+}
+
+blockquote.tip {
+    border-left: 3px solid #1a7f37;
+    background-color: #f0fff4;
+    color: #14532d;
+}
+
+blockquote.warning {
+    border-left: 3px solid #d97706;
+    background-color: #fffbeb;
+    color: #78350f;
+}
+
+blockquote.danger {
+    border-left: 3px solid #cf222e;
+    background-color: #ffebe9;
+    color: #7a1f1d;
 }
 
 /* --------------------------------------------------------------------------
    8. TABLEAUX DE DONNÉES (table, th, td)
    --------------------------------------------------------------------------
+   - border-collapse  : Fusion des bordures pour des filets simples nets.
    - border           : Filet fin entourant chaque case du tableau.
    - padding          : Aération intérieure des cases (marge texte / bordure).
    - background-color : Fond de l'en-tête (th) pour le démarquer des données.
    -------------------------------------------------------------------------- */
 
 table {
+    border-collapse: collapse;
     margin: 4px 0;
     max-width: 100%;
 }

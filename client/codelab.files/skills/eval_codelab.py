@@ -116,19 +116,64 @@ def resolve_skill(skill_name=None, target_dir=None):
             return sdir
     return None
 
-def load_sessions_users(sessions_xml_path=None, search_dirs=None):
-    """Charge la base des utilisateurs {login: {'name': ..., 'mail': ..., 'groups': ...}} depuis sessions.xml."""
-    candidates = []
-    if sessions_xml_path and Path(sessions_xml_path).is_file():
-        candidates.append(Path(sessions_xml_path))
+def load_sessions_users(users_path=None, search_dirs=None):
+    """
+    Charge la base des utilisateurs {login: {'name': ..., 'mail': ..., 'groups': ..., 'role': ..., 'isStudent': ...}}
+    depuis users.json (fourni par CodeLab) en priorité absolue, avec repli de compatibilité XML si besoin.
+    """
+    candidates_json = []
+    candidates_xml = []
+
+    if users_path:
+        p = Path(users_path)
+        if p.is_file():
+            if p.suffix == ".json" or "users" in p.name.lower():
+                candidates_json.append(p)
+            else:
+                candidates_xml.append(p)
+        elif users_path.strip().startswith("[") or users_path.strip().startswith("{"):
+            try:
+                data = json.loads(users_path)
+                users = {}
+                if isinstance(data, list):
+                    for u in data:
+                        if isinstance(u, dict) and u.get("login"):
+                            users[u["login"]] = u
+                    return users
+                elif isinstance(data, dict):
+                    return data
+            except Exception:
+                pass
+
     if search_dirs:
         for d in search_dirs:
             if d:
-                candidates.append(Path(d) / "sessions.xml")
+                candidates_json.append(Path(d) / "users.json")
+                candidates_json.append(Path(d) / "evaluations" / "users.json")
+                candidates_xml.append(Path(d) / "sessions.xml")
 
+    # 1. Priorité absolue au JSON de CodeLab
+    for c in candidates_json:
+        if c.is_file():
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    users = {}
+                    if isinstance(data, list):
+                        for u in data:
+                            if isinstance(u, dict) and u.get("login"):
+                                users[u["login"]] = u
+                    elif isinstance(data, dict):
+                        users.update(data)
+                    if users:
+                        return users
+            except Exception:
+                pass
+
+    # 2. Repli de compatibilité sur sessions.xml si présent
     import xml.etree.ElementTree as ET
     users = {}
-    for c in candidates:
+    for c in candidates_xml:
         if c.is_file():
             try:
                 tree = ET.parse(c)
@@ -138,8 +183,16 @@ def load_sessions_users(sessions_xml_path=None, search_dirs=None):
                     mail = u.get("mail", "")
                     groups = u.get("groups", "")
                     role = u.get("role", "")
+                    is_student = (role.lower() == "student") if role else True
                     if login:
-                        users[login] = {"name": name or login, "mail": mail, "groups": groups, "role": role}
+                        users[login] = {
+                            "name": name or login,
+                            "mail": mail,
+                            "groups": groups,
+                            "role": role,
+                            "isStudent": is_student,
+                            "isTutor": not is_student
+                        }
                 if users:
                     return users
             except Exception:
@@ -147,16 +200,18 @@ def load_sessions_users(sessions_xml_path=None, search_dirs=None):
     return users
 
 def is_tutor_user(login, user_info=None):
-    """Détermine si un compte correspond à un tuteur ou enseignant à exclure des évaluations étudiantes."""
+    """Détermine si un compte correspond à un tuteur ou enseignant à exclure rigoureusement des évaluations étudiantes."""
     if not login:
         return False
     l = str(login).strip().lower()
-    # 1. Logins connus d'enseignants ou tuteurs
-    if l in ("lehuen", "despres", "tuteur", "tutor", "admin", "enseignant", "prof"):
-        return True
+
     if user_info:
+        if "isStudent" in user_info and not user_info["isStudent"]:
+            return True
+        if user_info.get("isTutor"):
+            return True
         role = (user_info.get("role") or "").lower()
-        if role in ("tutor", "admin", "tuteur"):
+        if role in ("tutor", "admin", "tuteur", "teacher", "prof", "enseignant"):
             return True
         groups = (user_info.get("groups") or "").lower()
         if groups in ("tutor", "admin", "tuteurs", "enseignants"):
@@ -165,6 +220,11 @@ def is_tutor_user(login, user_info=None):
         # Si groupe vide et courriel non-étudiant ou absent, et login non-numérique
         if not groups and (mail in ("--", "") or "etu" not in mail) and not l.isdigit():
             return True
+
+    # Logins connus d'enseignants, tuteurs ou comptes techniques
+    if l in ("lehuen", "hamdi", "despres", "tuteur", "tutor", "admin", "enseignant", "prof", "root", "support", "test"):
+        return True
+
     return False
 
 def extract_author_from_files(folder_path):
@@ -2188,7 +2248,7 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
         try:
             import audit_cohort
             if hasattr(audit_cohort, "detect_cohort_plagiarism"):
-                plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p))
+                plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p), users_db=users_db)
                 if isinstance(plag_res, tuple):
                     if len(plag_res) == 2 and isinstance(plag_res[1], dict):
                         plag_map = plag_res[1]
@@ -2219,7 +2279,7 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
         except Exception:
             pass
         from audit_cohort import analyze_cohort, export_csv, export_summary_markdown
-        results = analyze_cohort(str(session_dir))
+        results = analyze_cohort(str(session_dir), users_db=users_db)
         export_csv(results, str(csv_file), cohort_dir=str(session_p))
         use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
         try:
@@ -2247,7 +2307,7 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
         try:
             import audit_cohort
             if hasattr(audit_cohort, "detect_cohort_plagiarism"):
-                plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p))
+                plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p), users_db=users_db)
                 if isinstance(plag_res, tuple):
                     if len(plag_res) == 2 and isinstance(plag_res[1], dict):
                         plag_map = plag_res[1]
@@ -2320,7 +2380,8 @@ def main():
     parser.add_argument("--session", help="ID de la session pour audit complet de cohorte")
     parser.add_argument("--dir", help="Répertoire racine de la session")
     parser.add_argument("--eval-dir", help="Dossier de destination permanent pour les évaluations")
-    parser.add_argument("--sessions", help="Chemin vers sessions.xml (optionnel)")
+    parser.add_argument("--users", help="Chemin vers users.json ou JSON des utilisateurs (fourni par CodeLab)")
+    parser.add_argument("--sessions", help="Alias de compatibilité pour le chemin des utilisateurs")
     parser.add_argument("--out", help="Fichier de sortie spécifique (.md)")
     parser.add_argument("--props", help="Chemin vers user.properties (optionnel)")
     parser.add_argument("--skill", help="ID du skill à appliquer (ex: eval-introprog, eval-c-sample, eval-python-sample, eval-java-sample ou auto)")
@@ -2387,7 +2448,8 @@ def main():
             eval_student_dir = session_dir / "evaluations" / args.student
         eval_student_dir.mkdir(parents=True, exist_ok=True)
         out_file = args.out or (eval_student_dir / f"{args.student}_rapport.md")
-        res_path = evaluate_folder(student_dir, out_file, args.sessions, ai_props, skill_name=args.skill,
+        users_input = args.users or args.sessions
+        res_path = evaluate_folder(student_dir, out_file, users_input, ai_props, skill_name=args.skill,
                                    student_login=args.student, student_name=args.student_name)
             
         if res_path:
@@ -2400,7 +2462,8 @@ def main():
     # 3. Mode session complète
     if args.session and args.dir:
         session_dir = Path(args.dir).resolve()
-        res_path = evaluate_session(args.session, session_dir, eval_output_dir=args.eval_dir, sessions_xml=args.sessions, ai_props=ai_props, skill_name=args.skill)
+        users_input = args.users or args.sessions
+        res_path = evaluate_session(args.session, session_dir, eval_output_dir=args.eval_dir, sessions_xml=users_input, ai_props=ai_props, skill_name=args.skill)
         if res_path:
             print(f"REPORT_FILE: {os.path.abspath(res_path)}")
             sys.exit(0)

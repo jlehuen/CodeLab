@@ -43,8 +43,12 @@ import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 import javax.swing.KeyStroke;
 import javax.swing.text.AttributeSet;
@@ -62,6 +66,8 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import java.util.Arrays;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextAreaEditorKit;
@@ -196,11 +202,22 @@ public class NotebookCellPane extends JPanel {
 	// Éléments du bandeau supérieur
 	private JPanel headerPanel;
 	private JPanel leftBox, centerBox, rightBox;
+	private JButton btnFold;
 	private JComboBox<String> typeSelector;
 	private JButton btnRunCell;
-	private JButton btnUp, btnDown, btnAddCode, btnAddMd, btnDelete;
+	private JLabel lblExecutionCount;
+	private JButton btnUp, btnDown, btnAddCode, btnAddMd, btnClone, btnDelete;
 	private CellLockButton btnLock;
 	private boolean locked = false;
+
+	// État replié / déplié (Collapsible cell)
+	private boolean collapsed = false;
+	private JLabel lblCollapsedHint;
+
+	// Compteur d'exécution et statut d'exécution (Jupyter)
+	private int executionCount = -1;
+	private boolean running = false;
+	private JsonNode originalOutputs = null;
 
 	// Conteneur central
 	private JPanel centerPanel;
@@ -329,12 +346,15 @@ public class NotebookCellPane extends JPanel {
 	public void setEditable(boolean value) {
 		this.editable = value;
 		if (btnLock != null) btnLock.setEnabled(value);
+		if (btnFold != null) btnFold.setEnabled(value);
 		if (typeSelector != null) typeSelector.setEnabled(value && !locked);
 		if (btnRunCell != null) btnRunCell.setEnabled(value);
+		if (lblExecutionCount != null) lblExecutionCount.setEnabled(value);
 		if (btnUp != null) btnUp.setEnabled(value);
 		if (btnDown != null) btnDown.setEnabled(value);
 		if (btnAddCode != null) btnAddCode.setEnabled(value);
 		if (btnAddMd != null) btnAddMd.setEnabled(value);
+		if (btnClone != null) btnClone.setEnabled(value);
 		if (btnDelete != null) {
 			btnDelete.setEnabled(value && !locked);
 			btnDelete.setToolTipText(locked ? "Cellule verrouillée (déverrouiller pour supprimer)" : "Supprimer cette cellule");
@@ -386,7 +406,123 @@ public class NotebookCellPane extends JPanel {
 		updateActiveState();
 	}
 
+	public int getExecutionCount() {
+		return executionCount;
+	}
+
+	public void setExecutionCount(int count) {
+		this.executionCount = count;
+		this.running = false;
+		updateExecutionCountLabel();
+	}
+
+	public boolean isRunning() {
+		return running;
+	}
+
+	public void setRunning(boolean running) {
+		this.running = running;
+		updateExecutionCountLabel();
+	}
+
+	public void updateExecutionCountLabel() {
+		Runnable update = () -> {
+			if (lblExecutionCount == null) return;
+			if (running) {
+				lblExecutionCount.setText("In [*]:");
+				lblExecutionCount.setForeground(new Color(220, 100, 0));
+			} else if (executionCount > 0) {
+				lblExecutionCount.setText(String.format("In [%d]:", executionCount));
+				lblExecutionCount.setForeground(new Color(30, 80, 160));
+			} else {
+				lblExecutionCount.setText("In [ ]:");
+				lblExecutionCount.setForeground(new Color(140, 150, 165));
+			}
+			if (leftBox != null) {
+				leftBox.revalidate();
+				leftBox.repaint();
+			}
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			update.run();
+		} else {
+			SwingUtilities.invokeLater(update);
+		}
+	}
+
+	public JsonNode getOriginalOutputs() {
+		return originalOutputs;
+	}
+
+	public void setOriginalOutputs(JsonNode outputs) {
+		this.originalOutputs = outputs;
+	}
+
+	public boolean isCollapsed() {
+		return collapsed;
+	}
+
+	public void setCollapsed(boolean collapsed) {
+		this.collapsed = collapsed;
+		centerPanel.setVisible(!collapsed);
+		if (btnFold != null) {
+			btnFold.setToolTipText(collapsed ? CodeLab.LABEL("Btn_expand_cell") : CodeLab.LABEL("Btn_collapse_cell"));
+			btnFold.repaint();
+		}
+		updateCollapsedHint();
+		revalidate();
+		repaint();
+		if (editor != null) {
+			editor.revalidateContainer();
+		}
+	}
+
+	private void updateCollapsedHint() {
+		if (lblCollapsedHint != null) {
+			lblCollapsedHint.setVisible(collapsed && !isEditingMd);
+		}
+		if (centerBox != null) {
+			centerBox.setVisible(("markdown".equals(type) && isEditingMd) || collapsed);
+		}
+	}
+
+	private void showCellContextMenu(MouseEvent e) {
+		if (editor == null) return;
+		editor.setActiveCell(this);
+
+		JPopupMenu popup = new JPopupMenu();
+
+		if ("code".equals(type)) {
+			JMenuItem itemRun = new JMenuItem(CodeLab.LABEL("Menu_run_cell"));
+			itemRun.addActionListener(ev -> editor.runSingleCell(this));
+			popup.add(itemRun);
+			popup.add(new JSeparator());
+		}
+
+		JMenuItem itemFold = new JMenuItem(collapsed ? CodeLab.LABEL("Btn_expand_cell") : CodeLab.LABEL("Btn_collapse_cell"));
+		itemFold.addActionListener(ev -> setCollapsed(!collapsed));
+		popup.add(itemFold);
+
+		JMenuItem itemClone = new JMenuItem(CodeLab.LABEL("Menu_duplicate_cell"));
+		itemClone.addActionListener(ev -> editor.duplicateCell(this));
+		popup.add(itemClone);
+
+		JMenuItem itemDel = new JMenuItem(CodeLab.LABEL("Menu_delete_cell"));
+		itemDel.setEnabled(editable && !locked);
+		itemDel.addActionListener(ev -> editor.removeCell(this));
+		popup.add(itemDel);
+
+		popup.add(new JSeparator());
+
+		JMenuItem itemReset = new JMenuItem(CodeLab.LABEL("Menu_clear_counts"));
+		itemReset.addActionListener(ev -> editor.resetExecutionCounts());
+		popup.add(itemReset);
+
+		popup.show(e.getComponent(), e.getX(), e.getY());
+	}
+
 	public void focusEditor() {
+		if (collapsed) setCollapsed(false);
 		if (editor != null) editor.setActiveCell(this);
 		updateActiveState();
 		if ("markdown".equals(type)) {
@@ -417,7 +553,7 @@ public class NotebookCellPane extends JPanel {
 				if (width <= 0 || height <= 0) return;
 
 				// Adapter le libellé des boutons selon la largeur disponible
-				if (width < 440) {
+				if (width < 490) {
 					if (!"+ MD".equals(btnAddMd.getText())) btnAddMd.setText("+ MD");
 					btnAddMd.setPreferredSize(new Dimension(54, 26));
 					btnAddMd.setMinimumSize(new Dimension(54, 26));
@@ -425,6 +561,16 @@ public class NotebookCellPane extends JPanel {
 					if (!"+ Markdown".equals(btnAddMd.getText())) btnAddMd.setText("+ Markdown");
 					btnAddMd.setPreferredSize(new Dimension(84, 26));
 					btnAddMd.setMinimumSize(new Dimension(84, 26));
+				}
+
+				if (width < 410) {
+					if (!"+ C".equals(btnAddCode.getText())) btnAddCode.setText("+ C");
+					btnAddCode.setPreferredSize(new Dimension(46, 26));
+					btnAddCode.setMinimumSize(new Dimension(46, 26));
+				} else {
+					if (!"+ Code".equals(btnAddCode.getText())) btnAddCode.setText("+ Code");
+					btnAddCode.setPreferredSize(new Dimension(64, 26));
+					btnAddCode.setMinimumSize(new Dimension(64, 26));
 				}
 
 				if (btnValidateMd != null && btnValidateMd.isVisible()) {
@@ -445,13 +591,21 @@ public class NotebookCellPane extends JPanel {
 					}
 				}
 
+				boolean showInCount = "code".equals(type) && (width >= 470 || width <= 0);
+				if (lblExecutionCount != null && lblExecutionCount.isVisible() != showInCount) {
+					lblExecutionCount.setVisible(showInCount);
+				}
+
 				int rightW = rightBox.getPreferredSize().width;
 				int rightX = width - rightW;
 
+				int foldW = (btnFold != null && btnFold.isVisible()) ? 29 : 0;
+				int runW = (btnRunCell != null && btnRunCell.isVisible()) ? 34 : 0;
+				int inW = (lblExecutionCount != null && lblExecutionCount.isVisible()) ? (lblExecutionCount.getPreferredSize().width + 6) : 0;
+
 				int leftMaxW = Math.max(80, rightX - 6);
 				int baseTypeW = 135;
-				int runW = (btnRunCell != null && btnRunCell.isVisible()) ? 38 : 0;
-				int actualTypeW = Math.min(baseTypeW, Math.max(75, leftMaxW - runW - 9));
+				int actualTypeW = Math.min(baseTypeW, Math.max(70, leftMaxW - foldW - runW - inW - 9));
 				typeSelector.setPreferredSize(new Dimension(actualTypeW, 27));
 
 				int leftW = leftBox.getPreferredSize().width;
@@ -466,6 +620,16 @@ public class NotebookCellPane extends JPanel {
 					if (actualRightX > leftW) {
 						centerBox.setBounds(leftW, 0, actualRightX - leftW, height);
 						centerBox.doLayout();
+						if (lblCollapsedHint != null && lblCollapsedHint.isVisible()) {
+							int availCenterW = actualRightX - leftW;
+							if (availCenterW < 80) {
+								lblCollapsedHint.setVisible(false);
+							} else if (availCenterW < 220) {
+								lblCollapsedHint.setText("(Repliée)");
+							} else {
+								lblCollapsedHint.setText("(Cellule repliée — double-clic pour déplier)");
+							}
+						}
 					} else {
 						centerBox.setBounds(0, 0, 0, 0);
 					}
@@ -478,10 +642,23 @@ public class NotebookCellPane extends JPanel {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (editor != null) editor.setActiveCell(NotebookCellPane.this);
+				if (e.isPopupTrigger()) showCellContextMenu(e);
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if (e.isPopupTrigger()) showCellContextMenu(e);
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+					setCollapsed(!isCollapsed());
+				}
 			}
 		});
 
-		// Côté gauche : sélecteur de type + bouton RUN de cellule
+		// Côté gauche : bouton de repliage + sélecteur de type + bouton RUN de cellule
 		leftBox = new JPanel(new GridBagLayout());
 		leftBox.setOpaque(false);
 		leftBox.setBorder(BorderFactory.createEmptyBorder(3, 9, 0, 0));
@@ -490,6 +667,10 @@ public class NotebookCellPane extends JPanel {
 		gbcL.gridy = 0;
 		gbcL.anchor = GridBagConstraints.CENTER;
 		gbcL.insets = new Insets(0, 0, 0, 4);
+
+		btnFold = new CellFoldButton();
+		btnFold.addActionListener(e -> setCollapsed(!isCollapsed()));
+		leftBox.add(btnFold, gbcL);
 
 		typeSelector = new JComboBox<>(new String[] { OPT_PYTHON, OPT_C, OPT_TEXT });
 		if ("markdown".equals(type)) {
@@ -522,6 +703,14 @@ public class NotebookCellPane extends JPanel {
 		btnRunCell.addActionListener(e -> editor.runSingleCell(this));
 		leftBox.add(btnRunCell, gbcL);
 
+		lblExecutionCount = new JLabel("In [ ]:");
+		lblExecutionCount.setFont(new Font("Monospaced", Font.BOLD, 11));
+		lblExecutionCount.setForeground(new Color(140, 150, 165));
+		lblExecutionCount.setVisible("code".equals(type));
+		lblExecutionCount.setToolTipText("Ordre d'exécution de la cellule (Jupyter)");
+		gbcL.insets = new Insets(0, 2, 0, 4);
+		leftBox.add(lblExecutionCount, gbcL);
+
 		// Côté droit : boutons d'action
 		rightBox = new JPanel(new GridBagLayout());
 		rightBox.setOpaque(false);
@@ -548,6 +737,10 @@ public class NotebookCellPane extends JPanel {
 		btnAddMd.addActionListener(e -> editor.addCellAfter(this, "markdown"));
 		rightBox.add(btnAddMd, gbcR);
 
+		btnClone = new CellHeaderButton("⧉", CodeLab.LABEL("Btn_duplicate_cell"), 28, false, false, true);
+		btnClone.addActionListener(e -> editor.duplicateCell(this));
+		rightBox.add(btnClone, gbcR);
+
 		btnDelete = new CellHeaderButton("✕", "Supprimer cette cellule", 28, true, true);
 		btnDelete.addActionListener(e -> editor.removeCell(this));
 		rightBox.add(btnDelete, gbcR);
@@ -563,7 +756,7 @@ public class NotebookCellPane extends JPanel {
 		});
 		rightBox.add(btnLock, gbcR);
 
-		// Au milieu : bouton de validation de l'affichage Markdown
+		// Au milieu : bouton de validation Markdown ou indicateur de repliage
 		centerBox = new JPanel(new GridBagLayout());
 		centerBox.setOpaque(false);
 		centerBox.setBorder(BorderFactory.createEmptyBorder(3, 0, 0, 0));
@@ -571,6 +764,19 @@ public class NotebookCellPane extends JPanel {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				if (editor != null) editor.setActiveCell(NotebookCellPane.this);
+				if (e.isPopupTrigger()) showCellContextMenu(e);
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if (e.isPopupTrigger()) showCellContextMenu(e);
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+					setCollapsed(!isCollapsed());
+				}
 			}
 		});
 
@@ -582,6 +788,19 @@ public class NotebookCellPane extends JPanel {
 		btnValidateMd.addActionListener(e -> switchToMdView());
 		btnValidateMd.setVisible("markdown".equals(type) && isEditingMd);
 		centerBox.add(btnValidateMd, gbcC);
+
+		lblCollapsedHint = new JLabel("(Cellule repliée — double-clic pour déplier)");
+		lblCollapsedHint.setFont(new Font("SansSerif", Font.ITALIC, 11));
+		lblCollapsedHint.setForeground(new Color(130, 140, 155));
+		lblCollapsedHint.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		lblCollapsedHint.setVisible(false);
+		lblCollapsedHint.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				setCollapsed(false);
+			}
+		});
+		centerBox.add(lblCollapsedHint, gbcC);
 
 		headerPanel.add(leftBox, BorderLayout.WEST);
 		headerPanel.add(centerBox, BorderLayout.CENTER);
@@ -806,6 +1025,9 @@ public class NotebookCellPane extends JPanel {
 			}
 		}
 		btnRunCell.setVisible("code".equals(type));
+		if (lblExecutionCount != null) {
+			lblExecutionCount.setVisible("code".equals(type));
+		}
 
 		centerPanel.removeAll();
 		if ("markdown".equals(type)) {
@@ -1116,9 +1338,11 @@ public class NotebookCellPane extends JPanel {
 			Color dividerColor = isHighlighted() ? BORDER_HEADER_SELECTED : BORDER_NORMAL;
 			g2.setColor(headerBg);
 			g2.fillRect(x, y, w, headerH);
-			// Séparateur sous l'en-tête
-			g2.setColor(dividerColor);
-			g2.drawLine(x, y + headerH - 1, x + w, y + headerH - 1);
+			if (!collapsed) {
+				// Séparateur sous l'en-tête
+				g2.setColor(dividerColor);
+				g2.drawLine(x, y + headerH - 1, x + w, y + headerH - 1);
+			}
 			g2.setClip(oldClip);
 		}
 		g2.dispose();
@@ -1174,13 +1398,19 @@ public class NotebookCellPane extends JPanel {
 
 		private final boolean isDanger;
 		private final boolean isCross;
+		private final boolean isClone;
 		private boolean isHover = false;
 		private boolean isPressed = false;
 
 		public CellHeaderButton(String text, String tooltip, int width, boolean isDanger, boolean isCross) {
+			this(text, tooltip, width, isDanger, isCross, false);
+		}
+
+		public CellHeaderButton(String text, String tooltip, int width, boolean isDanger, boolean isCross, boolean isClone) {
 			super(text);
 			this.isDanger = isDanger;
 			this.isCross = isCross;
+			this.isClone = isClone;
 			Dimension d = new Dimension(width, 26);
 			setPreferredSize(d);
 			setMinimumSize(d);
@@ -1295,6 +1525,14 @@ public class NotebookCellPane extends JPanel {
 				p.moveTo(cx + sz, cy);
 				p.lineTo(cx, cy + sz);
 				g2.draw(p);
+			} else if (isClone) {
+				// Deux carrés superposés vectoriels (icône dupliquer)
+				g2.setStroke(new BasicStroke(1.2f));
+				g2.drawRoundRect(w / 2 - 2, h / 2 - 5, 8, 8, 2, 2);
+				g2.setColor(bg);
+				g2.fillRoundRect(w / 2 - 5, h / 2 - 2, 8, 8, 2, 2);
+				g2.setColor(fg);
+				g2.drawRoundRect(w / 2 - 5, h / 2 - 2, 8, 8, 2, 2);
 			} else {
 				// Texte centré (+ Code, + Texte)
 				FontMetrics fm = g2.getFontMetrics(getFont());
@@ -1560,6 +1798,106 @@ public class NotebookCellPane extends JPanel {
 			}
 			g2.draw(p);
 
+			g2.dispose();
+		}
+	}
+
+	/**
+	 * Bouton moderne replier / déplier la cellule (chevrons vectoriels ▾ / ▸).
+	 */
+	private class CellFoldButton extends JButton {
+		private static final long serialVersionUID = 1L;
+		private boolean isHover = false;
+		private boolean isPressed = false;
+
+		public CellFoldButton() {
+			super();
+			Dimension d = new Dimension(24, 26);
+			setPreferredSize(d);
+			setMinimumSize(d);
+			setMaximumSize(d);
+			setContentAreaFilled(false);
+			setFocusPainted(false);
+			setBorderPainted(false);
+			setOpaque(false);
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			setToolTipText(CodeLab.LABEL("Btn_collapse_cell"));
+
+			addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseEntered(MouseEvent e) {
+					if (isEnabled()) { isHover = true; repaint(); }
+				}
+				@Override
+				public void mouseExited(MouseEvent e) {
+					isHover = false; isPressed = false; repaint();
+				}
+				@Override
+				public void mousePressed(MouseEvent e) {
+					if (isEnabled()) { isPressed = true; repaint(); }
+				}
+				@Override
+				public void mouseReleased(MouseEvent e) {
+					isPressed = false; repaint();
+				}
+			});
+		}
+
+		@Override
+		protected void paintComponent(Graphics g) {
+			Graphics2D g2 = (Graphics2D) g.create();
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+			int w = getWidth();
+			int h = getHeight();
+
+			Color bg;
+			Color border;
+			Color fg;
+
+			if (!isEnabled()) {
+				bg = new Color(245, 246, 248);
+				border = new Color(225, 228, 232);
+				fg = new Color(185, 190, 195);
+			} else if (isPressed) {
+				bg = new Color(220, 226, 234);
+				border = new Color(180, 188, 198);
+				fg = new Color(30, 40, 50);
+			} else if (isHover) {
+				bg = new Color(235, 240, 246);
+				border = new Color(195, 202, 212);
+				fg = new Color(30, 40, 50);
+			} else {
+				bg = Color.WHITE;
+				border = new Color(210, 216, 224);
+				fg = new Color(80, 90, 105);
+			}
+
+			int arc = 8;
+			g2.setColor(bg);
+			g2.fillRoundRect(1, 1, w - 2, h - 2, arc, arc);
+			g2.setColor(border);
+			g2.setStroke(new BasicStroke(1.0f));
+			g2.drawRoundRect(1, 1, w - 3, h - 3, arc, arc);
+
+			g2.setColor(fg);
+			g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			float cx = w / 2.0f;
+			float cy = h / 2.0f;
+			Path2D.Float p = new Path2D.Float();
+			if (collapsed) {
+				// Chevron pointant vers la droite ▸
+				p.moveTo(cx - 2.5f, cy - 4.5f);
+				p.lineTo(cx + 2.5f, cy);
+				p.lineTo(cx - 2.5f, cy + 4.5f);
+			} else {
+				// Chevron pointant vers le bas ▾
+				p.moveTo(cx - 4.5f, cy - 2.5f);
+				p.lineTo(cx, cy + 2.5f);
+				p.lineTo(cx + 4.5f, cy - 2.5f);
+			}
+			g2.draw(p);
 			g2.dispose();
 		}
 	}

@@ -96,6 +96,7 @@ public class UserTable extends JScrollPane {
 	private JMenuItem itemControl = new JMenuItem();
 	private JMenu menuEvalStudent = new JMenu();
 	private JMenu menuEvalSession = new JMenu();
+	private JCheckBoxMenuItem itemUseAi = new JCheckBoxMenuItem();
 	private JMenuItem itemResetPasswd= new JMenuItem();
 	private JMenuItem itemDeconnexion = new JMenuItem();
 	private JMenuItem itemOpenSession = new JMenuItem();
@@ -377,6 +378,7 @@ public class UserTable extends JScrollPane {
 
 		menuStudent.setText(String.format(CodeLab.LABEL("UserTable_menuStudent"), udata));
 		itemControl.setText(String.format(label2, udata));
+		itemUseAi.setSelected(SessionEvaluator.isUseAi());
 		menuEvalSession.setText(String.format(CodeLab.LABEL("menuEvalSession"), sessionId));
 		SessionEvaluator.populateSkillsSubmenu(menuEvalSession, (skill, useAi) -> SessionEvaluator.evaluateSession(codelab, sessionId, skill, useAi));
 		itemTchat.setText(String.format(CodeLab.LABEL("UserTable_4"), udata));
@@ -756,18 +758,22 @@ public class UserTable extends JScrollPane {
 				}
 			});
 
+			// Activation / désactivation globale de l'IA pour les évaluations
+			itemUseAi.setText(CodeLab.LABEL("evalUseAiCheckbox"));
+			itemUseAi.addItemListener(new ItemListener() {
+				public void itemStateChanged(ItemEvent e) {
+					SessionEvaluator.setUseAi(itemUseAi.getState());
+				}
+			});
+
 			// Construction du menu
 
-			menuStudent.add(menuEvalStudent);
-			menuStudent.add(new JSeparator());
 			menuStudent.add(itemTchat);
 			menuStudent.add(itemResetHelpFlag);
 			menuStudent.add(itemControl);
 			menuStudent.add(itemResetPasswd);
 			menuStudent.add(itemDeconnexion);
 
-			menuGroup.add(menuEvalSession);
-			menuGroup.add(new JSeparator());
 			menuGroup.add(itemMessage);
 			menuGroup.add(itemDisableControlAll);
 			menuGroup.add(itemDeconnexionAll);
@@ -788,6 +794,10 @@ public class UserTable extends JScrollPane {
 			add(info_3);
 			add(info_4);
 			//add(info_5);
+			add(new JSeparator());
+			add(itemUseAi);
+			add(menuEvalStudent);
+			add(menuEvalSession);
 			add(new JSeparator());
 			add(menuStudent);
 			add(menuGroup);

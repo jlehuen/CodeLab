@@ -23,22 +23,22 @@ public class FileDescr {
 
 	private boolean modified = false; // Flag de modification exterieure
 
-	private ImageIcon icon_c = ResourceUtils.loadImageIcon("icons/mini_icon_c.png");
-	private ImageIcon icon_go = ResourceUtils.loadImageIcon("icons/mini_icon_go.png");
-	private ImageIcon icon_lua = ResourceUtils.loadImageIcon("icons/mini_icon_lua.png");
-	private ImageIcon icon_lisp = ResourceUtils.loadImageIcon("icons/mini_icon_lisp.png");
-	private ImageIcon icon_java = ResourceUtils.loadImageIcon("icons/mini_icon_java.png");
-	private ImageIcon icon_clips = ResourceUtils.loadImageIcon("icons/mini_icon_clips.png");
-	private ImageIcon icon_python = ResourceUtils.loadImageIcon("icons/mini_icon_python.png");
-	private ImageIcon icon_jupyter = ResourceUtils.loadImageIcon("icons/mini_icon_jupyter.png");
-	private ImageIcon icon_haskell = ResourceUtils.loadImageIcon("icons/mini_icon_haskell.png");
-	private ImageIcon icon_blocs = ResourceUtils.loadImageIcon("icons/mini_icon_blocs.png");
-	private ImageIcon icon_processing = ResourceUtils.loadImageIcon("icons/mini_icon_process.png");
-	private ImageIcon icon_folder = ResourceUtils.loadImageIcon("icons/mini_icon_folder.png");
-	private ImageIcon icon_text = ResourceUtils.loadImageIcon("icons/mini_icon_text.png");
-	private ImageIcon icon_html = ResourceUtils.loadImageIcon("icons/mini_icon_html.png");
-	private ImageIcon icon_image = ResourceUtils.loadImageIcon("icons/mini_icon_eye.png");
-	private ImageIcon icon_array = ResourceUtils.loadImageIcon("icons/mini_icon_numpy.png");
+	public static final ImageIcon icon_c = ResourceUtils.loadImageIcon("icons/mini_icon_c.png");
+	public static final ImageIcon icon_go = ResourceUtils.loadImageIcon("icons/mini_icon_go.png");
+	public static final ImageIcon icon_lua = ResourceUtils.loadImageIcon("icons/mini_icon_lua.png");
+	public static final ImageIcon icon_lisp = ResourceUtils.loadImageIcon("icons/mini_icon_lisp.png");
+	public static final ImageIcon icon_java = ResourceUtils.loadImageIcon("icons/mini_icon_java.png");
+	public static final ImageIcon icon_clips = ResourceUtils.loadImageIcon("icons/mini_icon_clips.png");
+	public static final ImageIcon icon_python = ResourceUtils.loadImageIcon("icons/mini_icon_python.png");
+	public static final ImageIcon icon_jupyter = ResourceUtils.loadImageIcon("icons/mini_icon_jupyter.png");
+	public static final ImageIcon icon_haskell = ResourceUtils.loadImageIcon("icons/mini_icon_haskell.png");
+	public static final ImageIcon icon_blocs = ResourceUtils.loadImageIcon("icons/mini_icon_blocs.png");
+	public static final ImageIcon icon_processing = ResourceUtils.loadImageIcon("icons/mini_icon_process.png");
+	public static final ImageIcon icon_folder = ResourceUtils.loadImageIcon("icons/mini_icon_folder.png");
+	public static final ImageIcon icon_text = ResourceUtils.loadImageIcon("icons/mini_icon_text.png");
+	public static final ImageIcon icon_html = ResourceUtils.loadImageIcon("icons/mini_icon_html.png");
+	public static final ImageIcon icon_image = ResourceUtils.loadImageIcon("icons/mini_icon_eye.png");
+	public static final ImageIcon icon_array = ResourceUtils.loadImageIcon("icons/mini_icon_numpy.png");
 
 	private String label = null;
 
