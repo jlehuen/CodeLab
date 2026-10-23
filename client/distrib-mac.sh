@@ -103,7 +103,6 @@ MACOS="$APP/Contents/MacOS"
 rm -rf "$APP"
 cp -r "$MAC_APP_DIR" "$APP"
 cp -r hidden/codelab "$MACOS"
-cp data/report.css "$MACOS/report.css"
 
 echo "Copie des fichiers de configuration..."
 cp sys-properties/sysconfig-mac.properties "$MACOS/codelab/sysconfig.properties"

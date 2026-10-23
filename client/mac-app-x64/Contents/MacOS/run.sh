@@ -47,6 +47,7 @@ fi
 # Sécurité : s'assurer que les exécutables et dylibs internes sont dé-quarantainés
 xattr -d com.apple.quarantine "$JAVA_HOME/bin/java" "$JAVA_HOME/bin/javac" 2>/dev/null || true
 xattr -cr "$BASE/codelab/natives" 2>/dev/null || true
+xattr -cr "$BASE/codelab/libraries" 2>/dev/null || true
 xattr -cr "$BASE/bin" 2>/dev/null || true
 
 CODELAB="codelab/codelab.jar"

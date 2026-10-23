@@ -97,9 +97,26 @@ public class Executeur implements Runnable {
 		// Emplacement des librairies natives
 		String DLIBPATH = CodeLab.PROCESSING;
 		switch (CodeLab.SYSTEM) {
-			case "Mac": DLIBPATH += "/macos-x86_64"; break;
-			case "Linux": DLIBPATH += "/linux-amd64"; break;
-			case "Windows": DLIBPATH += "/windows-amd64"; break;
+			case "Mac":
+				if (CodeLab.ARCHITECTURE.equals("Apple Silicon")) {
+					DLIBPATH += "/macos-aarch64";
+				} else {
+					DLIBPATH += "/macos-x86_64";
+				}
+				break;
+			case "Linux":
+				String arch = System.getProperty("os.arch", "").toLowerCase();
+				if (arch.contains("aarch64") || arch.contains("arm64")) {
+					DLIBPATH += "/linux-aarch64";
+				} else if (arch.contains("arm")) {
+					DLIBPATH += "/linux-arm";
+				} else {
+					DLIBPATH += "/linux-amd64";
+				}
+				break;
+			case "Windows":
+				DLIBPATH += "/windows-amd64";
+				break;
 		}
 
 		switch (lang) {

@@ -350,8 +350,6 @@ public class CodeLab extends AbstractCodeLab {
 			if (fRscCodelab.exists() && fRscCodelab.length() > 0) return fRscCodelab;
 		}
 		// 3. Mode dev
-		File devArm = new File("client/mac-app-arm/Contents/MacOS/report.css");
-		if (devArm.exists() && devArm.length() > 0) return devArm;
 		File devData = new File("client/data/report.css");
 		if (devData.exists() && devData.length() > 0) return devData;
 		return null;
