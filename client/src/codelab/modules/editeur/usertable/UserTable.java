@@ -40,6 +40,7 @@ import javax.swing.table.TableModel;
 
 import codelab.CodeLab;
 import codelab.client.ChatController;
+import codelab.client.CodelabClient;
 import codelab.client.NewpassDialog;
 import codelab.client.UserData;
 import codelab.eval.SessionEvaluator;
@@ -101,6 +102,7 @@ public class UserTable extends JScrollPane {
 	private JMenuItem itemDeconnexion = new JMenuItem();
 	private JMenuItem itemOpenSession = new JMenuItem();
 	private JMenuItem itemNewStudent = new JMenuItem();
+	private JMenu menuChangeSession = new JMenu();
 	private JMenuItem itemResetHelpFlag = new JMenuItem();
 	private JMenuItem itemResetTutorPasswd = new JMenuItem(CodeLab.LABEL("itemResetTutorPasswd"));
 	//private JMenuItem itemEnableControlAll = new JMenuItem(CodeLab.LABEL("UserTable_17a"));
@@ -392,6 +394,36 @@ public class UserTable extends JScrollPane {
 		String label3 = openned ? CodeLab.LABEL("UserTable_19b") : CodeLab.LABEL("UserTable_19a");
 		itemOpenSession.setText(String.format(label3, sessionId));
 		itemNewStudent.setText(String.format(CodeLab.LABEL("itemNewStudent"), sessionId));
+
+		// Sous-menu changement de session
+		menuChangeSession.setText(CodeLab.LABEL("ServerPopupMenu_4"));
+		menuChangeSession.removeAll();
+		CodelabClient client = codelab.getClient();
+		if (client != null && client.isConnected()) {
+			String[] sessions = client.getSessions();
+			String curSession = client.getSession();
+			if (curSession == null || curSession.isEmpty()) curSession = sessionId;
+			menuChangeSession.setEnabled(client.nbSessions() > 1);
+			if (sessions != null) {
+				for (String sId : sessions) {
+					boolean isOpen = client.isOpen(sId);
+					boolean isActive = sId.equals(curSession);
+					JMenuItem item = new JMenuItem(sId);
+					if (isActive) item.setText("=> " + sId);
+					item.setEnabled(!isActive);
+					item.setBackground(isOpen ? Color.WHITE : COLOR_CLOSED);
+					item.setOpaque(true);
+					item.addActionListener(new ActionListener() {
+						public void actionPerformed(ActionEvent event) {
+							client.actionChangeSession(sId);
+						}
+					});
+					menuChangeSession.add(item);
+				}
+			}
+		} else {
+			menuChangeSession.setEnabled(false);
+		}
 
 		// Pour le menu contextuel de l'éditeur
 		editor.updateUserData(udata);
@@ -786,6 +818,7 @@ public class UserTable extends JScrollPane {
 			menuConfig.add(itemRemoveFilter);
 
 			add(info_0);
+			add(menuChangeSession);
 			add(itemOpenSession);
 			add(itemNewStudent);
 			add(new JSeparator());
