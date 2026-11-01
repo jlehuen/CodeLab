@@ -97,6 +97,10 @@ client/codelab.files/userdata/ai_cache/
 server/server/target/
 **/target/
 
+# Documentation MkDocs (sites compilés générés)
+mkdocs/**/site/
+site/
+
 # Client Java (compilation Ant et JAR résultant)
 client/class/
 **/class/

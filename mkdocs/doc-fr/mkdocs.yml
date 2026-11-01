@@ -1,0 +1,16 @@
+site_name: ''
+nav:
+    - Home: 'https://codelab.univ-lemans.fr'
+    - Langages:
+        - "Langage C": 'lang-c/doc-c-fr.md'
+        - "Langage Java": 'lang-java/doc-java-fr.md'
+        - "Langage Python": 'lang-python/doc-py-fr.md'
+        - "Langage CLIPS": 'lang-clips/doc-clips-fr.md'
+    - Usages:
+        - "Utilisation en mode connecté": 'usages/infoclient-fr.md'
+        - "Installation d'un serveur": 'usages/infoserver-fr.md'
+        - "Section HOWTO": 'usages/howto-fr.md'
+    - Développeur:
+        - "1. Conception d'un premier module CodeLab": 'tuto1/tuto1-fr.md'
+        - "2. Conception d'un module de tracé 2D": 'tuto2/tuto2-fr.md'
+        - "3. Conception d'un module simulateur": 'tuto3/tuto3-fr.md'
