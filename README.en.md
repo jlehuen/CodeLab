@@ -24,7 +24,7 @@
   <strong>Programming Learning Environment
   <br>for Secondary and Higher Education</strong>
   <br>
-  <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
+  <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a> &nbsp;|&nbsp; 📖 <a href="mkdocs/doc-en/">Documentation</a>
   <br><br>
   <a href="#downloads"><img src="client/images/download.png" alt="Downloads" width="160"></a>
 </p>
@@ -53,6 +53,7 @@ A key feature of CodeLab is enabling **virtual classrooms** (in-person or remote
 ## Table of Contents
 
 - [Downloads](#downloads)
+- [Documentation](#documentation)
 - [Language Setup](#language-setup)
 - [Application Modules Setup](#application-modules-setup)
 - [Automated Pedagogical Evaluation & AI](#automated-pedagogical-evaluation--ai)
@@ -110,6 +111,29 @@ All available releases can be found in the CodeLab [Releases](https://github.com
 | 1. On the *"Windows protected your PC"* screen, click the **More info** link.<br><br>2. Then click the **Run anyway** button that appears at the bottom.<br><br>3. The installation runs within your user session; thereafter, the Start Menu shortcut will launch CodeLab directly without any security prompt. | <img src="client/images/auth_codelab_win.png" alt="Windows SmartScreen Authorization" width="350"> |
 
 </details>
+
+<p align="center">
+  <br>
+  <img src="client/data/mentions/separator.png" alt="separator.png">
+</p>
+
+## Documentation
+
+The complete CodeLab documentation (user guides, language API references, and developer tutorials) is tracked directly in the repository and available in the [**`mkdocs/doc-en/`**](mkdocs/doc-en/) directory:
+
+- **User Guides**:
+  - [Connected Mode (Client)](mkdocs/doc-en/docs/usages/infoclient-en.md): Student/tutor login, instant messaging, and real-time code monitoring.
+  - [Server Installation and Administration](mkdocs/doc-en/docs/usages/infoserver-en.md): Deployment, network setup, and virtual classroom management.
+  - [HOWTO Section (FAQ & Troubleshooting)](mkdocs/doc-en/docs/usages/howto-en.md): Useful tips and common commands.
+- **Language API References**:
+  - [C Language API](mkdocs/doc-en/docs/lang-c/doc-c-en.md)
+  - [Java Language API](mkdocs/doc-en/docs/lang-java/doc-java-en.md)
+  - [Python Language API](mkdocs/doc-en/docs/lang-python/doc-py-en.md)
+  - [CLIPS Language API](mkdocs/doc-en/docs/lang-clips/doc-clips-en.md)
+- **Developer Tutorials (Designing Application Modules)**:
+  - [Tutorial #1: Designing a First CodeLab Module](mkdocs/doc-en/docs/tuto1/tuto1-en.md)
+  - [Tutorial #2: Designing a 2D Plotter Module](mkdocs/doc-en/docs/tuto2/tuto2-en.md)
+  - [Tutorial #3: Designing a Motor Simulator](mkdocs/doc-en/docs/tuto3/tuto3-en.md)
 
 <p align="center">
   <br>
