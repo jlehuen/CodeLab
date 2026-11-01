@@ -1,3 +1,7 @@
+<p align="right">
+  🌐 <strong>Français</strong> &nbsp;|&nbsp; <a href="README.en.md">English</a>
+</p>
+
 <p align="center">
   <img src="client/icons/icone.png" alt="CodeLab Logo" width="130">
 </p>
