@@ -119,12 +119,8 @@ All available releases can be found in the CodeLab [Releases](https://github.com
 
 ## Documentation
 
-The complete CodeLab documentation (user guides, language API references, and developer tutorials) is tracked directly in the repository and available in the [**`mkdocs/doc-en/`**](mkdocs/doc-en/) directory:
+The CodeLab documentation (language API references and developer tutorials) is tracked directly in the repository and available in the [**`mkdocs/doc-en/`**](mkdocs/doc-en/) directory:
 
-- **User Guides**:
-  - [Connected Mode (Client)](mkdocs/doc-en/docs/usages/infoclient-en.md): Student/tutor login, instant messaging, and real-time code monitoring.
-  - [Server Installation and Administration](mkdocs/doc-en/docs/usages/infoserver-en.md): Deployment, network setup, and virtual classroom management.
-  - [HOWTO Section (FAQ & Troubleshooting)](mkdocs/doc-en/docs/usages/howto-en.md): Useful tips and common commands.
 - **Language API References**:
   - [C Language API](mkdocs/doc-en/docs/lang-c/doc-c-en.md)
   - [Java Language API](mkdocs/doc-en/docs/lang-java/doc-java-en.md)

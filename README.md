@@ -120,12 +120,8 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 
 ## Documentation
 
-La documentation complète de CodeLab (guides d'utilisation, références des API et tutoriels développeur) est disponible dans le dossier [**`mkdocs/doc-fr/`**](mkdocs/doc-fr/) :
+La documentation de CodeLab (références des API et tutoriels développeur) est disponible dans le dossier [**`mkdocs/doc-fr/`**](mkdocs/doc-fr/) :
 
-- **Guides d'utilisation** :
-  - [Utilisation en mode connecté](mkdocs/doc-fr/docs/usages/infoclient-fr.md) : connexion élève/tuteur, messagerie instantanée, partage et suivi de code en temps réel.
-  - [Installation et administration du serveur](mkdocs/doc-fr/docs/usages/infoserver-fr.md) : déploiement, configuration réseau et pilotage des classes virtuelles.
-  - [Section HOWTO (FAQ & Dépannage)](mkdocs/doc-fr/docs/usages/howto-fr.md) : astuces pratiques et commandes utiles.
 - **Références des API par langage** :
   - [API Langage C](mkdocs/doc-fr/docs/lang-c/doc-c-fr.md)
   - [API Langage Java](mkdocs/doc-fr/docs/lang-java/doc-java-fr.md)
