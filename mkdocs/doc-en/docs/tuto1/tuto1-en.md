@@ -68,54 +68,50 @@ The design and development of a CodeLab plugin is facilitated by a set of Java c
 8. [Internationalization of the module](#8)
 
 <a name=1></a>
-## 1. Development tree
+## 1. Creating the plugin with the CDK
 
-To develop a new plugin, the first thing to do is to copy the `plugins` folder to the root of CodeLab, next to the `modules` one. The plugin will not compile if you are working in another location.
+To develop a new plugin, folder generation and configuration are fully automated by the **CDK** (*CodeLab Development Kit*, located in `client/codelab.files/hidden/CDK/` or at the root of the installed distribution).
 
-Go to the `plugins` folder, duplicate the `YourModule` template-tree and rename it to `HelloModule`. The execution of the `build.sh` or `build.bat` script (depending on your operating system) will produce a `.jar` file which will contain all the files and resources of your plugin. This file will be automatically copied into the `modules` directory of CodeLab, which will allow you to test your module during its development.
+> **Important**: CodeLab must have been run at least once on your machine beforehand!
 
-<pre>
-plugins/
-└── YourModule/       &larr; Do not modify the template-tree
-└── HelloModule/      &larr; HelloModule plugin-tree
-    ├── class/        &larr; Reserved for compilation (do not modify)
-    ├── data/         &larr; For your resources (images, audio, etc.)
-    ├── includes/     &larr; For files to be included in programs
-    ├── lib/          &larr; For the possible Java libraries
-    ├── src/          &larr; For the Java sources of your plugin
-    ├── templates/    &larr; For possible templates and exercises
-    ├── build.sh      &larr; Bash script for compilation and packaging
-    └── build.bat     &larr; DOS script for compilation and packaging
-</pre>
+### Automatic skeleton generation
 
-Explore `HelloModule`. The `src` directory contains in particular the two Java files `YourModule.java` and `YourToolbar.java` to be renamed and which will be used as a basis for the development of your module:
+1. Open a terminal in the `CDK` directory.
+2. Run the creation script specifying your module name (`HelloModule`):
+   - Under Linux / macOS: `./newmodule.sh HelloModule`
+   - Under Windows: `newmodule.bat HelloModule`
+
+This script automatically creates the `HelloModule/` folder in `CDK/` as well as an initial ready-to-use `HelloModule.pac` package in the `modules/` directory of CodeLab. All renamings (packages, Java classes, XML, and manual) are performed automatically!
 
 <pre>
 HelloModule/
+├── class/        &larr; Reserved for compilation (do not modify)
+├── data/         &larr; For your resources (images, audio, etc.)
+│   ├── icon_clear.png
+│   └── icon_hello.png
+├── includes/     &larr; For API specification files
+│   ├── api.dtd
+│   └── HelloModuleAPI.xml
 ├── lib/
-│   └── codelab.jar                     &larr; Reserved for compilation (do not delete)
-├── src/
-│   └── codelab/
-│       └── modules/
-│           └── yourmodule/             &larr; Rename to "hellomodule"
-│               ├── YourModule.java     &larr; Rename to "HelloModule.java"
-│               └── YourToolbar.java    &larr; Rename to "HelloToolbar.java"
-├── data/
-│   ├── icon_clear.png                  &larr; An icon for a button
-│   └── icon_hello.png                  &larr; Another icon
-├── includes/
-│   └── api.dtd                         &larr; Reserved for compilation (do not delete)
-├── templates/
+│   └── codelab.jar &larr; Reserved for compilation (do not delete)
+├── man/          &larr; Workshop manual in Markdown
+│   └── HelloModule.md
+├── src/          &larr; Java sources of your plugin
+│   └── codelab/modules/hellomodule/
+│       ├── HelloModule.java
+│       └── HelloToolbar.java
+├── templates/    &larr; Program templates for each language
+│   ├── hello.c
+│   ├── hello.clp
+│   ├── hello.java
+│   └── hello.py
+├── build.sh      &larr; Bash compilation and packaging script
+└── build.bat     &larr; DOS compilation and packaging script
 </pre>
 
-After duplicating the template-tree, you have renamed it as follows:
+Regularly executing the `build.sh` script (or `build.bat` on Windows) will produce a **`.pac`** file (`HelloModule.pac`) that is automatically copied into the `modules/` directory of CodeLab, allowing you to test your module as you develop it.
 
-- The main directory `YourModule` has become `HelloModule`
-- The terminal package `yourmodule` has become `hellomodule`
-- The class `YourModule.java` has become `HelloModule.java`
-- The class `YourToolbar.java` has become `HelloToolbar.java`
-
-The `HelloToolbar.java` class will not be used at first.
+The `HelloToolbar.java` class will not be modified at first.
 
 <a name=2></a>
 ## 2. Main classes of the module
@@ -176,7 +172,7 @@ public class HelloModule extends AbstractModule {
 }
 ~~~
 
-You can already generate your plugin to verify that it appears as a new tab in CodeLab. To do this, run the `build.sh` script and check that a `HelloModule.jar` file has been placed in the `modules` directory of CodeLab. Start CodeLab and notice that you have a new tab called `Hello Lab` but nothing more.
+You can already generate your plugin to verify that it appears as a new tab in CodeLab. To do this, run the `build.sh` script and check that a `HelloModule.pac` file has been placed in the `modules` directory of CodeLab. Start CodeLab and notice that you have a new tab called `Hello Lab` but nothing more.
 
 Here is the content of a terminal after the execution of the `build.bat` script (under Windows) or `build.sh` (under OSX or Linux) when everything has gone well:
 
@@ -420,6 +416,8 @@ HelloModule/
 │   └── icon_hello.png
 ├── lib/
 │   └── codelab.jar
+├── man/
+│   └── HelloModule.md
 ├── src/
 │   └── codelab/
 │       └── modules/
@@ -585,6 +583,8 @@ public HelloToolbar(HelloModule module) {
 	endToolbar();
 }
 ~~~
+
+> 💡 **Built-in workshop manual (`man/`)**: The Markdown file `man/HelloModule.md` is automatically compiled into HTML (`HelloModule.html`) whenever `./build.sh` (or `build.bat`) is executed, packaged directly inside `HelloModule.pac`, and can be opened in the system browser via the toolbar `MAN` button or the *Plugins > Workshop Manual* menu.
 
 This tutorial is over. You can continue to explore CodeLab plugin development by completing the next tutorials.
 

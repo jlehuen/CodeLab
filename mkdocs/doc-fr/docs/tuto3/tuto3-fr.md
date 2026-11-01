@@ -69,39 +69,49 @@ La différence entre ce module et ceux des précédents tutoriels réside dans l
 
 <br/>![](./img/sep.png?style=center+noborder)
 
-## 1. Arborescence de développement
+## 1. Création du plugin avec le CDK
 
-Comme pour les tutos précédents, allez dans le dossier `plugins` et dupliquez l'arborescence-modèle `YourModule` que vous renommerez en `MotorModule`.
+Comme pour les tutoriels précédents, ouvrez un terminal dans le dossier `CDK` et lancez le script de génération :
+- Sous Linux / macOS : `./newmodule.sh MotorModule`
+- Sous Windows : `newmodule.bat MotorModule`
 
-- Renommez également le package principal et les classes principales ;
-- Renommez le fichier `yourAPI.xml` en `NXTMotor.xml` ;
-- Ajoutez une classe vide `MotorSimulator` ;
-- Téléchargez dans le dossier `data` les ressources [axis.png](./data/axis.png) et [motor.png](./data/motor.png) :
+Le script prépare automatiquement l'arborescence `MotorModule/`, avec le package `codelab.modules.motormodule`, les classes `MotorModule.java`, `MotorToolbar.java` et le manuel Markdown.
+
+Pour ce module simulateur, effectuez les ajustements suivants :
+- Téléchargez dans le dossier `data` les ressources [axis.png](./data/axis.png) et [motor.png](./data/motor.png) ;
+- Renommez le fichier `includes/MotorModuleAPI.xml` en `includes/NXTMotor.xml` ;
+- Ajoutez la nouvelle classe `MotorSimulator.java` dans `src/codelab/modules/motormodule/`.
+
+Vous disposez de l'arborescence suivante :
 
 <pre>
-MotorModule/                                  &larr; Dossier renommé
+MotorModule/
 ├── class/
 ├── data/
 │   ├── icon_clear.png
 │   ├── icon_hello.png
-│   ├── axis.png                              &larr; Nouvelle ressource
-│   └── motor.png                             &larr; Nouvelle ressource
+│   ├── axis.png                              &larr; Ressource graphique
+│   └── motor.png                             &larr; Ressource graphique
 ├── includes/
 │   ├── api.dtd
-│   └── NXTMotor.xml                          &larr; fichier XML renommé
+│   └── NXTMotor.xml                          &larr; Fichier XML d'API renommé
 ├── lib/
 │   └── codelab.jar
+├── man/
+│   └── MotorModule.md
 ├── src/
 │   └── codelab/
 │       └── modules/
-│           └── motormodule/                  &larr; Package renommé
-│               ├── MotorModule.java          &larr; Classe renommée
-│               ├── MotorToolbar.java         &larr; Classe renommée
-│               └── MotorSimulator.java       &larr; Nouvelle classe
+│           └── motormodule/
+│               ├── MotorModule.java
+│               ├── MotorToolbar.java
+│               └── MotorSimulator.java       &larr; Classe simulateur
 ├── templates/
 ├── build.bat
 └── build.sh
 </pre>
+
+La compilation via `./build.sh` (ou `build.bat`) produira le paquet **`MotorModule.pac`** automatiquement déployé dans le dossier `modules/` de CodeLab.
 
 <br/>![](./img/sep.png?style=center+noborder)
 

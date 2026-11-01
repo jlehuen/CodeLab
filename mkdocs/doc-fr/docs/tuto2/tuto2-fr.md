@@ -68,30 +68,41 @@ La principale différence entre ce module et celui du tutoriel n°1 réside dans
 
 <br/>![](./img/sep.png?style=center+noborder)
 
-## 1. Arborescence de développement
+## 1. Création du plugin avec le CDK
 
-Comme pour le premier tuto, allez dans le répertoire `plugins` et dupliquez l'arborescence-modèle `YourModule` que vous renommerez en `DrawingModule`. Renommez également le package principal et les classes principales. Après les renommages, vous devriez disposer de l'arborescence suivante :
+Comme pour le premier tutoriel, ouvrez un terminal dans le dossier `CDK` et lancez le script de génération :
+- Sous Linux / macOS : `./newmodule.sh DrawingModule`
+- Sous Windows : `newmodule.bat DrawingModule`
+
+Le script prépare automatiquement l'arborescence complète `DrawingModule/`, renomme le package (`codelab.modules.drawingmodule`), les classes principales (`DrawingModule.java`, `DrawingToolbar.java`), le fichier d'API et le manuel Markdown.
+
+Vous disposez ainsi de l'arborescence suivante :
 
 <pre>
-DrawingModule/                                &larr; Dossier renommé
+DrawingModule/
 ├── class/
 ├── data/
 │   ├── icon_clear.png
 │   └── icon_hello.png
 ├── includes/
-│   └── api.dtd
+│   ├── api.dtd
+│   └── DrawingModuleAPI.xml
 ├── lib/
 │   └── codelab.jar
+├── man/
+│   └── DrawingModule.md
 ├── src/
 │   └── codelab/
 │       └── modules/
-│           └── drawingmodule/                &larr; Package renommé
-│               ├── DrawingModule.java        &larr; Classe renommée
-│               └── DrawingToolbar.java       &larr; Classe renommée
+│           └── drawingmodule/
+│               ├── DrawingModule.java
+│               └── DrawingToolbar.java
 ├── templates/
 ├── build.bat
 └── build.sh
 </pre>
+
+La compilation via `./build.sh` (ou `build.bat`) produira le paquet **`DrawingModule.pac`** automatiquement déployé dans le dossier `modules/` de CodeLab.
 
 <br/>![](./img/sep.png?style=center+noborder)
 
@@ -331,7 +342,7 @@ Ce dernier permet notamment de générer les fichiers à inclure pour chaque lan
 
 ## 5. Définition de la barre d'outils
 
-L'écriture de la barre d'outils est très simple puisque tout était déjà écrit dans le fichier `YourModule.java` qui a servi de modèle à `DrawingModule.java`. Il suffit juste de procéder à quelques adaptations (icone, texte, tooltip, etc.) afin d'avoir un bouton `Clear` opérationnel en place et lieu du bouton `Hello` :
+L'écriture de la barre d'outils est très simple puisque le squelette de base a déjà été généré dans `DrawingToolbar.java` par le script `newmodule.sh`. Il suffit juste de procéder à quelques adaptations (icone, texte, tooltip, etc.) afin d'avoir un bouton `Clear` opérationnel :
 
 ```java
 package codelab.modules.drawingmodule;

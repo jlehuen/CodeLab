@@ -45,61 +45,71 @@ void main() {
 
 ![](./img/motor-module.png?style=center+margin)
 
-La différence entre ce module et ceux des précédents tutoriels réside dans leurs fonctionnements : les deux premiers correspondent à des visualisations, celui-ci à une simulation.
+The key difference between this module and those of the previous tutorials lies in how they operate: the first two are visualizations, while this one is a real-time simulation.
 
-### Prérequis pour réaliser ce tutoriel :
+### Prerequisites for this tutorial:
 
-- Avoir suivi les deux premiers tutoriels
-- Maîtriser les concepts objet et la POO en Java
-- Savoir exploiter les API Java awt et Swing
-- Comprendre la syntaxe des fichiers XML
+- Having completed the first two tutorials
+- Mastering object-oriented programming (OOP) in Java
+- Knowing how to use Java AWT and Swing APIs
+- Understanding XML syntax
 
 <a name=toc></a>
-### Table des matières :
+### Table of Contents:
 
-1. [Arborescence de développement](#1)
-2. [Classes principales du module](#2)
-3. [Définition de la classe MotorSimulator](#3)
-4. [Définition de l'API du module](#4)
-5. [Définition de la barre d'outils] (#5)
-6. [Génération du module] (#6)
-7. [Ajout d'un tableau de bord] (#7)
+1. [Creating the plugin with the CDK](#1)
+2. [Main classes of the module](#2)
+3. [Definition of the MotorSimulator class](#3)
+4. [Definition of the module API](#4)
+5. [Definition of the toolbar](#5)
+6. [Module generation](#6)
+7. [Adding a dashboard](#7)
 
 
 <a name=1></a>
-## 1. Arborescence de développement
+## 1. Creating the plugin with the CDK
 
-Comme pour les tutos précédents, allez dans le dossier `plugins` et dupliquez l'arborescence-modèle `YourModule` que vous renommerez en `MotorModule`.
+As in the previous tutorials, open a terminal in the `CDK` directory and execute the generation script:
+- Under Linux / macOS: `./newmodule.sh MotorModule`
+- Under Windows: `newmodule.bat MotorModule`
 
-- Renommez également le package principal et les classes principales ;
-- Renommez le fichier `yourAPI.xml` en `NXTMotor.xml` ;
-- Ajoutez une classe vide `MotorSimulator` ;
-- Téléchargez dans le dossier `data` les ressources [axis.png](./data/axis.png) et [motor.png](./data/motor.png) :
+The script automatically sets up the `MotorModule/` directory tree with the `codelab.modules.motormodule` package, the `MotorModule.java` and `MotorToolbar.java` classes, and the Markdown manual.
+
+For this simulator module, make the following adjustments:
+- Download the graphic resources [axis.png](./data/axis.png) and [motor.png](./data/motor.png) into the `data` directory;
+- Rename the API file `includes/MotorModuleAPI.xml` to `includes/NXTMotor.xml`;
+- Add the new simulator class `MotorSimulator.java` into `src/codelab/modules/motormodule/`.
+
+You now have the following directory tree:
 
 <pre>
-MotorModule/                                  &larr; Dossier renommé
+MotorModule/
 ├── class/
 ├── data/
 │   ├── icon_clear.png
 │   ├── icon_hello.png
-│   ├── axis.png                              &larr; Nouvelle ressource
-│   └── motor.png                             &larr; Nouvelle ressource
+│   ├── axis.png                              &larr; Graphic resource
+│   └── motor.png                             &larr; Graphic resource
 ├── includes/
 │   ├── api.dtd
-│   └── NXTMotor.xml                          &larr; fichier XML renommé
+│   └── NXTMotor.xml                          &larr; Renamed API XML file
 ├── lib/
 │   └── codelab.jar
+├── man/
+│   └── MotorModule.md
 ├── src/
 │   └── codelab/
 │       └── modules/
-│           └── motormodule/                  &larr; Package renommé
-│               ├── MotorModule.java          &larr; Classe renommée
-│               ├── MotorToolbar.java         &larr; Classe renommée
-│               └── MotorSimulator.java       &larr; Nouvelle classe
+│           └── motormodule/
+│               ├── MotorModule.java
+│               ├── MotorToolbar.java
+│               └── MotorSimulator.java       &larr; Simulator class
 ├── templates/
 ├── build.bat
 └── build.sh
 </pre>
+
+Compiling with `./build.sh` (or `build.bat`) will produce the **`MotorModule.pac`** package, automatically deployed into CodeLab's `modules/` directory.
 
 <a name=2></a>
 ## 2. Classes principales du module
@@ -421,23 +431,24 @@ public class MotorToolbar extends AbstractToolbar {
 ~~~
 
 <a name=6></a>
-## 6. Génération du module
+## 6. Module generation
 
-Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationnaliser votre module, comme cela est expliqué dans le premier tutoriel. Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `MotorModule.pac` dans le dossier `module` de CodeLab :
+The module is now ready to be generated. Before that, you can optionally define templates, exercises, or even internationalize your module, as explained in the first tutorial. To generate the module, run the build script, which will place a `MotorModule.pac` file in the `modules` directory of CodeLab:
 
 ![](./img/motor-term.png?style=center+margin)
 
-## 7. Ajout d'un tableau de bord
+<a name=7></a>
+## 7. Adding a dashboard
 
-Pour terminer ce tutoriel, vous allez ajouter un tableau de bord pour afficher certaines données (puissance et compteur de rotation) en provenance du simulateur. Cette fonctionnalité, prévue dans CodeLab, est facilement réalisable. Il suffit d'impémenter l'interface `DataTableInterface` qui comporte notamment trois méthodes principales :
+To complete this tutorial, you will add a dashboard to display certain data (power and rotation count) coming from the simulator. This feature, provided by CodeLab, is easy to implement. Simply implement the `DataTableInterface` interface, which includes three main methods:
 
-- Une méthode `getNbProp()` qui retourne le nombre de propriétés à afficher ;
-- Une méthode `getPropKey(int)` qui retourne le nom de la ième propriété ;
-- Une méthode `getPropVal(int)` qui retourne la valeur de la ième propriété ;
+- A `getNbProp()` method that returns the number of properties to display;
+- A `getPropKey(int)` method that returns the name of the i-th property;
+- A `getPropVal(int)` method that returns the value of the i-th property;
 
-Vous êtes libres de choisir la façon dont ces méthodes accèdent aux données, mais le plus simple est d'utiliser deux tableaux, comme dans l'exemple ci-dessous. L'actualisation des tableaux est réalisée dans la méthode `updateValues()` qui est automatiquement invoquée par le simulateur.
+You are free to choose how these methods access the data, but the simplest approach is to use two arrays, as in the example below. Updating the arrays is performed in the `updateValues()` method, which is automatically invoked by the simulator.
 
-Tout d'abord, complétez la classe `MotorSimulator` de la façon suivante :
+First, complete the `MotorSimulator` class as follows:
 
 ~~~java
 import codelab.DataTableInterface;

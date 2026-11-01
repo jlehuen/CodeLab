@@ -65,30 +65,41 @@ The main difference between this module and the first one in tutorial #1 is the 
 
 
 <a name=1></a>
-## 1. Development tree
+## 1. Creating the plugin with the CDK
 
-As in the first tutorial, go to the `plugins` directory and duplicate the `YourModule` model tree and rename it to `DrawingModule`. Also rename the main package and the main classes. After these renamings, you should have the following tree structure:
+As in the first tutorial, open a terminal in the `CDK` directory and execute the generation script:
+- Under Linux / macOS: `./newmodule.sh DrawingModule`
+- Under Windows: `newmodule.bat DrawingModule`
+
+The script automatically prepares the full `DrawingModule/` tree, renames the package (`codelab.modules.drawingmodule`), the main classes (`DrawingModule.java`, `DrawingToolbar.java`), the API file, and the Markdown manual.
+
+You now have the following directory tree:
 
 <pre>
-DrawingModule/                                &larr; Renamed folder
+DrawingModule/
 ├── class/
 ├── data/
 │   ├── icon_clear.png
 │   └── icon_hello.png
 ├── includes/
-│   └── api.dtd
+│   ├── api.dtd
+│   └── DrawingModuleAPI.xml
 ├── lib/
 │   └── codelab.jar
+├── man/
+│   └── DrawingModule.md
 ├── src/
 │   └── codelab/
 │       └── modules/
-│           └── drawingmodule/                &larr; Renamed package
-│               ├── DrawingModule.java        &larr; Renamed class
-│               └── DrawingToolbar.java       &larr; Renamed class
+│           └── drawingmodule/
+│               ├── DrawingModule.java
+│               └── DrawingToolbar.java
 ├── templates/
 ├── build.bat
 └── build.sh
 </pre>
+
+Compiling with `./build.sh` (or `build.bat`) will produce the **`DrawingModule.pac`** package, automatically deployed into CodeLab's `modules/` directory.
 
 <a name=2></a>
 ## 2. Main classes of the module
@@ -333,7 +344,7 @@ These definitions allow to generate the files to be included for each target lan
 <a name=5></a>
 ## 5. Definition of the toolbar
 
-Writing the toolbar is very simple since everything was already written in the `YourModule.java` file which served as a template for `DrawingModule.java`. We just need to make some adaptations (icon, text, tooltip, etc.) in order to have a working `Clear` button instead of the `Hello` button:
+Writing the toolbar is very simple since the basic skeleton was already generated in `DrawingToolbar.java` by the `newmodule.sh` script. We just need to make some adaptations (icon, text, tooltip, etc.) in order to have a working `Clear` button:
 
 ~~~java
 package codelab.modules.drawingmodule;
