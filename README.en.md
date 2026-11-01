@@ -24,7 +24,7 @@
   <strong>Programming Learning Environment
   <br>for Secondary and Higher Education</strong>
   <br>
-  <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a> &nbsp;|&nbsp; 📖 <a href="mkdocs/doc-en/">Documentation</a>
+  <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a> &nbsp;|&nbsp; 📖 <a href="https://jlehuen.github.io/CodeLab/doc-en/">Documentation</a>
   <br><br>
   <a href="#downloads"><img src="client/images/download.png" alt="Downloads" width="160"></a>
 </p>
@@ -119,7 +119,7 @@ All available releases can be found in the CodeLab [Releases](https://github.com
 
 ## Documentation
 
-The CodeLab documentation (language API references and developer tutorials) is tracked directly in the repository and available in the [**`mkdocs/doc-en/`**](mkdocs/doc-en/) directory:
+The interactive CodeLab documentation is available online at **[https://jlehuen.github.io/CodeLab/doc-en/](https://jlehuen.github.io/CodeLab/doc-en/)** (or directly in the Markdown source directory [`mkdocs/doc-en/`](mkdocs/doc-en/)):
 
 - **Language API References**:
   - [C Language API](mkdocs/doc-en/docs/lang-c/doc-c-en.md)

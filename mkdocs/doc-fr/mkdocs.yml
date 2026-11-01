@@ -1,6 +1,6 @@
-site_name: ''
+site_name: 'CodeLab'
 nav:
-    - Home: 'https://codelab.univ-lemans.fr'
+    - Accueil: 'index.md'
     - Langages:
         - "Langage C": 'lang-c/doc-c-fr.md'
         - "Langage Java": 'lang-java/doc-java-fr.md'
@@ -10,3 +10,5 @@ nav:
         - "1. Conception d'un premier module CodeLab": 'tuto1/tuto1-fr.md'
         - "2. Conception d'un module de tracé 2D": 'tuto2/tuto2-fr.md'
         - "3. Conception d'un module simulateur": 'tuto3/tuto3-fr.md'
+    - English: 'https://jlehuen.github.io/CodeLab/doc-en/'
+    - Site officiel: 'https://codelab.univ-lemans.fr'

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeLab - Documentation</title>
+    <link rel="icon" type="image/png" href="doc-fr/img/logo-codelab.png">
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=doc-fr/">
+    </noscript>
+    <script>
+        // Détection de la langue du navigateur
+        const userLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+        if (userLang.startsWith('fr')) {
+            window.location.replace('doc-fr/');
+        } else {
+            window.location.replace('doc-en/');
+        }
+    </script>
+    <style>
+        :root {
+            --primary: #1976d2;
+            --primary-hover: #1565c0;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 520px;
+            margin: 20px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            padding: 40px 32px;
+            text-align: center;
+        }
+        .logo {
+            width: 90px;
+            height: auto;
+            margin-bottom: 16px;
+        }
+        h1 {
+            font-size: 24px;
+            margin: 0 0 8px 0;
+            color: var(--text);
+        }
+        p {
+            color: var(--text-muted);
+            margin: 0 0 32px 0;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #f1f5f9;
+            color: var(--text);
+        }
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+        .flag {
+            font-size: 20px;
+        }
+        .footer {
+            margin-top: 32px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="doc-fr/img/logo-codelab.png" alt="CodeLab Logo" class="logo">
+        <h1>CodeLab Documentation</h1>
+        <p>Sélectionnez votre langue / Choose your language</p>
+        <div class="buttons">
+            <a href="doc-fr/" class="btn btn-primary">
+                <span class="flag">🇫🇷</span> Documentation en Français
+            </a>
+            <a href="doc-en/" class="btn btn-secondary">
+                <span class="flag">🇬🇧</span> English Documentation
+            </a>
+        </div>
+        <div class="footer">
+            <a href="https://codelab.univ-lemans.fr">Site officiel de CodeLab</a>
+        </div>
+    </div>
+</body>
+</html>
