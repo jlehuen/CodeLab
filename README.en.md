@@ -122,6 +122,10 @@ All available releases can be found in the CodeLab [Releases](https://github.com
 
 ## Documentation
 
+<p align="center">
+  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Access CodeLab Documentation" width="170"></a>
+</p>
+
 The interactive CodeLab documentation is available online at **[https://jlehuen.github.io/CodeLab/doc-en/](https://jlehuen.github.io/CodeLab/doc-en/)** (or directly in the Markdown source directory [`mkdocs/doc-en/`](mkdocs/doc-en/)):
 
 - **Language API References**:

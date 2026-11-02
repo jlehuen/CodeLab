@@ -123,6 +123,10 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 
 ## Documentation
 
+<p align="center">
+  <a href="https://jlehuen.github.io/CodeLab/doc-fr/"><img src="client/images/documentation.png" alt="Accéder à la Documentation CodeLab" width="170"></a>
+</p>
+
 La documentation interactive de CodeLab est consultable en ligne sur **[https://jlehuen.github.io/CodeLab/doc-fr/](https://jlehuen.github.io/CodeLab/doc-fr/)** (ou directement dans les sources Markdown [`mkdocs/doc-fr/`](mkdocs/doc-fr/)) :
 
 - **Références des API par langage** :
