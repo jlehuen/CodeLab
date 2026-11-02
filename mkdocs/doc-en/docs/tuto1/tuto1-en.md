@@ -406,7 +406,7 @@ class _className_ extends Hello {
 
 ### Example of "growing.clp" template for the CLIPS language:
 
-~~~scheme
+~~~lisp
 #requires HelloModule/hello
 
 ;; Program _fileName_
