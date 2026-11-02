@@ -48,10 +48,17 @@ Si vous souhaitez modifier le code d'un module ou le recompiler :
 
 Pour concevoir un nouveau module applicatif interactif, vous pouvez suivre les **tutoriels développeur pas à pas** :
 
-- 📖 **[Tutoriel 1 : Conception d'un premier module CodeLab](https://jlehuen.github.io/CodeLab/doc-fr/tuto1/tuto1-fr/)** : découverte du CDK, architecture PAC, création du module *Hello World*, déclaration XML de l'API et premier build.
-- 📖 **[Tutoriel 2 : Conception d'un module de tracé 2D](https://jlehuen.github.io/CodeLab/doc-fr/tuto2/tuto2-fr/)** : IHM graphique personnalisée, gestion des requêtes clientes et mise en œuvre d'une API de dessin 2D.
-- 📖 **[Tutoriel 3 : Conception d'un simulateur de moteur NXT](https://jlehuen.github.io/CodeLab/doc-fr/tuto3/tuto3-fr/)** : simulateur temps réel multithreadé, modélisation physique, asservissement et tableau de bord interactif.
-
+- 📖 **[Tutoriel 1 : Conception d'un premier module CodeLab](https://jlehuen.github.io/CodeLab/doc-fr/tuto1/tuto1-fr/)**
+	- découverte du CDK et de l'architecture PAC
+	- création d'un premier module *Hello World*
+	- déclaration XML de l'API et premier build
+- 📖 **[Tutoriel 2 : Conception d'un module de tracé 2D](https://jlehuen.github.io/CodeLab/doc-fr/tuto2/tuto2-fr/)**
+	- IHM graphique personnalisée
+	- gestion des requêtes clientes
+	- mise en œuvre d'une API de dessin 2D
+- 📖 **[Tutoriel 3 : Conception d'un simulateur de moteur NXT](https://jlehuen.github.io/CodeLab/doc-fr/tuto3/tuto3-fr/)**
+	- simulateur temps réel multithreadé
+	- asservissement et tableau de bord interactif
 
 ### Étapes rapides avec le CDK :
 
