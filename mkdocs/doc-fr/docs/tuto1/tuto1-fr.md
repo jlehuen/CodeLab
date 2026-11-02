@@ -58,7 +58,7 @@ La conception et le développement d'un module CodeLab "enfichable" (plugable) s
 
 ### Architecture logicielle : le modèle PAC (Présentation - Abstraction - Contrôle)
 
-Les modules CodeLab reposent sur le patron d'architecture logicielle **PAC** (introduit par Joëlle Coutaz pour les systèmes interactifs), dont est directement issue l'extension de fichier **`.pac`** des plugins distribués (`HelloModule.pac`) :
+Les modules CodeLab reposent sur le patron d'architecture logicielle **PAC** (introduit par Joëlle Coutaz pour les systèmes interactifs), dont est directement issue l'extension de fichier **`.pac`** des plugins distribués (`HelloModule.pac`), qui fait également écho à **« Plugin Applicatif CodeLab »** :
 
 - **P (Présentation)** : l'interface visuelle Swing vue par l'apprenant (les panneaux graphiques comme `JPanel` ou `JLabel`, et la barre d'outils `HelloToolbar`).
 - **A (Abstraction)** : le modèle métier ou la simulation (les données internes, l'état applicatif ou le simulateur temps réel).

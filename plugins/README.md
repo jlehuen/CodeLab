@@ -1,6 +1,6 @@
 # Modules Applicatifs CodeLab
 
-CodeLab permet d'enrichir l'environnement d'apprentissage à l'aide de **modules applicatifs** (plugins). Chaque module associe une interface graphique interactive (IHM) et une interface de programmation (API) accessible dans tous les langages supportés par CodeLab (C, Go, Java, Python, CLIPS, etc.).
+CodeLab permet d'enrichir l'environnement d'apprentissage à l'aide de **modules applicatifs** (plugins distribués sous l'extension `.pac` pour *Plugin Applicatif CodeLab*, également fondés sur le modèle architectural *Présentation - Abstraction - Contrôle*). Chaque module associe une interface graphique interactive (IHM) et une interface de programmation (API) accessible dans tous les langages supportés par CodeLab (C, Go, Java, Python, CLIPS, etc.).
 
 ---
 

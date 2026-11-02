@@ -45,7 +45,7 @@ The design and development of a CodeLab plugin is facilitated by a set of Java c
 
 ### Software Architecture: The PAC Model (Presentation - Abstraction - Control)
 
-CodeLab modules are based on the **PAC** architectural pattern (introduced by Joëlle Coutaz for interactive systems), which is the direct origin of the **`.pac`** file extension used for distributed plugins (`HelloModule.pac`):
+CodeLab modules are based on the **PAC** architectural pattern (introduced by Joëlle Coutaz for interactive systems), which is the direct origin of the **`.pac`** file extension used for distributed plugins (`HelloModule.pac`), also standing for **"Plugin Applicatif CodeLab"** (CodeLab Application Plugin):
 
 - **P (Presentation)**: The Swing graphical user interface seen by the learner (visual components like `JPanel` or `JLabel`, and the `HelloToolbar` toolbar).
 - **A (Abstraction)**: The business logic or simulation (internal state, application data, or real-time simulator).
