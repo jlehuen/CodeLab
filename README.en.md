@@ -27,9 +27,9 @@
   <br>
   <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a> &nbsp;|&nbsp; 📖 <a href="https://jlehuen.github.io/CodeLab/doc-en/">Documentation</a>
   <br><br>
-  <a href="#downloads"><img src="client/images/download.png" alt="Downloads" width="160"></a>
+  <a href="#downloads"><img src="client/images/download.png" alt="Downloads" width="160" height="60"></a>
   &emsp;
-  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Documentation" width="160"></a>
+  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Documentation" width="184" height="60"></a>
 </p>
 
 **CodeLab** is an educational programming environment dedicated to teaching and learning programming in middle schools, high schools, and introductory higher education courses. Its key innovation is offering playful and interactive alternatives to traditional screen-keyboard interactions for pedagogical activities through "application modules". These modules, available as plugins, include **visualizations**, **control panels**, **simulators**, and other real-time systems. Each module pairs a **GUI** (Graphical User Interface) with an application programming interface (**API**) available across all languages supported by CodeLab. Learners can thus focus on algorithms and coding while interacting with rich, engaging, and motivating applications:
@@ -123,7 +123,7 @@ All available releases can be found in the CodeLab [Releases](https://github.com
 ## Documentation
 
 <p align="center">
-  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Access CodeLab Documentation" width="170"></a>
+  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Access CodeLab Documentation" width="184" height="60"></a>
 </p>
 
 The interactive CodeLab documentation is available online at **[https://jlehuen.github.io/CodeLab/doc-en/](https://jlehuen.github.io/CodeLab/doc-en/)** (or directly in the Markdown source directory [`mkdocs/doc-en/`](mkdocs/doc-en/)):

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 959 360" width="959" height="360">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 360" width="1100" height="360">
   <defs>
     <!-- Soft shadow filter identical in offset and blur to download.png -->
     <filter id="shadow_orange" x="-15%" y="-15%" width="140%" height="140%">
@@ -28,17 +28,17 @@
     </linearGradient>
   </defs>
 
-  <!-- 1. The Pill Shaped Button (matches x=145..885, y=90..270) -->
+  <!-- 1. The Pill Shaped Button (height 180, rx=90, width enlarged to fit 82px font) -->
   <g filter="url(#shadow_orange)">
-    <rect x="145" y="90" width="740" height="180" rx="90" ry="90"
+    <rect x="145" y="90" width="880" height="180" rx="90" ry="90"
           fill="url(#pillGrad_orange)"
           stroke="#7c2d12" stroke-width="8" />
     <!-- Glossy finish -->
-    <rect x="149" y="94" width="732" height="172" rx="86" ry="86"
+    <rect x="149" y="94" width="872" height="172" rx="86" ry="86"
           fill="url(#gloss_orange)" />
   </g>
 
-  <!-- 2. Stylized Open Book Icon on Left (Compact to match Download arrow width) -->
+  <!-- 2. Stylized Open Book Icon on Left -->
   <g filter="url(#shadow_orange)">
     <!-- Bottom book cover / thickness -->
     <path d="M 115 248
@@ -94,19 +94,19 @@
     <line x1="240" y1="193" x2="282" y2="197" stroke="#7c2d12" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
   </g>
 
-  <!-- 3. Typography "Documentation" perfectly centered and balanced -->
+  <!-- 3. Typography "Documentation" at font-size 82 (exact same scale as Download) -->
   <g>
-    <text x="601.5" y="204.5"
+    <text x="676.5" y="209.5"
           font-family="Arial, Helvetica, sans-serif"
-          font-size="62"
+          font-size="82"
           font-weight="bold"
           fill="#000000"
           fill-opacity="0.25"
           text-anchor="middle"
           letter-spacing="-0.5">Documentation</text>
-    <text x="600" y="203"
+    <text x="675" y="208"
           font-family="Arial, Helvetica, sans-serif"
-          font-size="62"
+          font-size="82"
           font-weight="bold"
           fill="#FFFFFF"
           text-anchor="middle"
