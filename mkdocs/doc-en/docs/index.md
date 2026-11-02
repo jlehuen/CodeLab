@@ -6,8 +6,6 @@ Welcome to the official documentation for the **CodeLab** programming environmen
   <img src="img/logo-codelab.png" alt="CodeLab Logo" width="160">
 </p>
 
-> ⚡ **New to CodeLab?** Check out the [**Quickstart Guide**](quickstart/quickstart-en.md) to launch the environment and run your first program in under 2 minutes!
-
 ## Language API References
 
 - [**C Language**](lang-c/doc-c-en.md): Imperative, procedural, compiled, and statically typed language.

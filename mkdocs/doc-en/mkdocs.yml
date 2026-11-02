@@ -5,7 +5,6 @@ theme:
         - lisp
 nav:
     - Home: 'index.md'
-    - '⚡ Quickstart': 'quickstart/quickstart-en.md'
     - Languages:
         - "C language": 'lang-c/doc-c-en.md'
         - "Java language": 'lang-java/doc-java-en.md'

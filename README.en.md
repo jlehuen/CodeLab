@@ -27,8 +27,6 @@
   <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a> &nbsp;|&nbsp; 📖 <a href="https://jlehuen.github.io/CodeLab/doc-en/">Documentation</a>
   <br><br>
   <a href="#downloads"><img src="client/images/download.png" alt="Downloads" width="160"></a>
-  <br><br>
-  👉 <a href="QUICKSTART.en.md"><strong>⚡ Quickstart Guide (2-minute setup)</strong></a>
 </p>
 
 **CodeLab** is an educational programming environment dedicated to teaching and learning programming in middle schools, high schools, and introductory higher education courses. Its key innovation is offering playful and interactive alternatives to traditional screen-keyboard interactions for pedagogical activities through "application modules". These modules, available as plugins, include **visualizations**, **control panels**, **simulators**, and other real-time systems. Each module pairs a **GUI** (Graphical User Interface) with an application programming interface (**API**) available across all languages supported by CodeLab. Learners can thus focus on algorithms and coding while interacting with rich, engaging, and motivating applications:
