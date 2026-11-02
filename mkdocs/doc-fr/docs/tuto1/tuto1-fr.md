@@ -93,13 +93,21 @@ Pour développer un nouveau plugin, la création et la configuration de l'arbore
 
 ### Génération automatique du squelette
 
-1. Ouvrez un terminal dans le répertoire `CDK`.
-2. Lancez le script de création en indiquant le nom de votre module (`HelloModule`) :
-   - Sous Linux / macOS : `./newmodule.sh HelloModule`
-   - Sous Windows : `newmodule.bat HelloModule`
+1. Dans CodeLab, sélectionnez l'élément de menu **Modules > Générer un nouveau module** (ou *Plugins > Générer un nouveau module*). Une boîte de dialogue vous invite à saisir le nom de votre module (par exemple `HelloModule`) :
 
-Ce script génère automatiquement le dossier du projet dans `modules/HelloModule/`. Tous les renommages (packages, classes Java, XML et manuel) sont déjà effectués automatiquement !
-L'exécution du script `build.sh` (ou `build.bat` sous Windows) depuis ce dossier compile le code Java, génère les bibliothèques d'API et assemble le fichier **`.pac`** (`HelloModule.pac`) qui est automatiquement copié dans le répertoire `modules/` de CodeLab.
+<br/>![](./img/newmod_1_fr.png?style=center+noborder)
+
+2. Après validation, un message confirme la création du projet et le dossier `modules/HelloModule` est automatiquement ouvert dans l'explorateur de fichiers de votre système :
+
+<br/>![](./img/newmod_2_fr.png?style=center+noborder)
+
+> 💡 *Alternative en ligne de commande* : vous pouvez également ouvrir un terminal dans le répertoire `CDK` et lancer le script de création :
+> - Sous Linux / macOS : `./newmodule.sh HelloModule`
+> - Sous Windows : `newmodule.bat HelloModule`
+
+3. En ouvrant un terminal dans le dossier du projet généré (`modules/HelloModule/`), vous retrouvez l'arborescence complète déjà configurée et renommée :
+
+<br/>![](./img/newmod_3_fr.png?style=center+noborder)
 
 <pre>
 HelloModule/
@@ -126,6 +134,14 @@ HelloModule/
 ├── build.sh      &larr; Script Bash de compilation et de packaging
 └── build.bat     &larr; Script DOS de compilation et de packaging
 </pre>
+
+4. Il ne reste plus qu'à lancer le script de compilation depuis ce dossier :
+   - Sous Linux / macOS : `./build.sh`
+   - Sous Windows : `build.bat`
+
+<br/>![](./img/newmod_4_fr.png?style=center+noborder)
+
+Ce script compile le code Java, génère les bibliothèques et documentations d'API multi-langages, convertit le manuel d'atelier Markdown et assemble le fichier **`.pac`** (`HelloModule.pac`) qui est automatiquement copié dans le répertoire `modules/` de CodeLab.
 
 > 💡 *Note sur la barre d'outils* : le script génère initialement `HelloModuleToolbar.java`. Vous pouvez la renommer en `HelloToolbar.java` (en adaptant le nom de la classe et son appel dans `HelloModule.java`), convention plus concise que nous adoptons dans la suite de ce tutoriel.
 

@@ -57,11 +57,8 @@ Pour concevoir un nouveau module applicatif interactif, vous pouvez suivre les *
 
 > **Important** : CodeLab doit préalablement avoir été exécuté au moins une fois sur la machine !
 
-1. Ouvrez un terminal Bash (ou l'invite de commandes Windows) dans le répertoire `CDK`.
-2. Exécutez le script de génération en spécifiant le nom de votre module (par exemple `Foo`) :
-   - Sous Linux / macOS : `./newmodule.sh Foo`
-   - Sous Windows : `newmodule.bat Foo`
-   *Cela crée le projet dans le répertoire `modules/Foo/`.*
+1. Dans CodeLab, sélectionnez l'élément de menu **Modules > Générer un nouveau module** *(alternative en ligne de commande : ouvrez un terminal dans le répertoire `CDK` et exécutez `./newmodule.sh Foo` sous Linux/macOS ou `newmodule.bat Foo` sous Windows)*.
+2. Saisissez le nom de votre module (par exemple `Foo`) dans la boîte de dialogue : le projet est instantanément créé dans `modules/Foo/` et ouvert dans votre gestionnaire de fichiers.
 3. Rendez-vous dans `modules/Foo/` et éditez les fichiers clés pour développer votre module :
    - `src/codelab/modules/foo/Foo.java` : IHM principale et logique applicative Swing.
    - `src/codelab/modules/foo/FooToolbar.java` : barre d'outils et contrôles interactifs (avec support du bouton `MAN`).
