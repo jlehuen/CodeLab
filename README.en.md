@@ -29,7 +29,7 @@
   <br><br>
   <a href="#downloads"><img src="client/images/download.png" alt="Downloads" width="160" height="60"></a>
   &emsp;
-  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Documentation" width="184" height="60"></a>
+  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Documentation" width="200" height="60"></a>
 </p>
 
 **CodeLab** is an educational programming environment dedicated to teaching and learning programming in middle schools, high schools, and introductory higher education courses. Its key innovation is offering playful and interactive alternatives to traditional screen-keyboard interactions for pedagogical activities through "application modules". These modules, available as plugins, include **visualizations**, **control panels**, **simulators**, and other real-time systems. Each module pairs a **GUI** (Graphical User Interface) with an application programming interface (**API**) available across all languages supported by CodeLab. Learners can thus focus on algorithms and coding while interacting with rich, engaging, and motivating applications:
