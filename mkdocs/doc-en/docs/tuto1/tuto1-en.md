@@ -617,5 +617,4 @@ This tutorial is over. You can continue to explore CodeLab plugin development by
 <br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2021 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
-<br/>Version 25-04-2021
 </center>

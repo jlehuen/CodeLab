@@ -903,5 +903,4 @@ z = 0.800000
 <br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
 <br/>![](../img/licence.png?style=center+noborder)
-<br/>Version 04-05-2026
 </center>

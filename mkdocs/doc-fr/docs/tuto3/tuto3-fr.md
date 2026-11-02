@@ -587,5 +587,4 @@ Re-générez et testez votre module : vous devrier avoir un nouveau bouton qui o
 <br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
-<br/>Version 04-05-2026
 </center>

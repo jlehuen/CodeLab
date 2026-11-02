@@ -580,5 +580,4 @@ Re-generate and test your module: you should see a new button that opens a panel
 <br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2021 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
-<br/>Version 21-06-2021
 </center>
