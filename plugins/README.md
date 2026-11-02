@@ -55,8 +55,6 @@ Pour concevoir un nouveau module applicatif interactif, vous pouvez suivre les *
 
 ### Étapes rapides avec le CDK :
 
-> **Important** : CodeLab doit préalablement avoir été exécuté au moins une fois sur la machine !
-
 1. **Génération du squelette depuis CodeLab** :
    Dans CodeLab, sélectionnez l'élément de menu **Modules > Générer un nouveau module** et saisissez le nom de votre module (par exemple `ModuleName`) :
 
