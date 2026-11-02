@@ -56,7 +56,6 @@ A key feature of CodeLab is enabling **virtual classrooms** (in-person or remote
 ## Table of Contents
 
 - [Downloads](#downloads)
-- [Documentation](#documentation)
 - [Language Setup](#language-setup)
 - [Application Modules Setup](#application-modules-setup)
 - [Automated Pedagogical Evaluation & AI](#automated-pedagogical-evaluation--ai)
@@ -114,29 +113,6 @@ All available releases can be found in the CodeLab [Releases](https://github.com
 | 1. On the *"Windows protected your PC"* screen, click the **More info** link.<br><br>2. Then click the **Run anyway** button that appears at the bottom.<br><br>3. The installation runs within your user session; thereafter, the Start Menu shortcut will launch CodeLab directly without any security prompt. | <img src="client/images/auth_codelab_win.png" alt="Windows SmartScreen Authorization" width="350"> |
 
 </details>
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
-
-## Documentation
-
-<p align="center">
-  <a href="https://jlehuen.github.io/CodeLab/doc-en/"><img src="client/images/documentation.png" alt="Access CodeLab Documentation" width="184" height="60"></a>
-</p>
-
-The interactive CodeLab documentation is available online at **[https://jlehuen.github.io/CodeLab/doc-en/](https://jlehuen.github.io/CodeLab/doc-en/)** (or directly in the Markdown source directory [`mkdocs/doc-en/`](mkdocs/doc-en/)):
-
-- **Language API References**:
-  - [C Language API](mkdocs/doc-en/docs/lang-c/doc-c-en.md)
-  - [Java Language API](mkdocs/doc-en/docs/lang-java/doc-java-en.md)
-  - [Python Language API](mkdocs/doc-en/docs/lang-python/doc-py-en.md)
-  - [CLIPS Language API](mkdocs/doc-en/docs/lang-clips/doc-clips-en.md)
-- **Developer Tutorials (Designing Application Modules)**:
-  - [Tutorial #1: Designing a First CodeLab Module](mkdocs/doc-en/docs/tuto1/tuto1-en.md)
-  - [Tutorial #2: Designing a 2D Plotter Module](mkdocs/doc-en/docs/tuto2/tuto2-en.md)
-  - [Tutorial #3: Designing a Motor Simulator](mkdocs/doc-en/docs/tuto3/tuto3-en.md)
 
 <p align="center">
   <br>

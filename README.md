@@ -56,7 +56,6 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 ## Sommaire
 
 - [Téléchargements](#téléchargements)
-- [Documentation](#documentation)
 - [Installation des langages](#installation-des-langages)
 - [Installation des modules applicatifs](#installation-des-modules-applicatifs)
 - [Évaluation pédagogique automatisée & IA](#évaluation-pédagogique-automatisée--ia)
@@ -115,29 +114,6 @@ Toutes les versions disponibles sont dans la section [Releases](https://github.c
 | 1. Sur l'écran *« Windows a protégé votre ordinateur »*, cliquez sur le lien **Informations complémentaires**.<br><br>2. Cliquez ensuite sur le bouton **Exécuter quand même** qui apparaît en bas.<br><br>3. L'installation s'exécute dans votre session utilisateur ; par la suite, le raccourci du menu Démarrer lancera CodeLab directement, sans aucun avertissement. | <img src="client/images/auth_codelab_win.png" alt="Autorisation Windows SmartScreen" width="350"> |
 
 </details>
-
-<p align="center">
-  <br>
-  <img src="client/data/mentions/separator.png" alt="separator.png">
-</p>
-
-## Documentation
-
-<p align="center">
-  <a href="https://jlehuen.github.io/CodeLab/doc-fr/"><img src="client/images/documentation.png" alt="Accéder à la Documentation CodeLab" width="184" height="60"></a>
-</p>
-
-La documentation interactive de CodeLab est consultable en ligne sur **[https://jlehuen.github.io/CodeLab/doc-fr/](https://jlehuen.github.io/CodeLab/doc-fr/)** (ou directement dans les sources Markdown [`mkdocs/doc-fr/`](mkdocs/doc-fr/)) :
-
-- **Références des API par langage** :
-  - [API Langage C](mkdocs/doc-fr/docs/lang-c/doc-c-fr.md)
-  - [API Langage Java](mkdocs/doc-fr/docs/lang-java/doc-java-fr.md)
-  - [API Langage Python](mkdocs/doc-fr/docs/lang-python/doc-py-fr.md)
-  - [API Langage CLIPS](mkdocs/doc-fr/docs/lang-clips/doc-clips-fr.md)
-- **Tutoriels Développeur (conception de modules applicatifs)** :
-  - [Tutoriel 1 : Conception d'un premier module CodeLab](mkdocs/doc-fr/docs/tuto1/tuto1-fr.md)
-  - [Tutoriel 2 : Conception d'un module de tracé 2D](mkdocs/doc-fr/docs/tuto2/tuto2-fr.md)
-  - [Tutoriel 3 : Conception d'un simulateur de moteur NXT](mkdocs/doc-fr/docs/tuto3/tuto3-fr.md)
 
 <p align="center">
   <br>
