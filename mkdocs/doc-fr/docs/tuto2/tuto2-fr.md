@@ -394,7 +394,7 @@ public class DrawingToolbar extends AbstractToolbar {
 
 ## 6. Génération du module
 
-Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationnaliser votre module, comme cela est expliqué dans le tutoriel précédent.
+Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationaliser votre module, comme cela est expliqué dans le tutoriel précédent.
 
 Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `DrawingModule.pac` dans le dossier `modules/` de CodeLab :
 

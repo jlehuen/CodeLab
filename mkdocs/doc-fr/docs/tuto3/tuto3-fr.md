@@ -503,13 +503,13 @@ public class MotorToolbar extends AbstractToolbar {
 
 ## 6. Génération du module
 
-Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationnaliser votre module, comme cela est expliqué dans le premier tutoriel. Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `MotorModule.pac` dans le dossier `modules/` de CodeLab :
+Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationaliser votre module, comme cela est expliqué dans le premier tutoriel. Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `MotorModule.pac` dans le dossier `modules/` de CodeLab :
 
 ![](./img/motor-term.png?style=center+noborder)
 
 ## 7. Ajout d'un tableau de bord
 
-Pour terminer ce tutoriel, vous allez ajouter un tableau de bord pour afficher certaines données (puissance et compteur de rotation) en provenance du simulateur. Cette fonctionnalité, prévue dans CodeLab, est facilement réalisable. Il suffit d'impémenter l'interface `DataTableInterface` qui comporte notamment trois méthodes principales :
+Pour terminer ce tutoriel, vous allez ajouter un tableau de bord pour afficher certaines données (puissance et compteur de rotation) en provenance du simulateur. Cette fonctionnalité, prévue dans CodeLab, est facilement réalisable. Il suffit d'implémenter l'interface `DataTableInterface` qui comporte notamment trois méthodes principales :
 
 - Une méthode `getNbProp()` qui retourne le nombre de propriétés à afficher ;
 - Une méthode `getPropKey(int)` qui retourne le nom de la ième propriété ;
@@ -580,7 +580,7 @@ public MotorToolbar(MotorModule module) {
 }
 ```
 
-Re-générez et testez votre module : vous devrier avoir un nouveau bouton qui ouvre un panel à droite, qui affiche les données numériques "Power" et "Counter" en provenance du simulateur.
+Re-générez et testez votre module : vous devriez avoir un nouveau bouton qui ouvre un panel à droite, qui affiche les données numériques "Power" et "Counter" en provenance du simulateur.
 
 <br/><center>
 ![](./img/fin.png?style=center+noborder)
