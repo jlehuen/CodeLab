@@ -3,11 +3,11 @@
 <header id='header'>
 	<div class='left'>
 		<a href='../index.html#documentation'>Codelab Home page</a><br/>
-		<a href='#top'>Retourner en haut de la page</a><br/>
-		<a href='#toc'>Aller à la table des matières</a><br/>
+		<a href='#top'>Return to the top of this page</a><br/>
+		<a href='#toc'>Go to table of contents</a><br/>
 	</div>
 	<div class='center'>
-		<h1>Tutoriel CodeLab n°3</h1>
+		<h1>CodeLab Tutorial #3</h1>
 	</div>
 	<div class='right'>
 		<button type='button' onclick="setlang('fr'); location.href='tuto1-fr.html'">FR</button>
@@ -27,10 +27,10 @@
 <br/>
 <br/>
 <center>
-# Conception d'un module simulateur
+# Designing a Simulator Module
 </center>
 
-En suivant ce tutoriel, vous allez réaliser le plugin "MotorModule" qui visualise un moteur Lego NXT et permet de simuler son fonctionnement. Le rendu ci-dessous est le résultat de l'exécution du programme C suivant terminé, c'est-à-dire après une rotation de 45 degrés :
+By following this tutorial, you will develop the "MotorModule" plugin, which visualizes a Lego NXT motor and simulates its operation. The rendering below shows the result of running the following C program upon completion, after a 45-degree rotation:
 
 ~~~c
 #include "codelab/motormodule/NXTMotor.c"
@@ -112,22 +112,22 @@ MotorModule/
 Compiling with `./build.sh` (or `build.bat`) will produce the **`MotorModule.pac`** package, automatically deployed into CodeLab's `modules/` directory.
 
 <a name=2></a>
-## 2. Classes principales du module
+## 2. Main classes of the module
 
-Le modèle objet du `MotorModule` est similaire à celui du `DrawingModule` à ceci près que nous allons remplacer le `DrawingPanel` par un `MotorSimulator` hérité de la classe `AbstractSimulator`. Les trois classes que vous allez définir sont en rouge dans le diagramme suivant :
+The object model of `MotorModule` is similar to that of `DrawingModule`, except that we replace `DrawingPanel` with `MotorSimulator`, which inherits from the `AbstractSimulator` class. The three classes you will implement are highlighted in red in the following class diagram:
 
 ![](./img/motor-uml.png?style=center+margin)
 
-Commençez par définir la classe `MotorModule` comme ci-dessous. Les instructions que le gestionnaire d'instructions (handleRequest) devra prendre en compte sont les suivantes :
+Start by defining the `MotorModule` class as shown below. The instructions that the instruction handler (`handleRequest`) must process are:
 
-- `motorOn(puissance)` pour faire tourner le moteur
-- `motorOff()` pour arrêter le moteur
-- `getMotorRotationCount()` pour récupérer la valeur du compteur de rotation
-- `resetMotorRotationCount()` pour réinitialiser le compteur de rotation
+- `motorOn(power)` to spin the motor
+- `motorOff()` to stop the motor
+- `getMotorRotationCount()` to retrieve the rotation counter value
+- `resetMotorRotationCount()` to reset the rotation counter
 
-Remarquez que toutes ces instructions correspondent à des méthodes publiques de la classe `MotorSimulator` (qui n'est pas encore définie) que vous pouvez voir dans le diagramme de classes. Remarquez également que les méthodes `start()`, `stop()` et `reset()` ont été complétées pour piloter le simulateur.
+Note that all of these instructions correspond to public methods of `MotorSimulator` (not yet defined) seen in the class diagram. Also note that `start()`, `stop()` and `reset()` have been completed to control the simulator.
 
-Ci-dessous le code de la classe `MotorModule` :
+Below is the code for the `MotorModule` class:
 
 ~~~java
 package codelab.modules.motormodule;
@@ -205,20 +205,20 @@ public class MotorModule extends AbstractModule {
 ~~~
 
 <a name=3></a>
-## 3. Définition de la classe MotorSimulator
+## 3. Defining the MotorSimulator class
 
-Nous allons maintenant écrire le simulateur `MotorSimulator` qui hérite de la classe abstraite `AbstractSimulator` fournie dans le kit de développement. Cette dernière est une classe "runnable" qui actualise le simulateur de façon asynchrone, en faisant appel à la méthode `update()` que vous allez définir dans `MotorSimulator`.
+We will now write the simulator `MotorSimulator`, which inherits from the abstract class `AbstractSimulator` provided in the development kit. The latter is a "runnable" class that updates the simulator asynchronously by invoking the `update()` method that you will define in `MotorSimulator`.
 
-Comme les précédents tutoriels, celui-ci n'a pas vocation à expliciter les API Java awt et Swing (classes graphiques, placement des composants, etc.), ces classes étant largement abordées sur le web.
+Like the previous tutorials, this guide is not intended to explain Java AWT and Swing APIs (graphics classes, component layout, etc.), as these are widely covered on the web.
 
-La classe `MotorSimulator` comporte les méthodes suivantes :
+The `MotorSimulator` class contains the following methods:
 
-- Les méthodes correspondant aux instructions de l'API du module (motorOn, motorOff, etc.) ;
-- Les méthodes invoquées par les boutons de la barre d'outils (non encore définie) ;
-- La méthode `update()` d'actualisation des paramètres du simulateur ;
-- La méthode `paintComponent(Graphics graphics)` qui réalise la visualisation ;
+- Methods corresponding to module API instructions (`motorOn`, `motorOff`, etc.);
+- Methods invoked by toolbar buttons (not yet defined);
+- The `update()` method for refreshing simulator parameters;
+- The `paintComponent(Graphics graphics)` method that renders the visualization;
 
-Voilà ci-dessous une première version du simulateur :
+Below is a first version of the simulator:
 
 ~~~java
 package codelab.modules.motormodule;
@@ -355,15 +355,15 @@ public class MotorSimulator extends AbstractSimulator {
 ~~~
 
 <a name=4></a>
-## 4. Définition de l'API du module
+## 4. Defining the module API
 
-La cohérence de notre module repose sur une bonne correspondance entre :
+The coherence of our module relies on a tight match between:
 
-- Le gestionnaire d'instructions de la classe `MotorModule`
-- Les méthodes publiques de la classe `MotorSimulator`
-- Les définitions du fichier XML décrivant l'API du module
+- The instruction handler of the `MotorModule` class
+- The public methods of the `MotorSimulator` class
+- The definitions in the XML file describing the module's API
 
-Ce dernier permet notamment de générer les fichiers à inclure pour chaque langage cible. Rappellons que le nom de ce fichier est important puisqu'il détermine les noms des fichiers à inclure. Écrivez le document XML suivant dans le fichier `NXTMotor.xml` et placez-le dans le répertoire `includes` :
+The latter enables the generation of include files for each target language. Remember that this file name is important because it dictates the names of the include files. Write the following XML document into `NXTMotor.xml` and place it in the `includes` directory:
 
 ~~~xml
 <?xml version='1.0' encoding='UTF-8'?>
@@ -394,10 +394,69 @@ Ce dernier permet notamment de générer les fichiers à inclure pour chaque lan
 </api>
 ~~~
 
-<a name=5></a>
-## 5. Définition de la barre d'outils
+Example C program:
 
-L'écriture de la barre d'outils est on ne peut plus simple, puisqu'il suffit juste de demander l'ajout d'un bouton dédié `RESET` avec un `addButton("RESET")` dans le constructeur :
+~~~c
+#include "codelab/motormodule/NXTMotor.c"
+
+void main() {
+	resetMotorRotationCount(OUT_A);
+	motorOn(OUT_A, 25);
+	while (motorRotationCount(OUT_A) < 45);
+	motorOff(OUT_A);
+}
+~~~
+
+Example Java program:
+
+~~~java
+import codelab.motormodule.NXTMotor;
+
+class MotorTest extends NXTMotor {
+
+	private void run() {
+		resetMotorRotationCount(OUT_A);
+		motorOn(OUT_A, 25);
+		while (motorRotationCount(OUT_A) < 45);
+		motorOff(OUT_A);
+	}
+	
+	public static void main(String args[]) {
+		new MotorTest().run();
+	}
+}
+~~~
+
+Example Python program:
+
+~~~python
+from codelab.motormodule.NXTMotor import *
+
+resetMotorRotationCount(OUT_A)
+motorOn(OUT_A, 25)
+while motorRotationCount(OUT_A) < 45: pass
+motorOff(OUT_A)
+~~~
+
+Example CLIPS program:
+
+~~~lisp
+#requires codelab.motormodule.NXTMotor
+
+(defrule only-rule
+	=>
+	(resetMotorRotationCount ?*OUT_A*)
+	(motorOn ?*OUT_A* 25)
+	(while (< (motorRotationCount ?*OUT_A*) 45) do)
+	(motorOff ?*OUT_A*))
+~~~
+
+<br/>![](./img/sep.png?style=center+noborder)
+
+<a name=5></a>
+## 5. Defining the toolbar
+
+Writing the toolbar could not be simpler, since you just need to request adding a dedicated `RESET` button with `addButton("RESET")` in the constructor:
 
 ~~~java
 package codelab.modules.motormodule;
@@ -486,7 +545,7 @@ public class MotorSimulator extends AbstractSimulator implements DataTableInterf
 }
 ~~~
 
-Ensuite, précisez dans le constructeur de `MotorModule` qu'un tableau de bord est disponible :
+Next, specify in the `MotorModule` constructor that a dashboard is available:
 
 ~~~java
 public MotorModule(CodeLab codelab) {
@@ -498,7 +557,7 @@ public MotorModule(CodeLab codelab) {
 }
 ~~~
 
-Enfin, ajoutez le bouton dédié `DATA` dans la barre d'outils :
+Finally, add the dedicated `DATA` button to the toolbar:
 
 ~~~java
 public MotorToolbar(MotorModule module) {
@@ -510,7 +569,7 @@ public MotorToolbar(MotorModule module) {
 }
 ~~~
 
-Re-générez et testez votre module : vous devrier avoir un nouveau bouton qui ouvre un panel à droite, qui affiche les données numériques "Power" et "Counter" en provenance du simulateur.
+Re-generate and test your module: you should see a new button that opens a panel on the right, displaying numerical data "Power" and "Counter" from the simulator.
 
 <center>
 ![](./img/fin.png?style=center)

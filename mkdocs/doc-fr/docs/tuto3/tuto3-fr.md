@@ -448,7 +448,7 @@ motorOff(OUT_A)
 
 Exemple de programme CLIPS :
 
-```scheme
+```lisp
 #requires codelab.motormodule.NXTMotor
 
 (defrule only-rule
