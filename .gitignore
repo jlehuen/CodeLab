@@ -39,6 +39,7 @@ client/gemini.sh
 ssh-*.command
 
 # Bilans techniques et feuilles de route internes
+works/
 BILAN*
 ROADMAP*
 
