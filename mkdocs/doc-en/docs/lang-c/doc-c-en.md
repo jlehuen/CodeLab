@@ -915,7 +915,7 @@ The following functions calculate the position of the clamp:
 <br/><center>
 ![](../img/fin.png?style=center+noborder)
 <br/>Document under Creative Commons License CC-BY-NC-ND
-<br/>Copyright &copy; Jérôme Lehuen, Le Mans Université, France
+<br/>Copyright &copy; 2026 Jérôme Lehuen, Le Mans Université, France
 <br/>![](../img/licence.png?style=center+noborder)
 </center>
 
