@@ -52,7 +52,6 @@ Pour concevoir un nouveau module applicatif interactif, vous pouvez suivre les *
 - 📖 **[Tutoriel 2 : Conception d'un module de tracé 2D](https://jlehuen.github.io/CodeLab/doc-fr/tuto2/tuto2-fr/)** : IHM graphique personnalisée, gestion des requêtes clientes et mise en œuvre d'une API de dessin 2D.
 - 📖 **[Tutoriel 3 : Conception d'un simulateur de moteur NXT](https://jlehuen.github.io/CodeLab/doc-fr/tuto3/tuto3-fr/)** : simulateur temps réel multithreadé, modélisation physique, asservissement et tableau de bord interactif.
 
-*(Ces guides sont également consultables en ligne sur le site de [documentation interactive](https://jlehuen.github.io/CodeLab/doc-fr/)).*
 
 ### Étapes rapides avec le CDK :
 
