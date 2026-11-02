@@ -54,7 +54,19 @@ setText('Hello World!')
 <br/>
 ![](./img/hello-module.png?style=center+noborder)
 
-La conception et le développement d'un module CodeLab "enfichable" (plugable) sont facilités par un ensemble de classes Java et d'outils qui assurent l'intégration du plugin au sein de l'architecture de CodeLab. Ce kit de développement contient :
+La conception et le développement d'un module CodeLab "enfichable" (plugable) sont facilités par un ensemble de classes Java et d'outils qui assurent l'intégration du plugin au sein de l'architecture de CodeLab.
+
+### Architecture logicielle : le modèle PAC (Présentation - Abstraction - Contrôle)
+
+Les modules CodeLab reposent sur le patron d'architecture logicielle **PAC** (introduit par Joëlle Coutaz pour les systèmes interactifs), dont est directement issue l'extension de fichier **`.pac`** des plugins distribués (`HelloModule.pac`) :
+
+- **P (Présentation)** : l'interface visuelle Swing vue par l'apprenant (les panneaux graphiques comme `JPanel` ou `JLabel`, et la barre d'outils `HelloToolbar`).
+- **A (Abstraction)** : le modèle métier ou la simulation (les données internes, l'état applicatif ou le simulateur temps réel).
+- **C (Contrôle)** : la classe centrale du module (héritant d'`AbstractModule`) qui agit comme pivot. Elle réceptionne les ordres des programmes étudiants via la méthode `handleRequest(Map<String, String> params)`, pilote l'Abstraction et synchronise la Présentation.
+
+> 💡 **Différence avec MVC** : Contrairement au patron MVC classique où la Vue peut observer directement le Modèle, dans le modèle PAC **la Présentation et l'Abstraction ne communiquent jamais directement entre elles**. Tout échange transite impérativement par le Contrôleur. Cette étanchéité garantit une indépendance totale entre l'affichage graphique et le code exécuté dans les différents langages (C, Python, Java, etc.).
+
+Ce kit de développement contient :
 
 - Une arborescence pour préparer le développement ;
 - Des classes Java à hériter pour écrire vos classes ;
@@ -397,7 +409,7 @@ class _className_ extends Hello {
 
 ### Exemple de template "growing.clp" pour le langage CLIPS :
 
-```scheme
+```lisp
 #requires HelloModule/hello
 
 ;; Program _fileName_

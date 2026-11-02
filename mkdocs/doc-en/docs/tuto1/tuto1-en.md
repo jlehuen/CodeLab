@@ -41,7 +41,19 @@ setText('Hello World!')
 
 ![](./img/hello-module.png?style=center+margin)
 
-The design and development of a CodeLab plugin is facilitated by a set of Java classes and tools that ensure the integration of the plugin into the CodeLab architecture. This development kit contains:
+The design and development of a CodeLab plugin is facilitated by a set of Java classes and tools that ensure the integration of the plugin into the CodeLab architecture.
+
+### Software Architecture: The PAC Model (Presentation - Abstraction - Control)
+
+CodeLab modules are based on the **PAC** architectural pattern (introduced by Joëlle Coutaz for interactive systems), which is the direct origin of the **`.pac`** file extension used for distributed plugins (`HelloModule.pac`):
+
+- **P (Presentation)**: The Swing graphical user interface seen by the learner (visual components like `JPanel` or `JLabel`, and the `HelloToolbar` toolbar).
+- **A (Abstraction)**: The business logic or simulation (internal state, application data, or real-time simulator).
+- **C (Control)**: The central module class (inheriting from `AbstractModule`) acting as a mediator. It receives requests sent by learner programs via the `handleRequest(Map<String, String> params)` method, controls the Abstraction, and updates the Presentation.
+
+> 💡 **Difference with MVC**: Unlike classic MVC where the View often observes the Model directly, in the PAC model **Presentation and Abstraction never communicate directly with each other**. All communication strictly flows through the Controller. This strict separation guarantees complete modularity between the graphical display and code executed in any programming language (C, Python, Java, etc.).
+
+This development kit contains:
 
 - A tree structure to prepare the development;
 - Some Java classes to be inherited to write your classes;
@@ -58,12 +70,12 @@ The design and development of a CodeLab plugin is facilitated by a set of Java c
 <a name=toc></a>
 ### Table of contents :
 
-1. [Development tree](#1)
+1. [Creating the plugin with the CDK](#1)
 2. [Main classes of the module](#2)
 3. [Business methods of the main class](#3)
 4. [Writing the instruction handler](#4)
 5. [Writing the "includes" for each target language](#5)
-6. [Writing four templates] (#6)
+6. [Writing four templates](#6)
 7. [Adding buttons to the toolbar](#7)
 8. [Internationalization of the module](#8)
 
