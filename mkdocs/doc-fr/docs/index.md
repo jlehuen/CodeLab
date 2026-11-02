@@ -15,6 +15,6 @@ Bienvenue dans la documentation officielle de l'environnement **CodeLab**.
 
 ## Tutoriels Développeur (Modules applicatifs)
 
-- [**Tutoriel n°1 : Conception d'un premier module CodeLab**](tuto1/tuto1-fr.md) : Principe de Architecture PAC (Présentation-Abstraction-Contrôle), cycle de vie et protocole de communication.
+- [**Tutoriel n°1 : Conception d'un premier module**](tuto1/tuto1-fr.md) : Architecture PAC (Présentation-Abstraction-Contrôle).
 - [**Tutoriel n°2 : Conception d'un module de tracé 2D**](tuto2/tuto2-fr.md) : Interface de tracé vectoriel (segments et cercles).
 - [**Tutoriel n°3 : Conception d'un simulateur de moteur**](tuto3/tuto3-fr.md) : Simulation temps réel et asservissement d'un moteur.
