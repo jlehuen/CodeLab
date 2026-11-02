@@ -84,11 +84,11 @@ Pour concevoir un nouveau module applicatif interactif, vous pouvez suivre les *
      <img src="../client/images/newmod_3_fr.png" alt="Arborescence du projet généré" width="600">
    </p>
 
-   Les fichiers clés à éditer pour développer votre module sont :
+   Les fichiers clés à éditer pour développer un module sont :
    - `src/codelab/modules/modulename/ModuleName.java` : IHM principale et logique applicative Swing.
-   - `src/codelab/modules/modulename/ModuleNameToolbar.java` : barre d'outils et contrôles interactifs (avec support du bouton `MAN`).
-   - `includes/ModuleNameAPI.xml` : description de votre API au format XML (génération automatique des bibliothèques clientes C, Go, Java, Python, CLIPS et de leurs documentations HTML de référence dédiées via les feuilles XSLT du CDK).
-   - `man/ModuleName.md` : documentation et manuel d'atelier en Markdown (avec sous-dossier `man/img/` pour les visuels). Lors du build, ce fichier est automatiquement compilé en HTML (`ModuleName.html`) par le parseur 100% Java embarqué, packagé dans le `.pac`, puis extrait à chaud par CodeLab pour consultation directe dans le navigateur via le bouton `MAN` ou le menu *Plugins > Manuel de l'atelier*.
+   - `src/codelab/modules/modulename/ModuleNameToolbar.java` : barre d'outils et contrôles interactifs.
+   - `includes/ModuleNameAPI.xml` : description de l'API au format XML pour génération automatique des librairies.
+   - `man/ModuleName.md` : documentation du module en Markdown pour le manuel HTML intégré au fichier .pac
 
 3. **Compilation et assemblage du plugin** :
    Depuis le dossier `modules/ModuleName/`, exécutez le script de compilation :
