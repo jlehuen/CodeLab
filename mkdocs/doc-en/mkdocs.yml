@@ -1,4 +1,8 @@
 site_name: 'CodeLab'
+theme:
+    name: mkdocs
+    hljs_languages:
+        - lisp
 nav:
     - Home: 'index.md'
     - Languages:

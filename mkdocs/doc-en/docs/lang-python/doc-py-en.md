@@ -28,7 +28,10 @@
 		padding: 20px;
 		margin: 10px;
 	}
-	code {
+	pre code {
+		background: transparent;
+	}
+	:not(pre) > code {
 		background: yellow;
 	}
 	code[class=yellow] {

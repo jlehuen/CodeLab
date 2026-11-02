@@ -23,8 +23,15 @@
 </script>
 
 <style>
-	code { background: yellow; }
-	code[class=yellow] { background: yellow; }
+	pre code {
+		background: transparent;
+	}
+	:not(pre) > code {
+		background: yellow;
+	}
+	code[class=yellow] {
+		background: yellow;
+	}
 </style>
 
 <a name=0></a><br/>
