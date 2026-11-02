@@ -33,7 +33,7 @@
 By following this tutorial, you will realize the plugin "DrawingModule" which allows to realize simple 2D plots, with any of the languages included in CodeLab. The rendering below is the result of the execution of the following Python program:
 
 ~~~python
-from DrawingModule.canvas import *
+from codelab.drawingmodule.canvas import *
 
 clearScreen()
 setColor(COLOR_RED)
@@ -56,12 +56,12 @@ The main difference between this module and the first one in tutorial #1 is the 
 <a name=toc></a>
 ### Table of Contents:
 
-1. [Development tree](#1)
+1. [Creating the plugin with the CDK](#1)
 2. [Main classes of the module](#2)
 3. [Definition of the DrawingPanel class](#3)
 4. [Definition of the module API](#4)
-5. [Definition of the toolbar] (#5)
-6. [Module generation] (#6)
+5. [Definition of the toolbar](#5)
+6. [Module generation](#6)
 
 
 <a name=1></a>
@@ -71,7 +71,7 @@ As in the first tutorial, open a terminal in the `CDK` directory and execute the
 - Under Linux / macOS: `./newmodule.sh DrawingModule`
 - Under Windows: `newmodule.bat DrawingModule`
 
-The script automatically prepares the full `DrawingModule/` tree, renames the package (`codelab.modules.drawingmodule`), the main classes (`DrawingModule.java`, `DrawingToolbar.java`), the API file, and the Markdown manual.
+The script automatically prepares the full project tree in `modules/DrawingModule/`, renames the package (`codelab.modules.drawingmodule`), the main class `DrawingModule.java`, the toolbar (`DrawingModuleToolbar.java` which you can rename to `DrawingToolbar.java`), the API file, and the Markdown manual.
 
 You now have the following directory tree:
 
@@ -303,12 +303,14 @@ The consistency of our module relies on a good correspondence between:
 - The public methods of the `DrawingPanel` class
 - The definitions in the XML file describing the module API
 
-These definitions allow to generate the files to be included for each target language. Remember that the name of this file is important because it determines the names of the files to be included. Write the following XML document in a `canvas.xml` file and place it in the `includes` directory:
+These definitions allow generating the client libraries for each target language. Remember that the name of this file is important because it dictates the names of the include files. Delete or replace the initial `DrawingModuleAPI.xml` sample file, then write the following XML document into `canvas.xml` and place it in the `includes` directory:
 
 ~~~xml
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE api SYSTEM 'api.dtd'>
-<api module='DrawingModule'>
+<api module='drawingmodule' name='canvas'>
+
+	<description>2D drawing module API</description>
 
 	<!-- Constants section -->
 
@@ -365,6 +367,7 @@ public class DrawingToolbar extends AbstractToolbar {
 		super(module);
 		addSeparator();
 		add(new ToolButton("CLEAR", "Clear", "Clear the canvas", icon_clear, this));
+		addButton("MAN");
 		endToolbar();
 	}
 
@@ -391,7 +394,7 @@ public class DrawingToolbar extends AbstractToolbar {
 
 The module is now ready to be generated. Before that, you may want to define templates, exercises and even internationalize your module, as explained in the previous tutorial.
 
-To generate the module, run the build script, which will place a `DrawingModule.pac` file in the `module` folder of CodeLab:
+To generate the module, run the build script, which will place a `DrawingModule.pac` file in the `modules/` folder of CodeLab:
 
 ![](./img/drawing-term.png?style=center+margin)
 

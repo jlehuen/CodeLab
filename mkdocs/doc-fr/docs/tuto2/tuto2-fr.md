@@ -48,7 +48,7 @@
 En suivant ce tutoriel, vous allez réaliser le plugin "DrawingModule" qui permet de réaliser des tracés simples en 2D, avec n'importe lequel des langages inclus dans CodeLab. Le rendu ci-dessous est le résultat de l'exécution du programme Python suivant :
 
 ```python
-from DrawingModule.canvas import *
+from codelab.drawingmodule.canvas import *
 
 clearScreen()
 setColor(COLOR_RED)
@@ -77,7 +77,7 @@ Comme pour le premier tutoriel, ouvrez un terminal dans le dossier `CDK` et lanc
 - Sous Linux / macOS : `./newmodule.sh DrawingModule`
 - Sous Windows : `newmodule.bat DrawingModule`
 
-Le script prépare automatiquement l'arborescence complète `DrawingModule/`, renomme le package (`codelab.modules.drawingmodule`), les classes principales (`DrawingModule.java`, `DrawingToolbar.java`), le fichier d'API et le manuel Markdown.
+Le script prépare automatiquement l'arborescence complète du projet dans `modules/DrawingModule/`, renomme le package (`codelab.modules.drawingmodule`), la classe principale `DrawingModule.java`, la barre d'outils (`DrawingModuleToolbar.java` que vous pouvez renommer en `DrawingToolbar.java`), le fichier d'API et le manuel Markdown.
 
 Vous disposez ainsi de l'arborescence suivante :
 
@@ -303,12 +303,14 @@ La cohérence de notre module repose sur une bonne correspondance entre :
 - Les méthodes publiques de la classe `DrawingPanel`
 - Les définitions du fichier XML décrivant l'API du module
 
-Ce dernier permet notamment de générer les fichiers à inclure pour chaque langage cible. Rappellons que le nom de ce fichier est important puisqu'il détermine les noms des fichiers à inclure. Écrivez le document XML suivant dans un fichier `canvas.xml` et placez-le dans le répertoire `includes` :
+Ce dernier permet notamment de générer les fichiers à inclure pour chaque langage cible. Rappellons que le nom de ce fichier est important puisqu'il détermine les noms des fichiers à inclure. Supprimez ou remplacez le fichier d'exemple `DrawingModuleAPI.xml` généré initialement, puis écrivez le document XML suivant dans `canvas.xml` et placez-le dans le répertoire `includes` :
 
 ```xml
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE api SYSTEM 'api.dtd'>
-<api module='DrawingModule'>
+<api module='drawingmodule' name='canvas'>
+
+	<description>API du module de tracé 2D</description>
 
 	<!-- Constants section -->
 
@@ -366,6 +368,7 @@ public class DrawingToolbar extends AbstractToolbar {
 		super(module);
 		addSeparator();
 		add(new ToolButton("CLEAR", "Clear", "Clear the canvas", icon_clear, this));
+		addButton("MAN");
 		endToolbar();
 	}
 
@@ -393,7 +396,7 @@ public class DrawingToolbar extends AbstractToolbar {
 
 Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationnaliser votre module, comme cela est expliqué dans le tutoriel précédent.
 
-Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `DrawingModule.pac` dans le dossier `module` de CodeLab :
+Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `DrawingModule.pac` dans le dossier `modules/` de CodeLab :
 
 ![](./img/drawing-term.png?style=center+noborder)
 

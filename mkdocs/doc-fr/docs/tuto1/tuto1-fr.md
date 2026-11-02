@@ -48,7 +48,7 @@
 En suivant ce tutoriel, vous allez réaliser le plugin "HelloModule", un petit module très simple permettant d'afficher un texte à partir d'un programme en C, Java ou Python. Le rendu ci-dessous est le résultat de l'exécution du programme Python suivant :
 
 ```python
-from HelloModule.hello import *
+from codelab.hellomodule.hello import *
 
 setFont('Times new Roman', 50)
 setText('Hello World!')
@@ -98,7 +98,8 @@ Pour développer un nouveau plugin, la création et la configuration de l'arbore
    - Sous Linux / macOS : `./newmodule.sh HelloModule`
    - Sous Windows : `newmodule.bat HelloModule`
 
-Ce script génère automatiquement le dossier `HelloModule/` dans `CDK/` ainsi qu'une première version prête à l'emploi `HelloModule.pac` dans le dossier `modules/` de CodeLab. Tous les renommages (packages, classes Java, XML et manuel) sont déjà effectués automatiquement !
+Ce script génère automatiquement le dossier du projet dans `modules/HelloModule/`. Tous les renommages (packages, classes Java, XML et manuel) sont déjà effectués automatiquement !
+L'exécution du script `build.sh` (ou `build.bat` sous Windows) depuis ce dossier compile le code Java, génère les bibliothèques d'API et assemble le fichier **`.pac`** (`HelloModule.pac`) qui est automatiquement copié dans le répertoire `modules/` de CodeLab.
 
 <pre>
 HelloModule/
@@ -126,7 +127,9 @@ HelloModule/
 └── build.bat     &larr; Script DOS de compilation et de packaging
 </pre>
 
-L'exécution régulière du script `build.sh` (ou `build.bat` sous Windows) produit un fichier **`.pac`** (`HelloModule.pac`) qui est automatiquement copié dans le répertoire `modules/` de CodeLab, vous permettant de tester votre module au fil de son développement.
+> 💡 *Note sur la barre d'outils* : le script génère initialement `HelloModuleToolbar.java`. Vous pouvez la renommer en `HelloToolbar.java` (en adaptant le nom de la classe et son appel dans `HelloModule.java`), convention plus concise que nous adoptons dans la suite de ce tutoriel.
+
+L'exécution régulière du script `build.sh` (ou `build.bat` sous Windows) produit le paquet **`.pac`** (`HelloModule.pac`) vous permettant de tester votre module au fil de son développement.
 
 La classe `HelloToolbar.java` ne sera pas modifiée dans un premier temps.
 
@@ -311,12 +314,14 @@ Cette dernière section permet de placer dans les fichier à include des défini
 <!ATTLIST include lang (c|java|python) #REQUIRED>
 ```
 
-Le choix du nom de ce fichier est important puisqu'il détermine les noms des fichiers à inclure. Par exemple, si nous nommons ce fichier `hello.xml`, l'exécution du build gérèrera les fichiers `hello.c`, `hello.py` et `Hello.java`. Écrivez le document XML suivant et placez-le dans le répertoire `includes` :
+Le choix du nom de ce fichier est important puisqu'il détermine les noms des fichiers à inclure. Par exemple, si nous nommons ce fichier `hello.xml` avec l'attribut `name='hello'`, l'exécution du build générera les bibliothèques clientes `hello.c`, `hello.py`, `Hello.java`, `hello.clp` et `hello.go`. Supprimez ou remplacez le fichier d'exemple `HelloModuleAPI.xml` généré initialement par le CDK, et écrivez le document XML suivant dans `includes/hello.xml` :
 
 ```xml
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE api SYSTEM 'api.dtd'>
-<api module='HelloModule'>
+<api module='hellomodule' name='hello'>
+
+	<description>API du module Hello</description>
 
 	<instruction name='setText' type='int'>
 		<arg name='str' type='string'/>
@@ -333,8 +338,8 @@ Le choix du nom de ce fichier est important puisqu'il détermine les noms des fi
 Générez une nouvelle fois votre plugin en exécutant le script de build et regardez les fichiers générés dans le répertoire `includes`. Examinons par exemple le fichier `hello.py` généré pour le langage Python :
 
 ```py
-SETTEXT_CMD = 'module=HelloModule&cmd=setText&str=%s'
-SETFONT_CMD = 'module=HelloModule&cmd=setFont&name=%s&size=%d'
+SETTEXT_CMD = 'module=HELLOMODULE&cmd=setText&str=%s'
+SETFONT_CMD = 'module=HELLOMODULE&cmd=setFont&name=%s&size=%d'
 
 def setText(str):
 	buffer = SETTEXT_CMD % str
@@ -362,7 +367,7 @@ Cette étape (optionnelle) consiste à concevoir et à ajouter au module des *te
 ### Exemple de template "growing.py" pour le langage Python :
 
 ```python
-from HelloModule.hello import *
+from codelab.hellomodule.hello import *
 
 ## Program _fileName_
 ## Created by _author_ on _date_
@@ -375,7 +380,7 @@ for size in range(0, 50):
 ### Exemple de template "growing.c" pour le langage C :
 
 ```c
-#include "HelloModule/hello.c"
+#include "codelab/hellomodule/hello.c"
 
 // Program _fileName_
 // Created by _author_ on _date_
@@ -391,7 +396,7 @@ int main() {
 ### Exemple de template "growing.java" pour le langage Java :
 
 ```java
-import HelloModule.Hello;
+import codelab.hellomodule.Hello;
 
 // Class _className_
 // Created by _author_ on _date_
@@ -413,7 +418,7 @@ class _className_ extends Hello {
 ### Exemple de template "growing.clp" pour le langage CLIPS :
 
 ```lisp
-#requires HelloModule/hello
+#requires codelab.hellomodule.hello
 
 ;; Program _fileName_
 ;; Created by _author_ on _date_
@@ -511,6 +516,7 @@ public class HelloToolbar extends AbstractToolbar {
 		addSeparator();
 		add(new ToolButton("HELLO", "Hello", "Say Hello World", icon_hello, this));
 		add(new ToolButton("CLEAR", "Clear", "Clear the panel", icon_clear, this));
+		addButton("MAN");
 		endToolbar();
 	}
 	
@@ -544,7 +550,12 @@ public int clear() {
 }
 ```
 
-Vous pouvez également ajouter une nouvelle instruction `clear()` dans l'API du module en complétant le fichier `hello.xml` et le gestionnaire d'instructions.
+Vous pouvez également ajouter une nouvelle instruction `clear()` dans l'API du module en complétant le fichier `hello.xml` et le gestionnaire d'instructions `handleRequest` :
+
+```java
+case "clear":
+	return String.valueOf(clear());
+```
 
 <br/>![](./img/sep.png?style=center+noborder)
 
@@ -600,6 +611,7 @@ public HelloToolbar(HelloModule module) {
 		getLangProperty("btn_clear"),
 		getLangProperty("btn_clear_tooltip"), icon_clear, this));
 
+	addButton("MAN");
 	endToolbar();
 }
 ```

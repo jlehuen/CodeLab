@@ -78,7 +78,7 @@ Comme pour les tutoriels précédents, ouvrez un terminal dans le dossier `CDK` 
 - Sous Linux / macOS : `./newmodule.sh MotorModule`
 - Sous Windows : `newmodule.bat MotorModule`
 
-Le script prépare automatiquement l'arborescence `MotorModule/`, avec le package `codelab.modules.motormodule`, les classes `MotorModule.java`, `MotorToolbar.java` et le manuel Markdown.
+Le script prépare automatiquement l'arborescence du projet dans `modules/MotorModule/`, avec le package `codelab.modules.motormodule`, la classe principale `MotorModule.java`, la barre d'outils (`MotorModuleToolbar.java` que vous renommez en `MotorToolbar.java`) et le manuel Markdown.
 
 Pour ce module simulateur, effectuez les ajustements suivants :
 - Téléchargez dans le dossier `data` les ressources [axis.png](./data/axis.png) et [motor.png](./data/motor.png) ;
@@ -378,6 +378,8 @@ Ce dernier permet notamment de générer les fichiers à inclure pour chaque lan
 <!DOCTYPE api SYSTEM 'api.dtd'>
 <api module='motormodule' name='NXTMotor'>
 
+	<description>API du simulateur moteur Lego NXT</description>
+
 	<constant name='OUT_A' type='int' value='0'/>
 	<constant name='OUT_B' type='int' value='1'/>
 	<constant name='OUT_C' type='int' value='2'/>
@@ -480,6 +482,7 @@ public class MotorToolbar extends AbstractToolbar {
 		super(module);
 		addSeparator();
 		addButton("RESET");
+		addButton("MAN");
 		endToolbar();
 	}
 
@@ -500,7 +503,7 @@ public class MotorToolbar extends AbstractToolbar {
 
 ## 6. Génération du module
 
-Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationnaliser votre module, comme cela est expliqué dans le premier tutoriel. Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `MotorModule.pac` dans le dossier `module` de CodeLab :
+Le module est maintenant prêt à être généré. Avant cela, vous pouvez éventuellement définir des templates, des exercices, voire internationnaliser votre module, comme cela est expliqué dans le premier tutoriel. Pour générer le module, exécutez le script de build, ce qui aura pour effet de placer un fichier `MotorModule.pac` dans le dossier `modules/` de CodeLab :
 
 ![](./img/motor-term.png?style=center+noborder)
 
@@ -572,6 +575,7 @@ public MotorToolbar(MotorModule module) {
 	addSeparator();
 	addButton("RESET");
 	addButton("DATA");
+	addButton("MAN");
 	endToolbar();
 }
 ```

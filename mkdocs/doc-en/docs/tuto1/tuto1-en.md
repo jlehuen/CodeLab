@@ -33,7 +33,7 @@
 By following this tutorial, you will develop the "HelloModule" plugin, a small and simple module to display a text from a C, Java or Python program. The rendering below is the result of the execution of the following Python program:
 
 ~~~python
-from HelloModule.hello import *
+from codelab.hellomodule.hello import *
 
 setFont('Times new Roman', 50)
 setText('Hello World!')
@@ -93,7 +93,8 @@ To develop a new plugin, folder generation and configuration are fully automated
    - Under Linux / macOS: `./newmodule.sh HelloModule`
    - Under Windows: `newmodule.bat HelloModule`
 
-This script automatically creates the `HelloModule/` folder in `CDK/` as well as an initial ready-to-use `HelloModule.pac` package in the `modules/` directory of CodeLab. All renamings (packages, Java classes, XML, and manual) are performed automatically!
+This script automatically creates the project directory in `modules/HelloModule/`. All renamings (packages, Java classes, XML, and manual) are performed automatically!
+Running the `build.sh` script (or `build.bat` on Windows) from this directory compiles the Java sources, generates the API client libraries, and packages the **`.pac`** archive (`HelloModule.pac`), which is automatically deployed to CodeLab's `modules/` directory.
 
 <pre>
 HelloModule/
@@ -121,7 +122,9 @@ HelloModule/
 └── build.bat     &larr; DOS compilation and packaging script
 </pre>
 
-Regularly executing the `build.sh` script (or `build.bat` on Windows) will produce a **`.pac`** file (`HelloModule.pac`) that is automatically copied into the `modules/` directory of CodeLab, allowing you to test your module as you develop it.
+> 💡 *Note on the toolbar*: The script initially generates `HelloModuleToolbar.java`. You can rename it to `HelloToolbar.java` (updating the class name and its reference in `HelloModule.java`), a concise convention we adopt throughout this tutorial.
+
+Regularly executing the `build.sh` script (or `build.bat` on Windows) produces the **`.pac`** package (`HelloModule.pac`), allowing you to test your module as you develop it.
 
 The `HelloToolbar.java` class will not be modified at first.
 
@@ -302,12 +305,14 @@ This last section allows to place in the include files definitions that go beyon
 <!ATTLIST include lang (c|java|python) #REQUIRED>
 ~~~
 
-The choice of the name of this file is important because it determines the names of the files to be included. For example, if we name this file `hello.xml`, running the build script will handle the files `hello.c`, `hello.py` and `Hello.java`. Write the following XML document and place it in the `includes` directory:
+The choice of this file name is important because it dictates the names of client include libraries. For example, if we name this file `hello.xml` with the `name='hello'` attribute, running the build script will generate `hello.c`, `hello.py`, `Hello.java`, `hello.clp`, and `hello.go`. Delete or replace the initial `HelloModuleAPI.xml` sample file created by the CDK, and write the following XML document into `includes/hello.xml`:
 
 ~~~xml
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE api SYSTEM 'api.dtd'>
-<api module='HelloModule'>
+<api module='hellomodule' name='hello'>
+
+	<description>Hello module API</description>
 
 	<instruction name='setText' type='int'>
 		<arg name='str' type='string'/>
@@ -324,8 +329,8 @@ The choice of the name of this file is important because it determines the names
 Generate your plugin again by running the build script and look at the generated files in the `includes` directory. For example, let's look at the `hello.py` file generated for the Python language:
 
 ~~~py
-SETTEXT_CMD = 'module=HelloModule&cmd=setText&str=%s'
-SETFONT_CMD = 'module=HelloModule&cmd=setFont&name=%s&size=%d'
+SETTEXT_CMD = 'module=HELLOMODULE&cmd=setText&str=%s'
+SETFONT_CMD = 'module=HELLOMODULE&cmd=setFont&name=%s&size=%d'
 
 def setText(str):
 	buffer = SETTEXT_CMD % str
@@ -352,7 +357,7 @@ This optional step consists in designing and adding *templates* (or exercises) t
 ### Example of "growing.py" template for the Python language:
 
 ~~~python
-from HelloModule.hello import *
+from codelab.hellomodule.hello import *
 
 ## Program _fileName_
 ## Created by _author_ on _date_
@@ -365,7 +370,7 @@ for size in range(0, 50):
 ### Example of "growing.c" template for the C language:
 
 ~~~c
-#include "HelloModule/hello.c"
+#include "codelab/hellomodule/hello.c"
 
 /*
  * Program _fileName_
@@ -383,7 +388,7 @@ int main() {
 ### Example of "growing.java" template for the Java language:
 
 ~~~java
-import HelloModule.Hello;
+import codelab.hellomodule.Hello;
 
 /*
  * Class _className_
@@ -407,7 +412,7 @@ class _className_ extends Hello {
 ### Example of "growing.clp" template for the CLIPS language:
 
 ~~~lisp
-#requires HelloModule/hello
+#requires codelab.hellomodule.hello
 
 ;; Program _fileName_
 ;; Created by _author_ on _date_
@@ -504,6 +509,7 @@ public class HelloToolbar extends AbstractToolbar {
 		addSeparator();
 		add(new ToolButton("HELLO", "Hello", "Say Hello World", icon_hello, this));
 		add(new ToolButton("CLEAR", "Clear", "Clear the panel", icon_clear, this));
+		addButton("MAN");
 		endToolbar();
 	}
 	
@@ -537,7 +543,12 @@ public int clear() {
 }
 ~~~
 
-You can also add a new `clear()` statement to the module's API by completing the `hello.xml` file and the statement handler.
+You can also add a new `clear()` statement to the module's API by completing the `hello.xml` file and the `handleRequest` statement handler:
+
+~~~java
+case "clear":
+	return String.valueOf(clear());
+~~~
 
 <a name=8></a>
 ## 8. Internationalization of the module
@@ -592,6 +603,7 @@ public HelloToolbar(HelloModule module) {
 		getLangProperty("btn_clear"),
 		getLangProperty("btn_clear_tooltip"), icon_clear, this));
 
+	addButton("MAN");
 	endToolbar();
 }
 ~~~

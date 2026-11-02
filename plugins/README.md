@@ -54,11 +54,11 @@ Pour concevoir un nouveau module applicatif interactif :
 2. Exécutez le script de génération en spécifiant le nom de votre module (par exemple `Foo`) :
    - Sous Linux / macOS : `./newmodule.sh Foo`
    - Sous Windows : `newmodule.bat Foo`
-   *Cela crée une arborescence `Foo/` dans le dossier `CDK` ainsi qu'une première version prête à l'emploi `Foo.pac` dans le dossier `modules/`.*
-3. Vous pouvez d'ores et déjà tester le nouveau module en lançant CodeLab : un nouveau template *Hello* a été ajouté pour chacun des langages pris en charge.
-4. Éditez les fichiers clés pour développer votre module :
-   - `Foo/src/codelab/modules/foo/Foo.java` : IHM principale et logique applicative Swing.
-   - `Foo/src/codelab/modules/foo/FooToolbar.java` : barre d'outils et contrôles interactifs (avec support du bouton `MAN`).
-   - `Foo/includes/FooAPI.xml` : description de votre API au format XML (génération automatique des bibliothèques clientes C, Go, Java, Python, CLIPS et de leurs documentations HTML de référence dédiées via les feuilles XSLT du CDK).
-   - `Foo/man/Foo.md` : documentation et manuel d'atelier en Markdown (avec sous-dossier `Foo/man/img/` pour les visuels). Lors du build (`./build.sh` ou `build.bat`), ce fichier est automatiquement compilé en HTML (`Foo.html`) par le parseur 100% Java embarqué, packagé dans `Foo.pac`, puis extrait à chaud par CodeLab pour consultation directe dans le navigateur via le bouton `MAN` ou le menu *Plugins > Manuel de l'atelier*.
-5. Exécutez `./build.sh` (ou `build.bat`) pour compiler le code Java, générer les bibliothèques et documentations HTML d'API multi-langages, compiler le manuel d'atelier Markdown, assembler le paquet `.pac` et le déployer automatiquement.
+   *Cela crée le projet dans le répertoire `modules/Foo/`.*
+3. Rendez-vous dans `modules/Foo/` et éditez les fichiers clés pour développer votre module :
+   - `src/codelab/modules/foo/Foo.java` : IHM principale et logique applicative Swing.
+   - `src/codelab/modules/foo/FooToolbar.java` : barre d'outils et contrôles interactifs (avec support du bouton `MAN`).
+   - `includes/FooAPI.xml` : description de votre API au format XML (génération automatique des bibliothèques clientes C, Go, Java, Python, CLIPS et de leurs documentations HTML de référence dédiées via les feuilles XSLT du CDK).
+   - `man/Foo.md` : documentation et manuel d'atelier en Markdown (avec sous-dossier `man/img/` pour les visuels). Lors du build (`./build.sh` ou `build.bat`), ce fichier est automatiquement compilé en HTML (`Foo.html`) par le parseur 100% Java embarqué, packagé dans `Foo.pac`, puis extrait à chaud par CodeLab pour consultation directe dans le navigateur via le bouton `MAN` ou le menu *Plugins > Manuel de l'atelier*.
+4. Exécutez `./build.sh` (ou `build.bat`) pour compiler le code Java, générer les bibliothèques et documentations HTML d'API multi-langages, compiler le manuel d'atelier Markdown, assembler le paquet `.pac` et le déployer automatiquement dans `modules/`.
+5. Lancez CodeLab pour tester votre nouveau module : il apparaît dans le sélecteur d'ateliers et ses templates d'API sont automatiquement disponibles pour chaque langage supporté.

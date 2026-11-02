@@ -73,7 +73,7 @@ As in the previous tutorials, open a terminal in the `CDK` directory and execute
 - Under Linux / macOS: `./newmodule.sh MotorModule`
 - Under Windows: `newmodule.bat MotorModule`
 
-The script automatically sets up the `MotorModule/` directory tree with the `codelab.modules.motormodule` package, the `MotorModule.java` and `MotorToolbar.java` classes, and the Markdown manual.
+The script automatically prepares the project tree in `modules/MotorModule/`, with the `codelab.modules.motormodule` package, the main class `MotorModule.java`, the toolbar (`MotorModuleToolbar.java` which you rename to `MotorToolbar.java`), and the Markdown manual.
 
 For this simulator module, make the following adjustments:
 - Download the graphic resources [axis.png](./data/axis.png) and [motor.png](./data/motor.png) into the `data` directory;
@@ -370,6 +370,8 @@ The latter enables the generation of include files for each target language. Rem
 <!DOCTYPE api SYSTEM 'api.dtd'>
 <api module='motormodule' name='NXTMotor'>
 
+	<description>Lego NXT motor simulator API</description>
+
 	<constant name='OUT_A' type='int' value='0'/>
 	<constant name='OUT_B' type='int' value='1'/>
 	<constant name='OUT_C' type='int' value='2'/>
@@ -473,6 +475,7 @@ public class MotorToolbar extends AbstractToolbar {
 		super(module);
 		addSeparator();
 		addButton("RESET");
+		addButton("MAN");
 		endToolbar();
 	}
 
@@ -492,7 +495,7 @@ public class MotorToolbar extends AbstractToolbar {
 <a name=6></a>
 ## 6. Module generation
 
-The module is now ready to be generated. Before that, you can optionally define templates, exercises, or even internationalize your module, as explained in the first tutorial. To generate the module, run the build script, which will place a `MotorModule.pac` file in the `modules` directory of CodeLab:
+The module is now ready to be generated. Before that, you can optionally define templates, exercises, or even internationalize your module, as explained in the first tutorial. To generate the module, run the build script, which will place a `MotorModule.pac` file in the `modules/` directory of CodeLab:
 
 ![](./img/motor-term.png?style=center+margin)
 
@@ -565,6 +568,7 @@ public MotorToolbar(MotorModule module) {
 	addSeparator();
 	addButton("RESET");
 	addButton("DATA");
+	addButton("MAN");
 	endToolbar();
 }
 ~~~
