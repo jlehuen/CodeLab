@@ -620,9 +620,10 @@ public HelloToolbar(HelloModule module) {
 
 Ce tutoriel est terminé. Vous pouvez continuer à explorer le développement de plugins CodeLab en réalisant les tutoriels suivants.
 
-<center>
+<br/><center>
 ![](./img/fin.png?style=center+noborder)
-Document under Creative Commons License CC-BY-NC-ND
+<br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
-Version 04-05-2022
+<br/>Version 04-05-2022
+</center>

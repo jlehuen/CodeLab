@@ -582,9 +582,10 @@ public MotorToolbar(MotorModule module) {
 
 Re-générez et testez votre module : vous devrier avoir un nouveau bouton qui ouvre un panel à droite, qui affiche les données numériques "Power" et "Counter" en provenance du simulateur.
 
-<center>
+<br/><center>
 ![](./img/fin.png?style=center+noborder)
-Document under Creative Commons License CC-BY-NC-ND
+<br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
-Version 04-05-2022
+<br/>Version 04-05-2022
+</center>

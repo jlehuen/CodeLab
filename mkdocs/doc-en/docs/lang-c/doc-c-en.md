@@ -912,11 +912,11 @@ The following functions calculate the position of the clamp:
 - Parameter: none
 - Return values: the coordinates (x, y, z) of the end of the clamp
 
-<center>
-<br/>![](../img/fin.png?style=center)
-<br/>Version du 26/05/21
-<br/>Document sous licence Creative Commons CC-BY-NC-ND
-<br/>Le Mans Université, France
-<br/><br/>![](../img/licence.png?style=center)
-<br/><br/>
+<br/><center>
+![](../img/fin.png?style=center+noborder)
+<br/>Version 26-05-2021
+<br/>Document under Creative Commons License CC-BY-NC-ND
+<br/>Copyright &copy; Jérôme Lehuen, Le Mans Université, France
+<br/>![](../img/licence.png?style=center+noborder)
+</center>
 

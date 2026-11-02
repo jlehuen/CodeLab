@@ -292,7 +292,7 @@ Méthodes :
 
 <br/><center>
 ![](../img/fin.png?style=center+noborder)
-Document under Creative Commons License CC-BY-NC-ND
+<br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; Jérôme Lehuen, Le Mans Université, France
 <br/>![](../img/licence.png?style=center+noborder)
 </center>

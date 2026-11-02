@@ -744,10 +744,11 @@ The position of the red ball-221a8efc is (-0.200000, 0.050000, 0.800000)
 - Paramètre : aucun
 - Valeur de retour (flottants) : la coordonnée x / y / z du crayon
 
-<center>
+<br/><center>
 ![](../img/fin.png?style=center+noborder)
-Document under Creative Commons License CC-BY-NC-ND
+<br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
 <br/>![](../img/licence.png?style=center+noborder)
-Version 04-05-2022
+<br/>Version 04-05-2022
+</center>
 
