@@ -25,7 +25,7 @@
   <strong>Environnement d'Apprentissage de la Programmation
   <br>pour l'Enseignement Secondaire et Supérieur</strong>
   <br>
-  <br>Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a> &nbsp;|&nbsp; 📖 <a href="https://jlehuen.github.io/CodeLab/doc-fr/">Documentation</a>
+  <br>Site officiel : <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
   <br><br>
   <a href="#téléchargements"><img src="client/images/download.png" alt="Téléchargements" width="160" height="60"></a>
   &emsp;

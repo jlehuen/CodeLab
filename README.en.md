@@ -25,7 +25,7 @@
   <strong>Programming Learning Environment
   <br>for Secondary and Higher Education</strong>
   <br>
-  <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a> &nbsp;|&nbsp; 📖 <a href="https://jlehuen.github.io/CodeLab/doc-en/">Documentation</a>
+  <br>Official website: <a href="https://codelab.univ-lemans.fr">https://codelab.univ-lemans.fr</a>
   <br><br>
   <a href="#downloads"><img src="client/images/download.png" alt="Downloads" width="160" height="60"></a>
   &emsp;

@@ -28,13 +28,13 @@
     </linearGradient>
   </defs>
 
-  <!-- 1. The Pill Shaped Button (height 184, rx=92, width enlarged to fit 96px font) -->
+  <!-- 1. The Button with Rounded Corners (rx=50 matching Download) -->
   <g filter="url(#shadow_indigo)">
-    <rect x="145" y="88" width="980" height="184" rx="92" ry="92"
+    <rect x="145" y="88" width="980" height="184" rx="50" ry="50"
           fill="url(#pillGrad_indigo)"
           stroke="#4c1d95" stroke-width="8.5" />
     <!-- Glossy finish -->
-    <rect x="149" y="92" width="972" height="176" rx="88" ry="88"
+    <rect x="149" y="92" width="972" height="176" rx="46" ry="46"
           fill="url(#gloss_indigo)" />
   </g>
 
