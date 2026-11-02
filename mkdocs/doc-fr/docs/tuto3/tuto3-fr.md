@@ -126,10 +126,10 @@ Le modèle objet du `MotorModule` est similaire à celui du `DrawingModule` à c
 
 Commençez par définir la classe `MotorModule` comme ci-dessous. Les instructions que le gestionnaire d'instructions (handleRequest) devra prendre en compte sont les suivantes :
 
-- `motorOn(puissance)` pour faire tourner le moteur
-- `motorOff()` pour arrêter le moteur
-- `getMotorRotationCount()` pour récupérer la valeur du compteur de rotation
-- `resetMotorRotationCount()` pour réinitialiser le compteur de rotation
+- `motorOn(port, puissance)` pour faire tourner le moteur
+- `motorOff(port)` pour arrêter le moteur
+- `motorRotationCount(port)` pour récupérer la valeur du compteur de rotation
+- `resetMotorRotationCount(port)` pour réinitialiser le compteur de rotation
 
 Remarquez que toutes ces instructions correspondent à des méthodes publiques de la classe `MotorSimulator` (qui n'est pas encore définie) que vous pouvez voir dans le diagramme de classes. Remarquez également que les méthodes `start()`, `stop()` et `reset()` ont été complétées pour piloter le simulateur.
 
@@ -550,7 +550,7 @@ public class MotorSimulator extends AbstractSimulator implements DataTableInterf
 		propKey[0] = "Power";
 		propVal[0] = String.valueOf(power * 1000);
 		propKey[1] = "Counter";
-		propVal[1] = String.format("%d°", getMotorRotationCount());
+		propVal[1] = String.format("%d°", motorRotationCount(0));
 	}
 }
 ```

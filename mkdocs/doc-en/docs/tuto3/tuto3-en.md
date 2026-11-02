@@ -120,10 +120,10 @@ The object model of `MotorModule` is similar to that of `DrawingModule`, except 
 
 Start by defining the `MotorModule` class as shown below. The instructions that the instruction handler (`handleRequest`) must process are:
 
-- `motorOn(power)` to spin the motor
-- `motorOff()` to stop the motor
-- `getMotorRotationCount()` to retrieve the rotation counter value
-- `resetMotorRotationCount()` to reset the rotation counter
+- `motorOn(port, power)` to spin the motor
+- `motorOff(port)` to stop the motor
+- `motorRotationCount(port)` to retrieve the rotation counter value
+- `resetMotorRotationCount(port)` to reset the rotation counter
 
 Note that all of these instructions correspond to public methods of `MotorSimulator` (not yet defined) seen in the class diagram. Also note that `start()`, `stop()` and `reset()` have been completed to control the simulator.
 
@@ -543,7 +543,7 @@ public class MotorSimulator extends AbstractSimulator implements DataTableInterf
 		propKey[0] = "Power";
 		propVal[0] = String.valueOf(power * 1000);
 		propKey[1] = "Counter";
-		propVal[1] = String.format("%d°", getMotorRotationCount());
+		propVal[1] = String.format("%d°", motorRotationCount(0));
 	}
 }
 ~~~
