@@ -6,6 +6,8 @@ Bienvenue dans la documentation officielle de l'environnement **CodeLab**.
   <img src="img/logo-codelab.png" alt="CodeLab Logo" width="160">
 </p>
 
+> ⚡ **Vous découvrez CodeLab ?** Consultez le [**Guide de Démarrage Rapide (Quickstart)**](quickstart/quickstart-fr.md) pour lancer l'environnement et exécuter votre premier programme en moins de 2 minutes chrono !
+
 ## Références des API par langage
 
 - [**Langage C**](lang-c/doc-c-fr.md) : Langage impératif, procédural, compilé et à typage statique.
