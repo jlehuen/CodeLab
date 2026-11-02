@@ -88,21 +88,13 @@ To develop a new plugin, folder generation and configuration are fully automated
 
 ### Automatic skeleton generation
 
-1. In CodeLab, select the menu item **Modules > Generate a new module** (or *Plugins > Generate a new module*). A dialog prompts you to enter the name of your module (for example `HelloModule`):
+1. Open a terminal in the `CDK` directory.
+2. Run the creation script specifying your module name (`HelloModule`):
+   - Under Linux / macOS: `./newmodule.sh HelloModule`
+   - Under Windows: `newmodule.bat HelloModule`
 
-<br/>![](./img/newmod_1_en.png?style=center+noborder)
-
-2. After confirming, a message confirms project creation and the `modules/HelloModule` directory automatically opens in your system file manager:
-
-<br/>![](./img/newmod_2_en.png?style=center+noborder)
-
-> 💡 *Command-line alternative*: You can also open a terminal in the `CDK` directory and execute the creation script:
-> - Under Linux / macOS: `./newmodule.sh HelloModule`
-> - Under Windows: `newmodule.bat HelloModule`
-
-3. Opening a terminal in the generated project directory (`modules/HelloModule/`), you will find the complete skeleton already configured and renamed:
-
-<br/>![](./img/newmod_3_en.png?style=center+noborder)
+This script automatically creates the project directory in `modules/HelloModule/`. All renamings (packages, Java classes, XML, and manual) are performed automatically!
+Running the `build.sh` script (or `build.bat` on Windows) from this directory compiles the Java sources, generates the API client libraries, and packages the **`.pac`** archive (`HelloModule.pac`), which is automatically deployed to CodeLab's `modules/` directory.
 
 <pre>
 HelloModule/
@@ -129,14 +121,6 @@ HelloModule/
 ├── build.sh      &larr; Bash compilation and packaging script
 └── build.bat     &larr; DOS compilation and packaging script
 </pre>
-
-4. All that remains is to run the compilation script from this directory:
-   - Under Linux / macOS: `./build.sh`
-   - Under Windows: `build.bat`
-
-<br/>![](./img/newmod_4_en.png?style=center+noborder)
-
-This script compiles the Java sources, generates the API client libraries and HTML reference documentation across all supported languages, converts the Markdown workshop manual, and packages the **`.pac`** archive (`HelloModule.pac`), which is automatically deployed to CodeLab's `modules/` directory.
 
 > 💡 *Note on the toolbar*: The script initially generates `HelloModuleToolbar.java`. You can rename it to `HelloToolbar.java` (updating the class name and its reference in `HelloModule.java`), a concise convention we adopt throughout this tutorial.
 

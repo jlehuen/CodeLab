@@ -57,12 +57,44 @@ Pour concevoir un nouveau module applicatif interactif, vous pouvez suivre les *
 
 > **Important** : CodeLab doit préalablement avoir été exécuté au moins une fois sur la machine !
 
-1. Dans CodeLab, sélectionnez l'élément de menu **Modules > Générer un nouveau module** *(alternative en ligne de commande : ouvrez un terminal dans le répertoire `CDK` et exécutez `./newmodule.sh Foo` sous Linux/macOS ou `newmodule.bat Foo` sous Windows)*.
-2. Saisissez le nom de votre module (par exemple `Foo`) dans la boîte de dialogue : le projet est instantanément créé dans `modules/Foo/` et ouvert dans votre gestionnaire de fichiers.
-3. Rendez-vous dans `modules/Foo/` et éditez les fichiers clés pour développer votre module :
-   - `src/codelab/modules/foo/Foo.java` : IHM principale et logique applicative Swing.
-   - `src/codelab/modules/foo/FooToolbar.java` : barre d'outils et contrôles interactifs (avec support du bouton `MAN`).
-   - `includes/FooAPI.xml` : description de votre API au format XML (génération automatique des bibliothèques clientes C, Go, Java, Python, CLIPS et de leurs documentations HTML de référence dédiées via les feuilles XSLT du CDK).
-   - `man/Foo.md` : documentation et manuel d'atelier en Markdown (avec sous-dossier `man/img/` pour les visuels). Lors du build (`./build.sh` ou `build.bat`), ce fichier est automatiquement compilé en HTML (`Foo.html`) par le parseur 100% Java embarqué, packagé dans `Foo.pac`, puis extrait à chaud par CodeLab pour consultation directe dans le navigateur via le bouton `MAN` ou le menu *Plugins > Manuel de l'atelier*.
-4. Exécutez `./build.sh` (ou `build.bat`) pour compiler le code Java, générer les bibliothèques et documentations HTML d'API multi-langages, compiler le manuel d'atelier Markdown, assembler le paquet `.pac` et le déployer automatiquement dans `modules/`.
-5. Lancez CodeLab pour tester votre nouveau module : il apparaît dans le sélecteur d'ateliers et ses templates d'API sont automatiquement disponibles pour chaque langage supporté.
+1. **Génération du squelette depuis CodeLab** :
+   Dans CodeLab, sélectionnez l'élément de menu **Modules > Générer un nouveau module** et saisissez le nom de votre module (par exemple `ModuleName`) :
+
+   <p align="center">
+     <img src="../client/images/newmod_1_fr.png" alt="Saisir le nom du nouveau module" width="350">
+   </p>
+
+   Après validation, un message confirme la création du projet et le dossier `modules/ModuleName/` s'ouvre automatiquement dans votre gestionnaire de fichiers :
+
+   <p align="center">
+     <img src="../client/images/newmod_2_fr.png" alt="Confirmation de création du module" width="450">
+   </p>
+
+   > 💡 *Alternative en ligne de commande* : vous pouvez également ouvrir un terminal dans le répertoire `CDK` et exécuter `./newmodule.sh <Nom>` (sous Linux/macOS) ou `newmodule.bat <Nom>` (sous Windows).
+
+2. **Arborescence du projet généré** :
+   Dans le terminal, le dossier `modules/ModuleName/` contient l'ensemble de l'arborescence prête à l'emploi :
+
+   <p align="center">
+     <img src="../client/images/newmod_3_fr.png" alt="Arborescence du projet généré" width="600">
+   </p>
+
+   Les fichiers clés à éditer pour développer votre module sont :
+   - `src/codelab/modules/modulename/ModuleName.java` : IHM principale et logique applicative Swing.
+   - `src/codelab/modules/modulename/ModuleNameToolbar.java` : barre d'outils et contrôles interactifs (avec support du bouton `MAN`).
+   - `includes/ModuleNameAPI.xml` : description de votre API au format XML (génération automatique des bibliothèques clientes C, Go, Java, Python, CLIPS et de leurs documentations HTML de référence dédiées via les feuilles XSLT du CDK).
+   - `man/ModuleName.md` : documentation et manuel d'atelier en Markdown (avec sous-dossier `man/img/` pour les visuels). Lors du build, ce fichier est automatiquement compilé en HTML (`ModuleName.html`) par le parseur 100% Java embarqué, packagé dans le `.pac`, puis extrait à chaud par CodeLab pour consultation directe dans le navigateur via le bouton `MAN` ou le menu *Plugins > Manuel de l'atelier*.
+
+3. **Compilation et assemblage du plugin** :
+   Depuis le dossier `modules/ModuleName/`, exécutez le script de compilation :
+   - Sous Linux / macOS : `./build.sh`
+   - Sous Windows : `build.bat`
+
+   <p align="center">
+     <img src="../client/images/newmod_4_fr.png" alt="Exécution du script build.sh" width="600">
+   </p>
+
+   Ce script compile le code Java, génère les bibliothèques et documentations d'API multi-langages, convertit le manuel d'atelier Markdown, assemble l'archive **`.pac`** (`ModuleName.pac`) et la déploie automatiquement dans le dossier `modules/` de CodeLab.
+
+4. **Test dans CodeLab** :
+   Relancez CodeLab pour tester votre nouveau module : il apparaît dans le sélecteur d'ateliers et ses templates d'API sont automatiquement disponibles pour chaque langage supporté.
