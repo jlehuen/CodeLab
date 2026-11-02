@@ -10,8 +10,8 @@
 
 <div align="center">
 
-![Client](https://img.shields.io/badge/Language-Java-orange.svg)
-![Server](https://img.shields.io/badge/Language-Rust-orange.svg)
+![Client](https://img.shields.io/badge/Client-Java-orange.svg)
+![Server](https://img.shields.io/badge/Server-Rust-orange.svg)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-green.svg)
 
 <!--
