@@ -20,9 +20,9 @@ Les archives téléchargeables ci-dessous contiennent les plugins prêts à l'em
 
 | Module Applicatif | Code source | Plugin | Taille (`.pac`) |
 | :--- | :---: | :---: | :---: |
-| **Exemple du [premier tutoriel](../mkdocs/doc-fr/docs/tuto1/tuto1-fr.md)** : module *Hello World* | [HelloModule.zip](downloads/HelloModule.zip) | [HelloModule.pac](downloads/HelloModule.pac) | ~30 Ko |
-| **Exemple du [deuxième tutoriel](../mkdocs/doc-fr/docs/tuto2/tuto2-fr.md)** : module de tracé en 2D | [DrawingModule.zip](downloads/DrawingModule.zip) | [DrawingModule.pac](downloads/DrawingModule.pac) | ~29 Ko |
-| **Exemple du [troisième tutoriel](../mkdocs/doc-fr/docs/tuto3/tuto3-fr.md)** : simulateur de moteur NXT | [MotorModule.zip](downloads/MotorModule.zip) | [MotorModule.pac](downloads/MotorModule.pac) | ~887 Ko |
+| **Exemple du [premier tutoriel](https://jlehuen.github.io/CodeLab/doc-fr/tuto1/tuto1-fr/)** : module *Hello World* | [HelloModule.zip](downloads/HelloModule.zip) | [HelloModule.pac](downloads/HelloModule.pac) | ~30 Ko |
+| **Exemple du [deuxième tutoriel](https://jlehuen.github.io/CodeLab/doc-fr/tuto2/tuto2-fr/)** : module de tracé en 2D | [DrawingModule.zip](downloads/DrawingModule.zip) | [DrawingModule.pac](downloads/DrawingModule.pac) | ~29 Ko |
+| **Exemple du [troisième tutoriel](https://jlehuen.github.io/CodeLab/doc-fr/tuto3/tuto3-fr/)** : simulateur de moteur NXT | [MotorModule.zip](downloads/MotorModule.zip) | [MotorModule.pac](downloads/MotorModule.pac) | ~887 Ko |
 | **Laboratoire de tris** : visualiseur d'algorithmes (bubble sort, quick sort, etc.) | [SortingModule.zip](downloads/SortingModule.zip) | [SortingModule.pac](downloads/SortingModule.pac) | ~36 Ko |
 | **Atelier graphique** : version plugin du module tortue vectorielle (Logo) | [TurtleModule.zip](downloads/TurtleModule.zip) | [TurtleModule.pac](downloads/TurtleModule.pac) | ~72 Ko |
 | **Robot industriel 5 axes CoreTech 3D** : bras articulé en 3D temps réel | [Robot3DModule.zip](downloads/Robot3DModule.zip) | [Robot3DModule.pac](downloads/Robot3DModule.pac) | ~15,6 Mo |
@@ -48,9 +48,9 @@ Si vous souhaitez modifier le code d'un module ou le recompiler :
 
 Pour concevoir un nouveau module applicatif interactif, vous pouvez suivre les **tutoriels développeur pas à pas** :
 
-- 📖 **[Tutoriel 1 : Conception d'un premier module CodeLab](../mkdocs/doc-fr/docs/tuto1/tuto1-fr.md)** : découverte du CDK, architecture PAC, création du module *Hello World*, déclaration XML de l'API et premier build.
-- 📖 **[Tutoriel 2 : Conception d'un module de tracé 2D](../mkdocs/doc-fr/docs/tuto2/tuto2-fr.md)** : IHM graphique personnalisée, gestion des requêtes clientes et mise en œuvre d'une API de dessin 2D.
-- 📖 **[Tutoriel 3 : Conception d'un simulateur de moteur NXT](../mkdocs/doc-fr/docs/tuto3/tuto3-fr.md)** : simulateur temps réel multithreadé, modélisation physique, asservissement et tableau de bord interactif.
+- 📖 **[Tutoriel 1 : Conception d'un premier module CodeLab](https://jlehuen.github.io/CodeLab/doc-fr/tuto1/tuto1-fr/)** : découverte du CDK, architecture PAC, création du module *Hello World*, déclaration XML de l'API et premier build.
+- 📖 **[Tutoriel 2 : Conception d'un module de tracé 2D](https://jlehuen.github.io/CodeLab/doc-fr/tuto2/tuto2-fr/)** : IHM graphique personnalisée, gestion des requêtes clientes et mise en œuvre d'une API de dessin 2D.
+- 📖 **[Tutoriel 3 : Conception d'un simulateur de moteur NXT](https://jlehuen.github.io/CodeLab/doc-fr/tuto3/tuto3-fr/)** : simulateur temps réel multithreadé, modélisation physique, asservissement et tableau de bord interactif.
 
 *(Ces guides sont également consultables en ligne sur le site de [documentation interactive](https://jlehuen.github.io/CodeLab/doc-fr/)).*
 
