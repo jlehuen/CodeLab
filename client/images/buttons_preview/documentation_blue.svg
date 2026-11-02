@@ -28,85 +28,89 @@
     </linearGradient>
   </defs>
 
-  <!-- 1. The Pill Shaped Button (height 180, rx=90, width enlarged to fit 94px font) -->
+  <!-- 1. The Pill Shaped Button (height 184, rx=92, width enlarged to fit 96px font) -->
   <g filter="url(#shadow_blue)">
-    <rect x="145" y="90" width="975" height="180" rx="90" ry="90"
+    <rect x="145" y="88" width="980" height="184" rx="92" ry="92"
           fill="url(#pillGrad_blue)"
-          stroke="#0c4a6e" stroke-width="8" />
+          stroke="#0c4a6e" stroke-width="8.5" />
     <!-- Glossy finish -->
-    <rect x="149" y="94" width="967" height="172" rx="86" ry="86"
+    <rect x="149" y="92" width="972" height="176" rx="88" ry="88"
           fill="url(#gloss_blue)" />
   </g>
 
-  <!-- 2. Stylized Open Book Icon on Left -->
+  <!-- 2. Big Stylized Open Book Icon on Left (bursts above and below pill, matching Download arrow) -->
   <g filter="url(#shadow_blue)">
     <!-- Bottom book cover / thickness -->
-    <path d="M 115 248
-             C 150 237, 180 239, 215 253
-             C 250 239, 280 237, 315 248
-             L 315 258
-             C 280 247, 250 249, 215 263
-             C 180 249, 150 247, 115 258
+    <path d="M 100 286
+             C 140 273, 175 275, 215 291
+             C 255 277, 290 275, 330 286
+             L 330 298
+             C 290 285, 255 287, 215 303
+             C 175 287, 140 285, 100 298
              Z"
-          fill="#0c4a6e" stroke="#0c4a6e" stroke-width="4" stroke-linejoin="round" />
+          fill="#0c4a6e" stroke="#0c4a6e" stroke-width="4.5" stroke-linejoin="round" />
 
     <!-- Left Book Page -->
-    <path d="M 215 110
-             C 180 96, 150 98, 115 110
-             C 111 111, 110 115, 110 119
-             L 110 245
-             C 110 249, 113 252, 116 251
-             C 150 238, 180 236, 215 251
+    <path d="M 215 62
+             C 175 46, 140 49, 100 62
+             C 96 63, 95 68, 95 73
+             L 95 282
+             C 95 287, 98 290, 102 289
+             C 140 274, 175 272, 215 289
              Z"
-          fill="url(#pageGrad)" stroke="#0c4a6e" stroke-width="8" stroke-linejoin="round" />
+          fill="url(#pageGrad)" stroke="#0c4a6e" stroke-width="8.5" stroke-linejoin="round" />
 
     <!-- Right Book Page -->
-    <path d="M 215 110
-             C 250 96, 280 98, 315 110
-             C 319 111, 320 115, 320 119
-             L 320 245
-             C 320 249, 317 252, 314 251
-             C 280 238, 250 236, 215 251
+    <path d="M 215 62
+             C 255 38, 290 49, 330 62
+             C 334 63, 335 68, 335 73
+             L 335 282
+             C 335 287, 332 290, 328 289
+             C 290 274, 255 272, 215 289
              Z"
-          fill="url(#pageGrad)" stroke="#0c4a6e" stroke-width="8" stroke-linejoin="round" />
+          fill="url(#pageGrad)" stroke="#0c4a6e" stroke-width="8.5" stroke-linejoin="round" />
 
     <!-- Book Center Fold / Spine Crease -->
-    <line x1="215" y1="110" x2="215" y2="251"
-          stroke="#0c4a6e" stroke-width="6" stroke-linecap="round" />
+    <line x1="215" y1="62" x2="215" y2="289"
+          stroke="#0c4a6e" stroke-width="7" stroke-linecap="round" />
 
     <!-- Hanging Bookmark Ribbon -->
-    <path d="M 211 110
-             L 211 153
-             L 215 147
-             L 219 153
-             L 219 110
+    <path d="M 210 62
+             L 210 128
+             L 215 119
+             L 220 128
+             L 220 62
              Z"
-          fill="#e0f2fe" stroke="#0c4a6e" stroke-width="2.5" stroke-linejoin="round" />
+          fill="#e0f2fe" stroke="#0c4a6e" stroke-width="3" stroke-linejoin="round" />
 
     <!-- Text lines on left page -->
-    <line x1="138" y1="145" x2="190" y2="141" stroke="#0c4a6e" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
-    <line x1="138" y1="171" x2="190" y2="167" stroke="#0c4a6e" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
-    <line x1="138" y1="197" x2="180" y2="193" stroke="#0c4a6e" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
+    <line x1="127" y1="110" x2="185" y2="105" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="127" y1="143" x2="185" y2="138" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="127" y1="176" x2="185" y2="171" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="127" y1="209" x2="185" y2="204" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="127" y1="242" x2="173" y2="237" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
 
     <!-- Text lines on right page -->
-    <line x1="240" y1="141" x2="292" y2="145" stroke="#0c4a6e" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
-    <line x1="240" y1="167" x2="292" y2="171" stroke="#0c4a6e" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
-    <line x1="240" y1="193" x2="282" y2="197" stroke="#0c4a6e" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
+    <line x1="245" y1="105" x2="303" y2="110" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="245" y1="138" x2="303" y2="143" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="245" y1="171" x2="303" y2="176" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="245" y1="204" x2="303" y2="209" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+    <line x1="245" y1="237" x2="293" y2="242" stroke="#0c4a6e" stroke-width="5" stroke-linecap="round" opacity="0.65" />
   </g>
 
-  <!-- 3. Typography "Documentation" at font-size 94 (bold, prominent) -->
+  <!-- 3. Typography "Documentation" at font-size 96 -->
   <g>
-    <text x="721.5" y="210.5"
+    <text x="731.5" y="213.5"
           font-family="Arial, Helvetica, sans-serif"
-          font-size="94"
+          font-size="96"
           font-weight="bold"
           fill="#000000"
           fill-opacity="0.25"
           text-anchor="middle"
           letter-spacing="-0.5">Documentation</text>
-    <text x="720" y="209"
+    <text x="730" y="212"
           font-family="Arial, Helvetica, sans-serif"
-          font-size="94"
+          font-size="96"
           font-weight="bold"
           fill="#FFFFFF"
           text-anchor="middle"
