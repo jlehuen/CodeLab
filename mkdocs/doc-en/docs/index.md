@@ -8,13 +8,13 @@ Welcome to the official documentation for the **CodeLab** programming environmen
 
 ## Language API References
 
-- [**C Language**](lang-c/doc-c-en.md): 2D graphics library, Lego NXT robot control, servo motors, and system utilities.
-- [**Java Language**](lang-java/doc-java-en.md): Educational classes (`Drawing`, `Turtle`, `RobotLego`, `NXTMotor`, `EventManager`, etc.).
-- [**Python Language**](lang-python/doc-py-en.md): Modules `graph2D`, `turtle`, `robotLego`, `robotRovio`, `nxtMotor`, `sound`, and `system`.
-- [**CLIPS Language**](lang-clips/doc-clips-en.md): Rule-based reasoning primitives for graphics and robotics.
+- [**C Language**](lang-c/doc-c-en.md): Imperative, procedural, compiled, and statically typed language.
+- [**Java Language**](lang-java/doc-java-en.md): Imperative, object-oriented language compiled to bytecode.
+- [**Python Language**](lang-python/doc-py-en.md): Multi-paradigm, interpreted, and dynamically typed language.
+- [**CLIPS Language**](lang-clips/doc-clips-en.md): Declarative, rule-based language designed for expert systems.
 
 ## Developer Tutorials (Application Modules)
 
-- [**Tutorial #1: Hello World**](tuto1/tuto1-en.md): Designing a first CodeLab module (PAC architecture), lifecycle, and protocol.
-- [**Tutorial #2: 2D Plotter**](tuto2/tuto2-en.md): Designing an interactive 2D drawing module with vector canvas.
-- [**Tutorial #3: Motor Simulator**](tuto3/tuto3-en.md): Designing a real-time NXT servo motor simulator with tachometer feedback.
+- [**Tutorial #1: Designing a First Module**](tuto1/tuto1-en.md): PAC architecture (Presentation-Abstraction-Control).
+- [**Tutorial #2: Designing a 2D Plotter Module**](tuto2/tuto2-en.md): Vector drawing interface (line segments and circles).
+- [**Tutorial #3: Designing a Motor Simulator**](tuto3/tuto3-en.md): Real-time simulation and closed-loop motor control.
