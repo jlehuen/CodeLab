@@ -749,6 +749,6 @@ The position of the red ball-221a8efc is (-0.200000, 0.050000, 0.800000)
 <br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
 <br/>![](../img/licence.png?style=center+noborder)
-<br/>Version 04-05-2022
+<br/>Version 04-05-2026
 </center>
 

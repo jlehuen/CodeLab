@@ -625,5 +625,5 @@ Ce tutoriel est terminé. Vous pouvez continuer à explorer le développement de
 <br/>Document under Creative Commons License CC-BY-NC-ND
 <br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
-<br/>Version 04-05-2022
+<br/>Version 04-05-2026
 </center>
