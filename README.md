@@ -162,7 +162,41 @@ Si un langage est totalement absent de votre machine, vous pouvez l'installer se
 <summary><b>Installer un compilateur C</b></summary>
 <br>
 
->Coming soon !
+CodeLab utilise un compilateur C standard (`gcc` ou `clang`) pour compiler et exécuter vos programmes C :
+
+#### 🐧 Linux
+Le compilateur **GCC** est généralement **déjà préinstallé** sur la quasi-totalité des distributions Linux.
+- Pour vérifier sa présence, ouvrez un terminal et tapez :
+  ```bash
+  gcc --version
+  ```
+- Si le compilateur n'est pas installé, vous pouvez l'obtenir via votre gestionnaire de paquets :
+  - **Ubuntu / Debian** : `sudo apt update && sudo apt install build-essential`
+  - **Fedora / RHEL** : `sudo dnf install gcc`
+  - **Arch Linux** : `sudo pacman -S gcc`
+
+#### 🍏 macOS
+Sous macOS, il est nécessaire d'installer les **Command Line Developer Tools** d'Apple, qui fournissent le compilateur **Clang** (accessible également via la commande alias `gcc`) :
+1. Ouvrez l'application **Terminal** (via Spotlight ou le dossier *Applications > Utilitaires*).
+2. Exécutez la commande suivante :
+   ```bash
+   xcode-select --install
+   ```
+3. Une boîte de dialogue système s'ouvre : cliquez sur **Installer** et acceptez les conditions d'utilisation. Le téléchargement et l'installation s'effectuent automatiquement en quelques minutes.
+
+#### 🪟 Windows
+Sous Windows, il est fortement recommandé d'installer la distribution **TDM-GCC** (MinGW-w64), particulièrement simple, robuste et optimisée pour CodeLab :
+1. Téléchargez l'installateur officiel **TDM-GCC 64-bit** depuis le site officiel :  
+   👉 [**https://jmeubank.github.io/tdm-gcc/**](https://jmeubank.github.io/tdm-gcc/) (ou sur [SourceForge](https://sourceforge.net/projects/tdm-gcc/)).
+2. Lancez le fichier téléchargé (ex. `tdm64-gcc-...exe`).
+3. Cliquez sur **Create** pour une nouvelle installation.
+4. Conservez les options recommandées par défaut (notamment l'emplacement `C:\TDM-GCC-64` et la case cochée pour ajouter GCC au `PATH` de Windows).
+5. Cliquez sur **Install** pour terminer l'installation.
+
+---
+
+> 💡 **Détection automatique dans CodeLab** :  
+> Après l'installation, relancez CodeLab ou ouvrez le menu **Configuration > Compilateurs & interpréteurs > Rechercher un compilateur C (gcc)...** pour que CodeLab configure automatiquement le chemin vers votre compilateur.
 </details>
 
 <details>

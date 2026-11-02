@@ -161,7 +161,41 @@ If a language is missing from your machine, you can install it following the ins
 <summary><b>Install a C compiler</b></summary>
 <br>
 
-> Coming soon!
+CodeLab uses a standard C compiler (`gcc` or `clang`) to build and execute your C programs:
+
+#### 🐧 Linux
+The **GCC** compiler is typically **already pre-installed** on virtually all Linux distributions.
+- To verify its presence, open a terminal and run:
+  ```bash
+  gcc --version
+  ```
+- If missing, install it using your distribution's package manager:
+  - **Ubuntu / Debian**: `sudo apt update && sudo apt install build-essential`
+  - **Fedora / RHEL**: `sudo dnf install gcc`
+  - **Arch Linux**: `sudo pacman -S gcc`
+
+#### 🍏 macOS
+On macOS, you need to install Apple's **Command Line Developer Tools**, which provide the **Clang** compiler (also accessible via the `gcc` alias command):
+1. Open the **Terminal** app (via Spotlight or *Applications > Utilities*).
+2. Run the following command:
+   ```bash
+   xcode-select --install
+   ```
+3. A system prompt will appear: click **Install** and accept the license terms. The tools will download and install automatically within a few minutes.
+
+#### 🪟 Windows
+On Windows, we strongly recommend installing **TDM-GCC** (MinGW-w64), an easy-to-use, robust C/C++ compiler suite tailored for CodeLab:
+1. Download the official **TDM-GCC 64-bit** installer from:  
+   👉 [**https://jmeubank.github.io/tdm-gcc/**](https://jmeubank.github.io/tdm-gcc/) (or on [SourceForge](https://sourceforge.net/projects/tdm-gcc/)).
+2. Run the downloaded installer (e.g. `tdm64-gcc-...exe`).
+3. Click **Create** for a new installation.
+4. Keep the default recommended options (default destination `C:\TDM-GCC-64` and ensure the option to add GCC to the Windows `PATH` is checked).
+5. Click **Install** to complete the setup.
+
+---
+
+> 💡 **Automatic Detection in CodeLab**:  
+> Once installed, restart CodeLab or open **Configuration > Compilers & Interpreters > Search for a C compiler (gcc)...** to have CodeLab automatically configure the compiler path.
 </details>
 
 <details>
