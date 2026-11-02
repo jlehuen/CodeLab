@@ -615,6 +615,6 @@ This tutorial is over. You can continue to explore CodeLab plugin development by
 <br/><center>
 ![](./img/fin.png?style=center+noborder)
 <br/>Document under Creative Commons License CC-BY-NC-ND
-<br/>Copyright &copy; 2021 Jérôme Lehuen, Le Mans Université, France
+<br/>Copyright &copy; 2026 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
 </center>

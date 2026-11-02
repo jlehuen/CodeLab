@@ -405,6 +405,6 @@ Ce second tutoriel est terminé. Vous pouvez continuer à explorer le développe
 <br/><center>
 ![](./img/fin.png?style=center+noborder)
 <br/>Document under Creative Commons License CC-BY-NC-ND
-<br/>Copyright &copy; 2022 Jérôme Lehuen, Le Mans Université, France
+<br/>Copyright &copy; 2026 Jérôme Lehuen, Le Mans Université, France
 <br/>![](./img/licence.png?style=center+noborder)
 </center>
