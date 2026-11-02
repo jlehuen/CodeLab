@@ -1998,7 +1998,7 @@
 											"top": 646,
 											"width": 188.17431640625,
 											"height": 13,
-											"text": "+getMotorRotationCount(): int",
+											"text": "+motorRotationCount(): int",
 											"horizontalAlignment": 0
 										},
 										{
@@ -3955,7 +3955,7 @@
 							"_parent": {
 								"$ref": "AAAAAAF4NdQ/V0C9sBg="
 							},
-							"name": "getMotorRotationCount",
+							"name": "motorRotationCount",
 							"parameters": [
 								{
 									"_type": "UMLParameter",
