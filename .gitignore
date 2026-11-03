@@ -23,6 +23,7 @@ server/server/config/sessions.xml
 server/server/config/sessions_new.xml
 server/server/sessions/
 server/scripts-admin/
+client/codelab.files/evaluations/
 
 # Tableurs de promotions d'étudiants (L1, L2, etc.)
 *.xlsx

@@ -179,6 +179,13 @@ public class SessionEvaluator {
 	 */
 	public static void populateSkillsSubmenu(JMenu parentMenu, BiConsumer<SkillDescr, Boolean> onSelect) {
 		parentMenu.removeAll();
+
+		// 1. Activation / désactivation de l'IA (Gemini)
+		JCheckBoxMenuItem itemAi = new JCheckBoxMenuItem(CodeLab.LABEL("evalUseAiCheckbox"), isUseAi());
+		itemAi.addItemListener(e -> setUseAi(itemAi.getState()));
+		parentMenu.add(itemAi);
+		parentMenu.add(new JSeparator());
+
 		if (availableSkills.isEmpty()) {
 			scanSkills();
 		}
@@ -189,17 +196,17 @@ public class SessionEvaluator {
 			return;
 		}
 
-		// 1. Détection automatique
+		// 2. Détection automatique
 		JMenuItem itemAuto = new JMenuItem(CodeLab.LABEL("evalSkillAuto"));
 		itemAuto.setToolTipText("Détecte automatiquement le langage et la compétence la plus adaptée");
-		itemAuto.addActionListener(e -> onSelect.accept(null, USE_AI));
+		itemAuto.addActionListener(e -> onSelect.accept(null, isUseAi()));
 		parentMenu.add(itemAuto);
 
-		// 2. Compétences individuelles
+		// 3. Compétences individuelles
 		for (SkillDescr skill : availableSkills) {
 			JMenuItem item = new JMenuItem(skill.getTitle());
 			item.setToolTipText(skill.getDescription());
-			item.addActionListener(e -> onSelect.accept(skill, USE_AI));
+			item.addActionListener(e -> onSelect.accept(skill, isUseAi()));
 			parentMenu.add(item);
 		}
 	}

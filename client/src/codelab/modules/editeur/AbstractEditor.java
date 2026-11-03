@@ -162,7 +162,8 @@ public abstract class AbstractEditor extends JPanel {
 		String ext = getExtension();
 		return ext.equals(".txt") ||
 			   ext.equals(".csv") ||
-			   ext.equals(".log");
+			   ext.equals(".log") ||
+			   ext.equals(".md");
 	}
 
 	public FileDescr getFileDescriptor() {

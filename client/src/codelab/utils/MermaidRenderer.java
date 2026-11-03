@@ -65,7 +65,7 @@ public class MermaidRenderer {
 	private static final float MAX_SCALE = 3.0f;
 
 	/** Change quand le rendu change (version de la bibliothèque, réglages) pour invalider le cache disque. */
-	private static final String CACHE_VERSION = "mermaid-java-2";
+	private static final String CACHE_VERSION = "mermaid-java-3";
 
 	private static final String PENDING_HTML = "\n\n<div class=\"mermaid-pending\" align=\"center\" style=\"color:#8c959f; font-style:italic;\">"
 		+ "Rendu du diagramme Mermaid en cours…</div>\n\n";

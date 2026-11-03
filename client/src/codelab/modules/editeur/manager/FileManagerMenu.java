@@ -175,9 +175,6 @@ public class FileManagerMenu {
 
 			if (fd.isDirectory()) {
 				if (!FileManager.isEvaluation(fd.getFile())) {
-					JCheckBoxMenuItem itemUseAi = new JCheckBoxMenuItem(LABEL("evalUseAiCheckbox"), SessionEvaluator.isUseAi());
-					itemUseAi.addItemListener(e -> SessionEvaluator.setUseAi(itemUseAi.getState()));
-					menu.add(itemUseAi);
 					JMenu subMenuEval = new JMenu(LABEL("menuEvalFolder"));
 					SessionEvaluator.populateSkillsSubmenu(subMenuEval, (skill, useAi) -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill, useAi));
 					menu.add(subMenuEval);
@@ -277,9 +274,6 @@ public class FileManagerMenu {
 					menu.add(new JSeparator());
 
 					if (!codelab.isConnected()) {
-						JCheckBoxMenuItem itemUseAi = new JCheckBoxMenuItem(LABEL("evalUseAiCheckbox"), SessionEvaluator.isUseAi());
-						itemUseAi.addItemListener(e -> SessionEvaluator.setUseAi(itemUseAi.getState()));
-						menu.add(itemUseAi);
 						JMenu menuEvalFolder = new JMenu(LABEL("menuEvalFolder"));
 						SessionEvaluator.populateSkillsSubmenu(menuEvalFolder, (skill, useAi) -> SessionEvaluator.evaluateFolder(codelab, fd.getFile(), skill, useAi));
 						menu.add(menuEvalFolder);

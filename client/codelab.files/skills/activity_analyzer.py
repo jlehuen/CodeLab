@@ -141,7 +141,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     # Tri temporel des événements
     parsed_events = []
     for ev in events:
-        dt = parse_iso_timestamp(ev.get("timestamp", ""))
+        dt = parse_iso_timestamp(ev.get("timestamp") or ev.get("ts") or "")
         parsed_events.append((dt, ev))
         
     parsed_events.sort(key=lambda x: x[0] if x[0] else datetime.min)
@@ -562,10 +562,11 @@ def generate_mermaid_radars(data: dict, student_name: str = "Étudiant") -> dict
         clean_name = "Étudiant"
 
     radar_ind_code = f"""```mermaid
+%%{{init: {{'radar': {{'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.12}}, 'themeVariables': {{'fontSize': '22px', 'radar': {{'axisLabelFontSize': 22}}}}}}}}%%
 radar-beta
-    title "1. Profil des Indicateurs Clés (/20)"
+    showLegend false
     axis auth["Authenticité"], focus["Concentration"], debug["Débogage"], test["Tests & Validation"], arch["Architecture"], style["Style & PEP8"]
-    curve etud["{clean_name}"]{{{auth_val}, {focus_val}, {debug_val}, {test_val}, {arch_val}, {style_val}}}
+    curve etud{{{auth_val}, {focus_val}, {debug_val}, {test_val}, {arch_val}, {style_val}}}
     max 20
     min 0
     graticule polygon
@@ -637,10 +638,11 @@ radar-beta
     guide_val = min(20.0, max(1.0, round(guide_score, 1)))
 
     radar_prof_code = f"""```mermaid
+%%{{init: {{'radar': {{'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.12}}, 'themeVariables': {{'fontSize': '22px', 'radar': {{'axisLabelFontSize': 22}}}}}}}}%%
 radar-beta
-    title "2. Typologie Comportementale Multidimensionnelle (/20)"
+    showLegend false
     axis auto["Autonome"], meth["Méthodique"], exp["Expérimentateur"], pers["Persévérant"], ext["Assistance Externe / IA"], guide["Besoin de Guidage"]
-    curve affinite["Affinité Comportementale"]{{{auto_val}, {meth_val}, {exp_val}, {pers_val}, {ext_val}, {guide_val}}}
+    curve etud{{{auto_val}, {meth_val}, {exp_val}, {pers_val}, {ext_val}, {guide_val}}}
     max 20
     min 0
     graticule polygon
@@ -648,14 +650,25 @@ radar-beta
 
     combined = f"""### 📊 Profil Visuel Multidimensionnel (Diagrammes Radar)
 
+<table width="100%" border="0" cellspacing="0" cellpadding="0" style="border:none; border-collapse:collapse; margin: 8px 0;">
+<tr>
+<td align="center" width="50%" style="border:none; padding:0; vertical-align:middle;">
+
 {radar_ind_code}
+
+</td>
+<td align="center" width="50%" style="border:none; padding:0; vertical-align:middle;">
 
 {radar_prof_code}
 
+</td>
+</tr>
+</table>
+
 > [!NOTE]
 > **Lecture des Radars Comportementaux** :
-> - **Radar 1 (Indicateurs)** : Évalue les piliers de compétence sur 20. Un polygone large et régulier témoigne d'une maîtrise homogène (code, concentration, validation et authenticité).
-> - **Radar 2 (Typologie)** : Mesure l'affinité de l'étudiant avec 6 facettes comportementales. Chaque étudiant conjugue plusieurs traits (ex. profil *Expérimentateur* et *Autonome*, ou *Persévérant* avec *Besoin de Guidage* ponctuel)."""
+> - **Radar de gauche (Indicateurs)** : Évalue les piliers de compétence sur 20. Un polygone large et régulier témoigne d'une maîtrise homogène (code, concentration, validation et authenticité).
+> - **Radar de droite (Typologie)** : Mesure l'affinité de l'étudiant avec 6 facettes comportementales. Chaque étudiant conjugue plusieurs traits (ex. profil *Expérimentateur* et *Autonome*, ou *Persévérant* avec *Besoin de Guidage* ponctuel)."""
 
     return {
         "radar_indicateurs": radar_ind_code,

@@ -17,7 +17,6 @@
 - **Stylométrie d'indentation :** {stylometrie_courte}
 - **Test de similarité (Plagiat) :** {similarite_courte}
 - **Indice d'assistance IA :** {ai_level}
-- **Environnement :** CodeLab v1.5.0
 
 ---
 

@@ -1370,7 +1370,6 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
 - **Stylométrie d'indentation :** {integ['stylometrie_courte']}
 - **Test de similarité (Plagiat) :** {integ['similarite_courte']}
 - **Indice d'assistance IA :** {ai_level}
-- **Environnement :** CodeLab v1.5.0
 
 ---
 
@@ -1942,7 +1941,6 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
 - **Stylométrie d'indentation :** {integ['stylometrie_courte']}
 - **Test de similarité (Plagiat) :** {integ['similarite_courte']}
 - **Indice d'assistance IA :** {data.get('ai_analysis', {}).get('level', 'Faible (0% - Code authentique)')}
-- **Environnement :** CodeLab v1.5.0
 
 ---
 
@@ -2218,7 +2216,6 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 - **Stylométrie d'indentation :** {integ['stylometrie_courte']}
 - **Test de similarité (Plagiat) :** {integ['similarite_courte']}
 - **Indice d'assistance IA :** {data.get('ai_analysis', {}).get('level', 'Faible (0% - Code authentique)')}
-- **Environnement :** CodeLab v1.5.0
 
 ---
 

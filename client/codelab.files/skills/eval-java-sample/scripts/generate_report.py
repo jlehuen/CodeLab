@@ -43,7 +43,6 @@ def format_report_markdown(results):
     md.append(f"- **Skill appliqué :** `eval-java-sample` (dernière modification : {skill_date})")
     md.append(f"- **Moteur d'évaluation :** {engine_name}")
     md.append(f"- **Indice d'assistance IA :** {ai_level}")
-    md.append(f"- **Environnement :** CodeLab v1.5.0")
     md.append("")
     md.append("---")
     md.append("")
