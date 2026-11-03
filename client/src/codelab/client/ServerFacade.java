@@ -84,6 +84,11 @@ public class ServerFacade extends AbstractServerFacade {
 		sendCommand("SET_SESSION_OPENNED", data);
 	}
 
+	public void setSessionReadOnly(boolean flag) {
+		Object[] data = {flag};
+		sendCommand("SET_SESSION_READONLY", data);
+	}
+
 	public void setEditedFile(String path) {
 		Object[] data = {path};
 		sendCommand("SET_EDITED_FILE", data);

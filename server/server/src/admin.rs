@@ -26,7 +26,7 @@ use sha2::{Digest, Sha256};
 use crate::connected::{get_all_clients, is_connected, force_disconnect};
 use crate::database::{
     get_groups_all, simulate_group_change, apply_group_change, SessionMoveInput, UserStatus,
-    toggle_session_state, add_user, delete_user,
+    toggle_session_state, toggle_session_readonly, add_user, delete_user,
 };
 use crate::constants::*;
 use crate::properties::*;
@@ -229,6 +229,10 @@ async fn handle_admin_request(
         ("POST", "/api/sessions/toggle") => {
             let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
             handle_toggle_session(&body_content).await
+        },
+        ("POST", "/api/sessions/readonly") => {
+            let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
+            handle_toggle_readonly(&body_content).await
         },
         ("POST", "/api/users/add") => {
             let body_content = read_request_body(&mut socket, &request_str, &request.headers).await;
@@ -434,6 +438,40 @@ async fn handle_toggle_session(body_content: &str) -> String {
                 escape_json(&req.session_id),
                 new_state,
                 if new_state { "ouverte" } else { "fermée" }
+            )
+        },
+        Err(e) => generate_error_json(&e),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct ToggleReadonlyRequest {
+    session_id: String,
+    readonly: bool,
+}
+
+async fn handle_toggle_readonly(body_content: &str) -> String {
+    let req: ToggleReadonlyRequest = match serde_json::from_str(body_content) {
+        Ok(r) => r,
+        Err(e) => return generate_error_json(&format!("JSON invalide : {}", e)),
+    };
+
+    match toggle_session_readonly(&req.session_id, req.readonly) {
+        Ok(new_state) => {
+            // Notifier tous les clients connectés
+            let clients = get_all_clients().await;
+            for client in clients {
+                let _ = client.session_readonly(&req.session_id, &new_state).await;
+            }
+            format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: application/json; charset=utf-8\r\n\
+                 Connection: close\r\n\
+                 \r\n\
+                 {{\"status\": \"success\", \"session_id\": \"{}\", \"readonly\": {}, \"message\": \"Session mise {} avec succès\"}}",
+                escape_json(&req.session_id),
+                new_state,
+                if new_state { "en lecture seule" } else { "en lecture/écriture" }
             )
         },
         Err(e) => generate_error_json(&e),
@@ -1074,6 +1112,7 @@ async fn generate_sessions_json() -> String {
             "{{\
                 \"id\": \"{}\",\
                 \"openned\": {},\
+                \"readonly\": {},\
                 \"groups\": \"{}\",\
                 \"users\": \"{}\",\
                 \"total_users\": {},\
@@ -1081,6 +1120,7 @@ async fn generate_sessions_json() -> String {
             }}",
             escape_json(&session.id),
             session.openned,
+            session.readonly,
             escape_json(&session.groups),
             escape_json(&session.users),
             session.total_users,

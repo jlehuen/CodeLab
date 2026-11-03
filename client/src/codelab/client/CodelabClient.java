@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.apache.commons.io.FileUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -364,17 +366,23 @@ public class CodelabClient {
 	///////////////////////////////////////////////////
 	
 	private HashMap<String, Boolean> sessions;
+	private HashMap<String, Boolean> sessionsReadOnly = new HashMap<>();
 
 	private String CLOSED_TAG = "[closed]"; // Ajouté par le serveur
 	private String CLOSED_TAG2 = " [closed]"; // Juste pour l'affichage
+	private String READONLY_TAG = "[readonly]"; // Ajouté par le serveur
+	private String READONLY_TAG2 = " [lecture seule]"; // Juste pour l'affichage
 
 	private void storeSessions(String str) {
 		// Remplissage de la HashMap à partir de la chaîne en provenance du serveur
 		sessions = new HashMap<>();
+		sessionsReadOnly = new HashMap<>();
 		for (String sessionId : str.split(";")) {
-			String name = sessionId.replace(CLOSED_TAG, "");
-			boolean opened = !sessionId.endsWith(CLOSED_TAG);
-			sessions.put(name, opened);
+			boolean isClosed = sessionId.contains(CLOSED_TAG);
+			boolean isReadOnly = sessionId.contains(READONLY_TAG);
+			String name = sessionId.replace(CLOSED_TAG, "").replace(READONLY_TAG, "");
+			sessions.put(name, !isClosed);
+			sessionsReadOnly.put(name, isReadOnly);
 		}
 	}
 
@@ -401,6 +409,27 @@ public class CodelabClient {
 		return false;
 	}
 
+	public boolean isReadOnly(String sessionId) {
+		if (sessionsReadOnly != null && sessionsReadOnly.containsKey(sessionId))
+			return sessionsReadOnly.get(sessionId);
+		return false;
+	}
+
+	public boolean isCurrentSessionReadOnly() {
+		return (session != null) && isReadOnly(session);
+	}
+
+	public void setReadOnlySession(String sessionId, boolean new_value) {
+		if (sessionId == null) return;
+		if (sessionsReadOnly == null) sessionsReadOnly = new HashMap<>();
+		sessionsReadOnly.put(sessionId, new_value);
+	}
+
+	public void setSessionReadOnly(boolean flag) {
+		setReadOnlySession(this.session, flag);
+		server.setSessionReadOnly(flag);
+	}
+
 	private boolean isSessionAvailable(String sessionId) {
 		return sessions != null && sessions.containsKey(sessionId);
 	}
@@ -410,10 +439,11 @@ public class CodelabClient {
 		String[] array = getSessions();
 		// Une seule session disponible
 		if (array.length == 1) return array[0];
-		// Ajouter les tags [closed]
+		// Ajouter les tags [closed] et [lecture seule]
 		int i = 0;
 		for (String sessionId : array) {
 			if (!isOpen(sessionId)) array[i] += CLOSED_TAG2;
+			else if (isReadOnly(sessionId)) array[i] += READONLY_TAG2;
 			i++;
 		}
 
@@ -426,7 +456,7 @@ public class CodelabClient {
 			array[0]);
 
 		if (choice == null) return CANCELLED; // Annulation
-		return choice.replace(CLOSED_TAG2, "");
+		return choice.replace(CLOSED_TAG2, "").replace(READONLY_TAG2, "");
 	}
 
 	public boolean actionChangeSession(String newSession) {
@@ -1120,8 +1150,104 @@ public class CodelabClient {
 
 	public void log2server(String texte) {
 		if (!isConnected()) return;
-		// server.log(texte);
-		// Journalisation distante désactivée par défaut
+		server.log(texte);
+	}
+
+	public void logCompile(String filename, boolean success, String errorMsg) {
+		if (!isConnected()) return;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode node = mapper.createObjectNode();
+			node.put("type", "COMPILE");
+			node.put("file", filename);
+			node.put("status", success ? "OK" : "ERROR");
+			if (errorMsg != null && !errorMsg.isEmpty()) {
+				node.put("error_msg", errorMsg);
+			}
+			server.log(mapper.writeValueAsString(node));
+		} catch (Exception e) {
+			System.err.println("Error sending compile log: " + e.getMessage());
+		}
+	}
+
+	public void logExecute(String filename, String status, Integer exitCode, String errorMsg) {
+		if (!isConnected()) return;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode node = mapper.createObjectNode();
+			node.put("type", "EXECUTE");
+			node.put("file", filename);
+			node.put("status", status);
+			if (exitCode != null) {
+				node.put("exit_code", exitCode);
+			}
+			if (errorMsg != null && !errorMsg.isEmpty()) {
+				node.put("error_msg", errorMsg);
+			}
+			server.log(mapper.writeValueAsString(node));
+		} catch (Exception e) {
+			System.err.println("Error sending execute log: " + e.getMessage());
+		}
+	}
+
+	public void logFocus(String status, Long durationSec) {
+		if (!isConnected()) return;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode node = mapper.createObjectNode();
+			node.put("type", "FOCUS");
+			node.put("status", status);
+			if (durationSec != null && durationSec > 0) {
+				node.put("duration_sec", durationSec);
+			}
+			server.log(mapper.writeValueAsString(node));
+		} catch (Exception e) {
+			System.err.println("Error sending focus log: " + e.getMessage());
+		}
+	}
+
+	public void logPaste(String filename, int charsCount, int linesCount) {
+		if (!isConnected()) return;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode node = mapper.createObjectNode();
+			node.put("type", "PASTE");
+			node.put("file", filename);
+			node.put("chars", charsCount);
+			node.put("lines", linesCount);
+			server.log(mapper.writeValueAsString(node));
+		} catch (Exception e) {
+			System.err.println("Error sending paste log: " + e.getMessage());
+		}
+	}
+
+	public void logTyping(String filename, int typedChars, int backspaces) {
+		if (!isConnected()) return;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode node = mapper.createObjectNode();
+			node.put("type", "TYPING");
+			node.put("file", filename);
+			node.put("typed_chars", typedChars);
+			node.put("backspaces", backspaces);
+			server.log(mapper.writeValueAsString(node));
+		} catch (Exception e) {
+			System.err.println("Error sending typing log: " + e.getMessage());
+		}
+	}
+
+	public void logFileDrop(String filename, long sizeBytes) {
+		if (!isConnected()) return;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			ObjectNode node = mapper.createObjectNode();
+			node.put("type", "FILE_DROP");
+			node.put("file", filename);
+			node.put("size_bytes", sizeBytes);
+			server.log(mapper.writeValueAsString(node));
+		} catch (Exception e) {
+			System.err.println("Error sending file drop log: " + e.getMessage());
+		}
 	}
 
 	public void exceptionReport(String content) {
@@ -1322,6 +1448,24 @@ public class CodelabClient {
 
 	public synchronized void OPEN_SESSION(String sessionId, boolean flag) {
 		openSession(sessionId, flag);
+		if (sessionId != null && sessionId.equals(this.session)) {
+			javax.swing.SwingUtilities.invokeLater(() -> {
+				if (editor != null && editor.getUserTable() != null) {
+					editor.getUserTable().setOpenned(flag);
+				}
+			});
+		}
+	}
+
+	public synchronized void SET_SESSION_READONLY(String sessionId, boolean flag) {
+		setReadOnlySession(sessionId, flag);
+		if (sessionId != null && sessionId.equals(this.session)) {
+			javax.swing.SwingUtilities.invokeLater(() -> {
+				if (editor != null) {
+					editor.setReadOnlySession(flag);
+				}
+			});
+		}
 	}
 	
 	public synchronized void UPDATE_FILE(Object[] array, String path) {

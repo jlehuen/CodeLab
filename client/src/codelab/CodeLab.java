@@ -9,6 +9,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -249,6 +250,26 @@ public class CodeLab extends AbstractCodeLab {
 			}
 		});
 
+		// Listener de perte / gain de focus pour la traçabilité d'activité
+		addWindowFocusListener(new WindowFocusListener() {
+			private long lostTimestamp = 0;
+
+			public void windowGainedFocus(WindowEvent e) {
+				if (client != null && client.isConnected() && !isTutor() && !isAdmin()) {
+					long durationSec = (lostTimestamp > 0) ? (System.currentTimeMillis() - lostTimestamp) / 1000 : 0;
+					client.logFocus("GAINED", durationSec);
+				}
+				lostTimestamp = 0;
+			}
+
+			public void windowLostFocus(WindowEvent e) {
+				lostTimestamp = System.currentTimeMillis();
+				if (client != null && client.isConnected() && !isTutor() && !isAdmin()) {
+					client.logFocus("LOST", null);
+				}
+			}
+		});
+
 		setTitle(TITLE);
 		setWindowLocation();
 		//setRunKeyStroke(); // Pour intercepter les Cmd-R (compile & run)
@@ -267,6 +288,9 @@ public class CodeLab extends AbstractCodeLab {
 		if (file == null || !file.exists()) {
 			logger("handleDroppedFile: file does not exist or is null");
 			return;
+		}
+		if (client != null && client.isConnected() && !isTutor() && !isAdmin()) {
+			client.logFileDrop(file.getName(), file.length());
 		}
 		showEditor();
 		toFront();

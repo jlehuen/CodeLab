@@ -85,6 +85,9 @@ chrono = { version = "0.4", features = ["serde"] }
 # Expressions régulières - Parsing des noms de fichiers de backup datés
 regex = "1.10"
 
+# Diff textuel - Calcul des deltas de modifications et détection d'insertions massives
+similar = "2.6"
+
 # Verrouillage de fichiers - Éviter les conflits lors des sauvegardes
 fs2 = "0.4"
 

@@ -345,8 +345,15 @@ function updateSessionsTable() {
     debugLog(`Affichage de ${sortedSessions.length} sessions`, 'info');
     
     tbody.innerHTML = sortedSessions.map(session => {
-        const statusClass = session.openned ? 'session-open' : 'session-closed';
-        const statusText = session.openned ? 'Ouverte' : 'Fermée';
+        let statusHtml = '';
+        if (!session.openned) {
+            statusHtml = `<span class="session-closed clickable-status" onclick="toggleSessionState('${escapedSessionId}', false)" title="Cliquer pour ouvrir">🔒 Fermée</span>`;
+        } else if (session.readonly) {
+            statusHtml = `<span class="clickable-status" style="background: #fef5e7; color: #d35400; border: 1px solid #f39c12; border-radius: 4px; padding: 2px 6px; font-weight: bold;" onclick="toggleSessionReadonly('${escapedSessionId}', true)" title="Cliquer pour désactiver la lecture seule">📖 Lecture seule</span>`;
+        } else {
+            statusHtml = `<span class="session-open clickable-status" onclick="toggleSessionState('${escapedSessionId}', true)" title="Cliquer pour fermer">✅ Ouverte</span>`;
+        }
+
         const toggleBtnClass = session.openned ? 'btn-close-session' : 'btn-open-session';
         const toggleBtnText = session.openned ? 'Fermer' : 'Ouvrir';
         const toggleBtnIcon = session.openned ? '🔒' : '🔓';
@@ -362,9 +369,16 @@ function updateSessionsTable() {
                 .map(user => `<span class="badge" style="background: #e67e22;">${user}</span>`).join(' ')
             : '';
         
+        const readonlyBtn = `<button class="btn" style="background: ${session.readonly ? '#27ae60' : '#e67e22'}; color: white; margin-left: 4px;"
+                    onclick="toggleSessionReadonly('${escapedSessionId}', ${session.readonly || false})"
+                    ${serverStopped ? 'disabled' : ''}
+                    title="${session.readonly ? 'Autoriser l\'édition par les étudiants' : 'Mettre en lecture seule pour les étudiants'}">
+                ${session.readonly ? '✏️ Édition' : '📖 Lecture seule'}
+            </button>`;
+
         return `<tr>
             <td><strong>${session.id}</strong></td>
-            <td><span class="${statusClass} clickable-status" onclick="toggleSessionState('${escapedSessionId}', ${session.openned})" title="Cliquer pour basculer l'état">${statusText}</span></td>
+            <td>${statusHtml}</td>
             <td>${groupsBadges}</td>
             <td>${usersBadges}</td>
             <td>${session.total_users || 0}</td>
@@ -376,6 +390,7 @@ function updateSessionsTable() {
                         title="${session.openned ? 'Fermer la session aux étudiants' : 'Ouvrir la session aux étudiants'}">
                     ${toggleBtnIcon} ${toggleBtnText}
                 </button>
+                ${readonlyBtn}
             </td>
         </tr>`;
     }).join('');
@@ -424,6 +439,50 @@ async function toggleSessionState(sessionId, currentState) {
     } catch (e) {
         alert(`Exception réseau : ${e.message}`);
         debugLog(`Exception basculement session: ${e.message}`, 'error');
+    }
+}
+
+// Bascule l'état lecture seule d'une session
+async function toggleSessionReadonly(sessionId, currentReadonly) {
+    if (serverStopped) return;
+    
+    const targetState = !currentReadonly;
+    const actionLabel = targetState ? "passer en lecture seule" : "autoriser l'édition de";
+    
+    if (!confirm(`Voulez-vous vraiment ${actionLabel} la session '${sessionId}' ?`)) {
+        return;
+    }
+    
+    debugLog(`Demande de basculement lecture seule session ${sessionId} vers ${targetState}...`, 'info');
+    
+    try {
+        const response = await fetch('/api/sessions/readonly', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                readonly: targetState
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'success') {
+            debugLog(`Session ${sessionId} : ${result.message}`, 'success');
+            const sess = allData.sessions.find(s => s.id === sessionId);
+            if (sess) {
+                sess.readonly = targetState;
+            }
+            updateSessionsTable();
+            await updateDashboard();
+        } else {
+            const err = result.message || 'Erreur inconnue';
+            alert(`Erreur : ${err}`);
+            debugLog(`Erreur lecture seule session ${sessionId}: ${err}`, 'error');
+        }
+    } catch (e) {
+        alert(`Exception réseau : ${e.message}`);
+        debugLog(`Exception lecture seule session: ${e.message}`, 'error');
     }
 }
 

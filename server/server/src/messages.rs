@@ -141,6 +141,7 @@ pub enum CommandType {
     // Générales
     INIT_SESSION,
     OPEN_SESSION,
+    SET_SESSION_READONLY,
     CLIENT_ARRIVED,
     CLIENT_EXITED,
     NEW_STUDENT,

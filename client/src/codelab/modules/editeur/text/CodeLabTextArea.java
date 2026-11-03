@@ -2,6 +2,9 @@ package codelab.modules.editeur.text;
 
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -79,6 +82,10 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 	private AutoCompletion ac = null;
 
 	private boolean ctrl = false;
+	private boolean isLoading = false;
+	private TextEditor editor;
+	private int typedCharsCount = 0;
+	private int backspaceCount = 0;
 
 	private JMenu menuConvert = new JMenu();
 	private JMenuItem itemTchat = new JMenuItem();
@@ -97,6 +104,7 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 
 	public CodeLabTextArea(TextEditor editor, String ext) {
 		super();
+		this.editor = editor;
 		switch (ext) {
 			case ".py":
 				comment = "##";
@@ -166,9 +174,16 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 		setEnabled(true);
 		requestFocus();
 
-		// KeyListener pour vérifier la touche [ctrl]
+		// KeyListener pour vérifier la touche [ctrl] et compter la frappe
 		addKeyListener(new KeyListener() {
-			public void keyTyped(KeyEvent e) {}
+			public void keyTyped(KeyEvent e) {
+				char c = e.getKeyChar();
+				if (c == KeyEvent.VK_BACK_SPACE || c == 127) {
+					backspaceCount++;
+				} else if (!Character.isISOControl(c)) {
+					typedCharsCount++;
+				}
+			}
 
 			public void keyPressed(KeyEvent e) {
 				int code = e.getKeyCode();
@@ -210,14 +225,25 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 		});
 		*/
 
-		// DocumentListener pour le flag de modification
+		// DocumentListener pour le flag de modification et le déclenchement de l'autosave
 		getDocument().addDocumentListener(new DocumentListener() {
-			public void removeUpdate(DocumentEvent e) {}
-			public void insertUpdate(DocumentEvent e) {}
+			public void removeUpdate(DocumentEvent e) {
+				handleModification();
+			}
+			public void insertUpdate(DocumentEvent e) {
+				handleModification();
+			}
 			public void changedUpdate(DocumentEvent e) {
+				handleModification();
+			}
+			private void handleModification() {
+				if (isLoading) return;
 				if (editor != null) {
 					editor.setModified(true); // Fichier modifié
 					editor.resetCompilationFlag(); // Doit être recompilé
+					if (editor.module != null) {
+						editor.module.triggerDebouncedAutosave();
+					}
 				}
 			}
 		});
@@ -458,9 +484,51 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 			if (tempFile.exists()) tempFile.delete();
 			ExceptionManager.process(e);
 		}
+
+		// Émission des métriques de frappe clavier
+		if (typedCharsCount > 0 || backspaceCount > 0) {
+			if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getClient() != null) {
+				CodeLab.INSTANCE.getClient().logTyping(file.getName(), typedCharsCount, backspaceCount);
+			}
+			typedCharsCount = 0;
+			backspaceCount = 0;
+		}
+	}
+
+	@Override
+	public void paste() {
+		try {
+			Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+			if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+				String text = (String) clipboard.getData(DataFlavor.stringFlavor);
+				if (text != null && !text.isEmpty()) {
+					int len = text.length();
+					int lines = text.split("\r\n|\r|\n", -1).length;
+					String filename = (editor != null && editor.getFile() != null) ? editor.getFile().getName() : "editor";
+					if (lines >= 2 || len >= 30) {
+						CodeLab.logger(String.format("Paste detected in %s: %d characters, %d lines", filename, len, lines));
+						if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getClient() != null) {
+							CodeLab.INSTANCE.getClient().logPaste(filename, len, lines);
+						}
+					}
+				}
+			}
+		} catch (Exception ignored) {
+		}
+
+		super.paste();
+
+		if (editor != null) {
+			editor.setModified(true);
+			editor.resetCompilationFlag();
+			if (editor.module != null) {
+				editor.module.triggerDebouncedAutosave();
+			}
+		}
 	}
 
 	public synchronized void load_content(File file) {
+		isLoading = true;
 		try (	FileReader reader = new FileReader(file);
 				BufferedReader in = new BufferedReader(reader)) {
 
@@ -468,6 +536,12 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 		}
 		catch (Exception e) {
 			ExceptionManager.process(e);
+		}
+		finally {
+			isLoading = false;
+			if (editor != null) {
+				editor.setModified(false);
+			}
 		}
 	}
 }

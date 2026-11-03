@@ -69,9 +69,29 @@ public class UserTable extends JScrollPane {
 
 	private String sessionId;
 	private boolean openned;
+	private boolean readOnly;
 
 	public boolean isSessionClosed() {
 		return !openned;
+	}
+
+	public boolean isReadOnly() {
+		return readOnly;
+	}
+
+	public void setReadOnly(boolean flag) {
+		this.readOnly = flag;
+		updateMenuItems();
+		updateBackgroundColor();
+		table.repaint();
+	}
+
+	public void setOpenned(boolean flag) {
+		this.openned = flag;
+		updateMenuItems();
+		updateBackgroundColor();
+		editor.getEditor().repaint();
+		table.repaint();
 	}
 
 	// Visibilité des colonnes
@@ -84,6 +104,7 @@ public class UserTable extends JScrollPane {
 	// https://www.w3schools.com/colors/colors_picker.asp
 	public static final Color VERY_LIGHT_GREY = new Color(212,212,212);
 	public static final Color COLOR_CLOSED = new Color(255, 230, 230);
+	public static final Color COLOR_READONLY = new Color(255, 250, 225);
 
 	// Items du menu popup
 	private JMenuItem info_0 = new JMenuItem();
@@ -101,6 +122,7 @@ public class UserTable extends JScrollPane {
 	private JMenuItem itemResetPasswd= new JMenuItem();
 	private JMenuItem itemDeconnexion = new JMenuItem();
 	private JMenuItem itemOpenSession = new JMenuItem();
+	private JCheckBoxMenuItem itemReadOnlySession = new JCheckBoxMenuItem();
 	private JMenuItem itemNewStudent = new JMenuItem();
 	private JMenu menuChangeSession = new JMenu();
 	private JMenuItem itemResetHelpFlag = new JMenuItem();
@@ -122,9 +144,14 @@ public class UserTable extends JScrollPane {
 	///////////////////////////////////////////////////
 
 	public UserTable(ModuleEditor editor, List<UserData> ulist, String sessionId, boolean openned) {
+		this(editor, ulist, sessionId, openned, false);
+	}
+
+	public UserTable(ModuleEditor editor, List<UserData> ulist, String sessionId, boolean openned, boolean readOnly) {
 
 		this.sessionId = sessionId;
 		this.openned = openned;
+		this.readOnly = readOnly;
 		this.editor = editor;
 
 		// Créer la table
@@ -332,8 +359,9 @@ public class UserTable extends JScrollPane {
 	}
 
 	private void updateBackgroundColor() {
-		if (openned) table.setBackground(Color.WHITE);
-		else table.setBackground(COLOR_CLOSED);
+		if (!openned) table.setBackground(COLOR_CLOSED);
+		else if (readOnly) table.setBackground(COLOR_READONLY);
+		else table.setBackground(Color.WHITE);
 	}
 
 	private boolean isPresent(UserData udata) {
@@ -363,7 +391,11 @@ public class UserTable extends JScrollPane {
 		itemResetPasswd.setEnabled(isstudent || client_Admin || client_Lehuen);
 		itemDeconnexion.setEnabled((ispresent && isstudent) || client_Admin || client_Lehuen);
 
-		String label0 = openned ? CodeLab.LABEL("UserTable_18b") : CodeLab.LABEL("UserTable_18a");
+		String label0;
+		if (!openned) label0 = CodeLab.LABEL("UserTable_18a");
+		else if (readOnly) label0 = CodeLab.LABEL("UserTable_18c");
+		else label0 = CodeLab.LABEL("UserTable_18b");
+
 		String label1 = isconnected ? CodeLab.LABEL("UserTable_0a1") : CodeLab.LABEL("UserTable_0a2");
 		String label2 = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
 
@@ -390,9 +422,11 @@ public class UserTable extends JScrollPane {
 		itemResetPasswd.setText(String.format(CodeLab.LABEL("UserTable_6"), udata));
 		itemResetHelpFlag.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
 
-		// Ouvrir ou fermer la session + Ajouter un étudiant
+		// Ouvrir ou fermer la session + Lecture seule + Ajouter un étudiant
 		String label3 = openned ? CodeLab.LABEL("UserTable_19b") : CodeLab.LABEL("UserTable_19a");
 		itemOpenSession.setText(String.format(label3, sessionId));
+		itemReadOnlySession.setText(CodeLab.LABEL("UserTable_readOnly"));
+		itemReadOnlySession.setSelected(readOnly);
 		itemNewStudent.setText(String.format(CodeLab.LABEL("itemNewStudent"), sessionId));
 
 		// Sous-menu changement de session
@@ -570,9 +604,10 @@ public class UserTable extends JScrollPane {
 			boolean iscontrolled = udata.isControlled();
 			boolean helpFlag = udata.getHelpFlag();
 
-			// Couleur du fond (selon si la session est ouverte ou fermée)
-			if (openned) setBackground(Color.WHITE);
-			else setBackground(COLOR_CLOSED);
+			// Couleur du fond (selon si la session est ouverte, fermée ou en lecture seule)
+			if (!openned) setBackground(COLOR_CLOSED);
+			else if (readOnly) setBackground(COLOR_READONLY);
+			else setBackground(Color.WHITE);
 			if (isSelected) setBackground(VERY_LIGHT_GREY);
 			if (iscontrolled) setBackground(Color.YELLOW);
 			if (iscontrolled && isSelected) setBackground(new Color(250, 234, 115));
@@ -612,6 +647,17 @@ public class UserTable extends JScrollPane {
 					updateMenuItems();
 					updateBackgroundColor();
 					editor.getEditor().repaint(); // Pour le cadenas
+				}
+			});
+
+			// Mettre la session en lecture seule
+			itemReadOnlySession.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					readOnly = itemReadOnlySession.isSelected();
+					codelab.getClient().setSessionReadOnly(readOnly);
+					updateMenuItems();
+					updateBackgroundColor();
+					table.repaint();
 				}
 			});
 
@@ -820,6 +866,7 @@ public class UserTable extends JScrollPane {
 			add(info_0);
 			add(menuChangeSession);
 			add(itemOpenSession);
+			add(itemReadOnlySession);
 			add(itemNewStudent);
 			add(new JSeparator());
 			add(info_1);

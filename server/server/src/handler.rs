@@ -42,6 +42,7 @@ declare_commands!(
 
     // Gestion des sessions
     SET_SESSION_OPENNED,
+    SET_SESSION_READONLY,
     SET_EDITED_FILE,
 
     // Gestion du contrôle
@@ -126,6 +127,10 @@ pub async fn handle_message(client: &mut Client, message: MessageFromClient) -> 
         SET_SESSION_OPENNED => {
             let flag = message.get_data_bool(0)?;
             client.set_session_openned(&flag).await
+        }
+        SET_SESSION_READONLY => {
+            let flag = message.get_data_bool(0)?;
+            client.set_session_readonly(&flag).await
         }
         SET_EDITED_FILE => {
             let name = message.get_data_str(0)?;

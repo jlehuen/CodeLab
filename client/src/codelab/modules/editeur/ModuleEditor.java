@@ -25,6 +25,7 @@ import com.github.difflib.patch.Patch;
 
 import codelab.AbstractModule;
 import codelab.CodeLab;
+import codelab.Compilateur;
 import codelab.Executeur;
 import codelab.client.CodelabClient;
 import codelab.client.Statut;
@@ -70,7 +71,14 @@ public class ModuleEditor extends AbstractModule {
 
 	public boolean diff = true; // Surlignage des différences en jaune
 	public boolean controlled = false; // Si prise de contrôle (côté student)
+	public boolean readOnlySession = false; // Si session en lecture seule (côté student)
 	protected String tutor; // Nom du tuteur en cas de contrôle
+
+	// Autosave temporisé (Debounced Autosave après pause de frappe)
+	private javax.swing.Timer autosaveTimer;
+	private long lastAutosaveTimestamp = 0;
+	private static final int AUTOSAVE_DEBOUNCE_DELAY_MS = 6000; // 6s de pause après frappe
+	private static final int AUTOSAVE_THROTTLE_MAX_MS = 60000;   // Sauvegarde forcée max après 60s de frappe continue
 
 	///////////////////////////////////////////////////
 	// Constructeur
@@ -100,6 +108,10 @@ public class ModuleEditor extends AbstractModule {
 		splitpane_vertical.setOneTouchExpandable(false);
 		splitpane_vertical.setDividerLocation(VPOS_INIT);
 		setComponent(splitpane_vertical);
+
+		// Initialisation du timer d'autosave (debounce 6 secondes)
+		autosaveTimer = new javax.swing.Timer(AUTOSAVE_DEBOUNCE_DELAY_MS, e -> performDebouncedAutosave());
+		autosaveTimer.setRepeats(false);
 	}
 
 	///////////////////////////////////////////////////
@@ -234,10 +246,49 @@ public class ModuleEditor extends AbstractModule {
 	}
 
 	///////////////////////////////////////////////////
+	// Autosave temporisé (Debounced Autosave)
+	///////////////////////////////////////////////////
+
+	public void triggerDebouncedAutosave() {
+		if (codelab == null) return;
+		if (codelab.isTutor() || codelab.isAdmin()) return;
+		if (editor == null || editor.isBlank() || !editor.editable) return;
+
+		File file = getCurrentFile();
+		if (file == null || FileManager.isEvaluation(file)) return;
+
+		long now = System.currentTimeMillis();
+		// Throttle : si l'étudiant tape en continu depuis plus de 60 secondes, forcer la sauvegarde
+		if (lastAutosaveTimestamp > 0 && (now - lastAutosaveTimestamp) >= AUTOSAVE_THROTTLE_MAX_MS) {
+			if (autosaveTimer != null) autosaveTimer.stop();
+			performDebouncedAutosave();
+			return;
+		}
+
+		if (autosaveTimer != null) {
+			autosaveTimer.restart();
+		}
+	}
+
+	private void performDebouncedAutosave() {
+		if (codelab == null || codelab.isTutor() || codelab.isAdmin()) return;
+		if (editor == null || !editor.isModified()) return;
+
+		File file = getCurrentFile();
+		if (file == null || FileManager.isEvaluation(file)) return;
+
+		lastAutosaveTimestamp = System.currentTimeMillis();
+		saveCurrentFile();
+		CodeLab.logger("Debounced autosave executed for: " + getCurrentFilename());
+	}
+
+	///////////////////////////////////////////////////
 	// Réinitialisation de l'éditeur
 	///////////////////////////////////////////////////
 
 	public void reinit(Statut statut, UserData[] array, String sessionId, boolean openned) {
+		boolean isReadOnly = codelab.getClient() != null && codelab.getClient().isReadOnly(sessionId);
+		this.readOnlySession = isReadOnly;
 
 		// La liste est null si statut n'est pas un TUTOR
 		int vpos = splitpane_vertical.getDividerLocation();
@@ -246,7 +297,7 @@ public class ModuleEditor extends AbstractModule {
 			case STUDENT:
 				// Construction du File Manager
 				manager = new FileManager(this, codelab);
-				manager.setTransferHandlerCapability(true);
+				manager.setTransferHandlerCapability(!readOnlySession);
 				managerScrollPane = new JScrollPane(manager);
 				managerScrollPane.setBorder(BorderFactory.createEmptyBorder());
 				// Arranger la partie gauche
@@ -270,7 +321,7 @@ public class ModuleEditor extends AbstractModule {
 				managerScrollPane.setBorder(BorderFactory.createEmptyBorder());
 				// Construction de la Table des utilisateurs
 				List<UserData> ulist = Arrays.asList(array);
-				usertable = new UserTable(this, ulist, sessionId, openned);
+				usertable = new UserTable(this, ulist, sessionId, openned, readOnlySession);
 				// Arranger la partie gauche
 				splitpane_horizontal.setTopComponent(managerScrollPane);
 				splitpane_horizontal.setBottomComponent(usertable);
@@ -478,13 +529,46 @@ public class ModuleEditor extends AbstractModule {
 		}
 	}
 
+	public static String extractErrorSnippet(File errFile) {
+		if (errFile == null || !errFile.exists()) return null;
+		try {
+			String content = Files.readString(errFile.toPath(), java.nio.charset.StandardCharsets.UTF_8).trim();
+			if (content.isEmpty()) return null;
+			String[] lines = content.split("\r\n|\r|\n", -1);
+			StringBuilder sb = new StringBuilder();
+			int count = 0;
+			for (String l : lines) {
+				String trimmed = l.trim();
+				if (trimmed.isEmpty()) continue;
+				if (sb.length() > 0) sb.append("\n");
+				sb.append(trimmed);
+				count++;
+				if (count >= 8 || sb.length() >= 500) break;
+			}
+			return sb.toString();
+		} catch (Exception ignored) {
+			return null;
+		}
+	}
+
 	public boolean compileFile() {
 		// Modifie le flag compilation_ok de AbstractEditor
+		String filename = getCurrentFilename();
 		boolean ok = editor.compile_file();
 		if (ok) {
 			if (!codelab.isTutor() && !codelab.isAdmin()) {
 				backupCurrentFile();
-				CodeLab.logger("Automatic backup created after successful compilation for: " + getCurrentFilename());
+				CodeLab.logger("Automatic backup created after successful compilation for: " + filename);
+				if (codelab.getClient() != null) {
+					codelab.getClient().logCompile(filename, true, null);
+				}
+			}
+		} else {
+			if (!codelab.isTutor() && !codelab.isAdmin()) {
+				String errorSnippet = extractErrorSnippet(Compilateur.ERR_FILE);
+				if (codelab.getClient() != null) {
+					codelab.getClient().logCompile(filename, false, errorSnippet);
+				}
 			}
 		}
 		return ok;
@@ -589,6 +673,27 @@ public class ModuleEditor extends AbstractModule {
 		codelab.getToolbar().update(); // Actualisation de la barre d'outils
 	}
 
+	public boolean isReadOnlySession() {
+		return readOnlySession;
+	}
+
+	public void setReadOnlySession(boolean value) {
+		readOnlySession = value;
+		if (usertable != null) {
+			usertable.setReadOnly(value);
+		}
+		if (manager != null) {
+			if (codelab.isStudent()) {
+				manager.setTransferHandlerCapability(!value && !controlled);
+			}
+		}
+		if (editor != null) {
+			editor.setEditableConfiguration(getEditableStrategy());
+		}
+		codelab.getToolbar().update();
+		updateFrameTitle();
+	}
+
 	public void open_file(File file, boolean save_flag) {
 		// Pour ouvrir un fichier hors-filemanager (.properties par exemple)
 		if (save_flag) editor.save_content();
@@ -614,7 +719,7 @@ public class ModuleEditor extends AbstractModule {
 		update_UI();
 
 		// Quelques actualisations
-		editor.setEditableConfiguration(true);
+		editor.setEditableConfiguration(getEditableStrategy());
 		editor.getToolbar().setLang(ext);
 		editor.resetCompilationFlag();
 		updateFrameTitle();
@@ -636,6 +741,7 @@ public class ModuleEditor extends AbstractModule {
 			if (codelab.isRunning()) title += " – RUNNING";
 		}
 		if (controlled) title += " – controlled by " + tutor;
+		if (readOnlySession && codelab.isStudent()) title += " – [" + CodeLab.LABEL("ReadOnly_title") + "]";
 
 		codelab.setTitle(title);
 	}
@@ -848,7 +954,7 @@ public class ModuleEditor extends AbstractModule {
 			return true;
 		switch (codelab.getStatut()) {
 			case STANDALONE: return true;
-			case STUDENT: return !controlled;
+			case STUDENT: return !controlled && !readOnlySession;
 			case TUTOR: return (currentUserData != null) && (currentUserData.isControlled() || isCloneCurrentFile());
 			case ADMIN: return (currentUserData != null) && (currentUserData.isControlled() || isCloneCurrentFile());
 			default: return false;

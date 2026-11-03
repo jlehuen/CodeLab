@@ -10,6 +10,7 @@
 // lors de la déconnexion du client.
 
 use crate::{
+    activity::*,
     backups::*,
     connected::*,
     constants::*,
@@ -257,6 +258,11 @@ impl Client {
         let minutes = duration.num_minutes() % 60;
         let seconds = duration.num_seconds() % 60;
         format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+    }
+
+    pub fn connection_duration_secs(&self) -> u64 {
+        let duration = Local::now() - self.since;
+        duration.num_seconds().max(0) as u64
     }
 
     pub fn update_worktime(&self) {
@@ -544,10 +550,38 @@ impl Client {
         Ok(())
     }
 
+    // Pour activer ou désactiver la lecture seule de la session
+    pub async fn set_session_readonly(&self, flag: &bool) -> EmptyResult {
+        let session = self.session.as_ref().unwrap();
+        crate::database::toggle_session_readonly(session, *flag)
+            .map_err(|e| format!("Error setting session readonly: {}", e))?;
+        // Notifier tous les utilisateurs connectés
+        let clients = get_all_clients().await;
+        for client in clients {
+            client.session_readonly(session, flag).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn is_in_readonly_session(&self) -> bool {
+        if let Some(session) = &self.session {
+            get_session_readonly(session).await
+        } else {
+            false
+        }
+    }
+
     // Changement du fichier en cours d'édition
     pub async fn set_edited_file(&mut self, filename: Option<&str>) -> EmptyResult {
         match filename {
             Some(name) => {
+                if self.edited_file.as_deref() != Some(name) {
+                    if self.is_student() {
+                        if let (Some(ref s), Some(ref l)) = (&self.session, &self.login) {
+                            record_view_event(s, l, name);
+                        }
+                    }
+                }
                 self.edited_file = Some(name.to_string());
                 let login = self.login.as_ref().unwrap();
                 // S'assurer que la modification est aussi dans la table des connectés
@@ -569,6 +603,12 @@ impl Client {
     pub async fn set_help_flag(&mut self, flag: &bool) -> EmptyResult {
         self.help_flag = flag.clone();
         let login = self.login.as_ref().unwrap();
+        // Tracer la demande d'aide de l'étudiant
+        if self.is_student() {
+            if let (Some(ref s), Some(ref l)) = (&self.session, &self.login) {
+                record_help_event(s, l, if *flag { "REQUESTED" } else { "CANCELLED" }, None);
+            }
+        }
         // S'assurer que la modification est aussi dans la table des connectés
         set_client_help_flag(login, *flag).await;
         // Notifier les tuteurs de la session
@@ -591,6 +631,10 @@ impl Client {
     
     // Baisser le flag localement ET dans la table des connectés
     pub async fn reset_help_flag(&self, login: &str) -> EmptyResult {
+        // Tracer la résolution de l'aide par le tuteur
+        if let Some(ref s) = self.session {
+            record_help_event(s, login, "RESOLVED", self.login.as_deref());
+        }
         // Modifier directement le flag dans la table des connectés
         if set_client_help_flag(login, false).await {
             // Récupérer le client pour les notifications
@@ -611,6 +655,10 @@ impl Client {
     // Pour créer un dossier vide
     // Le path est de la forme [session]/[login]/...
     pub async fn new_folder(&self, path: &str) -> EmptyResult {
+        if self.is_student() && self.is_in_readonly_session().await {
+            log::warn!("new_folder blocked for student in readonly session: {}", path);
+            return Ok(());
+        }
         let file_path = Path::new(PROG_DIR).join(path);
         if let Err(e) = fs::create_dir(&file_path).await {
             println!("Erreur lors de la création du dossier: {}", e);
@@ -623,9 +671,18 @@ impl Client {
     // Pour créer un fichier vide
     // Le path est de la forme [session]/[login]/...
     pub async fn new_file(&self, path: &str) -> EmptyResult {
+        if self.is_student() && self.is_in_readonly_session().await {
+            log::warn!("new_file blocked for student in readonly session: {}", path);
+            return Ok(());
+        }
         let file_path = Path::new(PROG_DIR).join(path);
         if let Err(e) = File::create(&file_path) {
             println!("Erreur lors de la création du fichier: {}", e);
+        } else if self.is_student() {
+            let mut parts = path.splitn(3, '/');
+            if let (Some(s), Some(l), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
+                record_file_op(s, l, "CREATE", rel, None);
+            }
         }
         // Notifier les tuteurs de la session
         self.notify_tutors_new_file(path).await?;
@@ -635,12 +692,22 @@ impl Client {
     // Pour supprimer un fichier ou un dossier
     // Le path est de la forme [session]/[login]/...
     pub async fn delete_file(&self, path: &str) -> EmptyResult {
+        if self.is_student() && self.is_in_readonly_session().await {
+            log::warn!("delete_file blocked for student in readonly session: {}", path);
+            return Ok(());
+        }
         let file_path = Path::new(PROG_DIR).join(path);
         if file_path.is_file() {
             // Supprimer le fichier
             if let Err(e) = fs::remove_file(&file_path).await {
                 println!("Erreur lors de la suppression du fichier: {}", e);
             } else {
+                if self.is_student() {
+                    let mut parts = path.splitn(3, '/');
+                    if let (Some(s), Some(l), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
+                        record_file_op(s, l, "DELETE", rel, None);
+                    }
+                }
                 // Supprimer aussi les backups
                 if let Err(e) = delete_backup_files(&file_path) {
                     log::warn!("Erreur lors de la suppression des backups pour {}: {}", path, e);
@@ -650,6 +717,11 @@ impl Client {
             // Supprimer le dossier
             if let Err(e) = fs::remove_dir_all(&file_path).await {
                 println!("Erreur lors de la suppression du dossier: {}", e);
+            } else if self.is_student() {
+                let mut parts = path.splitn(3, '/');
+                if let (Some(s), Some(l), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
+                    record_file_op(s, l, "DELETE", rel, None);
+                }
             }
         }
         // Notifier les tuteurs de la session
@@ -660,6 +732,10 @@ impl Client {
     // Pour renommer un fichier
     // Le path est de la forme [session]/[login]/...
     pub async fn rename_file(&self, path: &str, new_name: &str) -> EmptyResult {
+        if self.is_student() && self.is_in_readonly_session().await {
+            log::warn!("rename_file blocked for student in readonly session: {}", path);
+            return Ok(());
+        }
         let old_path = Path::new(PROG_DIR).join(path);
         // Reconstruire le nouveau path
         let parent = old_path.parent().unwrap_or(Path::new(""));
@@ -668,6 +744,12 @@ impl Client {
         if let Err(e) = fs::rename(&old_path, &new_path).await {
             println!("Erreur lors du renommage du fichier: {}", e);
         } else {
+            if self.is_student() {
+                let mut parts = path.splitn(3, '/');
+                if let (Some(s), Some(l), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
+                    record_file_op(s, l, "RENAME", rel, Some(new_name));
+                }
+            }
             // Renommer aussi les backups
             if let Err(e) = rename_backup_files(&old_path, new_name) {
                 log::warn!("Erreur lors du renommage des backups pour {}: {}", path, e);
@@ -681,6 +763,10 @@ impl Client {
     // Pour déplacer un fichier
     // Le path est de la forme [session]/[login]/...
     pub async fn move_file(&self, path: &str, dest_path: &str) -> EmptyResult {
+        if self.is_student() && self.is_in_readonly_session().await {
+            log::warn!("move_file blocked for student in readonly session: {}", path);
+            return Ok(());
+        }
         let old_path = Path::new(PROG_DIR).join(path);
         let filename = old_path.file_name().unwrap_or_default();
         let new_path = Path::new(PROG_DIR).join(dest_path).join(filename);
@@ -688,6 +774,12 @@ impl Client {
         if let Err(e) = fs::rename(&old_path, &new_path).await {
             println!("Erreur lors du déplacement du fichier: {}", e);
         } else {
+            if self.is_student() {
+                let mut parts = path.splitn(3, '/');
+                if let (Some(s), Some(l), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
+                    record_file_op(s, l, "MOVE", rel, Some(dest_path));
+                }
+            }
             // Déplacer aussi les backups
             if let Err(e) = move_backup_files(&old_path, &new_path) {
                 log::warn!("Erreur lors du déplacement des backups pour {}: {}", path, e);
@@ -766,6 +858,10 @@ impl Client {
     // Pour sauvegarder un fichier en provenance d'un client
     // Le path est de la forme [session]/[login]/...
     pub async fn upload_file(&self, path: &str, file_content: &[u8]) -> EmptyResult {
+        if self.is_student() && self.is_in_readonly_session().await {
+            log::warn!("upload_file blocked for student in readonly session: {}", path);
+            return Ok(());
+        }
         let file_path = Path::new(PROG_DIR).join(path);
         if let Some(parent_dir) = file_path.parent() {
             // Extraire le répertoire parent et le créer si nécessaire
@@ -773,6 +869,21 @@ impl Client {
             // Car les dossiers des tuteurs n'existent pas forcément
             ensure_dir_exists(parent_dir)?;
         }
+
+        // Suivi d'activité & calcul de diff textuel pour les étudiants
+        if self.is_student() {
+            let old_content = if file_path.is_file() {
+                std::fs::read(&file_path).ok()
+            } else {
+                None
+            };
+            // Découpage du chemin : [session]/[login]/[relative_file]
+            let mut parts = path.splitn(3, '/');
+            if let (Some(sess), Some(log), Some(rel_file)) = (parts.next(), parts.next(), parts.next()) {
+                record_file_activity(sess, log, rel_file, old_content.as_deref(), file_content);
+            }
+        }
+
         let mut file = std::fs::File::create(&file_path)?;
         file.lock_exclusive()?;
         std::io::Write::write_all(&mut file, file_content)?;
@@ -819,8 +930,10 @@ impl Client {
         Ok(())
     }
 
-    pub async fn log(&mut self, _txt: &str) -> EmptyResult {
-        // Réservé pour la journalisation client future
+    pub async fn log(&mut self, txt: &str) -> EmptyResult {
+        if let (Some(ref session), Some(ref login)) = (&self.session, &self.login) {
+            record_client_log(session, login, txt);
+        }
         Ok(())
     }
 
@@ -898,6 +1011,12 @@ impl Client {
 
         // Envoyer la session compressée au client
         self.send_command(CommandType::INIT_SESSION, data).await?;
+
+        // Notifier le client de l'état de lecture seule de la session
+        let readonly = get_session_readonly(session).await;
+        if readonly {
+            self.session_readonly(session, &true).await?;
+        }
         Ok(())
     }
 
@@ -941,6 +1060,12 @@ impl Client {
     pub async fn open_session(&self, session_id: &str, flag: &bool) -> EmptyResult {
         let data = create_data!(session_id, flag);
         self.send_command(CommandType::OPEN_SESSION, data).await
+    }
+
+    // Pour notifier de la lecture seule d'une session
+    pub async fn session_readonly(&self, session_id: &str, flag: &bool) -> EmptyResult {
+        let data = create_data!(session_id, flag);
+        self.send_command(CommandType::SET_SESSION_READONLY, data).await
     }
 
     // Pour notifier du shutdown du serveur

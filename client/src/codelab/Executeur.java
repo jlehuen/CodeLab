@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import codelab.console.Console;
+import codelab.modules.editeur.ModuleEditor;
 import codelab.modules.editeur.manager.TypeLang;
 import codelab.utils.JupyterUtils;
 import codelab.utils.MyFileUtils;
@@ -294,7 +295,9 @@ public class Executeur implements Runnable {
 		}
 
 		printInfo();
-		codelab.getClient().log2server("Executing " + filename);
+		if (codelab.getClient() != null) {
+			codelab.getClient().logExecute(filename, "STARTED", null, null);
+		}
 		
 		try {
 			// On crée un nouveau fichier ERR_FILE à chaque exécution
@@ -345,26 +348,30 @@ public class Executeur implements Runnable {
 
 			if (halted) {
 				// Programme stoppé
-				codelab.getClient().log2server("HALTED");
+				if (codelab.getClient() != null) codelab.getClient().logExecute(filename, "HALTED", errcode, null);
 				codelab.printToConsole("\n", Console.COLOR_LOG, false);
 				codelab.consoleLog(CodeLab.LABEL("Execution_halted"));
 			} else if (!str.isEmpty()) {
 				// Runtime error (langage C)
-				codelab.getClient().log2server("ERROR");
+				String errorSnippet = ModuleEditor.extractErrorSnippet(ERR_FILE);
+				if (errorSnippet == null || errorSnippet.isEmpty()) errorSnippet = str;
+				if (codelab.getClient() != null) codelab.getClient().logExecute(filename, "ERROR", errcode, errorSnippet);
 				printToConsole(String.format("[codelab] %s (code %d)", str, errcode), Console.COLOR_ERROR, false);
 				codelab.consoleLog(CodeLab.LABEL("Execution_error"));
 			} else if (errorFlag) {
 				// Runtime error (autres langages)
-				codelab.getClient().log2server("ERROR");
+				String errorSnippet = ModuleEditor.extractErrorSnippet(ERR_FILE);
+				if (codelab.getClient() != null) codelab.getClient().logExecute(filename, "ERROR", errcode, errorSnippet);
 				codelab.consoleLog(CodeLab.LABEL("Execution_error"));
 			} else {
 				// Exécution complète
-				codelab.getClient().log2server("DONE");
+				if (codelab.getClient() != null) codelab.getClient().logExecute(filename, "DONE", errcode, null);
 				codelab.consoleLog(CodeLab.LABEL("Execution_completed"));
 			}
 		}
 		catch (Exception e) {
 			ExceptionManager.process(e);
+			if (codelab.getClient() != null) codelab.getClient().logExecute(filename, "ERROR", -1, e.getMessage());
 			codelab.consoleLogErr("[codelab] Execution error: " + e.getMessage());
 		}
 		finally {

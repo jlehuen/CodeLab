@@ -426,6 +426,10 @@ public class NotebookEditor extends AbstractEditor {
 		boolean ok = comp.compile();
 		if (!ok) {
 			targetCell.setRunning(false);
+			if (module != null && module.codelab != null && module.codelab.getClient() != null) {
+				String errorSnippet = ModuleEditor.extractErrorSnippet(Compilateur.ERR_FILE);
+				module.codelab.getClient().logCompile(baseName, false, errorSnippet);
+			}
 			if (module.codelab.getConsole() != null) {
 				module.codelab.getConsole().flush();
 			}

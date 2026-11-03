@@ -12,6 +12,7 @@
 <!ATTLIST session
     id ID #REQUIRED
     openned (true|false) #REQUIRED
+    readonly (true|false) "false"
     groups IDREFS #IMPLIED
     users CDATA #IMPLIED>
 

@@ -778,6 +778,10 @@ public class FileManager extends JTree {
 
 	// Pour exécuter un bloc en mode safe
 
+	private boolean isReadOnlyBlocked() {
+		return editor != null && editor.isReadOnlySession() && codelab.isStudent();
+	}
+
 	private Object safeExecute(Statements bloc) {
 		editor.pauseTimerTasks(); // Stopper les tâches répétitives
 		Object value = bloc.execute(); // Exécuter le bloc d'instructions
@@ -790,6 +794,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	public void new_file() {
+		if (isReadOnlyBlocked()) return;
 		// Déterminer le node parent
 		DefaultMutableTreeNode parent;
 		String parentPath;
@@ -817,6 +822,7 @@ public class FileManager extends JTree {
 	}
 
 	void new_root_file() {
+		if (isReadOnlyBlocked()) return;
 		NewFileDialog dialog = new NewFileDialog(rootPath);
 		String filename = dialog.getFilename();
 		File template = dialog.getTemplate();
@@ -868,6 +874,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void new_folder() {
+		if (isReadOnlyBlocked()) return;
 		NewFolderDialog dialog = new NewFolderDialog();
 		String filename = dialog.getName();
 		if (filename == null) return; // Annulation
@@ -879,6 +886,7 @@ public class FileManager extends JTree {
 	}
 
 	void new_root_folder() {
+		if (isReadOnlyBlocked()) return;
 		NewFolderDialog dialog = new NewFolderDialog();
 		String filename = dialog.getName();
 		if (filename == null) return; // Annulation
@@ -924,6 +932,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void rename_file() {
+		if (isReadOnlyBlocked()) return;
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -965,6 +974,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void rename_folder() {
+		if (isReadOnlyBlocked()) return;
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -1002,6 +1012,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void delete_file() {
+		if (isReadOnlyBlocked()) return;
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -1037,6 +1048,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void delete_folder() {
+		if (isReadOnlyBlocked()) return;
 		Statements bloc = new Statements() {
 			public Object execute() {
 
@@ -1069,6 +1081,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void delete_multiple_files() {
+		if (isReadOnlyBlocked()) return;
 		int reply = JOptionPane.showConfirmDialog(CodeLab.FRAME,
 			LABEL("Confirm_multiple_del"),
 			LABEL("WARNING"), JOptionPane.YES_NO_OPTION);
@@ -1126,6 +1139,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void duplicate_file() {
+		if (isReadOnlyBlocked()) return;
 		FileDescr fd = selectedFileDescr();
 		if (fd == null) return; // Par sécurité
 
@@ -1151,6 +1165,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void backup_file() {
+		if (isReadOnlyBlocked()) return;
 		editor.saveCurrentFile();
 		editor.backupCurrentFile();
 	}
@@ -1160,6 +1175,7 @@ public class FileManager extends JTree {
 	// -----------------------------------------------------------
 
 	void restore_backup(File file, String date) {
+		if (isReadOnlyBlocked()) return;
 		Statements bloc = new Statements() {
 			public Object execute() {
 

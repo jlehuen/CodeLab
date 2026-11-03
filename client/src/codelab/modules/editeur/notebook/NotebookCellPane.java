@@ -18,6 +18,9 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.Shape;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
@@ -807,31 +810,64 @@ public class NotebookCellPane extends JPanel {
 		headerPanel.add(rightBox, BorderLayout.EAST);
 	}
 
+	private RSyntaxTextArea createCellTextArea(String syntaxStyle) {
+		RSyntaxTextArea area = new RSyntaxTextArea() {
+			@Override
+			public void paste() {
+				try {
+					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+					if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+						String text = (String) clipboard.getData(DataFlavor.stringFlavor);
+						if (text != null && !text.isEmpty()) {
+							int len = text.length();
+							int lines = text.split("\r\n|\r|\n", -1).length;
+							String filename = (editor != null && editor.getFile() != null) ? editor.getFile().getName() : "notebook.ipynb";
+							if (lines >= 2 || len >= 30) {
+								CodeLab.logger(String.format("Paste detected in %s (cell): %d characters, %d lines", filename, len, lines));
+								if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getClient() != null) {
+									CodeLab.INSTANCE.getClient().logPaste(filename, len, lines);
+								}
+							}
+						}
+					}
+				} catch (Exception ignored) {}
+
+				super.paste();
+
+				if (editor != null) {
+					editor.setModified(true);
+					if (editor.module != null) {
+						editor.module.triggerDebouncedAutosave();
+					}
+				}
+			}
+		};
+		area.setSyntaxEditingStyle(syntaxStyle);
+		return area;
+	}
+
 	private void createContent(String source) {
 		centerPanel = new JPanel(new BorderLayout());
 		centerPanel.setOpaque(false);
 
 		DocumentListener docListener = new DocumentListener() {
-			public void insertUpdate(DocumentEvent e) { 
-				if (editor != null) editor.setModified(true); 
-				updateCodeAreaRows();
-				NotebookCellPane.this.repaint();
-			}
-			public void removeUpdate(DocumentEvent e) { 
-				if (editor != null) editor.setModified(true); 
-				updateCodeAreaRows();
-				NotebookCellPane.this.repaint();
-			}
-			public void changedUpdate(DocumentEvent e) { 
-				if (editor != null) editor.setModified(true); 
+			public void insertUpdate(DocumentEvent e) { handleDocChange(); }
+			public void removeUpdate(DocumentEvent e) { handleDocChange(); }
+			public void changedUpdate(DocumentEvent e) { handleDocChange(); }
+			private void handleDocChange() {
+				if (editor != null) {
+					editor.setModified(true);
+					if (editor.module != null) {
+						editor.module.triggerDebouncedAutosave();
+					}
+				}
 				updateCodeAreaRows();
 				NotebookCellPane.this.repaint();
 			}
 		};
 
 		// 1. Code cell setup
-		codeArea = new RSyntaxTextArea();
-		codeArea.setSyntaxEditingStyle("c".equalsIgnoreCase(language) ? SyntaxConstants.SYNTAX_STYLE_C : SyntaxConstants.SYNTAX_STYLE_PYTHON);
+		codeArea = createCellTextArea("c".equalsIgnoreCase(language) ? SyntaxConstants.SYNTAX_STYLE_C : SyntaxConstants.SYNTAX_STYLE_PYTHON);
 		codeArea.setAntiAliasingEnabled(true);
 		codeArea.setCodeFoldingEnabled(true);
 		codeArea.setAutoIndentEnabled(true);
@@ -945,8 +981,7 @@ public class NotebookCellPane extends JPanel {
 		});
 
 		// Édition Markdown
-		mdArea = new RSyntaxTextArea();
-		mdArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN);
+		mdArea = createCellTextArea(SyntaxConstants.SYNTAX_STYLE_MARKDOWN);
 		mdArea.setLineWrap(true);
 		mdArea.setWrapStyleWord(true);
 		mdArea.setAntiAliasingEnabled(true);

@@ -16,6 +16,7 @@ mod constants; use constants::*;
 mod properties; use properties::*;
 mod client; use client::*;
 mod backups; use backups::*;
+mod activity; pub use activity::*;
 mod handler; use handler::*;
 mod database; use database::*;
 mod connected; use connected::*;
@@ -311,8 +312,9 @@ async fn client_handle(mut client: Client) -> EmptyResult {
     log::info!("Asking {} for session...", login);
     let message = format!("{}{}", ASK_SESSION, sessions);
     let session = client.send_and_receive(&message).await?;
-    // Enlever la balise CLOSED_TAG si elle est présente
+    // Enlever les balises CLOSED_TAG et READONLY_TAG si elles sont présentes
     let session = session.strip_suffix(CLOSED_TAG).unwrap_or(&session);
+    let session = session.strip_suffix(READONLY_TAG).unwrap_or(&session);
 
     client.set_session(session.to_string()); // Compléter la structure Client
     client.send_string(CONNECTION_OK).await?; // Fin du dialogue synchrone
@@ -321,6 +323,10 @@ async fn client_handle(mut client: Client) -> EmptyResult {
     client.notify_tutors_client_arrived().await?; // Informer les tuteurs présents
     add_client(client.clone(), session).await; // Ajouter le client à la table des connectés
     update_clientdata(&login, &session, &addr); // Actualiser la base de données
+
+    if client.is_student() {
+        record_session_event(&session, &login, "CONNECTED", Some(&addr.to_string()), None);
+    }
 
     //describe_all_clients_to_log().await;
 
@@ -386,6 +392,10 @@ async fn client_handle(mut client: Client) -> EmptyResult {
 
     let duration = client.connection_duration();
     log::info!("The client {} has been disconnected after {} ", login, duration);
+
+    if client.is_student() {
+        record_session_event(&session, &login, "DISCONNECTED", None, Some(client.connection_duration_secs()));
+    }
 
     remove_client(&login).await; // Retirer le client de la table des connectés
 

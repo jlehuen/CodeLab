@@ -159,6 +159,25 @@ pub async fn get_session_openned(session_id: &str) -> bool {
     false // Retourne false si la session n'existe pas
 }
 
+#[allow(dead_code)]
+pub fn set_session_readonly(session_id: &str, flag: &bool) -> bool {
+    let mut dico = SESSIONS_DICO.write().unwrap();
+    if let Some(session) = dico.get_mut(session_id) {
+        session.set_readonly(flag);
+        return true;
+    } else {
+        false
+    }
+}
+
+pub async fn get_session_readonly(session_id: &str) -> bool {
+    let dico = SESSIONS_DICO.read().unwrap();
+    if let Some(session) = dico.get(session_id) {
+        return session.get_readonly()
+    }
+    false // Retourne false si la session n'existe pas
+}
+
 // ----------------------------------------------------------------------------
 // Consolidation de la structure de fichiers (sessions et users)
 // ----------------------------------------------------------------------------
@@ -246,6 +265,7 @@ struct Group {
 
 fn default_str() -> String { "--".to_string() }
 fn is_empty_vec(vec: &Vec<String>) -> bool { vec.is_empty() }
+fn is_false(b: &bool) -> bool { !*b }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct ClientData {
@@ -348,6 +368,9 @@ struct Session {
     id: String,
         #[serde(rename = "@openned")]
     openned: bool,
+        #[serde(rename = "@readonly", default)]
+        #[serde(skip_serializing_if = "is_false")]
+    readonly: bool,
         #[serde(rename = "@groups", default)]
         #[serde(skip_serializing_if = "is_empty_vec")]
         #[serde(serialize_with = "space_separated_serializer")]
@@ -369,9 +392,18 @@ impl Session {
         self.openned
     }
 
+    fn set_readonly(&mut self, flag: &bool) {
+        self.readonly = *flag;
+    }
+
+    fn get_readonly(&self) -> bool {
+        self.readonly
+    }
+
     fn describe(&self) {
         println!("Session : {}", self.id);
         println!("Openned : {}", self.openned);
+        println!("ReadOnly: {}", self.readonly);
         println!("Groups  : {}", self.groups.join(", "));
         println!("Users   : {}", self.users.join(", "));
         //println!("Total   : {}", self.get_userlist().join(", "));
@@ -704,6 +736,7 @@ fn write_xml(file_path: &str) -> Result<(), Box<dyn Error>> {
 // Avec éventuellement un tag [closed] à enlever au moment de la réception
 
 pub const CLOSED_TAG: &str = "[closed]";
+pub const READONLY_TAG: &str = "[readonly]";
 
 pub fn get_sessions(login: &str) -> String {
     // Accès en lecture sur les HashMap
@@ -715,11 +748,13 @@ pub fn get_sessions(login: &str) -> String {
         Some(client) => {
             let mut result = Vec::new();
             for session in sessions_dico.values() {
-                let mut descr = session.id.clone(); // Pour pouvoir ajouter le CLOSED_TAG
+                let mut descr = session.id.clone(); // Pour pouvoir ajouter les tags
                 // Si la session est fermée et que l'utilisateur est un étudiant => on passe à la suivante
                 if !session.openned && client.is_student() { continue; }
                 // Si la session est fermée et que l'utilisateur n'est pas un étudiant => on ajoute le CLOSED_TAG
                 if !session.openned && !client.is_student() { descr += CLOSED_TAG; }
+                // Si la session est en lecture seule => on ajoute le READONLY_TAG
+                if session.readonly { descr += READONLY_TAG; }
                 // Vérifier si l'utilisateur est listé dans les utilisateurs de la session
                 if session.users.contains(&login.to_string()) && !result.contains(&session.id) {
                     result.push(descr.clone());
@@ -834,6 +869,7 @@ pub struct UserDataAdmin {
 pub struct SessionDataAdmin {
     pub id: String,
     pub openned: bool,
+    pub readonly: bool,
     pub groups: String,
     pub users: String,
     pub total_users: usize,
@@ -874,6 +910,7 @@ pub fn get_sessions_all() -> Vec<SessionDataAdmin> {
         result.push(SessionDataAdmin {
             id: session.id.clone(),
             openned: session.openned,
+            readonly: session.readonly,
             groups: session.groups.join(" "),
             users: session.users.join(" "),
             total_users,
@@ -1334,6 +1371,21 @@ pub fn toggle_session_state(session_id: &str, openned: bool) -> Result<bool, Str
     Ok(openned)
 }
 
+// Modifie l'état de lecture seule d'une session et persiste dans sessions.xml
+pub fn toggle_session_readonly(session_id: &str, readonly: bool) -> Result<bool, String> {
+    {
+        let mut dico = SESSIONS_DICO.write().unwrap();
+        if let Some(session) = dico.get_mut(session_id) {
+            session.set_readonly(&readonly);
+        } else {
+            return Err(format!("Session '{}' introuvable", session_id));
+        }
+    }
+    save_database(CONFIG_XML);
+    log::info!("Session '{}' readonly is now {}", session_id, readonly);
+    Ok(readonly)
+}
+
 // Ajoute un nouvel utilisateur et persiste dans sessions.xml
 pub fn add_user(
     login: &str,
@@ -1515,18 +1567,21 @@ mod tests {
             sessions.insert("Session_A".to_string(), Session {
                 id: "Session_A".to_string(),
                 openned: true,
+                readonly: false,
                 groups: vec!["Group_1".to_string()],
                 users: vec![],
             });
             sessions.insert("Session_B".to_string(), Session {
                 id: "Session_B".to_string(),
                 openned: true,
+                readonly: false,
                 groups: vec!["Group_2".to_string()],
                 users: vec![],
             });
             sessions.insert("Session_C".to_string(), Session {
                 id: "Session_C".to_string(),
                 openned: true,
+                readonly: false,
                 groups: vec!["Group_3".to_string()],
                 users: vec![],
             });
@@ -1631,12 +1686,14 @@ mod tests {
             sessions.insert("Session_A".to_string(), Session {
                 id: "Session_A".to_string(),
                 openned: true,
+                readonly: false,
                 groups: vec!["Group_1".to_string()],
                 users: vec![],
             });
             sessions.insert("Session_C".to_string(), Session {
                 id: "Session_C".to_string(),
                 openned: true,
+                readonly: false,
                 groups: vec!["Group_3".to_string()],
                 users: vec![],
             });
@@ -1704,12 +1761,14 @@ mod tests {
             sessions.insert("Session_Src".to_string(), Session {
                 id: "Session_Src".to_string(),
                 openned: true,
+                readonly: false,
                 groups: vec!["Group_Src".to_string()],
                 users: vec![],
             });
             sessions.insert("Session_Dst".to_string(), Session {
                 id: "Session_Dst".to_string(),
                 openned: true,
+                readonly: false,
                 groups: vec!["Group_Dst".to_string()],
                 users: vec![],
             });
@@ -1748,6 +1807,7 @@ mod tests {
             sessions.insert("Session_Toggle".to_string(), Session {
                 id: "Session_Toggle".to_string(),
                 openned: false,
+                readonly: false,
                 groups: vec![],
                 users: vec![],
             });
@@ -1760,6 +1820,29 @@ mod tests {
         let res = toggle_session_state("Session_Toggle", false).unwrap();
         assert!(!res);
         assert!(!SESSIONS_DICO.read().unwrap().get("Session_Toggle").unwrap().openned);
+    }
+
+    #[test]
+    fn test_toggle_session_readonly() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        {
+            let mut sessions = SESSIONS_DICO.write().unwrap();
+            sessions.insert("Session_RO_Test".to_string(), Session {
+                id: "Session_RO_Test".to_string(),
+                openned: true,
+                readonly: false,
+                groups: vec![],
+                users: vec![],
+            });
+        }
+
+        let res = toggle_session_readonly("Session_RO_Test", true).unwrap();
+        assert!(res);
+        assert!(SESSIONS_DICO.read().unwrap().get("Session_RO_Test").unwrap().readonly);
+
+        let res = toggle_session_readonly("Session_RO_Test", false).unwrap();
+        assert!(!res);
+        assert!(!SESSIONS_DICO.read().unwrap().get("Session_RO_Test").unwrap().readonly);
     }
 
     #[test]

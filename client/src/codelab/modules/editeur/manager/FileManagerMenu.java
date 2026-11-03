@@ -218,6 +218,7 @@ public class FileManagerMenu {
 
 	private void showStudentMenu(Point point, DefaultMutableTreeNode selectedNode) {
 		JPopupMenu menu = new JPopupMenu();
+		boolean readOnly = editor.isReadOnlySession();
 
 		if (selectedNode == null) {
 			// Clic dans le fond de l'arbre
@@ -226,14 +227,16 @@ public class FileManagerMenu {
 			menu.add(itemEvalRoot);
 			menu.add(new JSeparator());
 
-			JMenuItem item8 = new JMenuItem(LABEL("New_root_program"));
-			item8.addActionListener(ev -> manager.new_root_file());
-			menu.add(item8);
+			if (!readOnly) {
+				JMenuItem item8 = new JMenuItem(LABEL("New_root_program"));
+				item8.addActionListener(ev -> manager.new_root_file());
+				menu.add(item8);
 
-			JMenuItem item9 = new JMenuItem(LABEL("New_root_folder"));
-			item9.addActionListener(ev -> manager.new_root_folder());
-			menu.add(item9);
-			menu.add(new JSeparator());
+				JMenuItem item9 = new JMenuItem(LABEL("New_root_folder"));
+				item9.addActionListener(ev -> manager.new_root_folder());
+				menu.add(item9);
+				menu.add(new JSeparator());
+			}
 
 			addNavigationControls(menu, false);
 
@@ -253,11 +256,13 @@ public class FileManagerMenu {
 				JMenuItem itemEvalMulti = new JMenuItem(LABEL("menuViewEvaluations"));
 				itemEvalMulti.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
 				menu.add(itemEvalMulti);
-				menu.add(new JSeparator());
 
-				JMenuItem itemDelMulti = new JMenuItem(LABEL("Delete_multiple_files"));
-				itemDelMulti.addActionListener(ev -> manager.delete_multiple_files());
-				menu.add(itemDelMulti);
+				if (!readOnly) {
+					menu.add(new JSeparator());
+					JMenuItem itemDelMulti = new JMenuItem(LABEL("Delete_multiple_files"));
+					itemDelMulti.addActionListener(ev -> manager.delete_multiple_files());
+					menu.add(itemDelMulti);
+				}
 
 				menu.show(manager, point.x, point.y);
 			} else {
@@ -281,22 +286,24 @@ public class FileManagerMenu {
 						menu.add(new JSeparator());
 					}
 
-					JMenuItem itemNewProg = new JMenuItem(String.format(LABEL("New_program"), filename));
-					itemNewProg.addActionListener(ev -> manager.new_file());
-					menu.add(itemNewProg);
+					if (!readOnly) {
+						JMenuItem itemNewProg = new JMenuItem(String.format(LABEL("New_program"), filename));
+						itemNewProg.addActionListener(ev -> manager.new_file());
+						menu.add(itemNewProg);
 
-					JMenuItem itemNewFolder = new JMenuItem(String.format(LABEL("New_folder"), filename));
-					itemNewFolder.addActionListener(ev -> manager.new_folder());
-					menu.add(itemNewFolder);
-					menu.add(new JSeparator());
+						JMenuItem itemNewFolder = new JMenuItem(String.format(LABEL("New_folder"), filename));
+						itemNewFolder.addActionListener(ev -> manager.new_folder());
+						menu.add(itemNewFolder);
+						menu.add(new JSeparator());
 
-					JMenuItem itemRenFolder = new JMenuItem(String.format(LABEL("Rename_folder"), filename));
-					itemRenFolder.addActionListener(ev -> manager.rename_folder());
-					menu.add(itemRenFolder);
+						JMenuItem itemRenFolder = new JMenuItem(String.format(LABEL("Rename_folder"), filename));
+						itemRenFolder.addActionListener(ev -> manager.rename_folder());
+						menu.add(itemRenFolder);
 
-					JMenuItem itemDelFolder = new JMenuItem(String.format(LABEL("Delete_folder"), filename));
-					itemDelFolder.addActionListener(ev -> manager.delete_folder());
-					menu.add(itemDelFolder);
+						JMenuItem itemDelFolder = new JMenuItem(String.format(LABEL("Delete_folder"), filename));
+						itemDelFolder.addActionListener(ev -> manager.delete_folder());
+						menu.add(itemDelFolder);
+					}
 
 					JMenuItem itemDownFolder = new JMenuItem(String.format(LABEL("Download_folder"), filename));
 					itemDownFolder.addActionListener(ev -> manager.download_folder());
@@ -320,44 +327,47 @@ public class FileManagerMenu {
 						menu.add(new JSeparator());
 					}
 
-					JMenuItem itemRen = new JMenuItem(String.format(LABEL("Rename_program"), filename));
-					itemRen.addActionListener(ev -> manager.rename_file());
-					menu.add(itemRen);
+					if (!readOnly) {
+						JMenuItem itemRen = new JMenuItem(String.format(LABEL("Rename_program"), filename));
+						itemRen.addActionListener(ev -> manager.rename_file());
+						menu.add(itemRen);
 
-					JMenuItem itemDel = new JMenuItem(String.format(LABEL("Delete_program"), filename));
-					itemDel.addActionListener(ev -> manager.delete_file());
-					menu.add(itemDel);
+						JMenuItem itemDel = new JMenuItem(String.format(LABEL("Delete_program"), filename));
+						itemDel.addActionListener(ev -> manager.delete_file());
+						menu.add(itemDel);
 
-					JMenuItem itemDup = new JMenuItem(String.format(LABEL("Duplicate_program"), filename));
-					itemDup.addActionListener(ev -> manager.duplicate_file());
-					menu.add(itemDup);
+						JMenuItem itemDup = new JMenuItem(String.format(LABEL("Duplicate_program"), filename));
+						itemDup.addActionListener(ev -> manager.duplicate_file());
+						menu.add(itemDup);
 
-					JMenuItem itemBak = new JMenuItem(String.format(LABEL("Backup_program"), filename));
-					itemBak.addActionListener(ev -> manager.backup_file());
-					menu.add(itemBak);
+						JMenuItem itemBak = new JMenuItem(String.format(LABEL("Backup_program"), filename));
+						itemBak.addActionListener(ev -> manager.backup_file());
+						menu.add(itemBak);
 
-					// Sous-menu backups locaux
-					List<File> backups = BackupManager.backupsList(fd.getFile());
-					if (backups != null && !backups.isEmpty()) {
-						JMenu menuBak = new JMenu(String.format(LABEL("Backups"), filename));
-						for (File bFile : backups) {
-							long size = MyFileUtils.getSize(bFile);
-							String date = BackupManager.getDateFormat(bFile);
-							String txt = size < 1024 ?
-								String.format(LABEL("Restore_backup_1"), date, size) :
-								String.format(LABEL("Restore_backup_2"), date, size / 1024);
-							JMenuItem itemR = new JMenuItem(txt);
-							itemR.addActionListener(ev -> manager.restore_backup(bFile, date));
-							menuBak.add(itemR);
+						// Sous-menu backups locaux
+						List<File> backups = BackupManager.backupsList(fd.getFile());
+						if (backups != null && !backups.isEmpty()) {
+							JMenu menuBak = new JMenu(String.format(LABEL("Backups"), filename));
+							for (File bFile : backups) {
+								long size = MyFileUtils.getSize(bFile);
+								String date = BackupManager.getDateFormat(bFile);
+								String txt = size < 1024 ?
+									String.format(LABEL("Restore_backup_1"), date, size) :
+									String.format(LABEL("Restore_backup_2"), date, size / 1024);
+								JMenuItem itemR = new JMenuItem(txt);
+								itemR.addActionListener(ev -> manager.restore_backup(bFile, date));
+								menuBak.add(itemR);
+							}
+							menu.add(menuBak);
+						} else {
+							JMenuItem itemNoBak = new JMenuItem(LABEL("No_backup"));
+							itemNoBak.setEnabled(false);
+							menu.add(itemNoBak);
 						}
-						menu.add(menuBak);
-					} else {
-						JMenuItem itemNoBak = new JMenuItem(LABEL("No_backup"));
-						itemNoBak.setEnabled(false);
-						menu.add(itemNoBak);
+
+						menu.add(new JSeparator());
 					}
 
-					menu.add(new JSeparator());
 					addNavigationControls(menu, false);
 					menu.show(manager, point.x, point.y);
 				}
