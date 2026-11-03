@@ -301,8 +301,7 @@ codelab/
 │   │   ├── config/             # Configuration templates (server.properties, sessions.xml, DTD)
 │   │   └── Cargo.toml          # Cargo dependencies and metadata
 │   ├── run-server.sh           # Service startup script
-│   ├── kill-server.sh          # Clean service shutdown script
-│   └── update-server.sh        # Secure synchronization script to production server
+│   └── kill-server.sh          # Clean service shutdown script
 │
 ├── mkdocs/                     # Bilingual online documentation sources (MkDocs)
 │   ├── doc-fr/                 # French documentation
@@ -434,7 +433,6 @@ The list of groups, sessions, and authorized users is declared in `sessions.xml`
 From the `server/` directory:
 - `./run-server.sh`: starts the server as a background process with port availability check.
 - `./kill-server.sh`: cleanly terminates the service, flushing disk writes and disconnecting clients gracefully.
-- `./update-server.sh`: securely synchronizes modified files to the remote server, strictly preserving student databases, XML files, and active sessions.
 
 > 📖 **Full Documentation**: For advanced technical details (Tokio async architecture, SMTP alert configuration, timeout management, automated backup rotation, and GDPR compliance), consult the [full server manual](server/README.md).
 

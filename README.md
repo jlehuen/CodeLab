@@ -303,8 +303,7 @@ codelab/
 │   │   ├── config/             # Gabarits de configuration (server.properties, sessions.xml, DTD)
 │   │   └── Cargo.toml          # Dépendances et métadonnées Cargo
 │   ├── run-server.sh           # Script de démarrage du service
-│   ├── kill-server.sh          # Script d'arrêt propre du service
-│   └── update-server.sh        # Synchronisation sécurisée vers le serveur de production
+│   └── kill-server.sh          # Script d'arrêt propre du service
 │
 ├── mkdocs/                     # Sources de la documentation bilingue en ligne (MkDocs)
 │   ├── doc-fr/                 # Documentation en français
@@ -436,7 +435,6 @@ La liste des groupes, sessions et utilisateurs autorisés est déclarée dans `s
 Depuis le dossier `server/` :
 - `./run-server.sh` : démarrage du serveur en tâche de fond avec contrôle de port.
 - `./kill-server.sh` : arrêt propre du service avec finalisation des écritures sur disque et déconnexion ordonnée des clients.
-- `./update-server.sh` : synchronisation incrémentale sécurisée des fichiers modifiés vers le serveur distant avec préservation stricte des bases de données, des fichiers XML et des sessions étudiantes.
 
 > 📖 **Documentation complète** : Pour les détails techniques avancés (architecture asynchrone Tokio, configuration SMTP des alertes, gestion des timeouts, rotation automatique des sauvegardes et conformité RGPD), consultez le [manuel complet du serveur](server/README.md).
 
