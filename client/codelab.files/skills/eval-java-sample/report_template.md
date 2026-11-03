@@ -27,6 +27,10 @@
 
 ---
 
+{radars_visualisation}
+
+---
+
 {analyse_integrite}
 
 ---

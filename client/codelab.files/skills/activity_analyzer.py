@@ -503,6 +503,174 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     res["summary_markdown"] = "\n".join(md_lines)
     return res
 
+def generate_mermaid_radars(data: dict, student_name: str = "Étudiant") -> dict:
+    """
+    Génère deux diagrammes radar Mermaid (syntaxe radar-beta native de CodeLab) :
+    1. Radar des Indicateurs Clés (/20) : Authenticité, Concentration, Débogage, Tests, Architecture, Style
+    2. Radar de Typologie Comportementale Multidimensionnelle (/20) : Autonome, Méthodique, Expérimentateur, Persévérant, Recours Externe/IA, Besoin de Guidage
+    Toutes les valeurs sont harmonisées sur une échelle de 0 à 20.
+    """
+    scores = data.get("scores", {})
+    act = data.get("activity_analysis") or {}
+    ai_data = data.get("ai_analysis") or {}
+    ai_prob = float(ai_data.get("probability_pct", 0.0))
+    
+    # -------------------------------------------------------------
+    # 1. RADAR DES INDICATEURS CLÉS (/20)
+    # -------------------------------------------------------------
+    # Axe 1 : Authenticité de frappe (S_auth)
+    if act.get("active"):
+        auth_val = min(20.0, max(0.0, round(float(act.get("s_auth", 100.0)) / 5.0, 1)))
+    else:
+        auth_val = max(0.0, min(20.0, round(20.0 - (ai_prob / 5.0), 1)))
+
+    # Axe 2 : Concentration locale (100 - I_nav)
+    if act.get("active"):
+        focus_val = min(20.0, max(0.0, round((100.0 - float(act.get("i_nav", 0.0))) / 5.0, 1)))
+    else:
+        focus_val = 18.0
+
+    # Axe 3 : Efficience de débogage (absence d'acharnement)
+    if act.get("active"):
+        i_thrash = float(act.get("i_thrash", 0.0))
+        debug_val = min(20.0, max(0.0, round(20.0 - (i_thrash * 20.0), 1)))
+    else:
+        debug_val = 16.0
+
+    # Axe 4 : Validation & Tests
+    test_score = float(scores.get("tests", data.get("score_transversal", 0.0)))
+    test_max = 2.0 if test_score <= 2.5 else 4.0
+    if test_max > 0:
+        test_val = min(20.0, max(0.0, round((test_score / test_max) * 20.0, 1)))
+    else:
+        test_val = 14.0
+
+    # Axe 5 : Architecture & Conception
+    arch_score = float(scores.get("architecture", data.get("score_p2", scores.get("axe2_architecture", 0.0))))
+    arch_max = 8.0 if arch_score <= 8.5 else (10.0 if arch_score <= 10.5 else 20.0)
+    arch_val = min(20.0, max(0.0, round((arch_score / arch_max) * 20.0, 1)))
+
+    # Axe 6 : Style & Conventions
+    style_score = float(scores.get("style", scores.get("axe3_style", data.get("score_p1", 0.0))))
+    style_max = 4.0 if style_score <= 4.5 else (2.0 if style_score <= 2.5 else 8.0)
+    style_val = min(20.0, max(0.0, round((style_score / style_max) * 20.0, 1)))
+
+    # Assainissement du nom de l'étudiant pour la syntaxe Mermaid
+    import re
+    clean_name = re.sub(r'[\"\'\[\]\{\}\(\)]', '', student_name or "Étudiant").strip()
+    if not clean_name:
+        clean_name = "Étudiant"
+
+    radar_ind_code = f"""```mermaid
+radar-beta
+    title "1. Profil des Indicateurs Clés (/20)"
+    axis auth["Authenticité"], focus["Concentration"], debug["Débogage"], test["Tests & Validation"], arch["Architecture"], style["Style & PEP8"]
+    curve etud["{clean_name}"]{{{auth_val}, {focus_val}, {debug_val}, {test_val}, {arch_val}, {style_val}}}
+    max 20
+    min 0
+    graticule polygon
+```"""
+
+    # -------------------------------------------------------------
+    # 2. RADAR DE TYPOLOGIE COMPORTEMENTALE MULTIDIMENSIONNELLE (/20)
+    # -------------------------------------------------------------
+    note_brute = float(scores.get("note_technique_brute", data.get("note_technique_brute", scores.get("total", data.get("total", 10.0)))))
+    help_reqs = int(act.get("help_requests", 0))
+    burst_cnt = int(act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0))
+    total_runs = int(act.get("compilations", {}).get("total", 0) + act.get("executions", {}).get("total", 0))
+
+    # 1. Autonome
+    auto_score = (note_brute * 0.5) + (auth_val * 0.4) - (help_reqs * 3.0) - (burst_cnt * 4.0)
+    auto_val = min(20.0, max(1.0, round(auto_score, 1)))
+
+    # 2. Méthodique
+    backspaces = int(act.get("typing_backspaces", 0))
+    bonus_bs = 2.0 if backspaces >= 10 else 0.0
+    meth_score = (style_val * 0.45) + (debug_val * 0.45) + bonus_bs - (burst_cnt * 3.0)
+    meth_val = min(20.0, max(1.0, round(meth_score, 1)))
+
+    # 3. Expérimentateur
+    if act.get("active"):
+        if total_runs >= 12:
+            exp_val = 19.0
+        elif total_runs >= 8:
+            exp_val = 16.5
+        elif total_runs >= 4:
+            exp_val = 14.0
+        elif total_runs >= 2:
+            exp_val = 10.0
+        else:
+            exp_val = 6.0
+    else:
+        exp_val = min(20.0, max(5.0, round(test_val * 0.8 + 4.0, 1)))
+
+    # 4. Persévérant
+    ttf = act.get("ttf_avg_sec")
+    if act.get("active"):
+        if ttf is not None:
+            if ttf <= 60.0:
+                pers_val = 19.0
+            elif ttf <= 180.0:
+                pers_val = 16.0
+            elif ttf <= 300.0:
+                pers_val = 12.0
+            else:
+                pers_val = 8.0
+        else:
+            pers_val = 15.0 if total_runs > 0 else 10.0
+    else:
+        pers_val = 15.0
+
+    # 5. Assistance Externe / IA
+    if act.get("active"):
+        ext_score = ((20.0 - auth_val) * 0.5) + ((20.0 - focus_val) * 0.3) + (burst_cnt * 5.0)
+    else:
+        ext_score = (ai_prob / 100.0) * 20.0
+    ext_val = min(20.0, max(0.5, round(ext_score, 1)))
+
+    # 6. Besoin de Guidage
+    q_read_pct = float(act.get("time_quadrants", {}).get("q_read_pct", 0.0))
+    q_edit_pct = float(act.get("time_quadrants", {}).get("q_edit_pct", 50.0))
+    stagnation = 4.0 if (q_read_pct > 40.0 and q_edit_pct < 20.0) else 0.0
+    thrash_penalty = float(act.get("i_thrash", 0.0)) * 12.0
+    guide_score = (help_reqs * 5.0) + stagnation + thrash_penalty + max(0.0, (12.0 - note_brute) * 0.4)
+    guide_val = min(20.0, max(1.0, round(guide_score, 1)))
+
+    radar_prof_code = f"""```mermaid
+radar-beta
+    title "2. Typologie Comportementale Multidimensionnelle (/20)"
+    axis auto["Autonome"], meth["Méthodique"], exp["Expérimentateur"], pers["Persévérant"], ext["Assistance Externe / IA"], guide["Besoin de Guidage"]
+    curve affinite["Affinité Comportementale"]{{{auto_val}, {meth_val}, {exp_val}, {pers_val}, {ext_val}, {guide_val}}}
+    max 20
+    min 0
+    graticule polygon
+```"""
+
+    combined = f"""### 📊 Profil Visuel Multidimensionnel (Diagrammes Radar)
+
+{radar_ind_code}
+
+{radar_prof_code}
+
+> [!NOTE]
+> **Lecture des Radars Comportementaux** :
+> - **Radar 1 (Indicateurs)** : Évalue les piliers de compétence sur 20. Un polygone large et régulier témoigne d'une maîtrise homogène (code, concentration, validation et authenticité).
+> - **Radar 2 (Typologie)** : Mesure l'affinité de l'étudiant avec 6 facettes comportementales. Chaque étudiant conjugue plusieurs traits (ex. profil *Expérimentateur* et *Autonome*, ou *Persévérant* avec *Besoin de Guidage* ponctuel)."""
+
+    return {
+        "radar_indicateurs": radar_ind_code,
+        "radar_profils": radar_prof_code,
+        "radars_markdown": combined,
+        "valeurs_indicateurs": {
+            "auth": auth_val, "focus": focus_val, "debug": debug_val,
+            "test": test_val, "arch": arch_val, "style": style_val
+        },
+        "valeurs_profils": {
+            "auto": auto_val, "meth": meth_val, "exp": exp_val,
+            "pers": pers_val, "ext": ext_val, "guide": guide_val
+        }
+    }
+
 if __name__ == "__main__":
     # Test autonome sur un dossier passé en argument
     target = sys.argv[1] if len(sys.argv) > 1 else "."

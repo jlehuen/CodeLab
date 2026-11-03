@@ -61,6 +61,21 @@ def format_report_markdown(results):
     md.append("")
     md.append("---")
     md.append("")
+
+    try:
+        skills_root = Path(__file__).resolve().parent.parent.parent
+        if str(skills_root) not in sys.path:
+            sys.path.insert(0, str(skills_root))
+        from activity_analyzer import generate_mermaid_radars
+        radars = generate_mermaid_radars(results, student_name or student_id)
+        if radars.get("radars_markdown"):
+            md.append(radars["radars_markdown"])
+            md.append("")
+            md.append("---")
+            md.append("")
+    except Exception:
+        pass
+
     md.append("## 2. Analyse Détaillée")
     md.append("")
     snippets = results.get("snippets", {})

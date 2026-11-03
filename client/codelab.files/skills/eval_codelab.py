@@ -1283,6 +1283,14 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
 | **Note sans malus (IA / Similarité)** | **{note_sans_malus:.1f}** | **/ 20.0** | **Somme technique brute des 3 axes** |
 | **TOTAL GÉNÉRAL (Avec malus)** | **{tot:.1f}** | **/ 20.0** | **{profil}** |"""
 
+    radars_dict = {}
+    try:
+        from activity_analyzer import generate_mermaid_radars
+        radars_dict = generate_mermaid_radars(res, s_name)
+    except Exception:
+        pass
+    radars_visualisation = radars_dict.get("radars_markdown", "")
+
     template_vars = {
         "nom": s_name,
         "student_name": s_name,
@@ -1318,6 +1326,9 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         "similarite": integ["similarite"],
         "similarite_courte": integ["similarite_courte"],
         "analyse_integrite": integ["analyse_integrite"],
+        "radars_visualisation": radars_visualisation,
+        "radar_indicateurs": radars_dict.get("radar_indicateurs", ""),
+        "radar_profils": radars_dict.get("radar_profils", ""),
         "s_auth": (res.get("activity_analysis") or {}).get("s_auth", "N/A"),
         "i_nav": (res.get("activity_analysis") or {}).get("i_nav", "N/A"),
         "ttf": (res.get("activity_analysis") or {}).get("ttf_avg_sec", "N/A"),
@@ -1366,6 +1377,10 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
 ### Tableau Récapitulatif des Notes Calibrées
 
 {scores_table}
+
+---
+
+{radars_visualisation}
 
 ---
 
@@ -1857,6 +1872,14 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
             "eval-intropython", data, identity
         )
 
+    radars_dict = {}
+    try:
+        from activity_analyzer import generate_mermaid_radars
+        radars_dict = generate_mermaid_radars(data, s_name)
+    except Exception:
+        pass
+    radars_visualisation = radars_dict.get("radars_markdown", "")
+
     template_vars = {
         "sujet": data.get("sujet", 1),
         "nom": s_name,
@@ -1880,6 +1903,9 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
         "similarite": integ["similarite"],
         "similarite_courte": integ["similarite_courte"],
         "analyse_integrite": integ["analyse_integrite"],
+        "radars_visualisation": radars_visualisation,
+        "radar_indicateurs": radars_dict.get("radar_indicateurs", ""),
+        "radar_profils": radars_dict.get("radar_profils", ""),
         "s_auth": (res.get("activity_analysis") or {}).get("s_auth", "N/A"),
         "i_nav": (res.get("activity_analysis") or {}).get("i_nav", "N/A"),
         "ttf": (res.get("activity_analysis") or {}).get("ttf_avg_sec", "N/A"),
@@ -1923,6 +1949,10 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
 ### Tableau Récapitulatif des Notes Calibrées
 
 {scores_table}
+
+---
+
+{radars_visualisation}
 
 ---
 
@@ -2119,6 +2149,14 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
             skill_name, data, identity
         )
 
+    radars_dict = {}
+    try:
+        from activity_analyzer import generate_mermaid_radars
+        radars_dict = generate_mermaid_radars(data, s_name)
+    except Exception:
+        pass
+    radars_visualisation = radars_dict.get("radars_markdown", "")
+
     template_vars = {
         "nom": s_name,
         "student_name": s_name,
@@ -2141,6 +2179,9 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
         "similarite": integ["similarite"],
         "similarite_courte": integ["similarite_courte"],
         "analyse_integrite": integ["analyse_integrite"],
+        "radars_visualisation": radars_visualisation,
+        "radar_indicateurs": radars_dict.get("radar_indicateurs", ""),
+        "radar_profils": radars_dict.get("radar_profils", ""),
         "s_auth": (res.get("activity_analysis") or {}).get("s_auth", "N/A"),
         "i_nav": (res.get("activity_analysis") or {}).get("i_nav", "N/A"),
         "ttf": (res.get("activity_analysis") or {}).get("ttf_avg_sec", "N/A"),
@@ -2184,6 +2225,10 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 ### Tableau Récapitulatif des Notes Calibrées
 
 {scores_table}
+
+---
+
+{radars_visualisation}
 
 ---
 
