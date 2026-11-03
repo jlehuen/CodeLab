@@ -196,7 +196,7 @@ def export_csv(results, csv_path, cohort_dir=None):
 
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f, delimiter=';')
-        writer.writerow(["login", "fichiers_c", "compilation", "architecture", "style", "tests", "note_sans_malus", "note_finale", "indice_ia", "alerte_similarite"])
+        writer.writerow(["login", "fichiers_c", "compilation", "architecture", "style", "tests", "note_sans_malus", "note_finale", "indice_ia", "alerte_similarite", "s_auth", "i_nav", "compilations", "executions", "alertes_burst"])
         for r in results:
             sc = r.get("scores", {})
             note_sans_malus = sc.get("note_technique_brute", round(sc.get("syntax", 0) + sc.get("architecture", 0) + sc.get("style", 0) + sc.get("tests", 0), 1))
@@ -204,6 +204,12 @@ def export_csv(results, csv_path, cohort_dir=None):
             ai_str = ai_data.get("verdict", "0% IA (Code authentique)")
             login = r.get("student_id", "")
             sim_str = " | ".join(sim_map.get(login, [])) if login in sim_map else "Aucune"
+            act = r.get("activity_analysis") or {}
+            s_auth_col = f"{act.get('s_auth', '')}%" if act.get("active") else ""
+            i_nav_col = f"{act.get('i_nav', '')}%" if act.get("active") else ""
+            comp_col = act.get("compilations", {}).get("total", "") if act.get("active") else ""
+            exec_col = act.get("executions", {}).get("total", "") if act.get("active") else ""
+            burst_col = (act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0)) if act.get("active") else ""
             writer.writerow([
                 login,
                 len(r.get("c_files", [])),
@@ -214,7 +220,12 @@ def export_csv(results, csv_path, cohort_dir=None):
                 note_sans_malus,
                 sc.get("total", 0),
                 ai_str,
-                sim_str
+                sim_str,
+                s_auth_col,
+                i_nav_col,
+                comp_col,
+                exec_col,
+                burst_col
             ])
 
 def build_cohort_clusters(results, suspicious_logins):

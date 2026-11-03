@@ -161,9 +161,26 @@ def detect_ai_markers(java_files, student_dir=None):
     total_tabs = 0
     total_spaces = 0
     bak_count = 0
+    act_data = None
     if student_dir:
         try:
             bak_count = len(list(Path(student_dir).rglob("*.bak"))) + len(list(Path(student_dir).rglob("*_bak.java")))
+        except Exception:
+            pass
+        try:
+            skills_root = Path(__file__).resolve().parent.parent.parent
+            if str(skills_root) not in sys.path:
+                sys.path.insert(0, str(skills_root))
+            from activity_analyzer import analyze_student_activity
+            act_data = analyze_student_activity(student_dir)
+            if act_data.get("active"):
+                for a in act_data.get("alerts", []):
+                    if "BURST_INSERT" in a:
+                        add_marker("Télémétrie", "chronometrie_instantanee", "burst_insert", a, 0.45)
+                    elif "BURST_NEW_FILE" in a:
+                        add_marker("Télémétrie", "chronometrie_instantanee", "burst_new_file", a, 0.40)
+                if act_data.get("s_auth", 100.0) < 50.0:
+                    add_marker("Télémétrie", "variance_stylometrique", "low_s_auth", f"Score d'authenticité faible ({act_data['s_auth']}%) - Code majoritairement injecté ou collé ({act_data['paste_chars']} caractères collés)", 0.35)
         except Exception:
             pass
 
@@ -298,7 +315,8 @@ def detect_ai_markers(java_files, student_dir=None):
             'total_spaces': total_spaces,
             'files': file_indent
         },
-        'dates_info': dates_info
+        'dates_info': dates_info,
+        'activity_analysis': act_data
     }
 
 def audit_student(folder_path, sessions_xml_path=None):
@@ -581,6 +599,7 @@ def audit_student(folder_path, sessions_xml_path=None):
     ai_info = detect_ai_markers(java_files, student_dir=folder)
     results["ai_analysis"] = ai_info
     results["dates_info"] = ai_info.get("dates_info", {})
+    results["activity_analysis"] = ai_info.get("activity_analysis") or {}
     ai_prob = ai_info.get("probability_pct", 0)
 
     note_sans_malus = round(

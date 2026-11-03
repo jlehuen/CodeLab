@@ -29,6 +29,11 @@ USER_SKILLS_DIR = Path.home() / "codelab.files" / "skills"
 HAL_SKILLS_DIR = Path.home() / "HAL" / "skills"
 DESKTOP_SKILLS_DIR = Path.home() / "Desktop" / "skills"
 
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+if str(USER_SKILLS_DIR) not in sys.path:
+    sys.path.insert(0, str(USER_SKILLS_DIR))
+
 def get_skill_dir(name):
     """Localise le dossier d'un skill dans le projet ou chez l'utilisateur."""
     if not name:
@@ -747,7 +752,7 @@ def extract_eval_scores(llm_text):
 def extract_integrity_indicators(res, plagiarism_info=None):
     """
     Extrait et structure les 3 piliers d'intégrité académique :
-    1. Analyse Chronométrique (séances, étalement, bursts de création instantanée, inversions)
+    1. Analyse Chronométrique & Télémétrie d'Activité (S_auth, I_nav, compilations, exécutions, bursts)
     2. Ruptures Stylométriques (tabulations CodeLab vs 4 espaces ChatGPT, void main vs int main, Doxygen)
     3. Test de Similarité inter-étudiants (Winnowing/Jaccard, détection de plagiat)
     """
@@ -755,32 +760,58 @@ def extract_integrity_indicators(res, plagiarism_info=None):
     markers = ai_data.get("markers", [])
     dates_info = res.get("dates_info", {})
     ind_stats = ai_data.get("indentation_stats", {})
+    act = res.get("activity_analysis") or {}
     
-    # 1. Analyse Chronométrique
+    # 1. Analyse Chronométrique & Télémétrie
     chrono_markers = [m for m in markers if m.get("category") in ("chronometrie_instantanee", "chronometrie_anormale")]
-    distinct_days = dates_info.get("distinct_days", 0)
-    span_days = dates_info.get("span_days", 0)
-    first_d = dates_info.get("first_date", "")
-    last_d = dates_info.get("last_date", "")
     
-    if distinct_days > 0:
-        chrono_base = f"{distinct_days} séance(s) de TP tracée(s) sur {span_days} jour(s) (du {first_d} au {last_d})"
-    else:
-        chrono_base = "Aucun horodatage significatif tracé sur CodeLab"
+    if act.get("active"):
+        s_auth = float(act.get("s_auth", 100.0))
+        i_nav = float(act.get("i_nav", 0.0))
+        bursts = int(act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0))
+        runs = int(act.get("compilations", {}).get("total", 0) + act.get("executions", {}).get("total", 0))
         
-    if chrono_markers:
-        chrono_courte = f"⚠️ {len(chrono_markers)} anomalie(s) temporelle(s)"
-        chrono_lines = [
-            "> [!WARNING]",
-            f"> **Anomalies chronométriques détectées ({len(chrono_markers)} événement(s))** :",
-        ]
-        for cm in chrono_markers:
-            chrono_lines.append(f"> - `{cm.get('file', '')}` : {cm.get('description', '')}")
-        chrono_lines.append(">\n> *Rappel : Un programme complexe produit en quelques secondes ou hors-séance trahit une injection ou un copier-coller de code externe.*")
-        chrono_md = "\n".join(chrono_lines)
+        if s_auth < 50.0 or bursts > 0:
+            chrono_courte = f"⚠️ Injection / Bursts ({bursts} burst(s), S_auth: {s_auth:.0f}%, Inav: {i_nav:.0f}%)"
+        elif s_auth < 85.0 or i_nav > 50.0:
+            chrono_courte = f"🟡 Mixte (S_auth: {s_auth:.0f}%, Inav: {i_nav:.0f}%, {runs} runs)"
+        else:
+            chrono_courte = f"✅ Authentique (S_auth: {s_auth:.0f}%, Inav: {i_nav:.0f}%, {runs} runs)"
+            
+        chrono_md = act.get("summary_markdown", "")
+        if chrono_markers:
+            extra_lines = [
+                "",
+                "> [!WARNING]",
+                f"> **Anomalies d'horodatage de fichiers ({len(chrono_markers)} marqueur(s))** :"
+            ]
+            for cm in chrono_markers:
+                extra_lines.append(f"> - `{cm.get('file', '')}` : {cm.get('description', '')}")
+            chrono_md += "\n" + "\n".join(extra_lines)
     else:
-        chrono_courte = f"Régulière ({distinct_days} séances / {span_days}j)" if distinct_days > 0 else "Neutre (sans trace)"
-        chrono_md = f"✅ **Rythme régulier et authentique** : {chrono_base}. Aucun pic de création instantané suspect (< 60s ou < 5 min)."
+        distinct_days = dates_info.get("distinct_days", 0)
+        span_days = dates_info.get("span_days", 0)
+        first_d = dates_info.get("first_date", "")
+        last_d = dates_info.get("last_date", "")
+        
+        if distinct_days > 0:
+            chrono_base = f"{distinct_days} séance(s) de TP tracée(s) sur {span_days} jour(s) (du {first_d} au {last_d})"
+        else:
+            chrono_base = "Aucun horodatage significatif tracé sur CodeLab"
+            
+        if chrono_markers:
+            chrono_courte = f"⚠️ {len(chrono_markers)} anomalie(s) temporelle(s)"
+            chrono_lines = [
+                "> [!WARNING]",
+                f"> **Anomalies chronométriques détectées ({len(chrono_markers)} événement(s))** :",
+            ]
+            for cm in chrono_markers:
+                chrono_lines.append(f"> - `{cm.get('file', '')}` : {cm.get('description', '')}")
+            chrono_lines.append(">\n> *Rappel : Un programme complexe produit en quelques secondes ou hors-séance trahit une injection ou un copier-coller de code externe.*")
+            chrono_md = "\n".join(chrono_lines)
+        else:
+            chrono_courte = f"Régulière ({distinct_days} séances / {span_days}j)" if distinct_days > 0 else "Neutre (sans trace)"
+            chrono_md = f"✅ **Rythme régulier et authentique** : {chrono_base}. Aucun pic de création instantané suspect (< 60s ou < 5 min)."
 
     # 2. Stylométrie & Analyse d'Indentation
     tot_tabs = ind_stats.get("total_tabs", 0)
@@ -833,9 +864,12 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         similarite_md = "**Travail original authentique** : Analyse croisée de cohorte par n-grams syntaxiques (Jaccard) réalisée sans aucune similarité suspecte détectée sur les exercices à code libre."
 
     # Bloc combiné complet
-    analyse_integrite_block = f"""### 🔬 Analyses d'Intégrité Pédagogique
+    titre_chrono = "#### ⏱️ Télémétrie d'Activité & Dynamique de Session" if act.get("active") else "#### ⏱️ Analyse Chronométrique & Dynamique de Travail"
+    titre_integrite = "### 🔬 Analyses d'Intégrité Pédagogique & Télémétrie" if act.get("active") else "### 🔬 Analyses d'Intégrité Pédagogique"
 
-#### ⏱️ Analyse Chronométrique & Dynamique de Travail
+    analyse_integrite_block = f"""{titre_integrite}
+
+{titre_chrono}
 {chrono_md}
 
 #### 📐 Stylométrie & Respect des Conventions d'Indentation
@@ -1284,6 +1318,11 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         "similarite": integ["similarite"],
         "similarite_courte": integ["similarite_courte"],
         "analyse_integrite": integ["analyse_integrite"],
+        "s_auth": (res.get("activity_analysis") or {}).get("s_auth", "N/A"),
+        "i_nav": (res.get("activity_analysis") or {}).get("i_nav", "N/A"),
+        "ttf": (res.get("activity_analysis") or {}).get("ttf_avg_sec", "N/A"),
+        "telemetrie_short": (res.get("activity_analysis") or {}).get("summary_short", ""),
+        "telemetrie_markdown": (res.get("activity_analysis") or {}).get("summary_markdown", ""),
         "bilan": sec_bilan,
         "points_forts": sec_points_forts,
         "axes_amelioration": sec_ameliorations,
@@ -1422,8 +1461,19 @@ def evaluate_single_c_folder(student_dir, output_file, sessions_xml=None, ai_pro
     jalons = f"{res.get('milestones_present', 0)}/{res.get('milestones_total', 31)}"
     print(f"[DONE] Audit statique comptable : {jalons} jalons validés | Note sans malus : {note_sans_malus}/20 | Note avec malus : {note}/20", flush=True)
 
-    # 1.2 Affichage des analyses d'intégrité à la console
+    # 1.2 Analyse télémétrique d'activité si .activity.jsonl est présent
+    try:
+        from activity_analyzer import analyze_student_activity
+        act_res = analyze_student_activity(student_dir)
+        if act_res.get("active"):
+            res["activity_analysis"] = act_res
+    except Exception:
+        pass
+
+    # 1.3 Affichage des analyses d'intégrité à la console
     integ = extract_integrity_indicators(res, plagiarism_info=plagiarism_info)
+    if res.get("activity_analysis", {}).get("active"):
+        print(f"[INFO] Télémétrie : {res['activity_analysis']['summary_short']}", flush=True)
     print(f"[INFO] Chronométrie : {integ['chronometrie_courte']}", flush=True)
     print(f"[INFO] Stylométrie : {integ['stylometrie_courte']}", flush=True)
     if "🚨" in integ['similarite_courte'] or "⚠️" in integ['similarite_courte']:
@@ -1681,6 +1731,7 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
 
     print("[INFO] Audit des scripts TP4, expressions régulières et calculs Numpy...", flush=True)
     data = audit_student(str(student_dir))
+    res = data
 
     data["student_id"] = identity["student_id"]
     data["student_name"] = identity["student_name"]
@@ -1717,8 +1768,19 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
     p2 = data.get('score_p2', 0)
     print(f"[DONE] Audit statique achevé : P1={p1}/8 | P2={p2}/10 | Sans malus={note_sans_malus}/20 | Avec malus={note}/20", flush=True)
 
+    # Analyse télémétrique d'activité si .activity.jsonl est présent
+    try:
+        from activity_analyzer import analyze_student_activity
+        act_res = analyze_student_activity(student_dir)
+        if act_res.get("active"):
+            data["activity_analysis"] = act_res
+    except Exception:
+        pass
+
     # Affichage des 3 piliers d'intégrité académique à la console
     integ = extract_integrity_indicators(data, plagiarism_info=plagiarism_info)
+    if data.get("activity_analysis", {}).get("active"):
+        print(f"[INFO] Télémétrie : {data['activity_analysis']['summary_short']}", flush=True)
     print(f"[INFO] Chronométrie : {integ['chronometrie_courte']}", flush=True)
     print(f"[INFO] Stylométrie : {integ['stylometrie_courte']}", flush=True)
     if "🚨" in integ['similarite_courte'] or "⚠️" in integ['similarite_courte']:
@@ -1818,6 +1880,11 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
         "similarite": integ["similarite"],
         "similarite_courte": integ["similarite_courte"],
         "analyse_integrite": integ["analyse_integrite"],
+        "s_auth": (res.get("activity_analysis") or {}).get("s_auth", "N/A"),
+        "i_nav": (res.get("activity_analysis") or {}).get("i_nav", "N/A"),
+        "ttf": (res.get("activity_analysis") or {}).get("ttf_avg_sec", "N/A"),
+        "telemetrie_short": (res.get("activity_analysis") or {}).get("summary_short", ""),
+        "telemetrie_markdown": (res.get("activity_analysis") or {}).get("summary_markdown", ""),
         "bilan": sec_bilan,
         "points_forts": sec_points_forts,
         "axes_amelioration": sec_ameliorations,
@@ -1924,6 +1991,7 @@ def evaluate_generic_folder(student_dir, output_file, sessions_xml=None, ai_prop
             data = audit_func(str(student_dir), sessions_xml)
         else:
             data = audit_func(str(student_dir))
+        res = data
     except Exception as e:
         print(f"[FAIL] Exception pendant l'audit: {e}", file=sys.stderr)
         return None
@@ -1961,8 +2029,19 @@ def evaluate_generic_folder(student_dir, output_file, sessions_xml=None, ai_prop
     note_sans_malus = scores.get("note_technique_brute", total)
     print(f"[DONE] Audit achevé | Note sans malus : {note_sans_malus}/20 | Note avec malus : {total}/20", flush=True)
 
+    # Analyse télémétrique d'activité si .activity.jsonl est présent
+    try:
+        from activity_analyzer import analyze_student_activity
+        act_res = analyze_student_activity(student_dir)
+        if act_res.get("active"):
+            data["activity_analysis"] = act_res
+    except Exception:
+        pass
+
     # Affichage des 3 piliers d'intégrité académique à la console
     integ = extract_integrity_indicators(data, plagiarism_info=plagiarism_info)
+    if data.get("activity_analysis", {}).get("active"):
+        print(f"[INFO] Télémétrie : {data['activity_analysis']['summary_short']}", flush=True)
     print(f"[INFO] Chronométrie : {integ['chronometrie_courte']}", flush=True)
     print(f"[INFO] Stylométrie : {integ['stylometrie_courte']}", flush=True)
     if "🚨" in integ['similarite_courte'] or "⚠️" in integ['similarite_courte']:
@@ -2062,6 +2141,11 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
         "similarite": integ["similarite"],
         "similarite_courte": integ["similarite_courte"],
         "analyse_integrite": integ["analyse_integrite"],
+        "s_auth": (res.get("activity_analysis") or {}).get("s_auth", "N/A"),
+        "i_nav": (res.get("activity_analysis") or {}).get("i_nav", "N/A"),
+        "ttf": (res.get("activity_analysis") or {}).get("ttf_avg_sec", "N/A"),
+        "telemetrie_short": (res.get("activity_analysis") or {}).get("summary_short", ""),
+        "telemetrie_markdown": (res.get("activity_analysis") or {}).get("summary_markdown", ""),
         "bilan": sec_bilan,
         "points_forts": sec_points_forts,
         "axes_amelioration": sec_ameliorations,
