@@ -119,20 +119,24 @@ Chaque compétence s'appuie sur une structure standardisée :
 
 ## 5. Fonctionnement Hybride & Configuration IA
 
-Le moteur d'évaluation CodeLab adopte une architecture **hybride et éthique** :
+Le moteur d'évaluation CodeLab adopte une architecture **hybride et éthique** alliant la rigueur de l'analyse statique locale à la personnalisation du retour pédagogique :
 
-### 5.1. Notes 100 % Déterministes & Hors-Ligne
-- **Calcul objectif local** : L'analyse syntaxique (AST Python, compilateur GCC/Clang ou Javac), la vérification des critères et le calcul de la note finale sur 20 points sont **exclusivement exécutés en local par Python**.
-- **Équité absolue** : La note chiffrée est strictement déterministe et identique avec ou sans activation de l'IA.
-- **Intégrité académique** : Les analyses de similarité inter-étudiants (Winnowing / n-grams) et de cohérence temporelle sont calculées localement sans aucun envoi de code à des services tiers.
+### 5.1. Une Méthodologie Hybride & Déterministe
+- **Analyse statique locale (100 % hors-ligne)** : Le code étudiant est d'abord analysé localement sans appel réseau (contrôle de syntaxe, analyse d'arbre syntaxique AST Python, Clang ou Javac, validation des jalons pédagogiques et détection d'anti-patterns de programmation).
+- **Intégrité absolue de la notation** : La note sur 20 points est calculée de manière déterministe par des règles objectives locales. **Elle est rigoureusement identique avec ou sans IA**.
+- **Calibration réaliste** : Le barème évite les notes de complaisance : la progression est évaluée selon l'autonomie démontrée et les étapes franchies, garantissant une note juste et représentative du niveau réel de l'étudiant.
 
-### 5.2. Rôle de l'IA (Optionnelle)
-L'IA intervient uniquement pour la **rédaction pédagogique** :
-- À partir du diagnostic factuel chiffré, elle formule des appréciations personnalisées, encourageantes et bienveillantes.
-- Elle propose des conseils de remédiation socratiques (explications méthodologiques plutôt que des solutions toutes faites).
+### 5.2. Détection d'Authenticité & Contrôle du Plagiat
+- **Détection d'assistance IA** : Analyse multi-critères croisant la conformité de l'écosystème (détection de bibliothèques ou syntaxes hors programme), la chronométrie de développement et les ruptures stylométriques d'indentation.
+- **Similarités inter-étudiants** : Détection automatique des copier-coller entre étudiants (algorithme Winnowing et n-grams syntaxiques), avec génération d'une matrice de similarité et d'un rapport de cohorte (`scripts/audit_cohort.py`).
+
+### 5.3. Rôle de l'IA : Guidance Socratique Bienveillante
+Pour l'instant, seul le LLM **Google Gemini** est implémenté. Lorsqu'une clé d'API est configurée :
+- **Diagnostic ciblé** : L'IA ne reçoit que le bilan factuel (scores fixés, jalons validés et courts extraits de code ciblés).
+- **Posture socratique** : L'IA n'attribue pas la note, elle se charge uniquement de rédiger la fiche individuelle en adoptant une posture d'enseignant bienveillant. Elle formule des questions ouvertes et guide l'étudiant vers l'auto-remédiation plutôt que de fournir une solution brute.
 - **Mode déconnecté** : En l'absence de clé API ou en cas de coupure réseau, un compte-rendu textuel déterministe est généré sans bloquer l'évaluation.
 
-### 5.3. Configuration & Gestion du Cache
+### 5.4. Configuration & Gestion du Cache
 
 La configuration s'effectue dans `~/codelab.files/userdata/user.properties` :
 ```properties

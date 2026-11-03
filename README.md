@@ -255,28 +255,14 @@ Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (
 
 ## Évaluation pédagogique automatisée & IA
 
-CodeLab intègre un système modulaire d'**évaluation formative continue** (*skills*), articulé autour d'une méthodologie hybride alliant la rigueur de l'analyse statique locale à la personnalisation du retour pédagogique.
+CodeLab intègre un système modulaire d'**évaluation formative continue** (*skills*), articulé autour d'une méthodologie hybride :
 
-### 1. Une Méthodologie Hybride & Déterministe
-- **Analyse statique locale (100 % hors-ligne)** : Le code étudiant est d'abord analysé localement sans appel réseau (contrôle de syntaxe, analyse d'arbre syntaxique AST, validation des jalons pédagogiques et détection d'anti-patterns de programmation).
-- **Intégrité absolue de la notation** : La note sur 20 points est calculée de manière déterministe par des règles objectives locales. **Elle est rigoureusement identique avec ou sans IA**.
-- **Calibration réaliste** : Le barème évite les notes de complaisance : la progression est évaluée selon l'autonomie démontrée et les étapes franchies, garantissant une note juste et représentative du niveau réel de l'étudiant.
+- **Notation 100 % déterministe et locale** : Le code étudiant est audité hors-ligne (syntaxe, analyse AST, exécution de tests, respect des consignes et barème sur 20 points). La note est objective et rigoureusement identique avec ou sans recours à l'IA.
+- **Contrôle d'authenticité** : Détection des anti-patterns, analyse des ruptures de style et repérage des similarités inter-étudiants (plagiat).
+- **Accompagnement pédagogique par IA** : Si une clé d'API (Google Gemini) est configurée, l'IA génère une appréciation socratique et personnalisée guidant l'étudiant vers l'auto-remédiation, sans jamais attribuer la note elle-même.
+- **Restitution complète** : Génération de fiches individuelles en Markdown (consultables dans le visualiseur intégré) et export CSV des résultats de promotion pour la scolarité.
 
-### 2. Détection d'Authenticité & Contrôle du Plagiat
-- **Détection d'assistance IA** : Analyse multi-critères croisant la conformité de l'écosystème (détection de bibliothèques ou syntaxes hors programme), la chronométrie de développement et les ruptures stylométriques d'indentation.
-- **Similarités inter-étudiants** : Détection automatique des copier-coller entre étudiants (algorithme Winnowing et n-grams syntaxiques), avec génération d'une matrice de similarité et d'un rapport de cohorte.
-
-### 3. Rôle de l'IA : Guidance Socratique Bienveillante
-Pour l'instant, seul le LLM **Google Gemini** est implémenté. Lorsqu'une clé d'API est configurée :
-- **Diagnostic ciblé** : L'IA ne reçoit que le bilan factuel (scores fixés, jalons validés et courts extraits de code ciblés).
-- **Posture socratique** : L'IA n'attribue pas la note, elle se charge uniquement de rédiger la fiche individuelle en adoptant une posture d'enseignant bienveillant. Elle formule des questions ouvertes et guide l'étudiant vers l'auto-remédiation plutôt que de fournir une solution brute.
-- **Performance & Cache** : Fonctionne dans le quota gratuit de Google AI Studio (Free Tier). Un cache local persistant évite toute consommation de requêtes si le code de l'étudiant n'a pas été modifié.
-
-### 4. Restitution Enseignant
-- **Fiches individuelles Markdown** consultables directement dans CodeLab ou dans le navigateur.
-- **Synthèse de promotion & Export CSV** générés instantanément pour les relevés de notes.
-
-> 📖 Pour en savoir plus sur l'architecture, la configuration de l'API et la création de nouvelles grilles d'évaluation, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
+> 📖 Pour découvrir l'architecture détaillée, la configuration de l'API et la création de grilles d'évaluation personnalisées, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
 
 <p align="center">
   <br>
@@ -293,9 +279,14 @@ codelab/
 │   ├── src/                    # Sources Java (package codelab)
 │   │   ├── client/             # Protocole réseau client-serveur (MessagePack)
 │   │   ├── controllers/        # Gestion des périphériques (JInput, joysticks, etc.)
-│   │   ├── modules/            # Modules interactifs et simulateurs PAC
-│   │   └── utils/              # Cryptographie, parseurs, compression Tar/Zstd
-│   ├── data/                   # Ressources graphiques, sons, syntaxes de langages
+│   │   ├── eval/               # Orchestration locale des évaluations pédagogiques
+│   │   ├── finders/            # Détection automatique des compilateurs et interpréteurs
+│   │   ├── modules/            # Éditeurs (code, Markdown, carnets .ipynb) et simulateurs intégrés
+│   │   └── utils/              # Rendu Markdown/LaTeX/Mermaid, cryptographie, compression Tar/Zstd
+│   ├── codelab.files/          # Environnement local utilisateur, skills d'évaluation et CDK
+│   │   ├── hidden/CDK/         # Kit de développement de plugins (CodeLab Development Kit)
+│   │   └── skills/             # Grilles d'évaluation automatisées, analyse AST et scripts IA
+│   ├── data/                   # Ressources graphiques, sons, polices, syntaxes de langages
 │   ├── hidden/codelab/         # Bibliothèques tierces (FlatLaf, JInput, etc.)
 │   ├── natives/                # Bibliothèques natives C/C++ par OS (.dylib, .so, .dll)
 │   ├── build.xml               # Fichier de build Apache Ant
@@ -309,16 +300,22 @@ codelab/
 ├── server/                     # Serveur d'infrastructure
 │   ├── server/                 # Serveur asynchrone Rust (Tokio)
 │   │   ├── src/                # Code source Rust (main, database, network, admin)
-│   │   ├── config/             # Gabarits de configuration (server.properties, sessions.xml)
+│   │   ├── config/             # Gabarits de configuration (server.properties, sessions.xml, DTD)
 │   │   └── Cargo.toml          # Dépendances et métadonnées Cargo
 │   ├── run-server.sh           # Script de démarrage du service
-│   └── kill-server.sh          # Script d'arrêt propre du service
+│   ├── kill-server.sh          # Script d'arrêt propre du service
+│   └── update-server.sh        # Synchronisation sécurisée vers le serveur de production
+│
+├── mkdocs/                     # Sources de la documentation bilingue en ligne (MkDocs)
+│   ├── doc-fr/                 # Documentation en français
+│   └── doc-en/                 # Documentation en anglais
 │
 ├── VERSION                     # Source unique du numéro de version
 ├── .gitignore
 ├── .gitattributes
 ├── .editorconfig
 ├── LICENSE
+├── README.en.md
 └── README.md
 ```
 

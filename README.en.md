@@ -253,26 +253,12 @@ The complete catalog, source archives (`.zip`), precompiled packages (`.pac`), a
 
 ## Automated Pedagogical Evaluation & AI
 
-CodeLab integrates a modular **continuous formative assessment** system (*skills*), built upon a hybrid methodology combining the rigor of local static analysis with personalized pedagogical feedback.
+CodeLab integrates a modular **continuous formative assessment** system (*skills*), built upon a hybrid methodology:
 
-### 1. A Hybrid & Deterministic Methodology
-- **Local static analysis (100% offline)**: Student code is first analyzed locally without any network requests (syntax checking, AST syntax tree analysis, learning milestones validation, and code anti-pattern detection).
-- **Absolute scoring integrity**: The 20-point grade is calculated deterministically through objective local rules. **It is strictly identical with or without AI**.
-- **Realistic calibration**: The rubric avoids grade inflation: progress is evaluated based on demonstrated autonomy and completed milestones, guaranteeing a fair assessment representative of the student's true level.
-
-### 2. Authenticity Detection & Plagiarism Control
-- **AI assistance detection**: Multi-criteria analysis cross-referencing ecosystem compliance (detecting out-of-curriculum libraries or constructs), development timeline, and stylometric indentation breaks.
-- **Peer similarity detection**: Automated copy-paste detection between students (Winnowing algorithm and syntactic n-grams), generating a similarity matrix and cohort report.
-
-### 3. Role of AI: Benevolent Socratic Guidance
-Currently, only **Google Gemini** is implemented. When an API key is configured:
-- **Targeted diagnosis**: The AI only receives factual data (fixed scores, validated milestones, and short targeted code snippets).
-- **Socratic posture**: The AI does not assign grades; it is solely tasked with writing the individual student report adopting a supportive, caring instructor stance. It asks open-ended questions and guides students toward self-remediation rather than handing out raw solutions.
-- **Performance & Cache**: Operates within Google AI Studio's Free Tier quotas. A persistent local cache avoids consuming requests if the student's code has not changed.
-
-### 4. Instructor Feedback & Reports
-- **Individual Markdown reports** viewable directly within CodeLab or in a web browser.
-- **Cohort summary & CSV export** generated instantly for grade recording.
+- **100% deterministic & local grading**: Student code is audited offline (syntax, AST analysis, automated unit tests, rubric criteria on 20 points). The grade is objective and strictly identical with or without AI.
+- **Authenticity & anti-plagiarism checks**: Anti-pattern detection, stylometric break analysis, and peer-to-peer similarity detection.
+- **Socratic AI guidance**: If an API key (Google Gemini) is configured, the AI crafts a personalized, benevolent assessment report guiding the student toward self-remediation, without ever calculating or altering the grade.
+- **Comprehensive reporting**: Individual Markdown reports (viewable in the built-in viewer) and instant CSV export for student records.
 
 > 📖 To learn more about architecture, API configuration, and authoring new assessment rubrics, consult the [evaluation skills guide](client/codelab.files/skills/README.md).
 
@@ -291,9 +277,14 @@ codelab/
 │   ├── src/                    # Java source code (codelab package)
 │   │   ├── client/             # Client-server network protocol (MessagePack)
 │   │   ├── controllers/        # Device controllers (JInput, joysticks, etc.)
-│   │   ├── modules/            # Interactive modules and PAC simulators
-│   │   └── utils/              # Cryptography, parsers, Tar/Zstd compression
-│   ├── data/                   # Graphics, sounds, language syntax resources
+│   │   ├── eval/               # Local automated pedagogical assessment orchestration
+│   │   ├── finders/            # Automatic discovery of compilers and interpreters
+│   │   ├── modules/            # Editors (code, Markdown, .ipynb notebooks) & built-in simulators
+│   │   └── utils/              # Markdown/LaTeX/Mermaid rendering, cryptography, Tar/Zstd compression
+│   ├── codelab.files/          # Local user environment, assessment skills, and CDK
+│   │   ├── hidden/CDK/         # Plugin development kit (CodeLab Development Kit)
+│   │   └── skills/             # Assessment rubrics, AST analysis, and AI feedback scripts
+│   ├── data/                   # Graphics, sounds, fonts, language syntax resources
 │   ├── hidden/codelab/         # Third-party libraries (FlatLaf, JInput, etc.)
 │   ├── natives/                # Native C/C++ libraries per OS (.dylib, .so, .dll)
 │   ├── build.xml               # Apache Ant build file
@@ -307,16 +298,22 @@ codelab/
 ├── server/                     # Infrastructure server
 │   ├── server/                 # Asynchronous Rust server (Tokio)
 │   │   ├── src/                # Rust source code (main, database, network, admin)
-│   │   ├── config/             # Configuration templates (server.properties, sessions.xml)
+│   │   ├── config/             # Configuration templates (server.properties, sessions.xml, DTD)
 │   │   └── Cargo.toml          # Cargo dependencies and metadata
 │   ├── run-server.sh           # Service startup script
-│   └── kill-server.sh          # Clean service shutdown script
+│   ├── kill-server.sh          # Clean service shutdown script
+│   └── update-server.sh        # Secure synchronization script to production server
+│
+├── mkdocs/                     # Bilingual online documentation sources (MkDocs)
+│   ├── doc-fr/                 # French documentation
+│   └── doc-en/                 # English documentation
 │
 ├── VERSION                     # Single source of truth for version numbering
 ├── .gitignore
 ├── .gitattributes
 ├── .editorconfig
 ├── LICENSE
+├── README.en.md
 └── README.md
 ```
 
