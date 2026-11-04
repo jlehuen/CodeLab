@@ -240,20 +240,31 @@ public class UserData {
 			sb.append(" <font color='#555555'>(").append(login).append(")</font>");
 		}
 		sb.append("<hr style='margin:4px 0;'/>");
+
+		// info_1 : Nom + connexion
 		if (isPresent) {
 			sb.append("<font color='#27ae60'><b>• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0a1"), fullname != null ? fullname : "")).append("</b></font><br/>");
 		} else {
 			sb.append("<font color='#7f8c8d'>• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0a2"), fullname != null ? fullname : "")).append("</font><br/>");
 		}
+
+		// info_2 : Date
 		String sdate = (date != null && !date.isBlank()) ? date : "--";
 		sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0b"), sdate)).append("<br/>");
+
+		// info_3 : Adresse
 		String saddr = (addr != null && !addr.isBlank()) ? addr : "--";
 		sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0c"), saddr)).append("<br/>");
+
+		// info_4 : Session
 		String ssession = (sessionId != null && !sessionId.isBlank()) ? sessionId : "--";
 		sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0d"), ssession)).append("<br/>");
+
+		// info_5 : Statut
 		if (statut != null) {
 			sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0e"), statut.toString())).append("<br/>");
 		}
+
 		if (groups != null && !groups.isBlank()) {
 			sb.append("• ").append(codelab.CodeLab.LABEL("UserTable_t3")).append(" : <b>").append(groups).append("</b><br/>");
 		}
