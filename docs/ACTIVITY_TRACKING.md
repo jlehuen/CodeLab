@@ -33,16 +33,16 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    E["1. ÉTUDIANT (Client Java Swing)<br/>Édition de code, frappes, alt-tab, exécutions"]
-    -->|"Sondes légères (&le; 1 Ko/min)"| S["2. SERVEUR RUST (Tokio)<br/>• Calcul incrémental S_auth et I_nav en direct<br/>• Détection continue des alertes BURST / THRASH<br/>• Automate d'auto-extinction Auto-Clear"]
+    E["<b>1. ÉTUDIANT (Client Java Swing)</b><br/>──────────────────────────────────────────────────────────<br/>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests"]
+    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b><br/>──────────────────────────────────────────────────────────<br/>• Traçabilité temps réel, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)"]
 
-    S -->|"Diffusion instantanée MsgPack"| T["3. POSTE TUTEUR (UserTable)<br/>• Badges prioritaires : 🚨 Burst (+1), ⚠️ Blocage<br/>• Score d'authenticité affiché en direct<br/>• Infobulle HTML complète au survol"]
-    T -.->|"Acquittement clic droit (RESET_USER_ALERT)"| S
+    S -->|"Diffusion instantanée d'état (MsgPack)"| T["<b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b><br/>──────────────────────────────────────────────────────────<br/>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol"]
+    T -.->|"Acquittement manuel clic droit (RESET_USER_ALERT)"| S
 
-    S ==>|"Journalisation append-only continue"| J[("Journal d'activité immuable<br/>.activity.jsonl sur disque")]
+    S ==>|"Journalisation append-only continue"| J[("<b>Journal d'Activité Immuable (.activity.jsonl)</b><br/>──────────────────────────────────────────────────────────<br/>Fichiers d'événements append-only sécurisés persistés sur disque")]
 
-    J --> A["4. MOTEUR D'AUDIT (Skills Python / CDK)<br/>• Découpage en tranches temporelles de 15 min<br/>• Qualification automatique dans les 6 profils didactiques"]
-    A --> R["5. BILAN PÉDAGOGIQUE<br/>• Double radar Mermaid étalonné sur 20 points<br/>• Valorisation de la démarche d'apprentissage"]
+    J --> A["<b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Skills Python / CDK)</b><br/>──────────────────────────────────────────────────────────<br/>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types"]
+    A --> R["<b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b><br/>──────────────────────────────────────────────────────────<br/>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort"]
 ```
 
 ### Principes Fondamentaux de Conception
