@@ -1,5 +1,6 @@
 package codelab.modules.editeur.usertable;
 
+import codelab.utils.IpLocationService;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -648,6 +649,16 @@ public class UserTable extends JScrollPane {
 		}
 	}
 
+	private int getUsersCountWithIp(String ip) {
+		if (ip == null || ip.isBlank() || ip.equals("--")) return 0;
+		int count = 0;
+		for (int row = 0; row < model.getRowCount(); row++) {
+			Object val = model.getValueAt(row, 3);
+			if (ip.equals(val)) count++;
+		}
+		return count;
+	}
+
 	///////////////////////////////////////////////////
 	// Classe interne du renderer
 	///////////////////////////////////////////////////
@@ -679,6 +690,10 @@ public class UserTable extends JScrollPane {
 			if (column == 0) {
 				setHorizontalAlignment(JLabel.LEFT);
 				((JLabel)comp).setToolTipText(udata.buildUserInfoTooltipHtml(isPresent(udata)));
+			} else if (column == 3) {
+				setHorizontalAlignment(JLabel.CENTER);
+				int ipCount = getUsersCountWithIp(udata.getAddress());
+				((JLabel)comp).setToolTipText(IpLocationService.buildIpTooltipHtml(udata, isPresent(udata), ipCount));
 			} else if (column == 4) {
 				setHorizontalAlignment(JLabel.CENTER);
 				if (udata.hasAlert()) {
