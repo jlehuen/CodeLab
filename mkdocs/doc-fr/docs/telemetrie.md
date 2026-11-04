@@ -35,26 +35,25 @@ flowchart LR
 #### Vue Fonctionnelle : Les Deux Canaux d'Exploitation
 
 ```mermaid
-%%{init: {'themeVariables': { 'fontSize': '18px' }}}%%
+%%{init: {'themeVariables': { 'fontSize': '14px' }}}%%
 flowchart TD
-    classDef default font-size:17px;
-    classDef titleStyle font-size:21px;
+    classDef default font-size:13px;
 
     subgraph C1 ["⚡ CANAL 1 : SUPERVISION TEMPS RÉEL (Pendant la séance)"]
         direction TB
-        E["<span style='font-size:21px'><b>1. ÉTUDIANT (Client Java Swing)</b></span><br/>────────────────────────────────────────────<br/>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests"]
-        -->|"<span style='font-size:15px'>Sondes d'activité légères (≤ 1 Ko/min)</span>"| S["<span style='font-size:21px'><b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b></span><br/>────────────────────────────────────────────<br/>• Traçabilité continue, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)"]
-        -->|"<span style='font-size:15px'>Diffusion instantanée d'état (MsgPack)</span>"| T["<span style='font-size:21px'><b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b></span><br/>────────────────────────────────────────────<br/>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol"]
+        E["<span style='font-size:16px'><b>1. ÉTUDIANT (Client Java Swing)</b></span><br/>────────────────────────────────────────────<br/>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests"]
+        -->|"<span style='font-size:12px'>Sondes d'activité légères (≤ 1 Ko/min)</span>"| S["<span style='font-size:16px'><b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b></span><br/>────────────────────────────────────────────<br/>• Traçabilité continue, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)"]
+        -->|"<span style='font-size:12px'>Diffusion instantanée d'état (MsgPack)</span>"| T["<span style='font-size:16px'><b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b></span><br/>────────────────────────────────────────────<br/>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol"]
     end
 
     subgraph C2 ["📊 CANAL 2 : AUDIT DIFFÉRÉ (Après la séance)"]
         direction TB
-        J[("<span style='font-size:21px'><b>Journal d'Activité Immuable (.activity.jsonl)</b></span><br/>────────────────────────────────────────────<br/>Fichiers d'événements append-only sécurisés persistés sur disque")]
-        -->|"<span style='font-size:15px'>Chargement des traces d'activité</span>"| A["<span style='font-size:21px'><b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Python / CDK)</b></span><br/>────────────────────────────────────────────<br/>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types"]
-        -->|"<span style='font-size:15px'>Génération de la synthèse pédagogique</span>"| R["<span style='font-size:21px'><b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b></span><br/>────────────────────────────────────────────<br/>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort"]
+        J[("<span style='font-size:16px'><b>Journal d'Activité Immuable (.activity.jsonl)</b></span><br/>────────────────────────────────────────────<br/>Fichiers d'événements append-only sécurisés persistés sur disque")]
+        -->|"<span style='font-size:12px'>Chargement des traces d'activité</span>"| A["<span style='font-size:16px'><b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Python / CDK)</b></span><br/>────────────────────────────────────────────<br/>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types"]
+        -->|"<span style='font-size:12px'>Génération de la synthèse pédagogique</span>"| R["<span style='font-size:16px'><b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b></span><br/>────────────────────────────────────────────<br/>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort"]
     end
 
-    C1 ==>|"<span style='font-size:16px'><b>Journalisation append-only continue sur disque</b></span>"| C2
+    C1 ==>|"<span style='font-size:13px'><b>Journalisation append-only continue sur disque</b></span>"| C2
 ```
 
 ### Principes Fondamentaux de Conception
