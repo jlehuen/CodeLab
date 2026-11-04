@@ -431,11 +431,14 @@ public class UserTable extends JScrollPane {
 			if (sessions != null) {
 				for (String sId : sessions) {
 					boolean isOpen = client.isOpen(sId);
+					boolean isReadOnly = client.isReadOnly(sId);
 					boolean isActive = sId.equals(curSession);
 					JMenuItem item = new JMenuItem(sId);
 					if (isActive) item.setText("=> " + sId);
 					item.setEnabled(!isActive);
-					item.setBackground(isOpen ? Color.WHITE : COLOR_CLOSED);
+					if (!isOpen) item.setBackground(COLOR_CLOSED);
+					else if (isReadOnly) item.setBackground(COLOR_READONLY);
+					else item.setBackground(Color.WHITE);
 					item.setOpaque(true);
 					item.addActionListener(new ActionListener() {
 						public void actionPerformed(ActionEvent event) {
