@@ -107,53 +107,54 @@ Le moteur d'analytics ([`activity_analyzer.py`](file:///Users/lehuen/dev/codelab
 
 ### A. Indicateurs d'Intégrité & de Genèse du Code
 
-#### 1. Score d'Authenticité ($S_{\text{auth}}$)
+#### 1. Score d'Authenticité (S_auth)
 Mesure la proportion de matière textuelle rédigée via frappe humaine directe face aux injections massives externes :
 
-$$S_{\text{auth}} = \frac{N_{\text{typed}}}{N_{\text{typed}} + N_{\text{pasted}} + N_{\text{dropped}}} \times 100$$
+$$S_{\mathrm{auth}} = \frac{N_{\mathrm{typed}}}{N_{\mathrm{typed}} + N_{\mathrm{pasted}} + N_{\mathrm{dropped}}} \times 100$$
 
 * **Interprétation** :
-  * $S_{\text{auth}} \ge 70\%$ : **Élevée** (saisie artisanale, appropriation du problème).
-  * $40\% \le S_{\text{auth}} < 70\%$ : **Modérée** (quelques collages ou réutilisations d'exemples).
-  * $S_{\text{auth}} < 40\%$ : **Suspecte / Faible** (forte prédominance d'injections externes ou génération IA).
+  * **S_auth ≥ 70%** : **Élevée** (saisie artisanale, appropriation du problème).
+  * **40% ≤ S_auth < 70%** : **Modérée** (quelques collages ou réutilisations d'exemples).
+  * **S_auth < 40%** : **Suspecte / Faible** (forte prédominance d'injections externes ou génération IA).
 
-#### 2. Indice de Navette Externe ($I_{\text{nav}}$)
+#### 2. Indice de Navette Externe (I_nav)
 Quantifie la tendance de l'étudiant à travailler hors de l'environnement de développement :
 
-$$I_{\text{nav}} = \frac{\sum t_{\text{away}}}{T_{\text{session}}} \times 100$$
+$$I_{\mathrm{nav}} = \frac{\sum t_{\mathrm{away}}}{T_{\mathrm{session}}} \times 100$$
 
 * **Pattern "Prompt IA / Copier-Coller"** :
-  $$\text{FOCUS}(\text{LOST}, \Delta t \in [20\text{s}, 180\text{s}]) \longrightarrow \text{FOCUS}(\text{GAINED}) \longrightarrow \text{PASTE}(\text{chars} \ge 150)$$
-  La détection de ce motif $\ge 3$ fois caractérise un cycle de requête de solution externe systématique.
+  `FOCUS(LOST, Δt ∈ [20s, 180s])` ──▶ `FOCUS(GAINED)` ──▶ `PASTE(chars ≥ 150)`
+  
+  La détection de ce motif **≥ 3 fois** caractérise un cycle de requête de solution externe systématique.
 
-#### 3. Taux de Friction Cognitive ($T_{\text{fric}}$)
+#### 3. Taux de Friction Cognitive (T_fric)
 Mesure l'hésitation rédactionnelle et les reprises de code :
 
-$$T_{\text{fric}} = \frac{N_{\text{backspaces}}}{N_{\text{typed}}} \times 100$$
+$$T_{\mathrm{fric}} = \frac{N_{\mathrm{backspaces}}}{N_{\mathrm{typed}}} \times 100$$
 
-* $T_{\text{fric}} < 3\%$ : Dictée passive, recopie mécanique sans aucune hésitation.
-* $10\% \le T_{\text{fric}} \le 25\%$ : Rythme normal de réflexion et de réajustement syntaxique.
-* $T_{\text{fric}} > 40\%$ : Tâtonnement aveugle, grande confusion algorithmique.
+* **T_fric < 3%** : Dictée passive, recopie mécanique sans aucune hésitation.
+* **10% ≤ T_fric ≤ 25%** : Rythme normal de réflexion et de réajustement syntaxique.
+* **T_fric > 40%** : Tâtonnement aveugle, grande confusion algorithmique.
 
 ---
 
 ### B. Indicateurs de Méthodologie & Démarche Expérimentale
 
-#### 1. Indice d'Acharnement Stérile ($I_{\text{thrash}}$)
+#### 1. Indice d'Acharnement Stérile (I_thrash)
 Représente la part des exécutions ou compilations menées sans réflexion préalable :
 
-$$I_{\text{thrash}} = \frac{\sum \text{Runs dans un épisode d'acharnement}}{\text{Total des Runs}} \times 100$$
+$$I_{\mathrm{thrash}} = \frac{\sum \text{Runs en acharnement}}{\text{Total des Runs}} \times 100$$
 
-* **Définition d'un épisode d'acharnement** : séquence d'au moins 3 exécutions consécutives soldées par `ERROR` avec $\Delta t \le 30$ secondes ou modification textuelle $\le 5$ caractères entre chaque tentative.
+* **Définition d'un épisode d'acharnement** : séquence d'au moins 3 exécutions consécutives soldées par `ERROR` avec Δt ≤ 30 secondes ou modification textuelle ≤ 5 caractères entre chaque tentative.
 
-#### 2. Temps Moyen de Résolution d'Erreur ($TTF$ — *Time To Fix*)
+#### 2. Temps Moyen de Résolution d'Erreur (TTF — *Time To Fix*)
 Durée moyenne écoulée entre l'apparition de la première erreur d'exécution sur un fichier et le retour au premier run `DONE` / `OK` :
 
-$$\overline{TTF} = \frac{1}{K} \sum_{k=1}^K (t_{\text{resolved}, k} - t_{\text{first\_error}, k})$$
+$$\overline{\mathrm{TTF}} = \frac{1}{K} \sum_{k=1}^K (t_{\mathrm{resolved}, k} - t_{\mathrm{error}, k})$$
 
-* $\overline{TTF} < 30$ s : Erreur d'inattention ou typo rapidement corrigée.
-* $\overline{TTF} \in [1\text{ min}, 5\text{ min}]$ : Démarche analytique saine de débogage.
-* $\overline{TTF} > 15$ min : Blocage conceptuel sévère nécessitant une intervention.
+* **TTF moyen < 30 s** : Erreur d'inattention ou typo rapidement corrigée.
+* **TTF moyen ∈ [1 min, 5 min]** : Démarche analytique saine de débogage.
+* **TTF moyen > 15 min** : Blocage conceptuel sévère nécessitant une intervention.
 
 ---
 
@@ -174,24 +175,24 @@ $$\sum_{i=1}^4 Q_i = 100\%$$
 
 ### D. Dynamique Temporelle par Fenêtres Glissantes (*Sliding Windows*)
 
-Une moyenne globale sur 2 heures peut masquer un basculement tardif vers une IA générative en fin de séance. Le moteur segmente donc la session en tranches continues de $\Delta t = 15$ minutes :
+Une moyenne globale sur 2 heures peut masquer un basculement tardif vers une IA générative en fin de séance. Le moteur segmente donc la session en tranches continues de Δt = 15 minutes :
 
-$$\mathcal{E}_k = \{ e \in \mathcal{E} \mid t_k \le \text{timestamp}(e) < t_k + \Delta t \}$$
+$$\mathcal{E}_k = \{ e \in \mathcal{E} \mid t_k \le t(e) < t_k + \Delta t \}$$
 
-Pour chaque tranche temporelle $k$, le moteur calcule localement :
-* **$S_{\text{auth}}(k)$** : score d'authenticité de la tranche.
-* **$I_{\text{nav}}(k)$** : ratio de temps hors IDE sur la tranche.
+Pour chaque tranche temporelle k, le moteur calcule localement :
+* **S_auth(k)** : score d'authenticité de la tranche.
+* **I_nav(k)** : ratio de temps hors IDE sur la tranche.
 * **Typologie de Phase** : qualification algorithmique de l'activité.
 
 #### Matrice de Qualification de Phase
 
 | Phase Qualifiée | Critères de Décision |
 | :--- | :--- |
-| `✅ Saisie autonome active` | $S_{\text{auth}} \ge 70\%$ et volume de frappe $> 80$ car/min |
-| `⚙️ Validation & Tests` | Runs fréquents ($> 2$), taux de succès $\ge 60\%$, $S_{\text{auth}} \ge 60\%$ |
-| `📖 Réflexion / Lecture` | Faible frappe ($< 30$ car), temps de lecture/consultation prédominant |
-| `⚠️ Acharnement sur erreurs` | $\ge 3$ exécutions consécutives soldées par un échec |
-| `🚨 Décrochage IA / Injection` | $S_{\text{auth}} < 40\%$ avec présence de `BURST` ou $I_{\text{nav}} > 50\%$ |
+| `✅ Saisie autonome active` | S_auth ≥ 70% et volume de frappe > 80 car/min |
+| `⚙️ Validation & Tests` | Runs fréquents (> 2), taux de succès ≥ 60%, S_auth ≥ 60% |
+| `📖 Réflexion / Lecture` | Faible frappe (< 30 car), temps de lecture/consultation prédominant |
+| `⚠️ Acharnement sur erreurs` | ≥ 3 exécutions consécutives soldées par un échec |
+| `🚨 Décrochage IA / Injection` | S_auth < 40% avec présence de `BURST` ou I_nav > 50% |
 | `📥 Dépôt externe` | Au moins un événement `FILE_DROP` sur la tranche |
 
 ---
@@ -203,8 +204,8 @@ Le serveur Rust évalue en temps réel chaque observable reçu au sein de son mo
 ### A. Indicateurs Calculés en Direct par le Serveur Rust
 
 Sans dépendre d'aucun interpréteur externe, le serveur calcule de manière incrémentale :
-* **Score d'Authenticité en direct ($S_{\text{auth}}$)** : rapport continu entre les caractères issus de la frappe clavier réelle et le volume total intégrant collages et bursts.
-* **Taux de Navette Hors IDE ($I_{\text{nav}}$)** : ratio de temps passé hors focus applicatif par rapport à la durée totale écoulée.
+* **Score d'Authenticité en direct (S_auth)** : rapport continu entre les caractères issus de la frappe clavier réelle et le volume total intégrant collages et bursts.
+* **Taux de Navette Hors IDE (I_nav)** : ratio de temps passé hors focus applicatif par rapport à la durée totale écoulée.
 * **Compteur d'Acharnement** : suivi des échecs consécutifs sans succès intermédiaire.
 * **Replay Résilient** : en cas de reconnexion d'un étudiant ou de redémarrage du serveur, l'état `StudentLiveStatus` est automatiquement reconstruit en quelques millisecondes à partir du journal local `.activity.jsonl`.
 
@@ -214,9 +215,9 @@ Ces indicateurs sont transmis aux postes superviseurs dans la structure `UserDat
 
 | Code Alerte | Niveau de Sévérité | Condition de Déclenchement | Règle d'Extinction (*Auto-Clear*) |
 | :---: | :---: | :--- | :--- |
-| `BURST` | `CRIT` | $\ge 20$ lignes insérées en $\le 15$s (`BURST_INSERT`) ou nouveau fichier créé avec $\ge 25$ lignes d'un coup (`BURST_NEW_FILE`). | Acquittement manuel par le tuteur au poste. |
-| `PASTE` | `WARN` | Collage unitaire $\ge 15$ lignes ou $\ge 400$ caractères. | Acquittement manuel par le tuteur au poste. |
-| `THRASH` | `WARN` | $\ge 3$ compilations `ERROR` ou exécutions `ERROR` consécutives sans run réussi intercalé. | **Auto-extinction automatique** dès :<br>1. Compilation réussie (`status: OK`)<br>2. Exécution réussie (`status: DONE`)<br>3. Modification de code $\ge 3$ lignes. |
+| `BURST` | `CRIT` | ≥ 20 lignes insérées en ≤ 15s (`BURST_INSERT`) ou nouveau fichier créé avec ≥ 25 lignes d'un coup (`BURST_NEW_FILE`). | Acquittement manuel par le tuteur au poste. |
+| `PASTE` | `WARN` | Collage unitaire ≥ 15 lignes ou ≥ 400 caractères. | Acquittement manuel par le tuteur au poste. |
+| `THRASH` | `WARN` | ≥ 3 compilations `ERROR` ou exécutions `ERROR` consécutives sans run réussi intercalé. | **Auto-extinction automatique** dès :<br>1. Compilation réussie (`status: OK`)<br>2. Exécution réussie (`status: DONE`)<br>3. Modification de code ≥ 3 lignes. |
 | `DROP` | `WARN` | Dépôt externe de fichier dans l'arborescence du projet via drag & drop. | Acquittement manuel par le tuteur au poste. |
 
 ### Gestion Multi-Alertes & Hiérarchie de Sévérité
@@ -299,33 +300,33 @@ Au survol de la cellule Alerte d'un étudiant, une infobulle HTML dynamique affi
 
 L'audit de post-traitement classe automatiquement les étudiants selon 6 profils didactiques types articulés autour de la matrice d'authenticité et de vélocité de résolution :
 
-| Authenticité ($S_{\text{auth}}$) $\backslash$ Résolution | Résolution Rapide ($TTF$ faible / Autonomie) | Résolution Lente ou Hésitante |
+| Authenticité (S_auth) / Résolution | Résolution Rapide (TTF faible / Autonomie) | Résolution Lente ou Hésitante |
 | :--- | :--- | :--- |
-| **Authenticité Élevée ($S_{\text{auth}} > 80\%$)** | **Le Boss**<br>• Résolution immédiate ($TTF$ quasi nul)<br>• Zéro acharnement<br>• Autonomie complète | **L'Artisan**<br>• Cycles courts et itératifs<br>• Lecture attentive du sujet<br>• Démarche d'apprentissage idéale |
-| **Authenticité Faible ($S_{\text{auth}} < 30\%$)** | **Le Cyborg**<br>• Navettes externes fréquentes (IA)<br>• Bursts massifs de lignes<br>• Faible volume de frappe manuelle | **Le Décrocheur**<br>• Temps hors IDE $> 40\%$<br>• Périodes Idle $> 15$ min<br>• Abandon face aux blocages |
+| **Authenticité Élevée (S_auth > 80%)** | **Le Boss**<br>• Résolution immédiate (TTF quasi nul)<br>• Zéro acharnement<br>• Autonomie complète | **L'Artisan**<br>• Cycles courts et itératifs<br>• Lecture attentive du sujet<br>• Démarche d'apprentissage idéale |
+| **Authenticité Faible (S_auth < 30%)** | **Le Cyborg**<br>• Navettes externes fréquentes (IA)<br>• Bursts massifs de lignes<br>• Faible volume de frappe manuelle | **Le Décrocheur**<br>• Temps hors IDE > 40%<br>• Périodes Idle > 15 min<br>• Abandon face aux blocages |
 
 ### 1. L'Artisan (Comportement d'Apprentissage Exemplaire)
-* **Indicateurs** : $S_{\text{auth}} > 80\%$, $T_{\text{fric}} \in [10\%, 25\%]$, $I_{\text{thrash}} < 10\%$.
+* **Indicateurs** : S_auth > 80%, T_fric ∈ [10%, 25%], I_thrash < 10%.
 * **Démarche** : Cycles de développement courts et incrémentaux, lecture approfondie du sujet avant de coder, résolution méthodique des erreurs étape par étape.
 
 ### 2. Le Boss (Expertise et Maîtrise Directe)
-* **Indicateurs** : $S_{\text{auth}} > 80\%$, $TTF < 30\text{ s}$, zéro demande d'aide tuteur, cadence de frappe élevée.
+* **Indicateurs** : S_auth > 80%, TTF < 30 s, zéro demande d'aide tuteur, cadence de frappe élevée.
 * **Démarche** : L'étudiant maîtrise parfaitement les concepts et déroule la solution sans friction notable.
 
 ### 3. Le Cyborg (Assistance IA / Solution Importée)
-* **Indicateurs** : $S_{\text{auth}} < 30\%$, alertes `BURST` multiples, $I_{\text{nav}} > 40\%$, $T_{\text{fric}} < 5\%$.
+* **Indicateurs** : S_auth < 30%, alertes `BURST` multiples, I_nav > 40%, T_fric < 5%.
 * **Démarche** : Absence de genèse itérative du code. L'étudiant formule des requêtes sur un modèle externe et injecte des blocs complets de 30 à 60 lignes sans les retoucher.
 
 ### 4. Le Casse-Cou (Acharnement Stérile / Tâtonnement Aveugle)
-* **Indicateurs** : $I_{\text{thrash}} > 35\%$, ratio d'erreurs d'exécution $> 70\%$, $\Delta t$ entre runs $< 15\text{ s}$.
+* **Indicateurs** : I_thrash > 35%, ratio d'erreurs d'exécution > 70%, Δt entre runs < 15 s.
 * **Démarche** : L'étudiant ne consulte pas la sortie console ni le traceback. Il modifie un caractère au hasard et relance en boucle en espérant un résultat positif.
 
 ### 5. Le Décrocheur (Perte de Pied et Abandon Silencieux)
-* **Indicateurs** : Temps hors IDE $> 50\%$, périodes d'inactivité $> 15$ min, moins de 3 runs sur l'ensemble de la séance.
+* **Indicateurs** : Temps hors IDE > 50%, périodes d'inactivité > 15 min, moins de 3 runs sur l'ensemble de la séance.
 * **Démarche** : Face à une difficulté initiale non résolue, l'étudiant renonce à chercher et attend la fin de séance sans solliciter l'encadrement.
 
 ### 6. Le Pirate (Collusion en Salle / Import Direct)
-* **Indicateurs** : Présence d'événements `FILE_DROP`, corrélation de synchronicité ($\le 90$s) avec la réussite d'un poste voisin.
+* **Indicateurs** : Présence d'événements `FILE_DROP`, corrélation de synchronicité (≤ 90 s) avec la réussite d'un poste voisin.
 * **Démarche** : Récupération directe d'un fichier source par clé USB, partage local ou messagerie instantanée.
 
 ---
@@ -345,7 +346,7 @@ L'audit de post-traitement classe automatiquement les étudiants selon 6 profils
    python3 client/codelab.files/skills/activity_analyzer.py sessions/2026-TP1/
    ```
 2. **Consulter les Fenêtres Glissantes** :
-   - Le tableau chronologique des tranches de 15 minutes permet d'identifier à la minute près l'instant de bascule vers une IA générative (chute brutale de $S_{\text{auth}}$).
+   - Le tableau chronologique des tranches de 15 minutes permet d'identifier à la minute près l'instant de bascule vers une IA générative (chute brutale de S_auth).
 3. **Valorisation à l'Évaluation** :
    - Deux étudiants obtenant la note de 14/20 aux tests unitaires automatiques peuvent être différenciés : accorder un bonus de démarche à un profil *Artisan* persévérant, et conditionner la note d'un profil *Cyborg* à une soutenance orale d'explication du code.
 
