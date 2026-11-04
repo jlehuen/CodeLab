@@ -178,7 +178,7 @@ pub struct LiveMetrics {
 impl Default for LiveMetrics {
     fn default() -> Self {
         Self {
-            s_auth: 100.0,
+            s_auth: -1.0,
             i_nav: 0.0,
             typed_chars: 0,
             backspaces: 0,
@@ -217,7 +217,7 @@ impl StudentLiveStatus {
     fn compute_s_auth(&self) -> f64 {
         let total = self.typed_chars + self.pasted_chars + self.burst_chars;
         if total == 0 {
-            100.0
+            -1.0
         } else {
             let score = (self.typed_chars as f64) / (total as f64) * 100.0;
             (score.clamp(0.0, 100.0) * 10.0).round() / 10.0
@@ -1018,6 +1018,10 @@ mod tests {
         let login = "student_metrics";
 
         record_session_event(session, login, "CONNECTED", Some("127.0.0.1"), None);
+        // Avant toute frappe ou collage, s_auth doit être -1.0 (en attente d'activité)
+        let init_metrics = get_student_live_metrics(session, login);
+        assert_eq!(init_metrics.s_auth, -1.0);
+
         record_client_log(session, login, r#"{"type":"TYPING","file":"tp.py","typed_chars":800,"backspaces":80}"#);
         record_client_log(session, login, r#"{"type":"PASTE","file":"tp.py","chars":200,"lines":10}"#);
 

@@ -533,7 +533,7 @@ pub fn build_userdata(login: &str) -> Option<UserData> {
             help_flag: false, // Modifier plus tard
             edited_file: String::new(), // Modifier plus tard
             alerts_json: "[]".to_string(),
-            s_auth: 100.0,
+            s_auth: -1.0,
             i_nav: 0.0,
         })
     } else {

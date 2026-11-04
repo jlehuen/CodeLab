@@ -27,7 +27,7 @@ public class UserData {
 	private boolean helpFlag = false;
 	private boolean connected = false;
 	private boolean controlled = false;
-	private double sAuth = 100.0;
+	private double sAuth = -1.0;
 	private double iNav = 0.0;
 	private Map<String, LiveAlert> activeAlerts = new java.util.LinkedHashMap<>();
 
@@ -236,13 +236,17 @@ public class UserData {
 	public String buildTooltipHtml() {
 		StringBuilder sb = new StringBuilder("<html><div style='padding:5px; font-family:sans-serif;'>");
 		sb.append("<b>Indicateurs en direct :</b><br/>");
-		sb.append("• Authenticité du code : <b>").append(String.format(java.util.Locale.US, "%.1f%%", sAuth)).append("</b>");
-		if (sAuth >= 75.0) {
-			sb.append(" <font color='#27ae60'>(Élevée / Saisie autonome)</font>");
-		} else if (sAuth >= 45.0) {
-			sb.append(" <font color='#d35400'>(Modérée)</font>");
+		if (sAuth >= 0.0) {
+			sb.append("• Authenticité du code : <b>").append(String.format(java.util.Locale.US, "%.1f%%", sAuth)).append("</b>");
+			if (sAuth >= 75.0) {
+				sb.append(" <font color='#27ae60'>(Élevée / Saisie autonome)</font>");
+			} else if (sAuth >= 45.0) {
+				sb.append(" <font color='#d35400'>(Modérée)</font>");
+			} else {
+				sb.append(" <font color='#c0392b'><b>(Faible / Attention)</b></font>");
+			}
 		} else {
-			sb.append(" <font color='#c0392b'><b>(Faible / Attention)</b></font>");
+			sb.append("• Authenticité du code : <b>--</b> <font color='#7f8c8d'>(En attente d'activité)</font>");
 		}
 		sb.append("<br/>");
 		if (iNav > 0.0) {

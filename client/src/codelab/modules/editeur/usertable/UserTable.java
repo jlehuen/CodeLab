@@ -564,7 +564,7 @@ public class UserTable extends JScrollPane {
 				return label;
 			}
 		}
-		if (udata.isConnected() && udata.getSAuth() < 100.0) {
+		if (udata.isConnected() && udata.getSAuth() >= 0.0 && udata.getSAuth() < 100.0) {
 			if (udata.getSAuth() < 40.0) {
 				return String.format(java.util.Locale.US, "⚠️ %.0f%%", udata.getSAuth());
 			}
@@ -705,12 +705,14 @@ public class UserTable extends JScrollPane {
 				if (udata.hasAlert()) {
 					if ("CRIT".equalsIgnoreCase(udata.getHighestAlertLevel())) setForeground(new Color(200, 20, 20));
 					else setForeground(new Color(210, 110, 0));
-				} else if (udata.getSAuth() < 40.0) {
+				} else if (udata.getSAuth() >= 0.0 && udata.getSAuth() < 40.0) {
 					setForeground(new Color(200, 20, 20));
-				} else if (udata.getSAuth() < 75.0) {
+				} else if (udata.getSAuth() >= 0.0 && udata.getSAuth() < 75.0) {
 					setForeground(new Color(180, 100, 0));
-				} else {
+				} else if (udata.getSAuth() >= 75.0) {
 					setForeground(new Color(40, 140, 40));
+				} else {
+					setForeground(Color.GRAY);
 				}
 				((JLabel)comp).setToolTipText(udata.buildTooltipHtml());
 			} else {
