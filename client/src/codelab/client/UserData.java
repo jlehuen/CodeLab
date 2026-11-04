@@ -233,6 +233,41 @@ public class UserData {
 		this.iNav = iNav;
 	}
 
+	public String buildUserInfoTooltipHtml(boolean isPresent) {
+		StringBuilder sb = new StringBuilder("<html><div style='padding:5px; font-family:sans-serif;'>");
+		sb.append("<b>").append(fullname != null ? fullname : "").append("</b>");
+		if (login != null && !login.isEmpty()) {
+			sb.append(" <font color='#555555'>(").append(login).append(")</font>");
+		}
+		sb.append("<hr style='margin:4px 0;'/>");
+		if (isPresent) {
+			sb.append("<font color='#27ae60'><b>• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0a1"), fullname != null ? fullname : "")).append("</b></font><br/>");
+		} else {
+			sb.append("<font color='#7f8c8d'>• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0a2"), fullname != null ? fullname : "")).append("</font><br/>");
+		}
+		String sdate = (date != null && !date.isBlank()) ? date : "--";
+		sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0b"), sdate)).append("<br/>");
+		String saddr = (addr != null && !addr.isBlank()) ? addr : "--";
+		sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0c"), saddr)).append("<br/>");
+		String ssession = (sessionId != null && !sessionId.isBlank()) ? sessionId : "--";
+		sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0d"), ssession)).append("<br/>");
+		if (statut != null) {
+			sb.append("• ").append(String.format(codelab.CodeLab.LABEL("UserTable_0e"), statut.toString())).append("<br/>");
+		}
+		if (groups != null && !groups.isBlank()) {
+			sb.append("• ").append(codelab.CodeLab.LABEL("UserTable_t3")).append(" : <b>").append(groups).append("</b><br/>");
+		}
+		if (editedFile != null && !editedFile.isBlank()) {
+			sb.append("• Fichier : <b>").append(editedFile).append("</b><br/>");
+		}
+		sb.append("</div></html>");
+		return sb.toString();
+	}
+
+	public String buildUserInfoTooltipHtml() {
+		return buildUserInfoTooltipHtml(isConnected());
+	}
+
 	public String buildTooltipHtml() {
 		StringBuilder sb = new StringBuilder("<html><div style='padding:5px; font-family:sans-serif;'>");
 		sb.append("<b>Indicateurs en direct :</b><br/>");

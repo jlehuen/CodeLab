@@ -109,11 +109,6 @@ public class UserTable extends JScrollPane {
 
 	// Items du menu popup
 	private JMenuItem info_0 = new JMenuItem();
-	private JMenuItem info_1 = new JMenuItem(); // Nom
-	private JMenuItem info_2 = new JMenuItem(); // Date
-	private JMenuItem info_3 = new JMenuItem(); // Adresse
-	private JMenuItem info_4 = new JMenuItem(); // Session
-	private JMenuItem info_5 = new JMenuItem(); // Statut
 
 	private JMenuItem itemTchat = new JMenuItem();
 	private JMenuItem itemControl = new JMenuItem();
@@ -266,11 +261,6 @@ public class UserTable extends JScrollPane {
 
 		// Juste des informations
 		info_0.setEnabled(false);
-		info_1.setEnabled(false);
-		info_2.setEnabled(false);
-		info_3.setEnabled(false);
-		info_4.setEnabled(false);
-		info_5.setEnabled(false);
 
 		setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -401,19 +391,9 @@ public class UserTable extends JScrollPane {
 		else if (readOnly) label0 = CodeLab.LABEL("UserTable_18c");
 		else label0 = CodeLab.LABEL("UserTable_18b");
 
-		String label1 = isconnected ? CodeLab.LABEL("UserTable_0a1") : CodeLab.LABEL("UserTable_0a2");
 		String label2 = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
 
-		//Date date = udata.getDate();
-		//String sdate = (date == null) ? "--" : UserData.DATEFORMAT.format(date);
-		String sdate = udata.getDate();
-
 		info_0.setText(String.format(label0, sessionId));
-		info_1.setText(String.format(label1, udata.getName()));
-		info_2.setText(String.format(CodeLab.LABEL("UserTable_0b"), sdate));
-		info_3.setText(String.format(CodeLab.LABEL("UserTable_0c"), udata.getAddress()));
-		info_4.setText(String.format(CodeLab.LABEL("UserTable_0d"), udata.getSessionId()));
-		info_5.setText(String.format(CodeLab.LABEL("UserTable_0e"), udata.getStatut()));
 
 		menuStudent.setText(String.format(CodeLab.LABEL("UserTable_menuStudent"), udata));
 		itemControl.setText(String.format(label2, udata));
@@ -695,12 +675,11 @@ public class UserTable extends JScrollPane {
 			}
 			else setForeground(Color.GRAY);
 
-			// Position dans la cellule
-			if (column == 0) setHorizontalAlignment(JLabel.LEFT);
-			if (column == 1) setHorizontalAlignment(JLabel.CENTER);
-			if (column == 2) setHorizontalAlignment(JLabel.CENTER);
-			if (column == 3) setHorizontalAlignment(JLabel.CENTER);
-			if (column == 4) {
+			// Position dans la cellule et infobulle
+			if (column == 0) {
+				setHorizontalAlignment(JLabel.LEFT);
+				((JLabel)comp).setToolTipText(udata.buildUserInfoTooltipHtml(isPresent(udata)));
+			} else if (column == 4) {
 				setHorizontalAlignment(JLabel.CENTER);
 				if (udata.hasAlert()) {
 					if ("CRIT".equalsIgnoreCase(udata.getHighestAlertLevel())) setForeground(new Color(200, 20, 20));
@@ -716,6 +695,7 @@ public class UserTable extends JScrollPane {
 				}
 				((JLabel)comp).setToolTipText(udata.buildTooltipHtml());
 			} else {
+				setHorizontalAlignment(JLabel.CENTER);
 				((JLabel)comp).setToolTipText(null);
 			}
 			return comp;
@@ -976,12 +956,6 @@ public class UserTable extends JScrollPane {
 			add(itemOpenSession);
 			add(itemReadOnlySession);
 			add(itemNewStudent);
-			add(new JSeparator());
-			add(info_1);
-			add(info_2);
-			add(info_3);
-			add(info_4);
-			//add(info_5);
 			add(new JSeparator());
 			add(menuStudent);
 			add(menuGroup);
