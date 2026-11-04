@@ -39,6 +39,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import codelab.utils.CleanListView;
+import codelab.client.ChatController;
+import codelab.client.UserData;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
@@ -521,6 +525,57 @@ public class NotebookCellPane extends JPanel {
 		itemReset.addActionListener(ev -> editor.resetExecutionCounts());
 		popup.add(itemReset);
 
+		if (CodeLab.INSTANCE != null && (CodeLab.INSTANCE.isTutor() || CodeLab.INSTANCE.isAdmin())) {
+			UserData udata = (editor.module != null) ? editor.module.getCurrentUdata() : null;
+			if (udata != null) {
+				popup.add(new JSeparator());
+
+				boolean isconnected = udata.isConnected();
+				boolean iscontrolled = udata.isControlled();
+				boolean helpFlag = udata.getHelpFlag();
+				boolean hasAlert = udata.hasAlert();
+
+				JMenuItem itemTchat = new JMenuItem(String.format(CodeLab.LABEL("UserTable_4"), udata));
+				itemTchat.setEnabled(isconnected);
+				itemTchat.addActionListener(ev -> {
+					ChatController.openChatWith(udata);
+					CodeLab.INSTANCE.getClient().resetHelpFlag(udata.getLogin());
+				});
+				popup.add(itemTchat);
+
+				JMenuItem itemResetHelp = new JMenuItem(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
+				itemResetHelp.setEnabled(isconnected && helpFlag);
+				itemResetHelp.addActionListener(ev -> {
+					CodeLab.INSTANCE.getClient().resetHelpFlag(udata.getLogin());
+				});
+				popup.add(itemResetHelp);
+
+				JMenuItem itemResetAlert = new JMenuItem();
+				if (udata.getAlertCount() > 1) {
+					itemResetAlert.setText(String.format("Acquitter toutes les alertes de %s (%d)", udata.getName(), udata.getAlertCount()));
+				} else {
+					itemResetAlert.setText(String.format(CodeLab.LABEL("itemResetUserAlert"), udata));
+				}
+				itemResetAlert.setEnabled(isconnected && hasAlert);
+				itemResetAlert.addActionListener(ev -> {
+					CodeLab.INSTANCE.getClient().resetUserAlert(udata.getLogin(), "ALL");
+					if (editor.module != null && editor.module.getUserTable() != null) {
+						editor.module.getUserTable().resetUserAlert(udata.getLogin(), "ALL");
+					}
+				});
+				popup.add(itemResetAlert);
+
+				String labelControl = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
+				JMenuItem itemControl = new JMenuItem(String.format(labelControl, udata));
+				itemControl.setEnabled(true);
+				itemControl.addActionListener(ev -> {
+					boolean val = udata.isControlled();
+					CodeLab.INSTANCE.getClient().askControlMode(udata.getLogin(), !val);
+				});
+				popup.add(itemControl);
+			}
+		}
+
 		popup.show(e.getComponent(), e.getX(), e.getY());
 	}
 
@@ -843,6 +898,80 @@ public class NotebookCellPane extends JPanel {
 			}
 		};
 		area.setSyntaxEditingStyle(syntaxStyle);
+
+		if (CodeLab.INSTANCE != null && (CodeLab.INSTANCE.isTutor() || CodeLab.INSTANCE.isAdmin())) {
+			JPopupMenu popup = area.getPopupMenu();
+			if (popup != null) {
+				popup.addSeparator();
+
+				JMenuItem itemTchat = new JMenuItem();
+				JMenuItem itemResetHelp = new JMenuItem();
+				JMenuItem itemResetAlert = new JMenuItem();
+				JMenuItem itemControl = new JMenuItem();
+
+				popup.add(itemTchat);
+				popup.add(itemResetHelp);
+				popup.add(itemResetAlert);
+				popup.add(itemControl);
+
+				popup.addPopupMenuListener(new PopupMenuListener() {
+					public void popupMenuCanceled(PopupMenuEvent e) {}
+					public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {}
+					public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+						UserData udata = (editor != null && editor.module != null) ? editor.module.getCurrentUdata() : null;
+						boolean isconnected = (udata != null) && udata.isConnected();
+						boolean helpFlag = (udata != null) && udata.getHelpFlag();
+						boolean hasAlert = (udata != null) && udata.hasAlert();
+						boolean iscontrolled = (udata != null) && udata.isControlled();
+
+						String label = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
+						itemControl.setText(String.format(label, udata));
+						itemControl.setEnabled(true);
+						itemTchat.setText(String.format(CodeLab.LABEL("UserTable_4"), udata));
+						itemTchat.setEnabled(isconnected);
+						itemResetHelp.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
+						itemResetHelp.setEnabled(isconnected && helpFlag);
+
+						if (udata != null && udata.getAlertCount() > 1) {
+							itemResetAlert.setText(String.format("Acquitter toutes les alertes de %s (%d)", udata.getName(), udata.getAlertCount()));
+						} else {
+							itemResetAlert.setText(String.format(CodeLab.LABEL("itemResetUserAlert"), udata));
+						}
+						itemResetAlert.setEnabled(isconnected && hasAlert);
+					}
+				});
+
+				itemTchat.addActionListener(ev -> {
+					UserData udata = (editor != null && editor.module != null) ? editor.module.getCurrentUdata() : null;
+					if (udata == null) return;
+					ChatController.openChatWith(udata);
+					CodeLab.INSTANCE.getClient().resetHelpFlag(udata.getLogin());
+				});
+
+				itemResetHelp.addActionListener(ev -> {
+					UserData udata = (editor != null && editor.module != null) ? editor.module.getCurrentUdata() : null;
+					if (udata == null) return;
+					CodeLab.INSTANCE.getClient().resetHelpFlag(udata.getLogin());
+				});
+
+				itemResetAlert.addActionListener(ev -> {
+					UserData udata = (editor != null && editor.module != null) ? editor.module.getCurrentUdata() : null;
+					if (udata == null) return;
+					CodeLab.INSTANCE.getClient().resetUserAlert(udata.getLogin(), "ALL");
+					if (editor != null && editor.module != null && editor.module.getUserTable() != null) {
+						editor.module.getUserTable().resetUserAlert(udata.getLogin(), "ALL");
+					}
+				});
+
+				itemControl.addActionListener(ev -> {
+					UserData udata = (editor != null && editor.module != null) ? editor.module.getCurrentUdata() : null;
+					if (udata == null) return;
+					boolean value = udata.isControlled();
+					CodeLab.INSTANCE.getClient().askControlMode(udata.getLogin(), !value);
+				});
+			}
+		}
+
 		return area;
 	}
 

@@ -35,6 +35,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import codelab.CodeLab;
 import codelab.Compilateur;
 import codelab.ExceptionManager;
+import codelab.client.ChatController;
+import codelab.client.UserData;
 import codelab.modules.editeur.AbstractEditor;
 import codelab.modules.editeur.ModuleEditor;
 import codelab.modules.editeur.text.ReplaceDialog;
@@ -156,9 +158,76 @@ public class NotebookEditor extends AbstractEditor {
 			}
 		});
 
+		java.awt.event.MouseAdapter bgMouseListener = new java.awt.event.MouseAdapter() {
+			@Override
+			public void mousePressed(java.awt.event.MouseEvent e) {
+				if (e.isPopupTrigger()) showTutorContextMenu(e);
+			}
+			@Override
+			public void mouseReleased(java.awt.event.MouseEvent e) {
+				if (e.isPopupTrigger()) showTutorContextMenu(e);
+			}
+		};
+		cellsPanel.addMouseListener(bgMouseListener);
+		topWrapper.addMouseListener(bgMouseListener);
+
 		setLayout(new BorderLayout());
 		setBackground(CANVAS_BG);
 		add(wrapWithLockLayer(scrollPane), BorderLayout.CENTER);
+	}
+
+	private void showTutorContextMenu(java.awt.event.MouseEvent e) {
+		if (CodeLab.INSTANCE == null || (!CodeLab.INSTANCE.isTutor() && !CodeLab.INSTANCE.isAdmin())) return;
+		UserData udata = (module != null) ? module.getCurrentUdata() : null;
+		if (udata == null) return;
+
+		javax.swing.JPopupMenu popup = new javax.swing.JPopupMenu();
+
+		boolean isconnected = udata.isConnected();
+		boolean iscontrolled = udata.isControlled();
+		boolean helpFlag = udata.getHelpFlag();
+		boolean hasAlert = udata.hasAlert();
+
+		javax.swing.JMenuItem itemTchat = new javax.swing.JMenuItem(String.format(CodeLab.LABEL("UserTable_4"), udata));
+		itemTchat.setEnabled(isconnected);
+		itemTchat.addActionListener(ev -> {
+			ChatController.openChatWith(udata);
+			CodeLab.INSTANCE.getClient().resetHelpFlag(udata.getLogin());
+		});
+		popup.add(itemTchat);
+
+		javax.swing.JMenuItem itemResetHelp = new javax.swing.JMenuItem(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
+		itemResetHelp.setEnabled(isconnected && helpFlag);
+		itemResetHelp.addActionListener(ev -> {
+			CodeLab.INSTANCE.getClient().resetHelpFlag(udata.getLogin());
+		});
+		popup.add(itemResetHelp);
+
+		javax.swing.JMenuItem itemResetAlert = new javax.swing.JMenuItem();
+		if (udata.getAlertCount() > 1) {
+			itemResetAlert.setText(String.format("Acquitter toutes les alertes de %s (%d)", udata.getName(), udata.getAlertCount()));
+		} else {
+			itemResetAlert.setText(String.format(CodeLab.LABEL("itemResetUserAlert"), udata));
+		}
+		itemResetAlert.setEnabled(isconnected && hasAlert);
+		itemResetAlert.addActionListener(ev -> {
+			CodeLab.INSTANCE.getClient().resetUserAlert(udata.getLogin(), "ALL");
+			if (module != null && module.getUserTable() != null) {
+				module.getUserTable().resetUserAlert(udata.getLogin(), "ALL");
+			}
+		});
+		popup.add(itemResetAlert);
+
+		String labelControl = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
+		javax.swing.JMenuItem itemControl = new javax.swing.JMenuItem(String.format(labelControl, udata));
+		itemControl.setEnabled(true);
+		itemControl.addActionListener(ev -> {
+			boolean val = udata.isControlled();
+			CodeLab.INSTANCE.getClient().askControlMode(udata.getLogin(), !val);
+		});
+		popup.add(itemControl);
+
+		popup.show(e.getComponent(), e.getX(), e.getY());
 	}
 
 	public JPanel getCellsPanel() {
