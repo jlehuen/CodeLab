@@ -350,26 +350,3 @@ L'audit de post-traitement classe automatiquement les étudiants selon 6 profils
 3. **Valorisation à l'Évaluation** :
    - Deux étudiants obtenant la note de 14/20 aux tests unitaires automatiques peuvent être différenciés : accorder un bonus de démarche à un profil *Artisan* persévérant, et conditionner la note d'un profil *Cyborg* à une soutenance orale d'explication du code.
 
----
-
-## 8. Procédure de Vérification & Tests du Système
-
-Pour s'assurer de l'intégrité de l'ensemble de la chaîne après toute modification :
-
-1. **Vérification du Moteur Serveur (Rust)** :
-   ```bash
-   cargo test --manifest-path server/server/Cargo.toml
-   ```
-   *Vérifie 11 tests unitaires couvrant la traçabilité des diffs, le multi-alertes, l'auto-clear et les opérations de fichiers.*
-
-2. **Compilation du Client Swing (Java)** :
-   ```bash
-   cd client && ./build.sh
-   ```
-   *Génère `codelab.jar` avec la table `UserTable`, le modèle `UserData`, les sondes et les messages réseau.*
-
-3. **Validation de l'Analyseur Python & Synchronisation Miroir** :
-   ```bash
-   diff -u client/codelab.files/skills/activity_analyzer.py ~/codelab.files/skills/activity_analyzer.py
-   python3 client/codelab.files/skills/activity_analyzer.py --help
-   ```
