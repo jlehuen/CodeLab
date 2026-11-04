@@ -91,6 +91,7 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 	private JMenuItem itemTchat = new JMenuItem();
 	private JMenuItem itemControl = new JMenuItem();
 	private JMenuItem itemResetHelp = new JMenuItem();
+	private JMenuItem itemResetAlert = new JMenuItem();
 	private JMenuItem itemClone = new JMenuItem();
 	private JMenuItem itemDeleteClone = new JMenuItem();
 	private JMenuItem itemConvertSpaceToTab = new JMenuItem();
@@ -304,6 +305,7 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 					UserData udata = editor.module.getCurrentUdata();
 					boolean isconnected = (udata != null) && udata.isConnected();
 					boolean helpFlag = (udata != null) && udata.getHelpFlag();
+					boolean hasAlert = (udata != null) && udata.hasAlert();
 					boolean iscontrolled = (udata != null) && udata.isControlled();
 					String label = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
 					itemControl.setText(String.format(label, udata));
@@ -312,6 +314,12 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 					itemTchat.setEnabled(isconnected);
 					itemResetHelp.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
 					itemResetHelp.setEnabled(isconnected && helpFlag);
+					if (udata != null && udata.getAlertCount() > 1) {
+						itemResetAlert.setText(String.format("Acquitter toutes les alertes de %s (%d)", udata.getName(), udata.getAlertCount()));
+					} else {
+						itemResetAlert.setText(String.format(CodeLab.LABEL("itemResetUserAlert"), udata));
+					}
+					itemResetAlert.setEnabled(isconnected && hasAlert);
 					itemDiff.setText(CodeLab.LABEL("itemDiff"));
 					itemDiff.setState(editor.module.diff);
 
@@ -366,6 +374,17 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 				}
 			});
 
+			itemResetAlert.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					UserData udata = editor.module.getCurrentUdata();
+					if (udata == null) return;
+					CodeLab.INSTANCE.getClient().resetUserAlert(udata.getLogin(), "ALL");
+					if (editor != null && editor.module != null && editor.module.getUserTable() != null) {
+						editor.module.getUserTable().resetUserAlert(udata.getLogin(), "ALL");
+					}
+				}
+			});
+
 			itemDiff.addItemListener(new ItemListener() {
 				public void itemStateChanged(ItemEvent e) {
 					editor.module.diff = itemDiff.getState();
@@ -380,6 +399,7 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 			popup.addSeparator();
 			popup.add(itemTchat);
 			popup.add(itemResetHelp);
+			popup.add(itemResetAlert);
 			popup.add(itemControl);
 		}
 	}

@@ -21,6 +21,7 @@ public class GlassPanePopupMenu extends JPopupMenu {
 	private JMenuItem itemTchat = new JMenuItem();
 	private JMenuItem itemControl = new JMenuItem();
 	private JMenuItem itemResetHelp = new JMenuItem();
+	private JMenuItem itemResetAlert = new JMenuItem();
 
 	///////////////////////////////////////////////////
 	// Constructeur
@@ -51,6 +52,7 @@ public class GlassPanePopupMenu extends JPopupMenu {
 			boolean isconnected = udata.isConnected();
 			boolean iscontrolled = udata.isControlled();
 			boolean helpFlag = udata.getHelpFlag();
+			boolean hasAlert = udata.hasAlert();
 			String label = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
 			itemControl.setText(String.format(label, udata));
 			itemControl.setEnabled(true);
@@ -58,6 +60,12 @@ public class GlassPanePopupMenu extends JPopupMenu {
 			itemTchat.setEnabled(isconnected);
 			itemResetHelp.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
 			itemResetHelp.setEnabled(isconnected && helpFlag);
+			if (udata.getAlertCount() > 1) {
+				itemResetAlert.setText(String.format("Acquitter toutes les alertes de %s (%d)", udata.getName(), udata.getAlertCount()));
+			} else {
+				itemResetAlert.setText(String.format(CodeLab.LABEL("itemResetUserAlert"), udata));
+			}
+			itemResetAlert.setEnabled(isconnected && hasAlert);
 
 			itemTchat.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -87,6 +95,17 @@ public class GlassPanePopupMenu extends JPopupMenu {
 				}
 			});
 
+			itemResetAlert.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					UserData udata = editor.getCurrentUdata();
+					if (udata == null) return;
+					CodeLab.INSTANCE.getClient().resetUserAlert(udata.getLogin(), "ALL");
+					if (editor.getUserTable() != null) {
+						editor.getUserTable().resetUserAlert(udata.getLogin(), "ALL");
+					}
+				}
+			});
+
 			boolean isClone = editor.isCloneCurrentFile();
 			JMenuItem itemCloneAction = new JMenuItem(isClone ? CodeLab.LABEL("Delete_current_clone") : CodeLab.LABEL("Clone_program"));
 			itemCloneAction.addActionListener(new ActionListener() {
@@ -100,6 +119,7 @@ public class GlassPanePopupMenu extends JPopupMenu {
 			add(itemCloneAction);
 			add(itemTchat);
 			add(itemResetHelp);
+			add(itemResetAlert);
 			add(itemControl);
 		}
 
