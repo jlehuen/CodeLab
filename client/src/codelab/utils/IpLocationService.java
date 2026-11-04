@@ -182,6 +182,11 @@ public class IpLocationService {
 
 		IpInfo info = getIpInfo(ip);
 		StringBuilder sb = new StringBuilder("<html><div style='padding:5px; font-family:sans-serif;'>");
+		sb.append("<b>").append(udata.getName() != null ? udata.getName() : "").append("</b>");
+		if (udata.getLogin() != null && !udata.getLogin().isEmpty()) {
+			sb.append(" <font color='#555555'>(").append(udata.getLogin()).append(")</font>");
+		}
+		sb.append("<hr style='margin:4px 0;'/>");
 		sb.append("<b>Informations réseau :</b><br/>");
 		sb.append("<hr style='margin:4px 0;'/>");
 		sb.append("• Adresse IP : <b>").append(ip).append("</b><br/>");
