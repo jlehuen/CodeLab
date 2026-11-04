@@ -32,17 +32,20 @@ flowchart LR
 #### Vue Fonctionnelle : Les Deux Canaux d'Exploitation
 
 ```mermaid
+%%{init: {'themeVariables': { 'fontSize': '16px' }}}%%
 flowchart TD
-    E["<b>1. ÉTUDIANT (Client Java Swing)</b><br/>──────────────────────────────────────────────────────────<br/>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests"]
-    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b><br/>──────────────────────────────────────────────────────────<br/>• Traçabilité temps réel, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)"]
+    classDef default font-size:16px;
 
-    S -->|"Diffusion instantanée d'état (MsgPack)"| T["<b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b><br/>──────────────────────────────────────────────────────────<br/>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol"]
+    E["<span style='font-size:18px'><b>1. ÉTUDIANT (Client Java Swing)</b></span><br/>──────────────────────────────────────────────────────────<br/>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests"]
+    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<span style='font-size:18px'><b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b></span><br/>──────────────────────────────────────────────────────────<br/>• Traçabilité temps réel, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)"]
+
+    S -->|"Diffusion instantanée d'état (MsgPack)"| T["<span style='font-size:18px'><b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b></span><br/>──────────────────────────────────────────────────────────<br/>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol"]
     T -.->|"Acquittement manuel clic droit (RESET_USER_ALERT)"| S
 
     S ==>|"Journalisation append-only continue"| J[("<b>Journal d'Activité Immuable (.activity.jsonl)</b><br/>──────────────────────────────────────────────────────────<br/>Fichiers d'événements append-only sécurisés persistés sur disque")]
 
-    J --> A["<b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Skills Python / CDK)</b><br/>──────────────────────────────────────────────────────────<br/>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types"]
-    A --> R["<b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b><br/>──────────────────────────────────────────────────────────<br/>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort"]
+    J --> A["<span style='font-size:18px'><b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Skills Python / CDK)</b></span><br/>──────────────────────────────────────────────────────────<br/>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types"]
+    A --> R["<span style='font-size:18px'><b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b></span><br/>──────────────────────────────────────────────────────────<br/>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort"]
 ```
 
 ### Principes Fondamentaux de Conception
