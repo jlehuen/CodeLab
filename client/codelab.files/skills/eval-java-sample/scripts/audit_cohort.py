@@ -235,49 +235,47 @@ def build_cohort_clusters(results, suspicious_logins):
     clusters = [
         {
             'id': 'boss',
-            'label': '**Les Boss**',
+            'label': '👑 **Les Boss**',
             'sub': 'Excellence & Autonomie',
             'desc': 'Note >= 14. Démarche personnelle complète, code propre et rigoureux. À mobiliser sur des défis d\'approfondissement ou du tutorat.',
             'members': []
         },
         {
             'id': 'artisans',
-            'label': '**Les Artisans**',
-            'sub': 'Pratique Régulière & Socle en Consolidation',
+            'label': '🔨 **Les Artisans**',
+            'sub': 'Démarche d\'Apprentissage & Régularité',
             'desc': 'Note entre 10 et 13.9. Socle technique acquis, travail appliqué et régulier. Poursuivre la consolidation sur la modularité et les tests.',
             'members': []
         },
         {
             'id': 'casse_cou',
-            'label': '**Les Casse-cou**',
-            'sub': 'Raccourcis & Architecture Fragile',
-            'desc': 'Sauts de jalons intermédiaires ou code précipité sans structuration fonctionnelle. Recadrer sur la rigueur de modélisation.',
+            'label': '⚡ **Les Casse-cou**',
+            'sub': 'Acharnement & Tâtonnement / Raccourcis',
+            'desc': 'Sauts de jalons, acharnement compilatoire ou code précipité sans structuration fonctionnelle. Recadrer sur la méthode.',
             'members': []
         },
         {
             'id': 'decrocheurs',
-            'label': '**Les Décrocheurs**',
-            'sub': 'Difficultés Méthodologiques ou Décrochage',
+            'label': '🚪 **Les Décrocheurs**',
+            'sub': 'Perte de Pied & Décrochage',
             'desc': 'Note < 10. Travaux partiels, blocages initiaux ou abandons précoces. Remédiation requise rapidement sur les fondamentaux.',
             'members': []
         },
         {
             'id': 'pirates',
-            'label': '**Les Pirates**',
-            'sub': 'Code Partagé & Copier-Coller',
-            'desc': 'Similarité directe (>= 75%) sur du code libre (détecté 100% hors-ligne). Rappel d\'intégrité et soutenance orale individuelle requise.',
+            'label': '🏴‍☠️ **Les Pirates**',
+            'sub': 'Collusion & Copier-Coller',
+            'desc': 'Similarité directe (>= 75%) sur du code libre ou import de fichiers externes. Soutenance individuelle requise.',
+            'members': []
+        },
+        {
+            'id': 'cyborgs',
+            'label': '🤖 **Les Cyborgs**',
+            'sub': 'Recours IA Extérieur & Rupture Stylométrique',
+            'desc': 'Forte présomption de code généré par IA ou ruptures stylistiques massives. Entretien oral conseillé.',
             'members': []
         }
     ]
-
-    if has_any_ai:
-        clusters.append({
-            'id': 'cyborgs',
-            'label': '**Les Cyborgs**',
-            'sub': 'Recours IA Extérieur & Rupture Stylométrique',
-            'desc': 'Forte présomption de code généré par IA ou ruptures de style. Entretien oral conseillé pour vérifier l\'autonomie conceptuelle.',
-            'members': []
-        })
 
     c_map = {c['id']: c for c in clusters}
 
@@ -315,7 +313,7 @@ def build_cohort_clusters(results, suspicious_logins):
             c_map['artisans']['members'].append(member_entry)
 
     lines = [
-        "## Typologies & Clusters d'Étudiants Types\n",
+        "## Typologies & Répartition par Clusters d'Étudiants Types\n",
         "| Cluster Typologique | Profil Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
         "| :--- | :--- | :---: | :---: | :--- | :--- |"
     ]
@@ -325,6 +323,17 @@ def build_cohort_clusters(results, suspicious_logins):
         m_str = ", ".join(c['members']) if c['members'] else "—"
         lines.append(f"| {c['label']} | {c['sub']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
     lines.append("")
+
+    try:
+        skills_root = Path(__file__).resolve().parent.parent.parent
+        if str(skills_root) not in sys.path:
+            sys.path.insert(0, str(skills_root))
+        from activity_analyzer import generate_cohort_radar
+        lines.append(generate_cohort_radar(clusters, total_st))
+        lines.append("")
+    except Exception:
+        pass
+
     return "\n".join(lines)
 
 def resolve_cohort_name(cohort_dir=None, output_md=None, session_id=None):

@@ -286,7 +286,6 @@ public class UserData {
 			sb.append(" <font color='#555555'>(").append(login).append(")</font>");
 		}
 		sb.append("<hr style='margin:4px 0;'/>");
-		sb.append("<b>Indicateurs en direct :</b><br/>");
 		if (sAuth >= 0.0) {
 			sb.append("• Authenticité du code : <b>").append(String.format(java.util.Locale.US, "%.1f%%", sAuth)).append("</b>");
 			if (sAuth >= 75.0) {

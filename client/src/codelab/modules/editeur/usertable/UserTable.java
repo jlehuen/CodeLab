@@ -42,7 +42,6 @@ import javax.swing.table.TableModel;
 import codelab.CodeLab;
 import codelab.client.ChatController;
 import codelab.client.CodelabClient;
-import codelab.client.NewpassDialog;
 import codelab.client.UserData;
 import codelab.eval.SessionEvaluator;
 import codelab.modules.editeur.ModuleEditor;
@@ -123,7 +122,6 @@ public class UserTable extends JScrollPane {
 	private JMenu menuChangeSession = new JMenu();
 	private JMenuItem itemResetHelpFlag = new JMenuItem();
 	private JMenuItem itemResetUserAlert = new JMenuItem();
-	private JMenuItem itemResetTutorPasswd = new JMenuItem(CodeLab.LABEL("itemResetTutorPasswd"));
 	//private JMenuItem itemEnableControlAll = new JMenuItem(CodeLab.LABEL("UserTable_17a"));
 	private JMenuItem itemDisableControlAll = new JMenuItem(CodeLab.LABEL("UserTable_17b"));
 	private JMenuItem itemDeconnexionAll = new JMenuItem(CodeLab.LABEL("UserTable_7"));
@@ -768,15 +766,6 @@ public class UserTable extends JScrollPane {
 				}
 			});
 
-			// Changer le password tuteur
-			itemResetTutorPasswd.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					NewpassDialog npd = new NewpassDialog();
-					String password = npd.getPassword();
-					codelab.getClient().changePassword(password);
-				}
-			});
-
 			// Ouvrir une discussion
 			itemTchat.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -979,7 +968,6 @@ public class UserTable extends JScrollPane {
 			add(menuGroup);
 			add(new JSeparator());
 			add(menuConfig);
-			add(itemResetTutorPasswd);
 		}
 	}
 }

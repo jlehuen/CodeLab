@@ -307,36 +307,93 @@ Au survol de la cellule Alerte d'un étudiant, une infobulle HTML dynamique affi
 
 ---
 
-## 6. Typologie des Profils Étudiants (Clusters Pédagogiques)
+## 6. Typologie des Profils Étudiants & Visualisation Radar
 
-L'audit de post-traitement classe automatiquement les étudiants selon 6 profils didactiques types articulés autour de la matrice d'authenticité et de vélocité de résolution :
+L'audit de post-traitement classe automatiquement les étudiants selon 6 profils didactiques types articulés autour de la matrice d'authenticité et de vélocité de résolution, et les projette sur un **diagramme radar Mermaid (`radar-beta`)** où les comportements sont opposés deux à deux à 180° :
 
-| Authenticité (S_auth) / Résolution | Résolution Rapide (TTF faible / Autonomie) | Résolution Lente ou Hésitante |
-| :--- | :--- | :--- |
-| **Authenticité Élevée (S_auth > 80%)** | **Le Boss**<br>• Résolution immédiate (TTF quasi nul)<br>• Zéro acharnement<br>• Autonomie complète | **L'Artisan**<br>• Cycles courts et itératifs<br>• Lecture attentive du sujet<br>• Démarche d'apprentissage idéale |
-| **Authenticité Faible (S_auth < 30%)** | **Le Cyborg**<br>• Navettes externes fréquentes (IA)<br>• Bursts massifs de lignes<br>• Faible volume de frappe manuelle | **Le Décrocheur**<br>• Temps hors IDE > 40%<br>• Périodes Idle > 15 min<br>• Abandon face aux blocages |
+```
+             👑 Le Boss (12h)
+                   ▲
+  ⚡ Le Casse-cou  │  🔨 L'Artisan (2h)
+        (10h) \    │    /
+               \   │   /
+    ────────────┼────────────
+               /   │   \
+        (8h)  /    │    \  (4h)
+    🤖 Le Cyborg   │  🏴‍☠️ Le Pirate
+                   ▼
+          🚪 Le Décrocheur (6h)
+```
 
-### 1. L'Artisan (Comportement d'Apprentissage Exemplaire)
+### A. Les 3 Couples de Profils Didactiques Opposés à 180°
+
+| Couple d'Opposés | Profil Type | Caractéristiques & Comportement Observé | Indicateurs Clés |
+| :--- | :--- | :--- | :--- |
+| **Axe 0 $\longleftrightarrow$ Axe 3**<br>*(Aisance vs Abandon)* | 👑 **Le Boss** | Résolution immédiate, autonomie complète, maîtrise conceptuelle sans friction. | $S_{auth} > 80\%$, $TTF < 30\,\text{s}$, $I_{thrash} = 0$, $0$ aide tuteur. |
+| | 🚪 **Le Décrocheur** | Difficulté non résolue, passivité, inactivité prolongée et abandon silencieux. | Périodes Idle $> 15\,\text{min}$, Hors IDE $> 40\%$, $\le 2$ runs. |
+| **Axe 1 $\longleftrightarrow$ Axe 4**<br>*(Authenticité vs IA)* | 🔨 **L'Artisan** | Démarche d'apprentissage exemplaire, saisie personnelle, cycles itératifs courts. | $S_{auth} > 80\%$, $T_{fric} \in [10\%, 25\%]$, $I_{thrash} < 10\%$. |
+| | 🤖 **Le Cyborg** | Délégation externe / IA, injections massives de blocs sans maturation. | $S_{auth} < 30\%$, alertes `BURST` multiples, $I_{nav} > 40\%$. |
+| **Axe 2 $\longleftrightarrow$ Axe 5**<br>*(Copie vs Acharnement)* | 🏴‍☠️ **Le Pirate** | Collusion directe en salle, import par support externe (USB/réseau) ou copie d'autrui. | Présence d'événements `FILE_DROP`, similarité Jaccard/Winnowing $\ge 75\%$. |
+| | ⚡ **Le Casse-cou** | Combat acharné avec le compilateur, tâtonnement compulsif sans recul ni diagnostic. | $I_{thrash} > 35\%$, erreurs $> 70\%$, $\Delta t$ entre runs $< 15\,\text{s}$. |
+
+---
+
+### B. Le Double Radar Individuel (Fiche Étudiant)
+
+Chaque rapport individuel présente côte à côte deux diagrammes radar complémentaires au format Mermaid (`radar-beta`), intégrés dans un tableau HTML5 responsive sans bordure :
+
+1. **Radar des Indicateurs Clés (/20)** : évalue les 6 dimensions techniques objectives :
+   - `auth` : Authenticité ($S_{auth}$)
+   - `focus` : Concentration ($100 - I_{nav}$)
+   - `debug` : Efficience de débogage ($1 - I_{thrash}$)
+   - `test` : Tests & Validation
+   - `arch` : Architecture & Conception
+   - `style` : Style & Conventions (PEP 8 / syntaxe)
+2. **Radar des Profils Types (/20)** : évalue l'affinité comportementale de l'étudiant selon les 6 archétypes opposés deux à deux :
+   - `axis boss["Le Boss"], artisan["L'Artisan"], pirate["Le Pirate"], decroch["Le Décrocheur"], cyborg["Le Cyborg"], casse["Le Casse-cou"]`
+
+```mermaid
+%%{init: {'radar': {'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.12}, 'themeVariables': {'fontSize': '22px', 'radar': {'axisLabelFontSize': 22}}}}%%
+radar-beta
+    showLegend false
+    axis boss["Le Boss"], artisan["L'Artisan"], pirate["Le Pirate"], decroch["Le Décrocheur"], cyborg["Le Cyborg"], casse["Le Casse-cou"]
+    curve etud{17.5, 14.2, 1.0, 1.2, 2.0, 1.5}
+    max 20
+    min 0
+    graticule polygon
+```
+
+---
+
+### C. Le Radar de Cohorte (Rapport de Synthèse de Promotion)
+
+Dans le rapport de synthèse de promotion (`synthese_*.md`), le tableau des clusters d'étudiants types est immédiatement suivi du **Radar de Cohorte**. Il synthétise en un seul coup d'œil la santé globale de la promotion en reportant le **nombre d'étudiants rattachés à chaque profil type** sur les mêmes 3 axes opposés deux à deux, avec une échelle maximale dynamique ajustée aux effectifs.
+
+---
+
+### D. Détail des 6 Profils Didactiques
+
+#### 1. L'Artisan (Comportement d'Apprentissage Exemplaire)
 * **Indicateurs** : S_auth > 80%, T_fric ∈ [10%, 25%], I_thrash < 10%.
 * **Démarche** : Cycles de développement courts et incrémentaux, lecture approfondie du sujet avant de coder, résolution méthodique des erreurs étape par étape.
 
-### 2. Le Boss (Expertise et Maîtrise Directe)
+#### 2. Le Boss (Expertise et Maîtrise Directe)
 * **Indicateurs** : S_auth > 80%, TTF < 30 s, zéro demande d'aide tuteur, cadence de frappe élevée.
 * **Démarche** : L'étudiant maîtrise parfaitement les concepts et déroule la solution sans friction notable.
 
-### 3. Le Cyborg (Assistance IA / Solution Importée)
+#### 3. Le Cyborg (Assistance IA / Solution Importée)
 * **Indicateurs** : S_auth < 30%, alertes `BURST` multiples, I_nav > 40%, T_fric < 5%.
 * **Démarche** : Absence de genèse itérative du code. L'étudiant formule des requêtes sur un modèle externe et injecte des blocs complets de 30 à 60 lignes sans les retoucher.
 
-### 4. Le Casse-Cou (Acharnement Stérile / Tâtonnement Aveugle)
+#### 4. Le Casse-Cou (Acharnement Stérile / Tâtonnement Aveugle)
 * **Indicateurs** : I_thrash > 35%, ratio d'erreurs d'exécution > 70%, Δt entre runs < 15 s.
 * **Démarche** : L'étudiant ne consulte pas la sortie console ni le traceback. Il modifie un caractère au hasard et relance en boucle en espérant un résultat positif.
 
-### 5. Le Décrocheur (Perte de Pied et Abandon Silencieux)
+#### 5. Le Décrocheur (Perte de Pied et Abandon Silencieux)
 * **Indicateurs** : Temps hors IDE > 50%, périodes d'inactivité > 15 min, moins de 3 runs sur l'ensemble de la séance.
 * **Démarche** : Face à une difficulté initiale non résolue, l'étudiant renonce à chercher et attend la fin de séance sans solliciter l'encadrement.
 
-### 6. Le Pirate (Collusion en Salle / Import Direct)
+#### 6. Le Pirate (Collusion en Salle / Import Direct)
 * **Indicateurs** : Présence d'événements `FILE_DROP`, corrélation de synchronicité (≤ 90 s) avec la réussite d'un poste voisin.
 * **Démarche** : Récupération directe d'un fichier source par clé USB, partage local ou messagerie instantanée.
 

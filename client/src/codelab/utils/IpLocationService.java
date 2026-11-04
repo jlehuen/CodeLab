@@ -187,8 +187,6 @@ public class IpLocationService {
 			sb.append(" <font color='#555555'>(").append(udata.getLogin()).append(")</font>");
 		}
 		sb.append("<hr style='margin:4px 0;'/>");
-		sb.append("<b>Informations réseau :</b><br/>");
-		sb.append("<hr style='margin:4px 0;'/>");
 		sb.append("• Adresse IP : <b>").append(ip).append("</b><br/>");
 
 		if (info != null) {

@@ -70,14 +70,15 @@ Ce skill intègre un moteur de contrôle garantissant l'authenticité des travau
 ## 4. Format du Rapport et Gabarit Markdown
 
 L'évaluation génère un compte-rendu individuel Markdown conforme au gabarit [report_template.md](file:///Users/lehuen/codelab.files/skills/eval-c-sample/report_template.md) :
-1. **En-tête & Cartouche de Traçabilité** : Date, version du skill, moteur utilisé, synthèse des 3 piliers d'intégrité.
+1. **En-tête & Cartouche de Traçabilité** : Date, version du skill, moteur utilisé, synthèse des 3 piliers d'intégrité et indice IA.
 2. **Tableau Récapitulatif des Notes Calibrées** : Restitution stricte des notes obtenues par axe avec barème officiel.
-3. **Analyses d'Intégrité Pédagogique** : Détail de la chronométrie, stylométrie et contrôle de similarités.
-4. **Sections Pédagogiques** :
-   - `### Bilan de Progression & Analyse Pédagogique`
-   - `### Points Forts Observés` (avec extraits de code C dans des blocs ```c ... ```)
-   - `### Axes d'Amélioration & Conseils Méthodologiques`
-   - `### Commentaire de l'Enseignant`
+3. **Profil Visuel Multidimensionnel (Diagrammes Radar)** : Double diagramme radar Mermaid (`radar-beta`) affichant côte à côte les 6 indicateurs techniques et l'affinité aux 6 profils didactiques opposés deux à deux.
+4. **Analyses d'Intégrité & Dynamique Temporelle** : Télémétrie d'activité, tranches de 15 min, stylométrie et contrôle de similarités.
+5. **Sections Pédagogiques Structurées** :
+   - `### 1. Synthèse Globale & Appréciation Pédagogique`
+   - `### 2. Bilan Chiffré & Respect des Spécifications`
+   - `### 3. Métriques & Qualité du Code` (avec extraits de code C dans des blocs ```c ... ```)
+   - `### 4. Pistes d'Amélioration & Conseils Pratiques`
 
 ---
 

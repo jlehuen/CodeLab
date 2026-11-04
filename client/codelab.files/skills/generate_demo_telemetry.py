@@ -18,7 +18,7 @@ SKILLS_DIR = Path(__file__).resolve().parent
 if str(SKILLS_DIR) not in sys.path:
     sys.path.insert(0, str(SKILLS_DIR))
 
-from activity_analyzer import analyze_student_activity, generate_mermaid_radars
+from activity_analyzer import analyze_student_activity, generate_mermaid_radars, generate_cohort_radar
 
 DEMO_DIR = SKILLS_DIR.parent / "evaluations" / "Demo_Telemetry"
 DEMO_DIR_USER = Path("/Users/lehuen/codelab.files/evaluations/Demo_Telemetry")
@@ -608,19 +608,27 @@ def main():
 
 | Étudiant | Login | Note Finale | Profil Typologique Dominant | $S_{{auth}}$ | $I_{{nav}}$ | Runs (Err) | Bursts IA |
 | :--- | :---: | :---: | :--- | :---: | :---: | :---: | :---: |
-| **Léa Martin** | `lmartin` | **19.5** / 20 | Autonome & Méthodique | 96.8% | 1.0% | 12 (1) | 0 |
-| **Thomas Dubois** | `tdubois` | **14.5** / 20 | Expérimentateur & Persévérant | 95.0% | 13.5% | 26 (11) | 0 |
-| **Lucas Bernard** | `lbernard` | **6.5** / 20 | 🚨 Recours Externe / IA Présumé | 2.2% | 72.5% | 2 (0) | 1 (142L) |
-| **Camille Petit** | `cpetit` | **8.5** / 20 | ⚠️ Besoin de Guidage / Blocage | 100.0% | 17.5% | 18 (14) | 0 |
+| **Léa Martin** | `lmartin` | **19.5** / 20 | 👑 **Le Boss** | 96.8% | 1.0% | 12 (1) | 0 |
+| **Thomas Dubois** | `tdubois` | **14.5** / 20 | 🔨 **L'Artisan** | 95.0% | 13.5% | 26 (11) | 0 |
+| **Lucas Bernard** | `lbernard` | **6.5** / 20 | 🤖 **Le Cyborg** | 2.2% | 72.5% | 2 (0) | 1 (142L) |
+| **Camille Petit** | `cpetit` | **8.5** / 20 | ⚡ **Le Casse-cou** | 100.0% | 17.5% | 18 (14) | 0 |
 
 ---
 
-## 🧭 Distribution des Profils Typologiques
+## Typologies & Répartition par Clusters d'Étudiants Types
 
-- **Autonome & Méthodique (25%)** : Travail régulier, code élégant, validation continue, maîtrise conceptuelle.
-- **Expérimentateur & Persévérant (25%)** : Démarche empirique par essais-erreurs, pugnacité face aux bogues, bonne assimilation par la pratique.
-- **Suspicion d'Assistance IA (25%)** : Rupture de flux, pic d'insertion de 142 lignes en 1.1s, authenticité de saisie nulle ($S_{{auth}} = 2.2\%$).
-- **En Difficulté / Blocage (25%)** : Taux d'acharnement élevé ($I_{{thrash}}$), stagnation sur les erreurs sans adaptation de la syntaxe, demandes d'aide.
+| Cluster Typologique | Profil Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |
+| :--- | :--- | :---: | :---: | :--- | :--- |
+| 👑 **Les Boss** | Excellence & Autonomie | 1 | 25.0% | Note >= 14. Démarche personnelle complète, code propre et rigoureux. | `lmartin` (Léa Martin) |
+| 🔨 **Les Artisans** | Démarche d'Apprentissage & Régularité | 1 | 25.0% | Note entre 10 et 13.9. Socle technique acquis, travail appliqué et régulier. | `tdubois` (Thomas Dubois) |
+| ⚡ **Les Casse-cou** | Acharnement & Tâtonnement / Raccourcis | 1 | 25.0% | Acharnement compilatoire sans recul (I_thrash = 0.44), stagnation sur les erreurs. | `cpetit` (Camille Petit) |
+| 🚪 **Les Décrocheurs** | Perte de Pied & Décrochage | 0 | 0.0% | Note < 10. Travaux partiels, blocages initiaux ou abandons précoces. | — |
+| 🏴‍☠️ **Les Pirates** | Collusion & Copier-Coller | 0 | 0.0% | Similarité directe (>= 75%) sur du code libre ou import de fichiers externes. | — |
+| 🤖 **Les Cyborgs** | Recours IA Extérieur & Rupture Stylométrique | 1 | 25.0% | Forte présomption de code généré par IA ou ruptures stylistiques massives. | `lbernard` (Lucas Bernard) |
+
+{generate_cohort_radar({
+    'boss': 1, 'artisans': 1, 'casse_cou': 1, 'decrocheurs': 0, 'pirates': 0, 'cyborgs': 1
+}, 4)}
 
 ---
 

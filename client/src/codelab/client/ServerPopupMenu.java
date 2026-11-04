@@ -111,6 +111,21 @@ public class ServerPopupMenu extends JPopupMenu {
 			}
 			add(item4);
 
+			// Item changer de mot de passe
+			JMenuItem item9 = new JMenuItem(CodeLab.LABEL("ServerPopupMenu_9"));
+			item9.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent event) {
+					NewpassDialog npd = new NewpassDialog();
+					if (!npd.cancelled()) {
+						String password = npd.getPassword();
+						if (password != null && !password.isEmpty()) {
+							client.changePassword(password);
+						}
+					}
+				}
+			});
+			add(item9);
+
 			// Item administration
 			if (client.getStatut() == Statut.ADMIN) {
 				JMenuItem item7 = new JMenuItem(CodeLab.LABEL("ServerPopupMenu_7"));

@@ -709,82 +709,122 @@ radar-beta
 ```"""
 
     # -------------------------------------------------------------
-    # 2. RADAR DE TYPOLOGIE COMPORTEMENTALE MULTIDIMENSIONNELLE (/20)
+    # 2. RADAR D'AFFINITÉ AUX 6 PROFILS TYPES ARCHÉTYPAUX (/20)
     # -------------------------------------------------------------
     note_brute = float(scores.get("note_technique_brute", data.get("note_technique_brute", scores.get("total", data.get("total", 10.0)))))
     help_reqs = int(act.get("help_requests", 0))
     burst_cnt = int(act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0))
+    file_drops = int(act.get("file_drop_count", 0))
     total_runs = int(act.get("compilations", {}).get("total", 0) + act.get("executions", {}).get("total", 0))
-
-    # 1. Autonome
-    auto_score = (note_brute * 0.5) + (auth_val * 0.4) - (help_reqs * 3.0) - (burst_cnt * 4.0)
-    auto_val = min(20.0, max(1.0, round(auto_score, 1)))
-
-    # 2. Méthodique
+    i_thrash = float(act.get("i_thrash", 0.0))
     backspaces = int(act.get("typing_backspaces", 0))
-    bonus_bs = 2.0 if backspaces >= 10 else 0.0
-    meth_score = (style_val * 0.45) + (debug_val * 0.45) + bonus_bs - (burst_cnt * 3.0)
-    meth_val = min(20.0, max(1.0, round(meth_score, 1)))
-
-    # 3. Expérimentateur
-    if act.get("active"):
-        if total_runs >= 12:
-            exp_val = 19.0
-        elif total_runs >= 8:
-            exp_val = 16.5
-        elif total_runs >= 4:
-            exp_val = 14.0
-        elif total_runs >= 2:
-            exp_val = 10.0
-        else:
-            exp_val = 6.0
-    else:
-        exp_val = min(20.0, max(5.0, round(test_val * 0.8 + 4.0, 1)))
-
-    # 4. Persévérant
     ttf = act.get("ttf_avg_sec")
-    if act.get("active"):
-        if ttf is not None:
-            if ttf <= 60.0:
-                pers_val = 19.0
-            elif ttf <= 180.0:
-                pers_val = 16.0
-            elif ttf <= 300.0:
-                pers_val = 12.0
-            else:
-                pers_val = 8.0
-        else:
-            pers_val = 15.0 if total_runs > 0 else 10.0
-    else:
-        pers_val = 15.0
-
-    # 5. Assistance Externe / IA
-    if act.get("active"):
-        ext_score = ((20.0 - auth_val) * 0.5) + ((20.0 - focus_val) * 0.3) + (burst_cnt * 5.0)
-    else:
-        ext_score = (ai_prob / 100.0) * 20.0
-    ext_val = min(20.0, max(0.5, round(ext_score, 1)))
-
-    # 6. Besoin de Guidage
+    idle_max = float(act.get("idle_max_sec", 0.0))
     q_read_pct = float(act.get("time_quadrants", {}).get("q_read_pct", 0.0))
     q_edit_pct = float(act.get("time_quadrants", {}).get("q_edit_pct", 50.0))
+    is_suspicious_copy = bool(data.get("is_suspicious_copy", False))
+
+    # 1. LE BOSS (Excellence, rapidité, maîtrise, zéro friction)
+    boss_score = (note_brute * 0.60) + (auth_val * 0.40) - (help_reqs * 4.0) - (burst_cnt * 4.0) - (i_thrash * 25.0)
+    if ttf is not None:
+        if ttf <= 30.0 and note_brute >= 16.0 and help_reqs == 0:
+            boss_score += 1.5
+        elif ttf > 90.0:
+            boss_score -= min(5.0, (ttf - 90.0) / 30.0)
+    boss_val = min(20.0, max(0.5, round(boss_score, 1)))
+
+    # 2. L'ARTISAN (Démarche d'apprentissage appliquée, itérative, sans acharnement)
+    bonus_bs = 2.0 if backspaces >= 10 else 0.0
+    artisan_score = (auth_val * 0.45) + (debug_val * 0.35) + (style_val * 0.20) + bonus_bs - (burst_cnt * 3.5)
+    artisan_val = min(20.0, max(1.0, round(artisan_score, 1)))
+
+    # 3. LE CYBORG (Assistance IA / Solution injectée)
+    if act.get("active"):
+        cyborg_score = ((20.0 - auth_val) * 0.50) + ((20.0 - focus_val) * 0.30) + (burst_cnt * 4.5)
+    else:
+        cyborg_score = (ai_prob / 100.0) * 20.0
+    cyborg_val = min(20.0, max(0.5, round(cyborg_score, 1)))
+
+    # 4. LE CASSE-COU (Acharnement stérile, runs compulsifs, tâtonnement)
+    casse_score = (i_thrash * 45.0) + (4.0 if total_runs >= 10 and (ttf is not None and ttf > 180) else 0.0)
+    if act.get("active") and total_runs >= 8 and q_read_pct < 15.0:
+        casse_score += 4.0
+    casse_val = min(20.0, max(0.5, round(casse_score, 1)))
+
+    # 5. LE DÉCROCHEUR (Inactivité prolongée, abandon face aux blocages, peu de runs)
+    idle_score = 7.0 if idle_max >= 900 else (4.0 if idle_max >= 450 else 0.0)
     stagnation = 4.0 if (q_read_pct > 40.0 and q_edit_pct < 20.0) else 0.0
-    thrash_penalty = float(act.get("i_thrash", 0.0)) * 12.0
-    guide_score = (help_reqs * 5.0) + stagnation + thrash_penalty + max(0.0, (12.0 - note_brute) * 0.4)
-    guide_val = min(20.0, max(1.0, round(guide_score, 1)))
+    decroch_score = max(0.0, (11.0 - note_brute) * 0.8) + idle_score + stagnation + (4.0 if (act.get("active") and total_runs <= 2) else 0.0)
+    decroch_val = min(20.0, max(0.5, round(decroch_score, 1)))
+
+    # 6. LE PIRATE (Collusion directe, import USB / drag & drop, forte similarité)
+    pirate_score = (file_drops * 8.0) + (16.0 if is_suspicious_copy else 0.0)
+    pirate_val = min(20.0, max(0.5, round(pirate_score, 1)))
+
+    # Identification du profil dominant et secondaire
+    profiles_list = [
+        {"id": "boss", "name": "Le Boss", "icon": "👑", "val": boss_val, "desc": "Excellence et aisance conceptuelle : résolution directe, haute authenticité et autonomie complète."},
+        {"id": "artisan", "name": "L'Artisan", "icon": "🔨", "val": artisan_val, "desc": "Démarche d'apprentissage exemplaire : saisie personnelle, cycles itératifs et résolution méthodique."},
+        {"id": "cyborg", "name": "Le Cyborg", "icon": "🤖", "val": cyborg_val, "desc": "Recours marqué aux outils externes / IA : faible authenticité de frappe et injections massives de code."},
+        {"id": "casse_cou", "name": "Le Casse-cou", "icon": "⚡", "val": casse_val, "desc": "Tâtonnement aveugle et acharnement stérile : exécutions en boucle sans recul ni lecture des tracebacks."},
+        {"id": "decrocheur", "name": "Le Décrocheur", "icon": "🚪", "val": decroch_val, "desc": "Difficultés méthodologiques ou abandon silencieux : périodes d'inactivité prolongées et blocages persistants."},
+        {"id": "pirate", "name": "Le Pirate", "icon": "🏴‍☠️", "val": pirate_val, "desc": "Collusion ou importation directe : transferts de fichiers externes (clé USB / réseau) ou copie directe."}
+    ]
+    sorted_profiles = sorted(profiles_list, key=lambda x: x["val"], reverse=True)
+    dominant = sorted_profiles[0]
+    secondary = sorted_profiles[1] if (len(sorted_profiles) > 1 and sorted_profiles[1]["val"] >= 10.0 and sorted_profiles[1]["id"] != dominant["id"]) else None
 
     radar_prof_code = f"""```mermaid
 %%{{init: {{'radar': {{'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.12}}, 'themeVariables': {{'fontSize': '22px', 'radar': {{'axisLabelFontSize': 22}}}}}}}}%%
 radar-beta
     showLegend false
-    axis auto["Autonome"], meth["Méthodique"], exp["Expérimentateur"], pers["Persévérant"], ext["Assistance Externe / IA"], guide["Besoin de Guidage"]
-    curve etud{{{auto_val}, {meth_val}, {exp_val}, {pers_val}, {ext_val}, {guide_val}}}
+    axis boss["Le Boss"], artisan["L'Artisan"], pirate["Le Pirate"], decroch["Le Décrocheur"], cyborg["Le Cyborg"], casse["Le Casse-cou"]
+    curve etud{{{boss_val}, {artisan_val}, {pirate_val}, {decroch_val}, {cyborg_val}, {casse_val}}}
     max 20
     min 0
     graticule polygon
 ```"""
 
+    # Construction du tableau explicatif et diagnostique
+    table_lines = [
+        "#### 📋 Caractérisation de l'Étudiant selon les Profils Types Didactiques\n",
+        f"> 🎯 **Profil Dominant Détecté** : **{dominant['icon']} {dominant['name']}** (Affinité : **{dominant['val']:.1f} / 20**)",
+    ]
+    if secondary:
+        table_lines.append(f"> 💡 *Composante secondaire notable* : **{secondary['icon']} {secondary['name']}** (Affinité : **{secondary['val']:.1f} / 20**)\n")
+    else:
+        table_lines.append("")
+
+    table_lines.append("| Profil Didactique Type | Démarche & Caractéristiques | Affinité / 20 | Adéquation & Diagnostic |")
+    table_lines.append("| :--- | :--- | :---: | :--- |")
+
+    for p in profiles_list:
+        val = p["val"]
+        pct = (val / 20.0) * 100.0
+        if p["id"] == dominant["id"]:
+            diag = f"🟢 **Profil dominant** ({pct:.0f}%) : correspond au comportement observé en séance."
+        elif val >= 14.0:
+            diag = f"🔵 **Forte composante** ({pct:.0f}%) : traits observables très marqués."
+        elif val >= 9.0:
+            diag = f"🟡 **Affinité modérée** ({pct:.0f}%) : traits observables occasionnels."
+        elif val >= 4.0:
+            diag = f"⚪ **Faible** ({pct:.0f}%) : comportement marginal ou peu significatif."
+        else:
+            diag = f"⚪ **Négligeable** ({pct:.0f}%) : aucun signe comportemental associé."
+
+        table_lines.append(f"| {p['icon']} **{p['name']}** | {p['desc']} | **{val:.1f}** | {diag} |")
+
+    table_md = "\n".join(table_lines)
+
     combined = f"""### 📊 Profil Visuel Multidimensionnel (Diagrammes Radar)
+
+> [!NOTE]
+> **Lecture des Deux Radars Complémentaires** :
+> - **Radar de gauche (Indicateurs)** : Évalue les 6 piliers de compétence technique sur 20 (code, concentration, validation et authenticité). Un polygone large et équilibré témoigne d'une maîtrise homogène.
+> - **Radar de droite (Profils Types)** : Mesure l'affinité comportementale selon 3 axes opposés deux à deux :
+>   - 👑 **Le Boss** $\\longleftrightarrow$ 🚪 **Le Décrocheur** : aisance et réussite autonome face au décrochage silencieux.
+>   - 🔨 **L'Artisan** $\\longleftrightarrow$ 🤖 **Le Cyborg** : démarche d'apprentissage authentique face à la délégation externe / IA.
+>   - ⚡ **Le Casse-cou** $\\longleftrightarrow$ 🏴‍☠️ **Le Pirate** : combat acharné avec le code face à la facilité de la copie d'autrui.
 
 <table width="100%" border="0" cellspacing="0" cellpadding="0" style="border:none; border-collapse:collapse; margin: 8px 0;">
 <tr>
@@ -801,24 +841,106 @@ radar-beta
 </tr>
 </table>
 
-> [!NOTE]
-> **Lecture des Radars Comportementaux** :
-> - **Radar de gauche (Indicateurs)** : Évalue les piliers de compétence sur 20. Un polygone large et régulier témoigne d'une maîtrise homogène (code, concentration, validation et authenticité).
-> - **Radar de droite (Typologie)** : Mesure l'affinité de l'étudiant avec 6 facettes comportementales. Chaque étudiant conjugue plusieurs traits (ex. profil *Expérimentateur* et *Autonome*, ou *Persévérant* avec *Besoin de Guidage* ponctuel)."""
+{table_md}"""
 
     return {
         "radar_indicateurs": radar_ind_code,
         "radar_profils": radar_prof_code,
         "radars_markdown": combined,
+        "tableau_explicatif": table_md,
+        "profil_dominant": dominant["name"],
+        "profil_dominant_score": dominant["val"],
         "valeurs_indicateurs": {
             "auth": auth_val, "focus": focus_val, "debug": debug_val,
             "test": test_val, "arch": arch_val, "style": style_val
         },
         "valeurs_profils": {
-            "auto": auto_val, "meth": meth_val, "exp": exp_val,
-            "pers": pers_val, "ext": ext_val, "guide": guide_val
+            "boss": boss_val, "artisan": artisan_val, "cyborg": cyborg_val,
+            "casse_cou": casse_val, "decrocheur": decroch_val, "pirate": pirate_val,
+            # Rétrocompatibilité des anciennes clés
+            "auto": boss_val, "meth": artisan_val, "exp": artisan_val,
+            "pers": boss_val, "ext": cyborg_val, "guide": decroch_val
         }
     }
+
+
+def generate_cohort_radar(clusters_data, total_st: int = None) -> str:
+    """Génère le diagramme radar Mermaid de répartition des effectifs de la cohorte selon les 6 profils types opposés deux à deux."""
+    c_counts = {"boss": 0, "artisan": 0, "pirate": 0, "decroch": 0, "cyborg": 0, "casse": 0}
+
+    if isinstance(clusters_data, list):
+        for c in clusters_data:
+            cid = str(c.get("id", "")).lower()
+            cnt = len(c.get("members", [])) if "members" in c else int(c.get("count", 0))
+            if "boss" in cid:
+                c_counts["boss"] = cnt
+            elif "artisan" in cid:
+                c_counts["artisan"] = cnt
+            elif "pirate" in cid:
+                c_counts["pirate"] = cnt
+            elif "decroch" in cid:
+                c_counts["decroch"] = cnt
+            elif "cyborg" in cid:
+                c_counts["cyborg"] = cnt
+            elif "casse" in cid:
+                c_counts["casse"] = cnt
+    elif isinstance(clusters_data, dict):
+        for k, v in clusters_data.items():
+            k_low = str(k).lower()
+            cnt = len(v) if isinstance(v, (list, set)) else int(v)
+            if "boss" in k_low:
+                c_counts["boss"] = cnt
+            elif "artisan" in k_low:
+                c_counts["artisan"] = cnt
+            elif "pirate" in k_low:
+                c_counts["pirate"] = cnt
+            elif "decroch" in k_low:
+                c_counts["decroch"] = cnt
+            elif "cyborg" in k_low:
+                c_counts["cyborg"] = cnt
+            elif "casse" in k_low:
+                c_counts["casse"] = cnt
+
+    vals = [c_counts["boss"], c_counts["artisan"], c_counts["pirate"], c_counts["decroch"], c_counts["cyborg"], c_counts["casse"]]
+    max_cnt = max(vals) if vals else 1
+
+    if max_cnt <= 5:
+        radar_max = 5
+    elif max_cnt <= 10:
+        radar_max = 10
+    else:
+        radar_max = ((max_cnt + 4) // 5) * 5 if (max_cnt % 5 != 0) else (max_cnt + 5)
+
+    tot = total_st if total_st is not None else sum(vals)
+
+    radar_md = f"""### 📊 Répartition Visuelle de la Cohorte (Diagramme Radar des 6 Profils)
+
+<table width="100%" border="0" cellspacing="0" cellpadding="0" style="border:none; border-collapse:collapse; margin: 8px 0;">
+<tr>
+<td align="center" style="border:none; padding:0; vertical-align:middle;">
+
+```mermaid
+%%{{init: {{'radar': {{'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.15}}, 'themeVariables': {{'fontSize': '22px', 'radar': {{'axisLabelFontSize': 22}}}}}}}}%%
+radar-beta
+    showLegend false
+    axis boss["Le Boss"], artisan["L'Artisan"], pirate["Le Pirate"], decroch["Le Décrocheur"], cyborg["Le Cyborg"], casse["Le Casse-cou"]
+    curve effectif{{{c_counts['boss']}, {c_counts['artisan']}, {c_counts['pirate']}, {c_counts['decroch']}, {c_counts['cyborg']}, {c_counts['casse']}}}
+    max {radar_max}
+    min 0
+    graticule polygon
+```
+
+</td>
+</tr>
+</table>
+
+> [!NOTE]
+> **Lecture du Radar de Cohorte (Effectifs par Profil Type)** :
+> Ce diagramme met en évidence la répartition des effectifs d'étudiants ({tot} étudiants au total) selon les 3 axes opposés deux à deux :
+> - 👑 **Le Boss** $\\longleftrightarrow$ 🚪 **Le Décrocheur** : autonomie et excellence face au décrochage silencieux.
+> - 🔨 **L'Artisan** $\\longleftrightarrow$ 🤖 **Le Cyborg** : démarche d'apprentissage authentique face à la délégation externe / IA.
+> - ⚡ **Le Casse-cou** $\\longleftrightarrow$ 🏴‍☠️ **Le Pirate** : combat acharné avec le code face à la collusion / copie d'autrui."""
+    return radar_md
 
 if __name__ == "__main__":
     # Test autonome sur un dossier passé en argument

@@ -13,7 +13,9 @@ Ce répertoire rassemble le moteur d'évaluation et les compétences (*skills*) 
 ```
 skills/
 ├── eval_codelab.py         # Moteur universel d'évaluation (CLI & interface CodeLab)
+├── activity_analyzer.py    # Moteur d'analytics télémétriques, double radar et 6 profils
 ├── recalculate_grades.py   # Utilitaire de recalcul des barèmes hors-ligne
+├── generate_session_test.py# Générateur de cohortes d'étalonnage à 10 profils
 ├── README.md               # Guide d'architecture et de référence (ce fichier)
 │
 ├── eval-c-sample/          # Exemple générique C (Compilation, Architecture, Style, Tests)
@@ -148,7 +150,80 @@ AI_CACHE       = true
 
 ---
 
-## 6. Consultation des Résultats
+## 6. Analyse Télémétrique, Double Radar & Typologies Didactiques
+
+CodeLab intègre un moteur d'analyse comportementale de pointe ([`activity_analyzer.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/activity_analyzer.py)) qui extrait des métriques objectives issues de la session de développement et les projette graphiquement sous forme de **diagrammes radar Mermaid (`radar-beta`)** nativement rendus dans l'interface CodeLab.
+
+### 6.1. Le Double Radar Individuel
+
+Chaque fiche d'évaluation individuelle intègre deux diagrammes radar complémentaires présentés côte à côte dans un tableau responsive :
+
+1. **Radar des Indicateurs Clés (/20)** : évalue les 6 compétences techniques objectives :
+   - `auth` : Authenticité de saisie ($S_{auth}$ issu du rapport touches frappées / volume total).
+   - `focus` : Concentration dans l'environnement ($100 - I_{nav}$).
+   - `debug` : Efficience de débogage et absence d'acharnement ($1 - I_{thrash}$).
+   - `test` : Validation fonctionnelle et robustesse aux tests.
+   - `arch` : Architecture modulaire et conception logicielle.
+   - `style` : Conventions, idiomes et propreté du code (ex: PEP 8).
+
+2. **Radar des Profils Types Didactiques (/20)** : projette le comportement d'apprentissage sur 3 couples d'archétypes opposés deux à deux à 180° :
+
+```
+             👑 Le Boss
+                 ▲
+  ⚡ Le Casse-cou│  🔨 L'Artisan
+          \      │    /
+           \     │   /
+    ─────────────┼─────────────
+           /     │   \
+          /      │    \
+    🤖 Le Cyborg │  🏴‍☠️ Le Pirate
+                 ▼
+          🚪 Le Décrocheur
+```
+
+> [!NOTE]
+> **Opposition des 3 Couples Didactiques à 180°** :
+> - 👑 **Le Boss** $\longleftrightarrow$ 🚪 **Le Décrocheur** : aisance et réussite autonome face au décrochage silencieux.
+> - 🔨 **L'Artisan** $\longleftrightarrow$ 🤖 **Le Cyborg** : démarche d'apprentissage authentique face à la délégation externe / IA.
+> - ⚡ **Le Casse-cou** $\longleftrightarrow$ 🏴‍☠️ **Le Pirate** : combat acharné avec le code face à la collusion / copie d'autrui.
+
+### 6.2. Le Radar de Cohorte dans les Synthèses de Session
+
+Dans le rapport de synthèse de promotion (`synthese_*.md`), le tableau `Typologies & Répartition par Clusters d'Étudiants Types` est immédiatement complété par le **Radar de Cohorte** :
+- Il reporte les effectifs réels de la promotion sur les 6 profils types opposés à 180°.
+- L'échelle maximale (`max`) s'ajuste dynamiquement par paliers (5, 10, ou multiples de 5) selon la taille du groupe.
+- Il permet à l'équipe pédagogique d'identifier instantanément si la séance a été dominée par une saine démarche d'apprentissage (*Artisans*), une réussite sans effort (*Boss*), des blocages massifs (*Casse-cou* / *Décrocheurs*) ou un recours marqué à des assistants externes (*Cyborgs*).
+
+### 6.3. Structure Normalisée des Fiches Individuelles
+
+Toutes les fiches individuelles produites par les compétences CodeLab s'articulent autour d'une structure rigoureuse et harmonisée en 4 sections pédagogiques :
+1. **Cartouche de Traçabilité & Synthèse d'Intégrité** : horodatage, version de la compétence, moteur d'évaluation, indices d'authenticité et d'assistance IA.
+2. **Tableau Récapitulatif des Notes Calibrées** : détail par axe de compétence avec respect strict du barème officiel.
+3. **Profil Visuel Multidimensionnel (Diagrammes Radar)** : rendu visuel des deux radars Mermaid et tableau diagnostique d'affinité aux 6 profils didactiques.
+4. **Analyses d'Intégrité & Dynamique Temporelle** : chronométrie fine, stylométrie, tranches de 15 minutes et alertes télémétriques.
+5. **Sections Pédagogiques Structurées** :
+   - `### 1. Synthèse Globale & Appréciation Pédagogique`
+   - `### 2. Bilan Chiffré & Respect des Spécifications`
+   - `### 3. Métriques & Qualité du Code`
+   - `### 4. Pistes d'Amélioration & Conseils Pratiques`
+
+### 6.4. Génération de Cohortes d'Étalonnage (`generate_session_test.py`)
+
+L'outil [`generate_session_test.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/generate_session_test.py) permet de créer instantanément une promotion de test complète (`Session_test`) comportant 10 étudiants simulés illustrant les différents profils types :
+- *Boss* autonome (`boss_expert`)
+- *Artisans* studieux (`artisan_regulier`, `artisan_debutant`)
+- *Cyborgs* dopés à l'IA (`cyborg_ia`, `cyborg_copier_coller`)
+- *Casse-cou* persévérant mais bloqué (`casse_cou_acharne`)
+- *Décrocheur* passif (`decrocheur_inactif`)
+- *Pirate* par importation externe (`pirate_drop`)
+- Profils mixtes et équilibrés (`etudiant_moyen`, `etudiant_hesitant`)
+
+Cet outil sert de banc d'essai pour valider le rendu du double radar, des fenêtres glissantes et de la synthèse de promotion.
+
+---
+
+## 7. Consultation des Résultats
 
 - **Stockage sécurisé** : Les fiches d'évaluation sont enregistrées dans `~/codelab.files/evaluations/` (espace enseignant strictement isolé des postes étudiants).
 - **Visualiseur Markdown intégré** : CodeLab inclut un visualiseur Markdown interactif avec rendu HTML5, typographie soignée et formules mathématiques.

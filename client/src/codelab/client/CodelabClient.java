@@ -36,6 +36,7 @@ import codelab.console.Console;
 import codelab.modules.editeur.ModuleEditor;
 import codelab.modules.editeur.manager.FileManager;
 import codelab.utils.WaitingDialog;
+import codelab.utils.Encryption;
 import codelab.utils.MyFileUtils;
 import codelab.utils.Utils;
 
@@ -759,7 +760,15 @@ public class CodelabClient {
 					}
 					// Première connexion (ou password réinitialisé)
 					NewpassDialog npd = new NewpassDialog();
+					if (npd.cancelled()) {
+						closeSocket();
+						return false;
+					}
 					passwrd = npd.getPassword();
+					if (passwrd == null || passwrd.isEmpty()) {
+						closeSocket();
+						return false;
+					}
 					this.password = passwrd;
 					pass256 = MessagePackUtils.encodeSHA256(passwrd);
 					response = sendString(pass256);
@@ -1024,6 +1033,10 @@ public class CodelabClient {
 		server.forceDisconnectAll();
 	}
 
+	public String getPassword() {
+		return password;
+	}
+
 	public void resetPassword(String user_login) {
 		if (!isConnected()) return;
 		server.resetPassword(user_login);
@@ -1033,6 +1046,14 @@ public class CodelabClient {
 		if (!isConnected()) return;
 		String pass_SHA256 = MessagePackUtils.encodeSHA256(new_passwd);
 		server.changePassword(pass_SHA256);
+		this.password = new_passwd;
+		if (CodeLab.AUTO_LOGIN) {
+			try {
+				CodeLab.PASSWD = Encryption.encrypt(new_passwd);
+			} catch (Exception e) {
+				CodeLab.logger("Error encrypting password: " + e.getMessage());
+			}
+		}
 	}
 	
 	public void changeSession(String sessionId) {
