@@ -69,16 +69,16 @@ A key feature of CodeLab is enabling **virtual classrooms** (in-person or remote
 
 <a id="downloads" name="downloads"></a>
 
-## Downloads (version 1.5.2)
+## Downloads (version 1.5.3)
 
 <br>
 
 <p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.2.dmg"><img src="client/images/download-macos.png" alt="Download for macOS" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.3.dmg"><img src="client/images/download-macos.png" alt="Download for macOS" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.2-Setup.exe"><img src="client/images/download-windows.png" alt="Download for Windows" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.3-Setup.exe"><img src="client/images/download-windows.png" alt="Download for Windows" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.2.zip"><img src="client/images/download-linux.png" alt="Download for Linux" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.3.zip"><img src="client/images/download-linux.png" alt="Download for Linux" width="150"></a>
 </p>
 
 All available releases can be found in the CodeLab [Releases](https://github.com/jlehuen/CodeLab/releases) section.
@@ -256,11 +256,13 @@ The complete catalog, source archives (`.zip`), precompiled packages (`.pac`), a
 CodeLab integrates a modular **continuous formative assessment** system (*skills*), built upon a hybrid methodology:
 
 - **100% deterministic & local grading**: Student code is audited offline (syntax, AST analysis, automated unit tests, rubric criteria on 20 points). The grade is objective and strictly identical with or without AI.
+- **Process Activity Tracking & Live Alerts**: Continuous capture of 11 learning observables (typing keystrokes, paste events, focus switches, execution cycles), native Rust calculation of the authenticity score $S_{\text{auth}}$, and instant live alerts (`BURST`, `PASTE`, `THRASH`, `DROP`) with auto-clear in the tutor table.
 - **Authenticity & anti-plagiarism checks**: Anti-pattern detection, stylometric break analysis, and peer-to-peer similarity detection.
 - **Socratic AI guidance**: If an API key (Google Gemini) is configured, the AI crafts a personalized, benevolent assessment report guiding the student toward self-remediation, without ever calculating or altering the grade.
 - **Comprehensive reporting**: Individual Markdown reports (viewable in the built-in viewer) and instant CSV export for student records.
 
-> 📖 To learn more about architecture, API configuration, and authoring new assessment rubrics, consult the [evaluation skills guide](client/codelab.files/skills/README.md).
+> 📖 To learn more about architecture, API configuration, and authoring new assessment rubrics, consult the [evaluation skills guide](client/codelab.files/skills/README.md).  
+> 🔬 For the formal mathematical modeling of the tripartite process (observables, indicators, real-time alerts, and 6 student learning clusters), consult the reference document [Process Tracking & Live Alerts](docs/ACTIVITY_TRACKING.md).
 
 <p align="center">
   <br>
@@ -307,6 +309,7 @@ codelab/
 │   ├── doc-fr/                 # French documentation
 │   └── doc-en/                 # English documentation
 │
+├── docs/                       # Specifications and technical architecture documentation (telemetry, etc.)
 ├── VERSION                     # Single source of truth for version numbering
 ├── .gitignore
 ├── .gitattributes

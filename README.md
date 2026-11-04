@@ -70,16 +70,16 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 <a id="telechargements" name="telechargements"></a>
 <a id="téléchargements" name="téléchargements"></a>
 
-## Téléchargements (version 1.5.2)
+## Téléchargements (version 1.5.3)
 
 <br>
 
 <p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.2.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.3.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.2-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.3-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.2.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.3.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
 </p>
 
 Toutes les versions disponibles sont dans la section [Releases](https://github.com/jlehuen/CodeLab/releases) de CodeLab.
@@ -258,11 +258,13 @@ Le catalogue complet, les archives sources (`.zip`), les paquets précompilés (
 CodeLab intègre un système modulaire d'**évaluation formative continue** (*skills*), articulé autour d'une méthodologie hybride :
 
 - **Notation 100 % déterministe et locale** : Le code étudiant est audité hors-ligne (syntaxe, analyse AST, exécution de tests, respect des consignes et barème sur 20 points). La note est objective et rigoureusement identique avec ou sans recours à l'IA.
+- **Traçabilité de processus & Alertes en direct** : Capture continue des 11 observables d'apprentissage (frappes réelles, collages, focus, runs), calcul natif du score d'authenticité $S_{\text{auth}}$ et détection d'alertes instantanées (`BURST`, `PASTE`, `THRASH`, `DROP`) avec auto-clear dans l'interface de supervision tuteur.
 - **Contrôle d'authenticité** : Détection des anti-patterns, analyse des ruptures de style et repérage des similarités inter-étudiants (plagiat).
 - **Accompagnement pédagogique par IA** : Si une clé d'API (Google Gemini) est configurée, l'IA génère une appréciation socratique et personnalisée guidant l'étudiant vers l'auto-remédiation, sans jamais attribuer la note elle-même.
 - **Restitution complète** : Génération de fiches individuelles en Markdown (consultables dans le visualiseur intégré) et export CSV des résultats de promotion pour la scolarité.
 
-> 📖 Pour découvrir l'architecture détaillée, la configuration de l'API et la création de grilles d'évaluation personnalisées, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).
+> 📖 Pour découvrir l'architecture détaillée, la configuration de l'API et la création de grilles d'évaluation personnalisées, consultez le [guide des skills d'évaluation](client/codelab.files/skills/README.md).  
+> 🔬 Pour la modélisation formelle du triptyque (observables, indicateurs, alertes temps réel et typologie des 6 profils d'apprenants), consultez le document de référence [Traçabilité & Alertes Temps Réel](docs/ACTIVITY_TRACKING.md).
 
 <p align="center">
   <br>
@@ -309,6 +311,7 @@ codelab/
 │   ├── doc-fr/                 # Documentation en français
 │   └── doc-en/                 # Documentation en anglais
 │
+├── docs/                       # Spécifications et documentation d'architecture technique (télémétrie, etc.)
 ├── VERSION                     # Source unique du numéro de version
 ├── .gitignore
 ├── .gitattributes

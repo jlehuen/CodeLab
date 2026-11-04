@@ -492,6 +492,9 @@ pub struct UserData {
     pub connected: bool,
     pub help_flag: bool,
     pub edited_file: String,
+    pub alerts_json: String,
+    pub s_auth: f64,
+    pub i_nav: f64,
 }
 
 impl UserData {
@@ -529,6 +532,9 @@ pub fn build_userdata(login: &str) -> Option<UserData> {
             connected: false, // Modifier plus tard
             help_flag: false, // Modifier plus tard
             edited_file: String::new(), // Modifier plus tard
+            alerts_json: "[]".to_string(),
+            s_auth: 100.0,
+            i_nav: 0.0,
         })
     } else {
         None // Utilisateur pas trouvé

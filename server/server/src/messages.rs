@@ -158,6 +158,10 @@ pub enum CommandType {
     SET_HELP_FLAG,
     RESET_HELP_FLAG,
 
+    // Télémétrie et Alertes
+    SET_USER_ALERT,
+    RESET_USER_ALERT,
+
      // Contrôle
     SET_CONTROLLED,
     SET_CONTROL_MODE,

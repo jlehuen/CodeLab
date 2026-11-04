@@ -152,12 +152,210 @@ pub enum ActivityEvent {
     },
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LiveAlert {
+    pub code: String,       // "BURST", "PASTE", "THRASH", "DROP"
+    pub level: String,      // "CRIT", "WARN", "INFO"
+    pub message: String,
+    pub timestamp: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LiveMetrics {
+    pub s_auth: f64,
+    pub i_nav: f64,
+    pub typed_chars: usize,
+    pub backspaces: usize,
+    pub pasted_chars: usize,
+    pub pasted_lines: usize,
+    pub burst_chars: usize,
+    pub burst_lines: usize,
+    pub dropped_files: usize,
+    pub total_away_sec: u64,
+    pub consecutive_errors: usize,
+}
+
+impl Default for LiveMetrics {
+    fn default() -> Self {
+        Self {
+            s_auth: 100.0,
+            i_nav: 0.0,
+            typed_chars: 0,
+            backspaces: 0,
+            pasted_chars: 0,
+            pasted_lines: 0,
+            burst_chars: 0,
+            burst_lines: 0,
+            dropped_files: 0,
+            total_away_sec: 0,
+            consecutive_errors: 0,
+        }
+    }
+}
+
 struct LastEditInfo {
     instant: Instant,
 }
 
+#[derive(Default)]
+struct StudentLiveStatus {
+    consecutive_errors: usize,
+    last_error_time: Option<Instant>,
+    typed_chars: usize,
+    backspaces: usize,
+    pasted_chars: usize,
+    pasted_lines: usize,
+    burst_chars: usize,
+    burst_lines: usize,
+    dropped_files: usize,
+    focus_lost_count: usize,
+    total_away_sec: u64,
+    session_start: Option<Instant>,
+}
+
+impl StudentLiveStatus {
+    fn compute_s_auth(&self) -> f64 {
+        let total = self.typed_chars + self.pasted_chars + self.burst_chars;
+        if total == 0 {
+            100.0
+        } else {
+            let score = (self.typed_chars as f64) / (total as f64) * 100.0;
+            (score.clamp(0.0, 100.0) * 10.0).round() / 10.0
+        }
+    }
+
+    fn compute_i_nav(&self) -> f64 {
+        let elapsed_sec = self.session_start.map(|t| t.elapsed().as_secs()).unwrap_or(0);
+        if elapsed_sec == 0 {
+            0.0
+        } else {
+            let ratio = (self.total_away_sec as f64) / (elapsed_sec as f64) * 100.0;
+            (ratio.clamp(0.0, 100.0) * 10.0).round() / 10.0
+        }
+    }
+
+    fn to_live_metrics(&self) -> LiveMetrics {
+        LiveMetrics {
+            s_auth: self.compute_s_auth(),
+            i_nav: self.compute_i_nav(),
+            typed_chars: self.typed_chars,
+            backspaces: self.backspaces,
+            pasted_chars: self.pasted_chars,
+            pasted_lines: self.pasted_lines,
+            burst_chars: self.burst_chars,
+            burst_lines: self.burst_lines,
+            dropped_files: self.dropped_files,
+            total_away_sec: self.total_away_sec,
+            consecutive_errors: self.consecutive_errors,
+        }
+    }
+}
+
 lazy_static! {
     static ref LAST_EDITS: Mutex<HashMap<String, LastEditInfo>> = Mutex::new(HashMap::new());
+    static ref STUDENT_LIVE: Mutex<HashMap<String, StudentLiveStatus>> = Mutex::new(HashMap::new());
+}
+
+// ----------------------------------------------------------------------------
+// Chargement et replay résilient du journal d'activité
+// ----------------------------------------------------------------------------
+
+pub fn ensure_student_live_loaded(session: &str, login: &str) {
+    let key = format!("{}/{}", session, login);
+    let mut live_map = STUDENT_LIVE.lock().unwrap();
+    if !live_map.contains_key(&key) {
+        let mut st = StudentLiveStatus::default();
+        let log_file_path = Path::new(PROG_DIR).join(session).join(login).join(".activity.jsonl");
+        if let Ok(content) = fs::read_to_string(&log_file_path) {
+            for line in content.lines() {
+                if line.trim().is_empty() {
+                    continue;
+                }
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(line) {
+                    match val.get("type").and_then(|t| t.as_str()) {
+                        Some("TYPING") => {
+                            st.typed_chars += val.get("typed_chars").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                            st.backspaces += val.get("backspaces").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                        }
+                        Some("PASTE") => {
+                            st.pasted_chars += val.get("chars").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                            st.pasted_lines += val.get("lines").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                        }
+                        Some("EDIT") => {
+                            if let Some(al) = val.get("alert").and_then(|a| a.as_str()) {
+                                if al.starts_with("BURST") {
+                                    let lines = val.get("lines_added").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                                    st.burst_lines += lines;
+                                    st.burst_chars += lines * 30;
+                                }
+                            }
+                        }
+                        Some("FOCUS") => {
+                            if val.get("status").and_then(|s| s.as_str()) == Some("GAINED") {
+                                st.total_away_sec += val.get("duration_sec").and_then(|v| v.as_u64()).unwrap_or(0);
+                            } else if val.get("status").and_then(|s| s.as_str()) == Some("LOST") {
+                                st.focus_lost_count += 1;
+                            }
+                        }
+                        Some("FILE_DROP") => {
+                            st.dropped_files += 1;
+                        }
+                        Some("COMPILE") | Some("EXECUTE") => {
+                            if val.get("status").and_then(|s| s.as_str()) == Some("ERROR") {
+                                st.consecutive_errors += 1;
+                            } else if val.get("status").and_then(|s| s.as_str()) == Some("OK")
+                                || val.get("status").and_then(|s| s.as_str()) == Some("DONE")
+                            {
+                                st.consecutive_errors = 0;
+                            }
+                        }
+                        Some("SESSION") => {
+                            if st.session_start.is_none() {
+                                st.session_start = Some(Instant::now());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        live_map.insert(key, st);
+    }
+}
+
+pub fn get_student_live_metrics(session: &str, login: &str) -> LiveMetrics {
+    ensure_student_live_loaded(session, login);
+    let key = format!("{}/{}", session, login);
+    let live_map = STUDENT_LIVE.lock().unwrap();
+    live_map.get(&key).map(|st| st.to_live_metrics()).unwrap_or_default()
+}
+
+// ----------------------------------------------------------------------------
+// Déclenchement, extinction et propagation d'alertes temps réel vers les tuteurs
+// ----------------------------------------------------------------------------
+
+pub fn trigger_live_alert(session: &str, login: &str, code: &str, msg: &str, level: &str) {
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+        let sess = session.to_string();
+        let log = login.to_string();
+        let c = code.to_string();
+        let m = msg.to_string();
+        let l = level.to_string();
+        handle.spawn(async move {
+            crate::client::notify_tutors_user_alert(&sess, &log, &c, &m, &l).await;
+        });
+    }
+}
+
+pub fn clear_live_alert(session: &str, login: &str, code: &str) {
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+        let sess = session.to_string();
+        let log = login.to_string();
+        let c = code.to_string();
+        handle.spawn(async move {
+            crate::client::notify_tutors_clear_alert(&sess, &log, &c).await;
+        });
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -258,6 +456,16 @@ pub fn record_view_event(session: &str, login: &str, file: &str) {
 }
 
 pub fn record_session_event(session: &str, login: &str, status: &str, ip: Option<&str>, duration_sec: Option<u64>) {
+    ensure_student_live_loaded(session, login);
+    if status == "CONNECTED" {
+        let key = format!("{}/{}", session, login);
+        let mut live_map = STUDENT_LIVE.lock().unwrap();
+        let st = live_map.entry(key).or_default();
+        if st.session_start.is_none() {
+            st.session_start = Some(Instant::now());
+        }
+    }
+
     let event = ActivityEvent::Session {
         timestamp: Utc::now().to_rfc3339(),
         session: session.to_string(),
@@ -371,11 +579,44 @@ pub fn record_file_activity(
         alert: alert.clone(),
     };
 
+    // Réinitialisation de l'acharnement si modification de code réelle
+    ensure_student_live_loaded(session, login);
+    let key = format!("{}/{}", session, login);
+
+    if lines_added + lines_removed >= 3 {
+        let mut had_thrash = false;
+        {
+            let mut live_map = STUDENT_LIVE.lock().unwrap();
+            if let Some(st) = live_map.get_mut(&key) {
+                if st.consecutive_errors >= 3 {
+                    had_thrash = true;
+                }
+                st.consecutive_errors = 0;
+            }
+        }
+        if had_thrash {
+            clear_live_alert(session, login, "THRASH");
+        }
+    }
+
     if let Some(ref al) = alert {
+        if al.starts_with("BURST") {
+            let mut live_map = STUDENT_LIVE.lock().unwrap();
+            let st = live_map.entry(key.clone()).or_default();
+            st.burst_lines += lines_added;
+            st.burst_chars += lines_added * 30;
+        }
+
         log::warn!(
             "[ACTIVITY ALERT] [{}] session={} login={} file={} (+{}/-{}) chunk_max={} dt={:?}s",
             al, session, login, relative_file, lines_added, lines_removed, chunk_max, dt_sec
         );
+        let msg = if al == "BURST_NEW_FILE" {
+            format!("Nouveau fichier {} ({}L)", relative_file, lines_added)
+        } else {
+            format!("+{}L insérées d'un bloc ({})", lines_added, relative_file)
+        };
+        trigger_live_alert(session, login, "BURST", &msg, "CRIT");
     } else {
         log::info!(
             "[ACTIVITY EDIT] session={} login={} file={} (+{}/-{}) chunk_max={}",
@@ -407,6 +648,8 @@ struct ClientLogPayload {
 }
 
 pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
+    ensure_student_live_loaded(session, login);
+    let key = format!("{}/{}", session, login);
     let now = Utc::now().to_rfc3339();
 
     if let Ok(payload) = serde_json::from_str::<ClientLogPayload>(raw_log) {
@@ -421,11 +664,36 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                         "[ACTIVITY COMPILE ERROR] session={} login={} file={} err={:?}",
                         session, login, file, error_msg
                     );
+                    let err_cnt;
+                    {
+                        let mut live_map = STUDENT_LIVE.lock().unwrap();
+                        let st = live_map.entry(key.clone()).or_default();
+                        st.consecutive_errors += 1;
+                        st.last_error_time = Some(Instant::now());
+                        err_cnt = st.consecutive_errors;
+                    }
+                    if err_cnt >= 3 {
+                        let msg = format!("{} échecs de compilation consécutifs ({})", err_cnt, file);
+                        trigger_live_alert(session, login, "THRASH", &msg, "WARN");
+                    }
                 } else {
                     log::info!(
                         "[ACTIVITY COMPILE OK] session={} login={} file={}",
                         session, login, file
                     );
+                    let mut had_thrash = false;
+                    {
+                        let mut live_map = STUDENT_LIVE.lock().unwrap();
+                        if let Some(st) = live_map.get_mut(&key) {
+                            if st.consecutive_errors >= 3 {
+                                had_thrash = true;
+                            }
+                            st.consecutive_errors = 0;
+                        }
+                    }
+                    if had_thrash {
+                        clear_live_alert(session, login, "THRASH");
+                    }
                 }
 
                 let event = ActivityEvent::Compile {
@@ -450,11 +718,38 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                         "[ACTIVITY EXECUTE ERROR] session={} login={} file={} code={:?} err={:?}",
                         session, login, file, exit_code, error_msg
                     );
+                    let err_cnt;
+                    {
+                        let mut live_map = STUDENT_LIVE.lock().unwrap();
+                        let st = live_map.entry(key.clone()).or_default();
+                        st.consecutive_errors += 1;
+                        st.last_error_time = Some(Instant::now());
+                        err_cnt = st.consecutive_errors;
+                    }
+                    if err_cnt >= 3 {
+                        let msg = format!("{} plantages consécutifs ({})", err_cnt, file);
+                        trigger_live_alert(session, login, "THRASH", &msg, "WARN");
+                    }
                 } else {
                     log::info!(
                         "[ACTIVITY EXECUTE {}] session={} login={} file={} code={:?}",
                         status, session, login, file, exit_code
                     );
+                    if status == "DONE" {
+                        let mut had_thrash = false;
+                        {
+                            let mut live_map = STUDENT_LIVE.lock().unwrap();
+                            if let Some(st) = live_map.get_mut(&key) {
+                                if st.consecutive_errors >= 3 {
+                                    had_thrash = true;
+                                }
+                                st.consecutive_errors = 0;
+                            }
+                        }
+                        if had_thrash {
+                            clear_live_alert(session, login, "THRASH");
+                        }
+                    }
                 }
 
                 let event = ActivityEvent::Execute {
@@ -472,6 +767,18 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
             Some("FOCUS") => {
                 let status = payload.status.unwrap_or_else(|| "UNKNOWN".to_string());
                 let duration_sec = payload.duration_sec;
+
+                {
+                    let mut live_map = STUDENT_LIVE.lock().unwrap();
+                    let st = live_map.entry(key.clone()).or_default();
+                    if status == "GAINED" {
+                        if let Some(dur) = duration_sec {
+                            st.total_away_sec += dur;
+                        }
+                    } else if status == "LOST" {
+                        st.focus_lost_count += 1;
+                    }
+                }
 
                 if status == "GAINED" {
                     log::info!(
@@ -500,10 +807,22 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                 let chars = payload.chars.unwrap_or(0);
                 let lines = payload.lines.unwrap_or(0);
 
+                {
+                    let mut live_map = STUDENT_LIVE.lock().unwrap();
+                    let st = live_map.entry(key.clone()).or_default();
+                    st.pasted_chars += chars;
+                    st.pasted_lines += lines;
+                }
+
                 log::warn!(
                     "[ACTIVITY PASTE] session={} login={} file={} chars={} lines={}",
                     session, login, file, chars, lines
                 );
+
+                if lines >= 15 || chars >= 400 {
+                    let msg = format!("Collage {}L ({} cars) dans {}", lines, chars, file);
+                    trigger_live_alert(session, login, "PASTE", &msg, "WARN");
+                }
 
                 let event = ActivityEvent::Paste {
                     timestamp: now,
@@ -521,6 +840,13 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                 let typed_chars = payload.typed_chars.unwrap_or(0);
                 let backspaces = payload.backspaces.unwrap_or(0);
 
+                {
+                    let mut live_map = STUDENT_LIVE.lock().unwrap();
+                    let st = live_map.entry(key.clone()).or_default();
+                    st.typed_chars += typed_chars;
+                    st.backspaces += backspaces;
+                }
+
                 let event = ActivityEvent::Typing {
                     timestamp: now,
                     session: session.to_string(),
@@ -536,10 +862,19 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                 let file = payload.file.unwrap_or_else(|| "unknown".to_string());
                 let size_bytes = payload.size_bytes.unwrap_or(0);
 
+                {
+                    let mut live_map = STUDENT_LIVE.lock().unwrap();
+                    let st = live_map.entry(key.clone()).or_default();
+                    st.dropped_files += 1;
+                }
+
                 log::warn!(
                     "[ACTIVITY FILE_DROP] session={} login={} file={} size={}",
                     session, login, file, size_bytes
                 );
+
+                let msg = format!("Fichier {} déposé ({} octets)", file, size_bytes);
+                trigger_live_alert(session, login, "DROP", &msg, "WARN");
 
                 let event = ActivityEvent::FileDrop {
                     timestamp: now,
@@ -673,6 +1008,25 @@ mod tests {
         assert!(content.contains("\"status\":\"DISCONNECTED\""));
         assert!(content.contains("\"type\":\"FILE_DROP\""));
         assert!(content.contains("\"size_bytes\":1024"));
+
+        let _ = fs::remove_dir_all(Path::new(PROG_DIR).join(session));
+    }
+
+    #[test]
+    fn test_live_metrics_computation() {
+        let session = "test_sess_metrics";
+        let login = "student_metrics";
+
+        record_session_event(session, login, "CONNECTED", Some("127.0.0.1"), None);
+        record_client_log(session, login, r#"{"type":"TYPING","file":"tp.py","typed_chars":800,"backspaces":80}"#);
+        record_client_log(session, login, r#"{"type":"PASTE","file":"tp.py","chars":200,"lines":10}"#);
+
+        let metrics = get_student_live_metrics(session, login);
+        assert_eq!(metrics.typed_chars, 800);
+        assert_eq!(metrics.backspaces, 80);
+        assert_eq!(metrics.pasted_chars, 200);
+        // s_auth = 800 / (800 + 200) * 100 = 80.0%
+        assert_eq!(metrics.s_auth, 80.0);
 
         let _ = fs::remove_dir_all(Path::new(PROG_DIR).join(session));
     }

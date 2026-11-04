@@ -104,6 +104,15 @@ public class ServerFacade extends AbstractServerFacade {
 		sendCommand("RESET_HELP_FLAG", data);
 	}
 
+	public void resetUserAlert(String user_login, String code) {
+		Object[] data = {user_login, code != null ? code : "ALL"};
+		sendCommand("RESET_USER_ALERT", data);
+	}
+
+	public void resetUserAlert(String user_login) {
+		resetUserAlert(user_login, "ALL");
+	}
+
 	public void createFolder(String path) {
 		Object[] data = {path};
 		sendCommand("NEW_FOLDER", data);

@@ -99,7 +99,8 @@ public class UserTable extends JScrollPane {
 	private boolean AFF_LOGIN = true;
 	private boolean AFF_GROUP = false;
 	private boolean AFF_ADRESS = true;
-	private Boolean visible[] = { AFF_NAME, AFF_LOGIN, AFF_GROUP, AFF_ADRESS };
+	private boolean AFF_ALERT = true;
+	private Boolean visible[] = { AFF_NAME, AFF_LOGIN, AFF_GROUP, AFF_ADRESS, AFF_ALERT };
 
 	// https://www.w3schools.com/colors/colors_picker.asp
 	public static final Color VERY_LIGHT_GREY = new Color(212,212,212);
@@ -125,6 +126,7 @@ public class UserTable extends JScrollPane {
 	private JMenuItem itemNewStudent = new JMenuItem();
 	private JMenu menuChangeSession = new JMenu();
 	private JMenuItem itemResetHelpFlag = new JMenuItem();
+	private JMenuItem itemResetUserAlert = new JMenuItem();
 	private JMenuItem itemResetTutorPasswd = new JMenuItem(CodeLab.LABEL("itemResetTutorPasswd"));
 	//private JMenuItem itemEnableControlAll = new JMenuItem(CodeLab.LABEL("UserTable_17a"));
 	private JMenuItem itemDisableControlAll = new JMenuItem(CodeLab.LABEL("UserTable_17b"));
@@ -170,6 +172,7 @@ public class UserTable extends JScrollPane {
 		model.addColumn(CodeLab.LABEL("UserTable_t2")); // Logins
 		model.addColumn(CodeLab.LABEL("UserTable_t3")); // Groupes
 		model.addColumn(CodeLab.LABEL("UserTable_t4")); // Adresses IP
+		model.addColumn(CodeLab.LABEL("UserTable_t5")); // Alertes
 		table.setModel(model);
 		String loginToExclude = codelab.getLogin();
 		for (UserData udata : ulist) {
@@ -177,7 +180,8 @@ public class UserTable extends JScrollPane {
 			String login = udata.getLogin();
 			String group = udata.getGroup();
 			String IP = isPresent(udata) ? udata.getAddress() : "--";
-			Object[] vector = new Object[]{ udata, login, group, IP };
+			String alertStr = formatAlertDisplay(udata);
+			Object[] vector = new Object[]{ udata, login, group, IP, alertStr };
 			model.addRow(vector);
 			if(!groups.contains(group)) groups.add(group);
 		}
@@ -188,6 +192,7 @@ public class UserTable extends JScrollPane {
 		table.getColumnModel().getColumn(1).setCellRenderer(renderer);
 		table.getColumnModel().getColumn(2).setCellRenderer(renderer);
 		table.getColumnModel().getColumn(3).setCellRenderer(renderer);
+		table.getColumnModel().getColumn(4).setCellRenderer(renderer);
 
 		// Modèle de tri
 		sorter = new TableRowSorter<TableModel>(model);
@@ -387,6 +392,7 @@ public class UserTable extends JScrollPane {
 		itemControl.setEnabled(isstudent);
 		menuEvalStudent.setEnabled(isstudent);
 		itemResetHelpFlag.setEnabled(ispresent && helpFlag);
+		itemResetUserAlert.setEnabled(ispresent && udata.hasAlert());
 		itemResetPasswd.setEnabled(isstudent || client_Admin || client_Lehuen);
 		itemDeconnexion.setEnabled((ispresent && isstudent) || client_Admin || client_Lehuen);
 
@@ -419,6 +425,11 @@ public class UserTable extends JScrollPane {
 		itemDeconnexion.setText(String.format(CodeLab.LABEL("UserTable_5"), udata));
 		itemResetPasswd.setText(String.format(CodeLab.LABEL("UserTable_6"), udata));
 		itemResetHelpFlag.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
+		if (udata.getAlertCount() > 1) {
+			itemResetUserAlert.setText(String.format("Acquitter toutes les alertes de %s (%d)", udata.getName(), udata.getAlertCount()));
+		} else {
+			itemResetUserAlert.setText(String.format(CodeLab.LABEL("itemResetUserAlert"), udata));
+		}
 
 		// Ouvrir ou fermer la session + Lecture seule + Ajouter un étudiant
 		String label3 = openned ? CodeLab.LABEL("UserTable_19b") : CodeLab.LABEL("UserTable_19a");
@@ -534,12 +545,79 @@ public class UserTable extends JScrollPane {
 		}
 	}
 
+	public static String formatAlertDisplay(UserData udata) {
+		if (udata == null) return "--";
+		if (udata.hasAlert()) {
+			UserData.LiveAlert highest = udata.getHighestAlert();
+			if (highest != null) {
+				String label;
+				if ("BURST".equalsIgnoreCase(highest.code)) label = "🚨 Burst";
+				else if ("PASTE".equalsIgnoreCase(highest.code)) label = "📋 Paste";
+				else if ("THRASH".equalsIgnoreCase(highest.code)) label = "⚠️ Blocage";
+				else if ("DROP".equalsIgnoreCase(highest.code)) label = "📥 Drop";
+				else label = "⚠️ " + highest.code;
+
+				int total = udata.getAlertCount();
+				if (total > 1) {
+					return String.format("%s (+%d)", label, total - 1);
+				}
+				return label;
+			}
+		}
+		if (udata.isConnected() && udata.getSAuth() < 100.0) {
+			if (udata.getSAuth() < 40.0) {
+				return String.format(java.util.Locale.US, "⚠️ %.0f%%", udata.getSAuth());
+			}
+			return String.format(java.util.Locale.US, "%.0f%%", udata.getSAuth());
+		}
+		return "--";
+	}
+
+	public void setUserAlert(String login, String code, String message, String level, String time) {
+		UserData udata = findUserData(login);
+		if (udata != null) {
+			udata.addAlert(code, message, level, time);
+			String display = formatAlertDisplay(udata);
+			for (int i = 0; i < model.getRowCount(); i++) {
+				Object obj = model.getValueAt(i, 0);
+				if (obj instanceof UserData && ((UserData) obj).getLogin().equals(login)) {
+					model.setValueAt(display, i, 4);
+					break;
+				}
+			}
+			updateMenuItems();
+			table.repaint();
+		}
+	}
+
+	public void resetUserAlert(String login, String code) {
+		UserData udata = findUserData(login);
+		if (udata != null) {
+			if (code == null || code.isEmpty() || "ALL".equalsIgnoreCase(code)) {
+				udata.clearAlerts();
+			} else {
+				udata.removeAlert(code);
+			}
+			String display = formatAlertDisplay(udata);
+			for (int i = 0; i < model.getRowCount(); i++) {
+				Object obj = model.getValueAt(i, 0);
+				if (obj instanceof UserData && ((UserData) obj).getLogin().equals(login)) {
+					model.setValueAt(display, i, 4);
+					break;
+				}
+			}
+			updateMenuItems();
+			table.repaint();
+		}
+	}
+
 	public void newStudent(UserData udata) {
 		// Un nouvel étudiant a été créé à la volée
 		SwingUtilities.invokeLater(() -> {
 			// Ajouter le student dans la table
 			String login = udata.getLogin();
-			Object[] vector = new Object[]{ udata, login, "", "--"};
+			String alertStr = formatAlertDisplay(udata);
+			Object[] vector = new Object[]{ udata, login, "", "--", alertStr};
 			model.addRow(vector);
 			table.repaint();
 		});
@@ -622,9 +700,22 @@ public class UserTable extends JScrollPane {
 			if (column == 1) setHorizontalAlignment(JLabel.CENTER);
 			if (column == 2) setHorizontalAlignment(JLabel.CENTER);
 			if (column == 3) setHorizontalAlignment(JLabel.CENTER);
-
-			// Ajout d'un Tootip
-			//((JLabel)comp).setToolTipText(String.format("Connected from %s", udata.getAddress()));
+			if (column == 4) {
+				setHorizontalAlignment(JLabel.CENTER);
+				if (udata.hasAlert()) {
+					if ("CRIT".equalsIgnoreCase(udata.getHighestAlertLevel())) setForeground(new Color(200, 20, 20));
+					else setForeground(new Color(210, 110, 0));
+				} else if (udata.getSAuth() < 40.0) {
+					setForeground(new Color(200, 20, 20));
+				} else if (udata.getSAuth() < 75.0) {
+					setForeground(new Color(180, 100, 0));
+				} else {
+					setForeground(new Color(40, 140, 40));
+				}
+				((JLabel)comp).setToolTipText(udata.buildTooltipHtml());
+			} else {
+				((JLabel)comp).setToolTipText(null);
+			}
 			return comp;
 		}
 	}
@@ -702,6 +793,16 @@ public class UserTable extends JScrollPane {
 					UserData udata = getSelectedUser();
 					if (udata == null) return;
 					codelab.getClient().resetHelpFlag(udata.getLogin());
+				}
+			});
+
+			// Acquitter une alerte
+			itemResetUserAlert.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					UserData udata = getSelectedUser();
+					if (udata == null) return;
+					codelab.getClient().resetUserAlert(udata.getLogin(), "ALL");
+					resetUserAlert(udata.getLogin(), "ALL");
 				}
 			});
 
@@ -794,6 +895,15 @@ public class UserTable extends JScrollPane {
 				}
 			});
 
+			// Affichage des alertes
+			JCheckBoxMenuItem itemAlert = new JCheckBoxMenuItem(CodeLab.LABEL("UserTable_t5"), visible[4]);
+			itemAlert.addItemListener(new ItemListener() {
+				public void itemStateChanged(ItemEvent e) {
+					visible[4] = itemAlert.getState();
+					adjustColumnsWidth();
+				}
+			});
+
 			// Filtrer sur les noms
 			itemNameFilter.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -838,6 +948,7 @@ public class UserTable extends JScrollPane {
 
 			menuStudent.add(itemTchat);
 			menuStudent.add(itemResetHelpFlag);
+			menuStudent.add(itemResetUserAlert);
 			menuStudent.add(itemControl);
 			menuStudent.add(menuEvalStudent);
 			menuStudent.add(new JSeparator());
@@ -853,6 +964,7 @@ public class UserTable extends JScrollPane {
 			menuConfig.add(itemLogin);
 			menuConfig.add(itemGroup);
 			menuConfig.add(itemAddr);
+			menuConfig.add(itemAlert);
 			menuConfig.add(itemNameFilter);
 			menuConfig.add(itemGroupFilter);
 			menuConfig.add(itemRemoveFilter);

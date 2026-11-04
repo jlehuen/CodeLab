@@ -27,6 +27,9 @@ public class UserData {
 	private boolean helpFlag = false;
 	private boolean connected = false;
 	private boolean controlled = false;
+	private double sAuth = 100.0;
+	private double iNav = 0.0;
+	private Map<String, LiveAlert> activeAlerts = new java.util.LinkedHashMap<>();
 
 	///////////////////////////////////////////////////
 	// Constructeurs de UserData
@@ -61,6 +64,21 @@ public class UserData {
 		this.editedFile = (String) map.get("edited_file");
 		this.connected = (boolean) map.get("connected");
 		this.helpFlag = (boolean) map.get("help_flag");
+		if (map.containsKey("s_auth") && map.get("s_auth") != null) {
+			this.sAuth = ((Number) map.get("s_auth")).doubleValue();
+		}
+		if (map.containsKey("i_nav") && map.get("i_nav") != null) {
+			this.iNav = ((Number) map.get("i_nav")).doubleValue();
+		}
+		Object ajson = map.get("alerts_json");
+		if (ajson instanceof String && !((String) ajson).isBlank()) {
+			parseAlertsJson((String) ajson);
+		} else if (map.containsKey("alert_code") && map.get("alert_code") != null) {
+			String c = (String) map.get("alert_code");
+			String m = map.get("alert_msg") != null ? (String) map.get("alert_msg") : "";
+			String l = map.get("alert_level") != null ? (String) map.get("alert_level") : "WARN";
+			if (!c.isBlank()) addAlert(c, m, l, "");
+		}
     }
 
 	///////////////////////////////////////////////////
@@ -127,4 +145,145 @@ public class UserData {
 	public void setControlled(boolean value) { controlled = value; }
 
 	public void setHelpFlag(boolean value) { helpFlag = value; }
+
+	///////////////////////////////////////////////////
+	// Gestion des alertes multi-niveaux en temps réel
+	///////////////////////////////////////////////////
+
+	public static class LiveAlert {
+		public String code;
+		public String message;
+		public String level; // "CRIT", "WARN", "INFO"
+		public String timestamp;
+
+		public LiveAlert(String code, String message, String level, String timestamp) {
+			this.code = (code != null) ? code : "";
+			this.message = (message != null) ? message : "";
+			this.level = (level != null) ? level : "WARN";
+			this.timestamp = (timestamp != null) ? timestamp : "";
+		}
+
+		public boolean isCritical() {
+			return "CRIT".equalsIgnoreCase(level);
+		}
+
+		public String getShortTime() {
+			if (timestamp != null && timestamp.length() >= 19) {
+				return timestamp.substring(11, 19);
+			}
+			return (timestamp != null) ? timestamp : "";
+		}
+	}
+
+	public void addAlert(String code, String msg, String level, String time) {
+		if (code != null && !code.isBlank()) {
+			activeAlerts.put(code, new LiveAlert(code, msg, level, time));
+		}
+	}
+
+	public void removeAlert(String code) {
+		if (code != null) {
+			activeAlerts.remove(code);
+		}
+	}
+
+	public void clearAlerts() {
+		activeAlerts.clear();
+	}
+
+	public boolean hasAlert() {
+		return !activeAlerts.isEmpty();
+	}
+
+	public int getAlertCount() {
+		return activeAlerts.size();
+	}
+
+	public LiveAlert getHighestAlert() {
+		if (activeAlerts.isEmpty()) return null;
+		LiveAlert highest = null;
+		for (LiveAlert a : activeAlerts.values()) {
+			if (highest == null) {
+				highest = a;
+			} else if (a.isCritical() && !highest.isCritical()) {
+				highest = a;
+			}
+		}
+		return highest;
+	}
+
+	public String getHighestAlertLevel() {
+		LiveAlert highest = getHighestAlert();
+		return (highest != null) ? highest.level : "";
+	}
+
+	public double getSAuth() {
+		return sAuth;
+	}
+
+	public void setSAuth(double sAuth) {
+		this.sAuth = sAuth;
+	}
+
+	public double getINav() {
+		return iNav;
+	}
+
+	public void setINav(double iNav) {
+		this.iNav = iNav;
+	}
+
+	public String buildTooltipHtml() {
+		StringBuilder sb = new StringBuilder("<html><div style='padding:5px; font-family:sans-serif;'>");
+		sb.append("<b>Indicateurs en direct :</b><br/>");
+		sb.append("• Authenticité du code : <b>").append(String.format(java.util.Locale.US, "%.1f%%", sAuth)).append("</b>");
+		if (sAuth >= 75.0) {
+			sb.append(" <font color='#27ae60'>(Élevée / Saisie autonome)</font>");
+		} else if (sAuth >= 45.0) {
+			sb.append(" <font color='#d35400'>(Modérée)</font>");
+		} else {
+			sb.append(" <font color='#c0392b'><b>(Faible / Attention)</b></font>");
+		}
+		sb.append("<br/>");
+		if (iNav > 0.0) {
+			sb.append("• Temps hors de l'IDE : <b>").append(String.format(java.util.Locale.US, "%.1f%%", iNav)).append("</b><br/>");
+		}
+		if (!activeAlerts.isEmpty()) {
+			sb.append("<hr style='margin:4px 0;'/>");
+			sb.append("<b>Alertes actives (").append(activeAlerts.size()).append(") :</b><br/>");
+			for (LiveAlert a : activeAlerts.values()) {
+				String color = a.isCritical() ? "#D32F2F" : "#F57C00";
+				String timeStr = a.getShortTime();
+				String timePrefix = !timeStr.isEmpty() ? " <i>(" + timeStr + ")</i>" : "";
+				sb.append("• <font color='").append(color).append("'><b>").append(a.code).append("</b></font>")
+				  .append(timePrefix).append(" : ").append(a.message).append("<br/>");
+			}
+		}
+		sb.append("</div></html>");
+		return sb.toString();
+	}
+
+	private void parseAlertsJson(String json) {
+		if (json == null || json.trim().isEmpty() || json.trim().equals("[]")) return;
+		try {
+			java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\{[^\\}]+\\}");
+			java.util.regex.Matcher m = p.matcher(json);
+			while (m.find()) {
+				String block = m.group();
+				String code = extractJsonField(block, "code");
+				String msg = extractJsonField(block, "message");
+				String level = extractJsonField(block, "level");
+				String ts = extractJsonField(block, "timestamp");
+				if (code != null && !code.isBlank()) {
+					addAlert(code, msg, level, ts);
+				}
+			}
+		} catch (Exception ignored) {}
+	}
+
+	private static String extractJsonField(String block, String key) {
+		java.util.regex.Pattern p = java.util.regex.Pattern.compile("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"");
+		java.util.regex.Matcher m = p.matcher(block);
+		return m.find() ? m.group(1) : "";
+	}
 }

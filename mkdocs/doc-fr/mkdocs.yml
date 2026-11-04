@@ -5,6 +5,7 @@ theme:
         - lisp
 nav:
     - Accueil: 'index.md'
+    - "Traçabilité & Alertes": 'telemetrie.md'
     - Langages:
         - "Langage C": 'lang-c/doc-c-fr.md'
         - "Langage Java": 'lang-java/doc-java-fr.md'

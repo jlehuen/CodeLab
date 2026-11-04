@@ -18,6 +18,122 @@ import math
 from pathlib import Path
 from datetime import datetime
 
+def compute_sliding_windows(parsed_events: list, window_sec: int = 900) -> list:
+    """
+    Découpe les événements horodatés en tranches temporelles (fenêtres de window_sec, par défaut 15 min).
+    Pour chaque fenêtre, calcule l'authenticité locale, les tests et le diagnostic de phase.
+    """
+    valid_dts = [pe[0] for pe in parsed_events if pe[0]]
+    if not valid_dts:
+        return []
+        
+    t_start = valid_dts[0]
+    t_end = valid_dts[-1]
+    total_sec = max(1.0, (t_end - t_start).total_seconds())
+    
+    # Nombre de tranches de window_sec
+    num_windows = max(1, math.ceil(total_sec / float(window_sec)))
+    windows = []
+    
+    from datetime import timedelta
+    for w_idx in range(num_windows):
+        w_t0 = t_start + timedelta(seconds=w_idx * window_sec)
+        w_t1 = min(t_end, w_t0 + timedelta(seconds=window_sec))
+        dur_sec = max(1.0, (w_t1 - w_t0).total_seconds())
+        
+        # Filtre des événements dans la tranche
+        win_evs = [pe for pe in parsed_events if pe[0] and (w_t0 <= pe[0] <= w_t1)]
+        
+        keys = 0
+        backspaces = 0
+        paste_chars = 0
+        paste_lines = 0
+        burst_lines = 0
+        burst_count = 0
+        code_modifs = 0
+        away_sec = 0.0
+        compiles = 0
+        execs = 0
+        errors = 0
+        drops = 0
+        
+        for dt, ev in win_evs:
+            ev_type = ev.get("type", "")
+            if ev_type == "TYPING":
+                keys += ev.get("typed_chars", 0)
+                backspaces += ev.get("backspaces", 0)
+            elif ev_type == "PASTE":
+                paste_chars += ev.get("chars", 0)
+                paste_lines += ev.get("lines", 0)
+            elif ev_type == "EDIT":
+                ins = ev.get("lines_added", 0)
+                rem = ev.get("lines_removed", 0)
+                code_modifs += (ins + rem)
+                al = ev.get("alert")
+                if al in ("BURST_INSERT", "BURST_NEW_FILE"):
+                    burst_lines += ins
+                    burst_count += 1
+            elif ev_type == "FOCUS":
+                if ev.get("status") == "GAINED":
+                    dur = ev.get("duration_sec")
+                    if dur:
+                        away_sec += float(dur)
+            elif ev_type == "COMPILE":
+                compiles += 1
+                if ev.get("status") == "ERROR":
+                    errors += 1
+            elif ev_type == "EXECUTE":
+                execs += 1
+                if ev.get("status") == "ERROR":
+                    errors += 1
+            elif ev_type == "FILE_DROP":
+                drops += 1
+                
+        denom = keys + paste_chars + (burst_lines * 30)
+        s_auth_local = round((keys / float(denom)) * 100.0, 1) if denom > 0 else (0.0 if burst_lines > 0 else None)
+        inav_local = min(100.0, round((away_sec / dur_sec) * 100.0, 1))
+        
+        # Diagnostic de la phase
+        if drops > 0:
+            diag = "📥 Dépôt de fichier externe"
+        elif burst_count > 0 or (s_auth_local is not None and s_auth_local < 40.0):
+            diag = "🚨 Décrochage IA / Injection"
+        elif errors >= 3 and code_modifs < 10:
+            diag = "⚠️ Acharnement sur erreurs"
+        elif inav_local > 60.0:
+            diag = "🌐 Consultation externe intensive"
+        elif keys >= 80 and (s_auth_local is None or s_auth_local >= 80.0):
+            diag = "✅ Saisie autonome active"
+        elif (compiles + execs) >= 2 and errors <= 1:
+            diag = "⚙️ Validation & Tests itératifs"
+        elif keys < 30 and paste_chars == 0 and burst_lines == 0:
+            diag = "📖 Réflexion / Lecture de l'énoncé"
+        else:
+            diag = "🟡 Travail mixte"
+            
+        windows.append({
+            "index": w_idx + 1,
+            "t0_str": w_t0.strftime("%H:%M"),
+            "t1_str": w_t1.strftime("%H:%M"),
+            "duration_min": round(dur_sec / 60.0, 1),
+            "keys": keys,
+            "backspaces": backspaces,
+            "paste_chars": paste_chars,
+            "paste_lines": paste_lines,
+            "burst_lines": burst_lines,
+            "burst_count": burst_count,
+            "s_auth": s_auth_local,
+            "away_sec": round(away_sec, 1),
+            "inav": inav_local,
+            "compiles": compiles,
+            "execs": execs,
+            "errors": errors,
+            "drops": drops,
+            "diagnostic": diag
+        })
+        
+    return windows
+
 def parse_iso_timestamp(ts_str: str) -> datetime | None:
     """Parse un timestamp ISO 8601 (avec ou sans fuseau Z/+00:00)."""
     if not ts_str:
@@ -108,6 +224,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         "file_ops": [],
         "help_requests": 0,
         "help_resolved": 0,
+        "sliding_windows": [],
         
         # 6. Synthèses & Alertes
         "alerts": [],
@@ -461,6 +578,10 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     res["sessions_count"] = max(sessions_count, 1)
     res["alerts"] = alerts
 
+    # Calcul des fenêtres glissantes (tranches de 15 minutes)
+    sliding_windows = compute_sliding_windows(parsed_events, window_sec=900)
+    res["sliding_windows"] = sliding_windows
+
     # Construction du résumé court console
     status_icon = "🚨" if (s_auth < 50.0 or burst_insert_count > 0 or burst_new_file_count > 0) else ("🟡" if s_auth < 85.0 else "✅")
     res["summary_short"] = f"{status_icon} S_auth: {s_auth}% | Inav: {i_nav}% ({focus_lost_count} sorties) | Runs: {total_runs} (err: {compile_err+exec_err}) | TTF: {ttf_avg or 'N/A'}s | Bursts: {burst_insert_count + burst_new_file_count}"
@@ -490,6 +611,21 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     md_lines.append(f"  - 📖 Réflexion / Lecture ($Q_{{read}}$) : **{p_read}%** (`{round(q_read/60.0, 1)} min`)")
     md_lines.append(f"  - ⚙️ Test & Exécution ($Q_{{test}}$) : **{p_test}%** (`{round(q_test/60.0, 1)} min`)")
     md_lines.append(f"  - 🌐 Hors IDE ($Q_{{away}}$) : **{p_away}%** (`{round(q_away/60.0, 1)} min`)")
+
+    # Table des fenêtres glissantes si au moins 2 tranches
+    if len(sliding_windows) >= 2:
+        md_lines.append("")
+        md_lines.append("- **Dynamique Temporelle & Chronologie (Tranches de 15 min)** :")
+        md_lines.append("")
+        md_lines.append("| Intervalle | Saisie | Collages / Bursts | $S_{auth}$ | Hors IDE | Tests (Erreurs) | Diagnostic de Phase |")
+        md_lines.append("| :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
+        for sw in sliding_windows:
+            auth_col = f"**{sw['s_auth']}%**" if sw['s_auth'] is not None else "*--*"
+            burst_str = f" +{sw['burst_lines']}L ({sw['burst_count']}b)" if sw['burst_count'] > 0 else ""
+            paste_col = f"`{sw['paste_lines']}L`{burst_str}" if (sw['paste_lines'] > 0 or sw['burst_count'] > 0) else "0"
+            runs_cnt = sw['compiles'] + sw['execs']
+            runs_col = f"{runs_cnt} ({sw['errors']} err)" if runs_cnt > 0 else "0"
+            md_lines.append(f"| {sw['t0_str']} - {sw['t1_str']} | `{sw['keys']}` c. | {paste_col} | {auth_col} | `{sw['inav']}%` | {runs_col} | {sw['diagnostic']} |")
 
     if alerts:
         md_lines.append("")

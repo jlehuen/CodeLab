@@ -1087,6 +1087,16 @@ public class CodelabClient {
 		server.resetHelpFlag(user_login);
 	}
 
+	public void resetUserAlert(String user_login, String code) {
+		// Action de la part d'un TUTOR
+		if (!isConnected()) return;
+		server.resetUserAlert(user_login, code);
+	}
+
+	public void resetUserAlert(String user_login) {
+		resetUserAlert(user_login, "ALL");
+	}
+
 	public void createFolderDist(File file) {
 		if (!isConnected()) return;
 		String name4server = name4server(file);
@@ -1536,6 +1546,30 @@ public class CodelabClient {
 		// Un utilisateur a modifié l'état du flag d'appel
 		editor.getUserTable().setHelpFlag(login, flag);
 		if (flag) soundIncomingMsg();
+	}
+
+	public synchronized void SET_USER_ALERT(String login, String code, String message, String level, String timestamp) {
+		// Une alerte télémétrique / intégrité a été déclenchée pour cet étudiant
+		if (editor.getUserTable() == null) return;
+		javax.swing.SwingUtilities.invokeLater(() -> {
+			editor.getUserTable().setUserAlert(login, code, message, level, timestamp);
+		});
+	}
+
+	public synchronized void SET_USER_ALERT(String login, String code, String message, String level) {
+		SET_USER_ALERT(login, code, message, level, "");
+	}
+
+	public synchronized void RESET_USER_ALERT(String login, String code) {
+		// Acquittement d'une alerte spécifique ou de toutes ("ALL")
+		if (editor.getUserTable() == null) return;
+		javax.swing.SwingUtilities.invokeLater(() -> {
+			editor.getUserTable().resetUserAlert(login, code);
+		});
+	}
+
+	public synchronized void RESET_USER_ALERT(String login) {
+		RESET_USER_ALERT(login, "ALL");
 	}
 	
 	public synchronized void SET_CONTROL_MODE(boolean flag, String login) {

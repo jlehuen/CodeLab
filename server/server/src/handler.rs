@@ -52,6 +52,7 @@ declare_commands!(
     // Communication
     SET_HELP_FLAG,
     RESET_HELP_FLAG,
+    RESET_USER_ALERT,
     CHAT_TO,
     MESSAGE_TO,
     MESSAGE_TO_ALL,
@@ -145,6 +146,11 @@ pub async fn handle_message(client: &mut Client, message: MessageFromClient) -> 
         RESET_HELP_FLAG => {
             let user_login = message.get_data_str(0)?;
             client.reset_help_flag(&user_login).await
+        }
+        RESET_USER_ALERT => {
+            let user_login = message.get_data_str(0)?;
+            let code = message.get_data_str(1).unwrap_or_else(|_| "ALL".to_string());
+            client.reset_user_alert(&user_login, &code).await
         }
         NEW_FOLDER => {
             let path = message.get_data_str(0)?;

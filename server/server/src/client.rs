@@ -27,6 +27,7 @@ use std::{
     fs::File,
     path::Path,
     sync::Arc,
+    collections::HashMap,
     net::SocketAddr,
     io::{self, ErrorKind},
 };
@@ -73,6 +74,7 @@ pub struct Client {
     fullname: Option<String>,                // Fullname du client (ou None)
     pub edited_file: Option<String>,         // Fichier en cours d'édition (ou None)
     pub help_flag: bool,                     // Flag d'appel
+    pub alerts: HashMap<String, crate::activity::LiveAlert>, // Alertes actives par code
 }
 
 // Implémentation manuelle du trait Clone en raison de la logique
@@ -94,6 +96,7 @@ impl Clone for Client {
             fullname: self.fullname.clone(),
             edited_file: self.edited_file.clone(),
             help_flag: self.help_flag.clone(),
+            alerts: self.alerts.clone(),
         }
     }
 }
@@ -135,6 +138,7 @@ impl Client {
             fullname: None,
             edited_file: None,
             help_flag: false,
+            alerts: HashMap::new(),
         }
     }
 
@@ -192,6 +196,22 @@ impl Client {
 
     pub fn get_help_flag(&self) -> bool {
         self.help_flag
+    }
+
+    pub fn get_alerts(&self) -> Vec<crate::activity::LiveAlert> {
+        self.alerts.values().cloned().collect()
+    }
+
+    pub fn set_alert(&mut self, alert: crate::activity::LiveAlert) {
+        self.alerts.insert(alert.code.clone(), alert);
+    }
+
+    pub fn remove_alert(&mut self, code: &str) -> bool {
+        self.alerts.remove(code).is_some()
+    }
+
+    pub fn clear_alerts(&mut self) {
+        self.alerts.clear();
     }
 
     pub fn get_date(&self) -> String {
@@ -1170,6 +1190,34 @@ impl Client {
         self.send_command(CommandType::SET_HELP_FLAG, data).await
     }
 
+    // Pour notifier les tuteurs d'une alerte sur un client
+    pub async fn tutor_set_user_alert(&self, login: &str, code: &str, msg: &str, level: &str, timestamp: &str) -> EmptyResult {
+        let data = create_data!(login, code, msg, level, timestamp);
+        self.send_command(CommandType::SET_USER_ALERT, data).await
+    }
+
+    // Pour notifier les tuteurs de la réinitialisation d'une alerte (ou de toutes si code == "ALL")
+    pub async fn tutor_reset_user_alert(&self, login: &str, code: &str) -> EmptyResult {
+        let data = create_data!(login, code);
+        self.send_command(CommandType::RESET_USER_ALERT, data).await
+    }
+
+    // Acquittement d'une alerte par un tuteur
+    pub async fn reset_user_alert(&self, user_login: &str, code: &str) -> EmptyResult {
+        if let Some(ref session) = self.session {
+            if code == "ALL" || code.is_empty() {
+                crate::connected::clear_client_alerts(session, user_login).await;
+            } else {
+                crate::connected::remove_client_alert(session, user_login, code).await;
+            }
+            let tutors = connected_tutors(session).await;
+            for tutor in tutors {
+                tutor.tutor_reset_user_alert(user_login, code).await?;
+            }
+        }
+        Ok(())
+    }
+
     // Pour notifier les tuteurs de la création d'un dossier
     pub async fn notify_tutors_new_folder(&self, path: &str) -> EmptyResult {
         let login = self.login.as_ref().unwrap();
@@ -1234,5 +1282,33 @@ impl Client {
             tutor.send_command(CommandType::MOVE_FILE, data).await?
         }
         Ok(())
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Diffusion globale d'une alerte étudiant vers les tuteurs connectés
+// ----------------------------------------------------------------------------
+
+pub async fn notify_tutors_user_alert(session: &str, login: &str, code: &str, msg: &str, level: &str) {
+    let ts = chrono::Utc::now().to_rfc3339();
+    let alert = crate::activity::LiveAlert {
+        code: code.to_string(),
+        level: level.to_string(),
+        message: msg.to_string(),
+        timestamp: ts.clone(),
+    };
+    crate::connected::set_client_alert(session, login, alert).await;
+    let tutors = connected_tutors(session).await;
+    for tutor in tutors {
+        let _ = tutor.tutor_set_user_alert(login, code, msg, level, &ts).await;
+    }
+}
+
+pub async fn notify_tutors_clear_alert(session: &str, login: &str, code: &str) {
+    if crate::connected::remove_client_alert(session, login, code).await {
+        let tutors = connected_tutors(session).await;
+        for tutor in tutors {
+            let _ = tutor.tutor_reset_user_alert(login, code).await;
+        }
     }
 }

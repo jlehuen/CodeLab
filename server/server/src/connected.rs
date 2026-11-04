@@ -178,6 +178,49 @@ pub async fn set_client_edited_file(login: &str, filename: Option<String>) -> bo
     false // Client non trouvé
 }
 
+// Positionner une alerte sur un client dans la table des connectés
+pub async fn set_client_alert(session_name: &str, login: &str, alert: crate::activity::LiveAlert) -> bool {
+    let mut sessions = CONNECTED_CLIENTS.lock().await;
+    if let Some(session) = sessions.get_mut(session_name) {
+        if let Some(client) = session.get_mut(login) {
+            client.set_alert(alert);
+            return true;
+        }
+    }
+    false
+}
+
+// Supprimer une alerte spécifique d'un client
+pub async fn remove_client_alert(session_name: &str, login: &str, code: &str) -> bool {
+    let mut sessions = CONNECTED_CLIENTS.lock().await;
+    if let Some(session) = sessions.get_mut(session_name) {
+        if let Some(client) = session.get_mut(login) {
+            return client.remove_alert(code);
+        }
+    }
+    false
+}
+
+// Réinitialiser toutes les alertes d'un client
+pub async fn clear_client_alerts(session_name: &str, login: &str) -> bool {
+    let mut sessions = CONNECTED_CLIENTS.lock().await;
+    if let Some(session) = sessions.get_mut(session_name) {
+        if let Some(client) = session.get_mut(login) {
+            client.clear_alerts();
+            return true;
+        }
+    }
+    false
+}
+
+// Récupérer toutes les alertes d'un client
+pub async fn get_client_alerts(login: &str) -> Vec<crate::activity::LiveAlert> {
+    if let Some(client) = get_client(login).await {
+        return client.get_alerts();
+    }
+    Vec::new()
+}
+
 // Récupérer un client par son login (ou None si non connecté)
 pub async fn get_client(login: &str) -> Option<Client> {
     let sessions = CONNECTED_CLIENTS.lock().await;
@@ -294,6 +337,11 @@ pub async fn get_userdata(session: &str, login: &str) -> Vec<UserData> {
         udata.connected = is_connected(&udata.login).await;
         udata.help_flag = get_help_flag(&udata.login).await;
         udata.edited_file = get_edited_file(&udata.login).await;
+        let alerts = get_client_alerts(&udata.login).await;
+        udata.alerts_json = serde_json::to_string(&alerts).unwrap_or_else(|_| "[]".to_string());
+        let metrics = crate::activity::get_student_live_metrics(session, &udata.login);
+        udata.s_auth = metrics.s_auth;
+        udata.i_nav = metrics.i_nav;
     }
     udata_list
 }

@@ -52,19 +52,13 @@ Chaque sous-dossier contenant un fichier `SKILL.md` est instantanément reconnu 
 
 Pour transformer l'un des modèles génériques en une compétence dédiée à un TP, un projet ou un examen précis, suivez cette méthode en 5 étapes :
 
-```
-┌────────────────────────┐     ┌────────────────────────┐     ┌────────────────────────┐
-│  1. Dupliquer le skill │ ──> │  2. Définir le sujet   │ ──> │  3. Régler le barème   │
-│     (ex. eval-python)  │     │     dans SKILL.md      │     │    dans weights.json   │
-└────────────────────────┘     └────────────────────────┘     └────────────────────────┘
-                                                                           │
-                               ┌────────────────────────┐                  │
-                               │  5. Valider à blanc    │ <────────────────┘
-                               │  (solution enseignant) │     ┌────────────────────────┐
-                               └────────────────────────┘ <── │  4. Coder les tests    │
-                                                              │   dans audit_student   │
-                                                              └────────────────────────┘
-```
+| Étape | Intitulé & Action | Fichier source / cible | Rôle pédagogique & Technique |
+| :---: | :--- | :--- | :--- |
+| **1** | **Dupliquer le skill** | `eval-python-sample/` $\to$ dossier cible | Initialiser la base de code du nouveau skill. |
+| **2** | **Définir le sujet** | `SKILL.md` | Préciser les consignes, signatures de fonctions et contraintes. |
+| **3** | **Régler le barème** | `weights.json` | Pondérer les exercices, la qualité du code et les pénalités. |
+| **4** | **Coder les tests** | `audit_student.py` | Implémenter les assertions dynamiques et tests fonctionnels. |
+| **5** | **Valider à blanc** | Solution enseignant | Exécuter l'évaluation sur le corrigé type pour certifier le 20/20. |
 
 ### Étape 1 : Dupliquer le modèle le plus proche
 Copiez le dossier exemple correspondant au langage de votre cours vers un nouvel identifiant explicite :
