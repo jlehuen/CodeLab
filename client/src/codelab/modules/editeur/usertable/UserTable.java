@@ -118,7 +118,7 @@ public class UserTable extends JScrollPane {
 	private JMenuItem itemResetPasswd= new JMenuItem();
 	private JMenuItem itemDeconnexion = new JMenuItem();
 	private JMenuItem itemOpenSession = new JMenuItem();
-	private JCheckBoxMenuItem itemReadOnlySession = new JCheckBoxMenuItem();
+	private JMenuItem itemReadOnlySession = new JMenuItem();
 	private JMenuItem itemNewStudent = new JMenuItem();
 	private JMenu menuChangeSession = new JMenu();
 	private JMenuItem itemResetHelpFlag = new JMenuItem();
@@ -370,7 +370,6 @@ public class UserTable extends JScrollPane {
 		int row = table.getSelectedRow();
 		UserData udata = (UserData) table.getValueAt(row, 0);
 		boolean isstudent = udata.isStudent();
-		boolean isconnected = udata.isConnected();
 		boolean iscontrolled = udata.isControlled();
 		boolean helpFlag = udata.getHelpFlag();
 		boolean ispresent = isPresent(udata);
@@ -415,8 +414,9 @@ public class UserTable extends JScrollPane {
 		// Ouvrir ou fermer la session + Lecture seule + Ajouter un étudiant
 		String label3 = openned ? CodeLab.LABEL("UserTable_19b") : CodeLab.LABEL("UserTable_19a");
 		itemOpenSession.setText(String.format(label3, sessionId));
-		itemReadOnlySession.setText(CodeLab.LABEL("UserTable_readOnly"));
-		itemReadOnlySession.setSelected(readOnly);
+		String labelReadOnly = readOnly ? CodeLab.LABEL("UserTable_19d") : CodeLab.LABEL("UserTable_19c");
+		itemReadOnlySession.setText(String.format(labelReadOnly, sessionId));
+		itemReadOnlySession.setEnabled(openned);
 		itemNewStudent.setText(String.format(CodeLab.LABEL("itemNewStudent"), sessionId));
 
 		// Sous-menu changement de session
@@ -736,10 +736,10 @@ public class UserTable extends JScrollPane {
 				}
 			});
 
-			// Mettre la session en lecture seule
+			// Mettre la session en lecture seule ou en écriture
 			itemReadOnlySession.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					readOnly = itemReadOnlySession.isSelected();
+					readOnly = !readOnly;
 					codelab.getClient().setSessionReadOnly(readOnly);
 					updateMenuItems();
 					updateBackgroundColor();
@@ -967,10 +967,10 @@ public class UserTable extends JScrollPane {
 			menuConfig.add(itemRemoveFilter);
 
 			add(info_0);
-			add(menuChangeSession);
 			add(itemOpenSession);
 			add(itemReadOnlySession);
 			add(itemNewStudent);
+			add(menuChangeSession);
 			add(new JSeparator());
 			add(menuStudent);
 			add(menuGroup);

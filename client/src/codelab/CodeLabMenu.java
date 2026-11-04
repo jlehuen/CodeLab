@@ -17,10 +17,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
-import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JSeparator;
-import javax.swing.event.MenuEvent;
-import javax.swing.event.MenuListener;
 
 import codelab.console.ConsolePopupMenu;
 import codelab.utils.MyFileUtils;
@@ -599,44 +596,5 @@ public class CodeLabMenu extends JPopupMenu {
 			CodeLab.ICON);
 		codelab.things_to_do_before_exiting();
 		CodeLab.relaunch();
-	}
-
-	private void buildMarkdownStylesMenu(JMenu menu) {
-		menu.removeAll();
-		ButtonGroup group = new ButtonGroup();
-		java.util.List<String> styles = CodeLab.getAvailableReportStyles();
-
-		// Détection contextuelle du document actif
-		codelab.modules.editeur.AbstractEditor currentEditor = (codelab.getEditor() != null) ? codelab.getEditor().getEditor() : null;
-		boolean isNotebook = currentEditor instanceof codelab.modules.editeur.notebook.NotebookEditor;
-		boolean isReport = currentEditor instanceof codelab.modules.editeur.markdown.MarkdownViewer;
-
-		String current;
-		if (isNotebook) {
-			current = AbstractCodeLab.IPYNB_STYLE != null ? AbstractCodeLab.IPYNB_STYLE : "Markdown";
-		} else if (isReport) {
-			current = AbstractCodeLab.REPORT_STYLE != null ? AbstractCodeLab.REPORT_STYLE : "Basic";
-		} else {
-			current = AbstractCodeLab.REPORT_STYLE != null ? AbstractCodeLab.REPORT_STYLE : "Basic";
-		}
-
-		for (String style : styles) {
-			JRadioButtonMenuItem item = new JRadioButtonMenuItem(style);
-			if (style.equalsIgnoreCase(current)) {
-				item.setSelected(true);
-			}
-			item.addActionListener(e -> {
-				if (isNotebook) {
-					codelab.setIpynbStyle(style);
-				} else if (isReport) {
-					codelab.setReportStyle(style);
-				} else {
-					codelab.setReportStyle(style);
-					codelab.setIpynbStyle(style);
-				}
-			});
-			group.add(item);
-			menu.add(item);
-		}
 	}
 }

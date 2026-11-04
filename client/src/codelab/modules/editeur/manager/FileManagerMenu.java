@@ -3,7 +3,6 @@ package codelab.modules.editeur.manager;
 import java.awt.Point;
 import java.io.File;
 import java.util.List;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
