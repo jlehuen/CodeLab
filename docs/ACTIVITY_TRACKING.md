@@ -24,31 +24,37 @@ Le système sépare clairement l'architecture en deux canaux complémentaires :
 flowchart LR
     classDef default font-size:11px;
 
-    A["<span style='font-size:12px'><b>1. COLLECTE</b></span><br/>Client Étudiant<br/><i>Frappes, Collages, Runs</i>"] 
-    -->|"<small>Événements bruts (≤ 1 Ko/min)</small>"| B["<span style='font-size:12px'><b>2. CALCULS</b></span><br/>Serveur Rust (Natif)<br/><i>Diffs, S_auth direct, Alertes</i>"]
+    A["<b>1. COLLECTE</b><br/>Client Étudiant<br/><i>Frappes, Collages, Runs</i>"] 
+    -->|"<small>≤ 1 Ko/min</small>"| B["<b>2. CALCULS</b><br/>Serveur Rust (Natif)<br/><i>Diffs, S_auth direct, Alertes</i>"]
     
-    B -->|"<small>Diffusion MsgPack<br/>Alertes &amp; Métriques</small>"| C["<span style='font-size:12px'><b>3. SUPERVISION</b></span><br/>Poste Tuteur (UserTable)<br/><i>Badges &amp; Infobulle</i>"]
+    B -->|"<small>Diffusion MsgPack</small>"| C["<b>3. SUPERVISION</b><br/>Poste Tuteur (UserTable)<br/><i>Badges &amp; Infobulle</i>"]
     
-    B -.->|"<small>Journal immuable<br/>.activity.jsonl</small>"| D["<span style='font-size:12px'><b>4. AUDIT DIFFÉRÉ</b></span><br/>Skills d'Évaluation<br/><i>Radars &amp; Fenêtres 15 min</i>"]
+    B -.->|"<small>Journal immuable</small>"| D["<b>4. AUDIT DIFFÉRÉ</b><br/>Skills Python / CDK<br/><i>Radars &amp; Fenêtres 15m</i>"]
 ```
 
 #### Vue Fonctionnelle : Les Deux Canaux d'Exploitation
 
 ```mermaid
-%%{init: {'themeVariables': { 'fontSize': '20px' }}}%%
+%%{init: {'themeVariables': { 'fontSize': '18px' }}}%%
 flowchart TD
-    classDef default font-size:18px;
+    classDef default font-size:17px;
+    classDef titleStyle font-size:21px;
 
-    E["<span style='font-size:22px'><b>1. ÉTUDIANT (Client Java Swing)</b></span><br/>──────────────────────────────────────────────────────────<br/><span style='font-size:18px'>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests</span>"]
-    -->|"<span style='font-size:16px'>Sondes d'activité légères (≤ 1 Ko/min)</span>"| S["<span style='font-size:22px'><b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b></span><br/>──────────────────────────────────────────────────────────<br/><span style='font-size:18px'>• Traçabilité temps réel, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)</span>"]
+    subgraph C1 ["⚡ CANAL 1 : SUPERVISION TEMPS RÉEL (Pendant la séance)"]
+        direction TB
+        E["<span style='font-size:21px'><b>1. ÉTUDIANT (Client Java Swing)</b></span><br/>────────────────────────────────────────────<br/>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests"]
+        -->|"<span style='font-size:15px'>Sondes d'activité légères (≤ 1 Ko/min)</span>"| S["<span style='font-size:21px'><b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b></span><br/>────────────────────────────────────────────<br/>• Traçabilité continue, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)"]
+        -->|"<span style='font-size:15px'>Diffusion instantanée d'état (MsgPack)</span>"| T["<span style='font-size:21px'><b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b></span><br/>────────────────────────────────────────────<br/>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol"]
+    end
 
-    S -->|"<span style='font-size:16px'>Diffusion instantanée d'état (MsgPack)</span>"| T["<span style='font-size:22px'><b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b></span><br/>──────────────────────────────────────────────────────────<br/><span style='font-size:18px'>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol</span>"]
-    T -.->|"<span style='font-size:16px'>Acquittement manuel clic droit (RESET_USER_ALERT)</span>"| S
+    subgraph C2 ["📊 CANAL 2 : AUDIT DIFFÉRÉ (Après la séance)"]
+        direction TB
+        J[("<span style='font-size:21px'><b>Journal d'Activité Immuable (.activity.jsonl)</b></span><br/>────────────────────────────────────────────<br/>Fichiers d'événements append-only sécurisés persistés sur disque")]
+        -->|"<span style='font-size:15px'>Chargement des traces d'activité</span>"| A["<span style='font-size:21px'><b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Python / CDK)</b></span><br/>────────────────────────────────────────────<br/>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types"]
+        -->|"<span style='font-size:15px'>Génération de la synthèse pédagogique</span>"| R["<span style='font-size:21px'><b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b></span><br/>────────────────────────────────────────────<br/>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort"]
+    end
 
-    S ==>|"<span style='font-size:16px'>Journalisation append-only continue</span>"| J[("<span style='font-size:22px'><b>Journal d'Activité Immuable (.activity.jsonl)</b></span><br/>──────────────────────────────────────────────────────────<br/><span style='font-size:18px'>Fichiers d'événements append-only sécurisés persistés sur disque</span>")]
-
-    J --> A["<span style='font-size:22px'><b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Skills Python / CDK)</b></span><br/>──────────────────────────────────────────────────────────<br/><span style='font-size:18px'>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types</span>"]
-    A --> R["<span style='font-size:22px'><b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b></span><br/>──────────────────────────────────────────────────────────<br/><span style='font-size:18px'>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort</span>"]
+    C1 ==>|"<span style='font-size:16px'><b>Journalisation append-only continue sur disque</b></span>"| C2
 ```
 
 ### Principes Fondamentaux de Conception
