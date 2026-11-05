@@ -1344,8 +1344,9 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
     intro_dir = get_skill_dir("eval-introprog") or INTROPROG_DIR
     template_candidates = [
         intro_dir / "report_template.md" if intro_dir else None,
-        Path("/Users/lehuen/codelab.files/skills/eval-introprog/report_template.md"),
-        INTROPROG_DIR / "report_template.md"
+        USER_SKILLS_DIR / "eval-introprog" / "report_template.md",
+        HAL_SKILLS_DIR / "eval-introprog" / "report_template.md",
+        INTROPROG_DIR / "report_template.md" if INTROPROG_DIR else None
     ]
     rendered = render_template_if_exists(template_candidates, template_vars)
     if rendered:
@@ -1918,7 +1919,9 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
 
     template_candidates = [
         intropython_dir / "report_template.md" if intropython_dir else None,
-        Path("/Users/lehuen/codelab.files/skills/eval-intropython/report_template.md")
+        USER_SKILLS_DIR / "eval-intropython" / "report_template.md",
+        HAL_SKILLS_DIR / "eval-intropython" / "report_template.md",
+        INTROYTHON_DIR / "report_template.md" if INTROYTHON_DIR else None
     ]
     report_text = render_template_if_exists(template_candidates, template_vars)
     if not report_text:
@@ -2193,7 +2196,8 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 
     template_candidates = [
         skill_dir / "report_template.md" if skill_dir else None,
-        Path(f"/Users/lehuen/codelab.files/skills/{skill_name}/report_template.md")
+        USER_SKILLS_DIR / skill_name / "report_template.md",
+        HAL_SKILLS_DIR / skill_name / "report_template.md"
     ]
     report_text = render_template_if_exists(template_candidates, template_vars)
     if not report_text:

@@ -21,7 +21,7 @@ if str(SKILLS_DIR) not in sys.path:
 from activity_analyzer import analyze_student_activity, generate_mermaid_radars, generate_cohort_radar
 
 DEMO_DIR = SKILLS_DIR.parent / "evaluations" / "Demo_Telemetry"
-DEMO_DIR_USER = Path("/Users/lehuen/codelab.files/evaluations/Demo_Telemetry")
+DEMO_DIR_USER = Path.home() / "codelab.files" / "evaluations" / "Demo_Telemetry"
 
 # Code source Python pour chaque profil
 CODE_MARTIN = '''"""

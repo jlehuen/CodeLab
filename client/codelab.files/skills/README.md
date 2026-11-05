@@ -152,7 +152,7 @@ AI_CACHE       = true
 
 ## 6. Analyse Télémétrique, Double Radar & Typologies Didactiques
 
-CodeLab intègre un moteur d'analyse comportementale de pointe ([`activity_analyzer.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/activity_analyzer.py)) qui extrait des métriques objectives issues de la session de développement et les projette graphiquement sous forme de **diagrammes radar Mermaid (`radar-beta`)** nativement rendus dans l'interface CodeLab.
+CodeLab intègre un moteur d'analyse comportementale de pointe ([`activity_analyzer.py`](activity_analyzer.py)) qui extrait des métriques objectives issues de la session de développement et les projette graphiquement sous forme de **diagrammes radar Mermaid (`radar-beta`)** nativement rendus dans l'interface CodeLab.
 
 ### 6.1. Le Double Radar Individuel
 
@@ -210,7 +210,7 @@ Toutes les fiches individuelles produites par les compétences CodeLab s'articul
 
 ### 6.4. Génération de Cohortes d'Étalonnage (`generate_session_test.py`)
 
-L'outil [`generate_session_test.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/generate_session_test.py) permet de créer instantanément une promotion de test complète (`Session_test`) comportant 10 étudiants simulés illustrant les différents profils types :
+L'outil [`generate_session_test.py`](generate_session_test.py) permet de créer instantanément une promotion de test complète (`Session_test`) comportant 10 étudiants simulés illustrant les différents profils types :
 - *Boss* autonome (`boss_expert`)
 - *Artisans* studieux (`artisan_regulier`, `artisan_debutant`)
 - *Cyborgs* dopés à l'IA (`cyborg_ia`, `cyborg_copier_coller`)

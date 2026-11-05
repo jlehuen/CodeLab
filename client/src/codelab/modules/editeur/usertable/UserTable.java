@@ -3,10 +3,6 @@ package codelab.modules.editeur.usertable;
 import codelab.utils.IpLocationService;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -17,15 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.ListSelectionModel;
@@ -40,10 +30,7 @@ import javax.swing.table.TableRowSorter;
 import javax.swing.table.TableModel;
 
 import codelab.CodeLab;
-import codelab.client.ChatController;
-import codelab.client.CodelabClient;
 import codelab.client.UserData;
-import codelab.eval.SessionEvaluator;
 import codelab.modules.editeur.ModuleEditor;
 import codelab.utils.Utils;
 
@@ -75,6 +62,30 @@ public class UserTable extends JScrollPane {
 		return !openned;
 	}
 
+	public boolean isOpenned() {
+		return openned;
+	}
+
+	public String getSessionId() {
+		return sessionId;
+	}
+
+	public List<String> getGroups() {
+		return groups;
+	}
+
+	public ModuleEditor getEditor() {
+		return editor;
+	}
+
+	public JTable getTable() {
+		return table;
+	}
+
+	public UserTableMenu getUserTableMenu() {
+		return menu;
+	}
+
 	public boolean isReadOnly() {
 		return readOnly;
 	}
@@ -102,37 +113,22 @@ public class UserTable extends JScrollPane {
 	private boolean AFF_ALERT = true;
 	private Boolean visible[] = { AFF_NAME, AFF_LOGIN, AFF_GROUP, AFF_ADRESS, AFF_ALERT };
 
+	public boolean isColumnVisible(int col) {
+		if (col >= 0 && col < visible.length) return visible[col];
+		return false;
+	}
+
+	public void setColumnVisible(int col, boolean val) {
+		if (col >= 0 && col < visible.length) visible[col] = val;
+	}
+
 	// https://www.w3schools.com/colors/colors_picker.asp
 	public static final Color VERY_LIGHT_GREY = new Color(212,212,212);
 	public static final Color COLOR_CLOSED = new Color(255, 230, 230);
 	public static final Color COLOR_READONLY = new Color(255, 250, 225);
 
-	// Items du menu popup
-	private JMenuItem info_0 = new JMenuItem();
-
-	private JMenuItem itemTchat = new JMenuItem();
-	private JMenuItem itemControl = new JMenuItem();
-	private JMenu menuEvalStudent = new JMenu();
-	private JMenu menuEvalSession = new JMenu();
-	private JMenuItem itemResetPasswd= new JMenuItem();
-	private JMenuItem itemDeconnexion = new JMenuItem();
-	private JMenuItem itemOpenSession = new JMenuItem();
-	private JMenuItem itemReadOnlySession = new JMenuItem();
-	private JMenuItem itemNewStudent = new JMenuItem();
-	private JMenu menuChangeSession = new JMenu();
-	private JMenuItem itemResetHelpFlag = new JMenuItem();
-	private JMenuItem itemResetUserAlert = new JMenuItem();
-	//private JMenuItem itemEnableControlAll = new JMenuItem(CodeLab.LABEL("UserTable_17a"));
-	private JMenuItem itemDisableControlAll = new JMenuItem(CodeLab.LABEL("UserTable_17b"));
-	private JMenuItem itemDeconnexionAll = new JMenuItem(CodeLab.LABEL("UserTable_7"));
-	private JMenuItem itemNameFilter = new JMenuItem(CodeLab.LABEL("UserTable_8a"));
-	private JMenuItem itemGroupFilter = new JMenuItem(CodeLab.LABEL("UserTable_8b"));
-	private JMenuItem itemRemoveFilter = new JMenuItem(CodeLab.LABEL("UserTable_9"));
-	private JMenuItem itemMessage = new JMenuItem(CodeLab.LABEL("itemMessage"));
-
-	private JMenu menuStudent = new JMenu();
-	private JMenu menuGroup = new JMenu(CodeLab.LABEL("UserTable_menuGroup"));
-	private JMenu menuConfig = new JMenu(CodeLab.LABEL("UserTable_menuConfig"));
+	// Menu contextuel
+	private UserTableMenu menu;
 
 	///////////////////////////////////////////////////
 	// Constructeur
@@ -253,13 +249,9 @@ public class UserTable extends JScrollPane {
 		});
 
 		// Menu popup
-		UserPopupMenu popupMenu = new UserPopupMenu();
-		table.setComponentPopupMenu(popupMenu);
-		itemRemoveFilter.setEnabled(false); // Pas de filtre au début
+		menu = new UserTableMenu(this);
+		table.setComponentPopupMenu(menu);
 		updateMenuItems(); // Une première fois
-
-		// Juste des informations
-		info_0.setEnabled(false);
 
 		setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -319,7 +311,7 @@ public class UserTable extends JScrollPane {
 		return -1;
 	}
 
-	private void setFilteredName(String text) {
+	public void setFilteredName(String text) {
 		// Filtrer sur le nom
 		RowFilter<Object, Object> filter = new RowFilter<Object, Object>() {
 			public boolean include(Entry<? extends Object, ? extends Object> entry) {
@@ -332,7 +324,7 @@ public class UserTable extends JScrollPane {
 		sorter.sort();
 	}
 
-	private void setFilteredGroup(String group) {
+	public void setFilteredGroup(String group) {
 		// Filtrer sur le groupe
 		RowFilter<Object, Object> filter = new RowFilter<Object, Object>() {
 			public boolean include(Entry<? extends Object, ? extends Object> entry) {
@@ -345,113 +337,33 @@ public class UserTable extends JScrollPane {
 		sorter.sort();
 	}
 
-	private void removeFilter() {
+	public void removeFilter() {
 		// Réinitialiser le fitrage
 		sorter.setRowFilter(null);
 		sorter.sort();
 	}
 
-	private void updateBackgroundColor() {
+	public void updateBackgroundColor() {
 		if (!openned) table.setBackground(COLOR_CLOSED);
 		else if (readOnly) table.setBackground(COLOR_READONLY);
 		else table.setBackground(Color.WHITE);
 	}
 
-	private boolean isPresent(UserData udata) {
+	public boolean isPresent(UserData udata) {
 		// Un client présent est connecté dans la session courante
 		boolean isconnected = udata.isConnected();
 		String session = udata.getSessionId();
 		return isconnected && (sessionId.equals(session));
 	}
 
-	private void updateMenuItems() {
-		int row = table.getSelectedRow();
-		UserData udata = (UserData) table.getValueAt(row, 0);
-		boolean isstudent = udata.isStudent();
-		boolean iscontrolled = udata.isControlled();
-		boolean helpFlag = udata.getHelpFlag();
-		boolean ispresent = isPresent(udata);
-
-		// Clients autorisés à forcer la déconnection de tous les utilisateurs
-		boolean client_Lehuen = codelab.getLogin().equals("lehuen"); // I'm god :)
-		boolean client_Admin = codelab.isAdmin();
-
-		itemTchat.setEnabled(ispresent);
-		itemControl.setEnabled(isstudent);
-		menuEvalStudent.setEnabled(isstudent);
-		itemResetHelpFlag.setEnabled(ispresent && helpFlag);
-		itemResetUserAlert.setEnabled(ispresent && udata.hasAlert());
-		itemResetPasswd.setEnabled(isstudent || client_Admin || client_Lehuen);
-		itemDeconnexion.setEnabled((ispresent && isstudent) || client_Admin || client_Lehuen);
-
-		String label0;
-		if (!openned) label0 = CodeLab.LABEL("UserTable_18a");
-		else if (readOnly) label0 = CodeLab.LABEL("UserTable_18c");
-		else label0 = CodeLab.LABEL("UserTable_18b");
-
-		String label2 = iscontrolled ? CodeLab.LABEL("UserTable_16b") : CodeLab.LABEL("UserTable_16a");
-
-		info_0.setText(String.format(label0, sessionId));
-
-		menuStudent.setText(String.format(CodeLab.LABEL("UserTable_menuStudent"), udata));
-		itemControl.setText(String.format(label2, udata));
-		menuEvalSession.setText(CodeLab.LABEL("menuEvalSession"));
-		SessionEvaluator.populateSkillsSubmenu(menuEvalSession, (skill, useAi) -> SessionEvaluator.evaluateSession(codelab, sessionId, skill, useAi));
-		itemTchat.setText(String.format(CodeLab.LABEL("UserTable_4"), udata));
-		menuEvalStudent.setText(String.format(CodeLab.LABEL("menuEvalStudent"), udata.getName()));
-		SessionEvaluator.populateSkillsSubmenu(menuEvalStudent, (skill, useAi) -> SessionEvaluator.evaluateStudent(codelab, udata.getLogin(), udata.getName(), skill, useAi));
-		itemDeconnexion.setText(String.format(CodeLab.LABEL("UserTable_5"), udata));
-		itemResetPasswd.setText(String.format(CodeLab.LABEL("UserTable_6"), udata));
-		itemResetHelpFlag.setText(String.format(CodeLab.LABEL("itemResetCallFlag"), udata));
-		if (udata.getAlertCount() > 1) {
-			itemResetUserAlert.setText(String.format("Acquitter toutes les alertes de %s (%d)", udata.getName(), udata.getAlertCount()));
-		} else {
-			itemResetUserAlert.setText(String.format(CodeLab.LABEL("itemResetUserAlert"), udata));
+	public void updateMenuItems() {
+		UserData udata = getSelectedUser();
+		if (udata != null) {
+			editor.updateUserData(udata);
 		}
-
-		// Ouvrir ou fermer la session + Lecture seule + Ajouter un étudiant
-		String label3 = openned ? CodeLab.LABEL("UserTable_19b") : CodeLab.LABEL("UserTable_19a");
-		itemOpenSession.setText(String.format(label3, sessionId));
-		String labelReadOnly = readOnly ? CodeLab.LABEL("UserTable_19d") : CodeLab.LABEL("UserTable_19c");
-		itemReadOnlySession.setText(String.format(labelReadOnly, sessionId));
-		itemReadOnlySession.setEnabled(openned);
-		itemNewStudent.setText(String.format(CodeLab.LABEL("itemNewStudent"), sessionId));
-
-		// Sous-menu changement de session
-		menuChangeSession.setText(CodeLab.LABEL("ServerPopupMenu_4"));
-		menuChangeSession.removeAll();
-		CodelabClient client = codelab.getClient();
-		if (client != null && client.isConnected()) {
-			String[] sessions = client.getSessions();
-			String curSession = client.getSession();
-			if (curSession == null || curSession.isEmpty()) curSession = sessionId;
-			menuChangeSession.setEnabled(client.nbSessions() > 1);
-			if (sessions != null) {
-				for (String sId : sessions) {
-					boolean isOpen = client.isOpen(sId);
-					boolean isReadOnly = client.isReadOnly(sId);
-					boolean isActive = sId.equals(curSession);
-					JMenuItem item = new JMenuItem(sId);
-					if (isActive) item.setText("=> " + sId);
-					item.setEnabled(!isActive);
-					if (!isOpen) item.setBackground(COLOR_CLOSED);
-					else if (isReadOnly) item.setBackground(COLOR_READONLY);
-					else item.setBackground(Color.WHITE);
-					item.setOpaque(true);
-					item.addActionListener(new ActionListener() {
-						public void actionPerformed(ActionEvent event) {
-							client.actionChangeSession(sId);
-						}
-					});
-					menuChangeSession.add(item);
-				}
-			}
-		} else {
-			menuChangeSession.setEnabled(false);
+		if (menu != null) {
+			menu.updateMenuItems();
 		}
-
-		// Pour le menu contextuel de l'éditeur
-		editor.updateUserData(udata);
 	}
 
 	///////////////////////////////////////////////////
@@ -715,259 +627,6 @@ public class UserTable extends JScrollPane {
 				((JLabel)comp).setToolTipText(null);
 			}
 			return comp;
-		}
-	}
-
-	///////////////////////////////////////////////////
-	// Classe interne du menu
-	///////////////////////////////////////////////////
-
-	private class UserPopupMenu extends JPopupMenu {
-
-		public UserPopupMenu() {
-
-			// Ouvrir ou fermer la session
-			itemOpenSession.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					openned = !openned;
-					codelab.getClient().setSessionOpenned(openned);
-					updateMenuItems();
-					updateBackgroundColor();
-					editor.getEditor().repaint(); // Pour le cadenas
-				}
-			});
-
-			// Mettre la session en lecture seule ou en écriture
-			itemReadOnlySession.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					readOnly = !readOnly;
-					codelab.getClient().setSessionReadOnly(readOnly);
-					updateMenuItems();
-					updateBackgroundColor();
-					table.repaint();
-				}
-			});
-
-			// Ajouter un nouvel étudiant
-			itemNewStudent.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					NewStudentDialog nsd = new NewStudentDialog(sessionId);
-					if (nsd.cancelled()) return;
-
-					String ulogin = nsd.getLogin();
-					String uname = nsd.getName();
-					if (!NewStudentDialog.isValidIdent(ulogin)) {
-						Utils.showWarningDialog("LOGIN ERROR", CodeLab.LABEL("NewStudentDialog_5"));
-						return;
-					}
-					if (uname.isEmpty()) uname = "unnamed";
-					codelab.getClient().addNewStudent(ulogin, uname);
-					// L'ajout effectif dans la table doit venir du serveur
-				}
-			});
-
-			// Ouvrir une discussion
-			itemTchat.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					UserData udata = getSelectedUser();
-					if (udata == null) return;
-					ChatController.openChatWith(udata);
-					codelab.getClient().resetHelpFlag(udata.getLogin());
-				}
-			});
-
-			// Baisser un flag d'appel
-			itemResetHelpFlag.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					UserData udata = getSelectedUser();
-					if (udata == null) return;
-					codelab.getClient().resetHelpFlag(udata.getLogin());
-				}
-			});
-
-			// Acquitter une alerte
-			itemResetUserAlert.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					UserData udata = getSelectedUser();
-					if (udata == null) return;
-					codelab.getClient().resetUserAlert(udata.getLogin(), "ALL");
-					resetUserAlert(udata.getLogin(), "ALL");
-				}
-			});
-
-			// Prendre ou redonner le contrôle
-			itemControl.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					UserData udata = getSelectedUser();
-					if (udata == null) return;
-					boolean value = udata.isControlled();
-					codelab.getClient().askControlMode(udata.getLogin(), !value);
-				}
-			});
-
-
-			// Rendre la main à tout le monde
-			itemDisableControlAll.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					disableAllControled();
-				}
-			});
-
-			// Envoyer un message à tout le monde
-			itemMessage.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					String msg = JOptionPane.showInputDialog(
-						CodeLab.FRAME,
-						CodeLab.LABEL("itemMessage_text"),
-						"MESSAGE",
-						JOptionPane.QUESTION_MESSAGE);
-					if(msg == null || msg.isBlank()) return;
-					codelab.getClient().messageToAll(msg);
-				}
-			});
-
-			// Réintialiser le mot de passe
-			itemResetPasswd.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					UserData udata = getSelectedUser();
-					if (udata == null) return;
-					String message = String.format(CodeLab.LABEL("UserTable_10"), udata);
-					if (Utils.confirmDialog(message))
-						codelab.getClient().resetPassword(udata.getLogin());
-				}
-			});
-
-			// Forcer une déconnection
-			itemDeconnexion.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					UserData udata = getSelectedUser();
-					if (udata == null) return;
-					String message = String.format(CodeLab.LABEL("UserTable_11"), udata);
-					if (Utils.confirmDialog(message))
-						codelab.getClient().forceDisconnect(udata.getLogin());
-				}
-			});
-
-			// Déconnecter tout le monde
-			itemDeconnexionAll.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					String message = CodeLab.LABEL("UserTable_12");
-					if (Utils.confirmDialog(message))
-						codelab.getClient().forceDisconnectAll();
-				}
-			});
-
-			// Affichage des logins
-			JCheckBoxMenuItem itemLogin = new JCheckBoxMenuItem(CodeLab.LABEL("itemLogin"), visible[1]);
-			itemLogin.addItemListener(new ItemListener() {
-				public void itemStateChanged(ItemEvent e) {
-					visible[1] = itemLogin.getState();
-					adjustColumnsWidth();
-				}
-			});
-
-			// Affichage des groupes
-			JCheckBoxMenuItem itemGroup = new JCheckBoxMenuItem(CodeLab.LABEL("itemGroup"), visible[2]);
-			itemGroup.addItemListener(new ItemListener() {
-				public void itemStateChanged(ItemEvent e) {
-					visible[2] = itemGroup.getState();
-					adjustColumnsWidth();
-				}
-			});
-
-			// Affichage des adresses
-			JCheckBoxMenuItem itemAddr = new JCheckBoxMenuItem(CodeLab.LABEL("itemAddr"), visible[3]);
-			itemAddr.addItemListener(new ItemListener() {
-				public void itemStateChanged(ItemEvent e) {
-					visible[3] = itemAddr.getState();
-					adjustColumnsWidth();
-				}
-			});
-
-			// Affichage des alertes
-			JCheckBoxMenuItem itemAlert = new JCheckBoxMenuItem(CodeLab.LABEL("UserTable_t5"), visible[4]);
-			itemAlert.addItemListener(new ItemListener() {
-				public void itemStateChanged(ItemEvent e) {
-					visible[4] = itemAlert.getState();
-					adjustColumnsWidth();
-				}
-			});
-
-			// Filtrer sur les noms
-			itemNameFilter.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					String text = JOptionPane.showInputDialog(
-						null,
-						CodeLab.LABEL("UserTable_14"),
-						CodeLab.LABEL("UserTable_13"),
-						JOptionPane.PLAIN_MESSAGE);
-					if (text == null) return;
-					setFilteredName(text);
-					itemRemoveFilter.setEnabled(true);
-				}
-			});
-
-			// Filtrer sur les groupes
-			itemGroupFilter.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					String[] options = groups.toArray(String[]::new);
-					String choice = (String) JOptionPane.showInputDialog(
-						null,
-						CodeLab.LABEL("UserTable_15"),
-						CodeLab.LABEL("UserTable_13"),
-						JOptionPane.QUESTION_MESSAGE,
-						null,
-						options,
-						options[0]);
-					if (choice == null) return;
-					setFilteredGroup(choice);
-					itemRemoveFilter.setEnabled(true);
-				}
-			});
-
-			// Supprimer les filtres
-			itemRemoveFilter.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					removeFilter();
-					itemRemoveFilter.setEnabled(false);
-				}
-			});
-
-			// Construction du menu
-
-			menuStudent.add(itemTchat);
-			menuStudent.add(itemResetHelpFlag);
-			menuStudent.add(itemResetUserAlert);
-			menuStudent.add(itemControl);
-			menuStudent.add(menuEvalStudent);
-			menuStudent.add(new JSeparator());
-			menuStudent.add(itemResetPasswd);
-			menuStudent.add(itemDeconnexion);
-
-			menuGroup.add(itemMessage);
-			menuGroup.add(itemDisableControlAll);
-			menuGroup.add(menuEvalSession);
-			menuGroup.add(new JSeparator());
-			menuGroup.add(itemDeconnexionAll);
-
-			menuConfig.add(itemLogin);
-			menuConfig.add(itemGroup);
-			menuConfig.add(itemAddr);
-			menuConfig.add(itemAlert);
-			menuConfig.add(itemNameFilter);
-			menuConfig.add(itemGroupFilter);
-			menuConfig.add(itemRemoveFilter);
-
-			add(info_0);
-			add(itemOpenSession);
-			add(itemReadOnlySession);
-			add(itemNewStudent);
-			add(menuChangeSession);
-			add(new JSeparator());
-			add(menuStudent);
-			add(menuGroup);
-			add(new JSeparator());
-			add(menuConfig);
 		}
 	}
 }

@@ -1554,8 +1554,12 @@ public class CodeLab extends AbstractCodeLab {
 
 	private static void setLanguage() {
 		System.out.print("   Setting application language... ");
-		String lang = CodeLab.PROP("LANG");
-		if (lang.equals("SYSTEM")) {
+		String lang = getStringData("LANG");
+		if (lang.equals(UNDEFINED)) {
+			// Rétrocompatibilité : vérifier si LANG était dans user.properties
+			lang = CodeLab.PROP("LANG");
+		}
+		if (lang.equals("SYSTEM") || lang.equals(UNDEFINED)) {
 			System.out.println(LANG); // Défini dans AbstractCodeLab
 			return;
 		}

@@ -384,8 +384,10 @@ public class CodeLabMenu extends JPopupMenu {
 				ButtonGroup group = new ButtonGroup();
 				JRadioButton en = new JRadioButton("English");
 				JRadioButton fr = new JRadioButton("Français");
+				JRadioButton es = new JRadioButton("Español");
 				panel.add(en); group.add(en); if (CodeLab.LANG.equals("en")) en.setSelected(true);
 				panel.add(fr); group.add(fr); if (CodeLab.LANG.equals("fr")) fr.setSelected(true);
+				panel.add(es); group.add(es); if (CodeLab.LANG.equals("es")) es.setSelected(true);
 
 				JOptionPane.showMessageDialog(CodeLab.FRAME,
 					panel,
@@ -394,6 +396,7 @@ public class CodeLabMenu extends JPopupMenu {
 					CodeLab.ICON);
 				if (en.isSelected() && !CodeLab.LANG.equals("en")) changeLanguage("en");
 				if (fr.isSelected() && !CodeLab.LANG.equals("fr")) changeLanguage("fr");
+				if (es.isSelected() && !CodeLab.LANG.equals("es")) changeLanguage("es");
 			}
 		});
 
@@ -572,16 +575,16 @@ public class CodeLabMenu extends JPopupMenu {
 	///////////////////////////////////////////////////
 
 	private void changeLanguage(String lang) {
-		// Changement de langue
-		if (MyFileUtils.findAndReplace(CodeLab.USER_PROP_FILE, "LANG=\\w+", "LANG="+lang)) {
-			JOptionPane.showMessageDialog(CodeLab.FRAME,
-				CodeLab.LABEL("RELAUNCH"),
-				CodeLab.LABEL("LANGPANEL_TITLE"),
-				JOptionPane.INFORMATION_MESSAGE,
-				CodeLab.ICON);
-			codelab.things_to_do_before_exiting();
-			CodeLab.relaunch();
-		}
+		// Changement de langue mémorisée dans data.properties
+		CodeLab.LANG = lang;
+		CodeLab.saveHiddenProperties();
+		JOptionPane.showMessageDialog(CodeLab.FRAME,
+			CodeLab.LABEL("RELAUNCH"),
+			CodeLab.LABEL("LANGPANEL_TITLE"),
+			JOptionPane.INFORMATION_MESSAGE,
+			CodeLab.ICON);
+		codelab.things_to_do_before_exiting();
+		CodeLab.relaunch();
 	}
 
 	private void changeModuleState(ArrayList<JCheckBoxMenuItem> checkList) {

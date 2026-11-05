@@ -69,7 +69,7 @@ Ce skill intègre un moteur de contrôle garantissant l'authenticité des travau
 
 ## 4. Format du Rapport et Gabarit Markdown
 
-L'évaluation génère un compte-rendu individuel Markdown conforme au gabarit [report_template.md](file:///Users/lehuen/codelab.files/skills/eval-c-sample/report_template.md) :
+L'évaluation génère un compte-rendu individuel Markdown conforme au gabarit [report_template.md](report_template.md) :
 1. **En-tête & Cartouche de Traçabilité** : Date, version du skill, moteur utilisé, synthèse des 3 piliers d'intégrité et indice IA.
 2. **Tableau Récapitulatif des Notes Calibrées** : Restitution stricte des notes obtenues par axe avec barème officiel.
 3. **Profil Visuel Multidimensionnel (Diagrammes Radar)** : Double diagramme radar Mermaid (`radar-beta`) affichant côte à côte les 6 indicateurs techniques et l'affinité aux 6 profils didactiques opposés deux à deux.

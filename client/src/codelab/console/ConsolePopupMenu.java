@@ -103,12 +103,12 @@ public class ConsolePopupMenu extends JPopupMenu {
 	public static void action_autoconsole() {
 		CodeLab codelab = CodeLab.INSTANCE;
 		codelab.setAutoconsole(!codelab.getAutoconsole());
-		PropertyBase.setUserProperty("CONSOLE_AUTOOPEN", codelab.getAutoconsole() ? "yes" : "no");
+		CodeLab.saveHiddenProperties();
 	}
 
 	public static void action_autoclear() {
 		CodeLab codelab = CodeLab.INSTANCE;
 		codelab.setAutoclear(!codelab.getAutoclear());
-		PropertyBase.setUserProperty("CONSOLE_AUTOCLEAR", codelab.getAutoclear() ? "yes" : "no");
+		CodeLab.saveHiddenProperties();
 	}
 }

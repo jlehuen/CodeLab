@@ -53,7 +53,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.5.3"; // Attribué automatiquement par ant
-	public static final String BUILD = "2611042215"; // Attribué automatiquement par ant
+	public static final String BUILD = "2611051039"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -240,7 +240,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	// Internationalisation
 	///////////////////////////////////////////////////
 
-	private static final String[] IMPLEMENTED_LANG = { "en", "fr" };
+	private static final String[] IMPLEMENTED_LANG = { "en", "fr", "es" };
 
 	public static boolean implemented(String lang) {
 		return Utils.contains(IMPLEMENTED_LANG, lang);
@@ -259,9 +259,14 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static String LABEL(String key) {
 		// Méthode invoquée partout
 		// Ne doit pas être obfusquée !!
-		key = String.format("%s_%s", key, LANG);
-		if (LANGUAGE.containsKey(key)) return LANGUAGE.getString(key);
-		return "undefined key: " + key;
+		String localizedKey = String.format("%s_%s", key, LANG);
+		if (LANGUAGE.containsKey(localizedKey)) return LANGUAGE.getString(localizedKey);
+		// Repli de sécurité vers l'anglais puis le français
+		String fallbackEn = String.format("%s_en", key);
+		if (LANGUAGE.containsKey(fallbackEn)) return LANGUAGE.getString(fallbackEn);
+		String fallbackFr = String.format("%s_fr", key);
+		if (LANGUAGE.containsKey(fallbackFr)) return LANGUAGE.getString(fallbackFr);
+		return "undefined key: " + localizedKey;
 	}
 
 	///////////////////////////////////////////////////
@@ -309,6 +314,12 @@ public abstract class AbstractCodeLab extends JFrame {
 		try {
 			HIDDEN_DATA.load(new FileInputStream(DATAFILE));
 
+			// Langue de l'application
+			String lang = getStringData("LANG");
+			if (!lang.equals(UNDEFINED) && implemented(lang)) {
+				LANG = lang;
+			}
+
 			// Interface de CodeLab
 			SOUND_EFFECTS = getBooleanData("SOUND_EFFECTS");
 			FILE_MANAGER_ICONS = getBooleanData("FILE_MANAGER_ICONS");
@@ -345,6 +356,9 @@ public abstract class AbstractCodeLab extends JFrame {
 
 	public static void saveHiddenProperties() {
 		try {
+			// Langue de l'application
+			setStringData("LANG", LANG);
+
 			// Interface de CodeLab
 			setBooleanData("SOUND_EFFECTS", SOUND_EFFECTS);
 			setBooleanData("FILE_MANAGER_ICONS", FILE_MANAGER_ICONS);
@@ -378,19 +392,19 @@ public abstract class AbstractCodeLab extends JFrame {
 		}
 	}
 
-	private static void setStringData(String key, String value) {
+	public static void setStringData(String key, String value) {
 		HIDDEN_DATA.setProperty(key, value);
 	}
 
-	private static void setBooleanData(String key, boolean value) {
+	public static void setBooleanData(String key, boolean value) {
 		HIDDEN_DATA.setProperty(key, Boolean.toString(value));
 	}
 
-	private static String getStringData(String key) {
+	public static String getStringData(String key) {
 		return HIDDEN_DATA.getProperty(key, UNDEFINED);
 	}
 
-	private static boolean getBooleanData(String key) {
+	public static boolean getBooleanData(String key) {
 		return Boolean.valueOf(getStringData(key));
 	}
 
