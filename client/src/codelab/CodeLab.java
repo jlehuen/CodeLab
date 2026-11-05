@@ -1090,13 +1090,17 @@ public class CodeLab extends AbstractCodeLab {
 		final String finalPassword = password;
 		WaitingDialog.open(LABEL("ConnectDialog_connecting"), () -> client.closeSocket());
 		new Thread(() -> {
+			boolean ok = false;
 			try {
-				// Tempo ergonomique (1 s) : matérialise l'établissement de la liaison sécurisée (labor illusion)
+				// Phase 1 : 1 seconde pour la connexion au serveur (labor illusion)
 				Utils.wait(1000);
-				client.connection(finalLogin, finalPassword);
+				ok = client.connection(finalLogin, finalPassword);
 			}
 			finally {
-				WaitingDialog.close();
+				// Ne ferme l'overlay que si la connexion a échoué (en cas de succès, INIT_SESSION gère la Phase 2)
+				if (!ok) {
+					WaitingDialog.close();
+				}
 			}
 		}, "CodeLab-ConnectThread").start();
 		return true;
