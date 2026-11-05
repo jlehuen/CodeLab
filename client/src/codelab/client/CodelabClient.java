@@ -489,6 +489,7 @@ public class CodelabClient {
 		updateComboBg.run();
 		combo.addActionListener(e -> updateComboBg.run());
 
+		WaitingDialog.close();
 		int res = JOptionPane.showConfirmDialog(
 			CodeLab.FRAME,
 			new Object[] { CodeLab.LABEL("CodeLab_session"), combo },
@@ -500,6 +501,7 @@ public class CodelabClient {
 		if (res != JOptionPane.OK_OPTION) return CANCELLED; // Annulation
 		String choice = (String) combo.getSelectedItem();
 		if (choice == null) return CANCELLED;
+		WaitingDialog.open(CodeLab.LABEL("ConnectDialog_connecting"), this::closeSocket);
 		return choice;
 	}
 
@@ -509,7 +511,7 @@ public class CodelabClient {
 		if (newSession.equals(session)) return false; // Pas de changement
 		codelab.halt(); // On stoppe l'exécution en cours
 		codelab.showEditor(); // On bascule sur l'éditeur
-		WaitingDialog.open("Downloading session...");
+		WaitingDialog.open(CodeLab.LABEL("Session_downloading"));
 		changeSession(newSession); // On demande la nouvelle session
 		session = newSession;
 		return true;
@@ -654,7 +656,7 @@ public class CodelabClient {
 	private PrintWriter writer;
 	private BufferedReader reader;
 
-	private void closeSocket() {
+	public void closeSocket() {
 		// Utilisé lors du dialogue de connexion
 		try {
 			if (socket != null) {
@@ -690,11 +692,13 @@ public class CodelabClient {
 			socket.connect(new InetSocketAddress(SERVER_NAME, SERVER_PORT), 5000);
 			socket.setKeepAlive(true);
 			socket.setTcpNoDelay(true);
+			socket.setSoTimeout(5000);
 			writer = new PrintWriter(socket.getOutputStream(), true);
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		}
 		catch (UnknownHostException e1) {
 			System.out.println("ERROR (unknown host)");
+			WaitingDialog.close();
 			if (!isAutoReconnect) {
 				String msg = String.format(CodeLab.LABEL("MepaClient_errorCode_1a"), SERVER_NAME);
 				Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -704,6 +708,7 @@ public class CodelabClient {
 		}
 		catch (SocketTimeoutException e2) {
 			System.out.println("ERROR (timeout)");
+			WaitingDialog.close();
 			if (!isAutoReconnect) {
 				String msg = String.format(CodeLab.LABEL("MepaClient_errorCode_1b"), SERVER_PORT);
 				Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -713,6 +718,7 @@ public class CodelabClient {
 		}
 		catch (IOException e3) {
 			System.out.println("ERROR (socket error)");
+			WaitingDialog.close();
 			if (!isAutoReconnect) {
 				String msg = CodeLab.LABEL("MepaClient_errorCode_1c");
 				Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -722,6 +728,7 @@ public class CodelabClient {
 		}
 		catch (IllegalArgumentException e4) {
 			System.out.println("ERROR (invalid address)");
+			WaitingDialog.close();
 			if (!isAutoReconnect) {
 				String msg = CodeLab.LABEL("MepaClient_errorCode_1d");
 				Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -731,6 +738,7 @@ public class CodelabClient {
 		}
 		catch (SecurityException e5) {
 			System.out.println("ERROR (security)");
+			WaitingDialog.close();
 			if (!isAutoReconnect) {
 				String msg = CodeLab.LABEL("MepaClient_errorCode_1e");
 				Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -759,6 +767,7 @@ public class CodelabClient {
 
 				if (response.equals(ERROR_LOGIN)) {
 					CodeLab.logger("Login error");
+					WaitingDialog.close();
 					if (!isAutoReconnect) {
 						String msg = CodeLab.LABEL("MepaClient_errorCode_3");
 						Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -770,6 +779,7 @@ public class CodelabClient {
 			}
 			else {
 				CodeLab.logger("Protocol error");
+				WaitingDialog.close();
 				if (!isAutoReconnect) {
 					String msg = CodeLab.LABEL("MepaClient_errorCode_0");
 					Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -788,6 +798,7 @@ public class CodelabClient {
 
 				if (response.equals(ERROR_PASSWD)) {
 					CodeLab.logger("Password error");
+					WaitingDialog.close();
 					if (!isAutoReconnect) {
 						String msg = CodeLab.LABEL("MepaClient_errorCode_5");
 						Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -802,6 +813,7 @@ public class CodelabClient {
 						return false;
 					}
 					// Première connexion (ou password réinitialisé)
+					WaitingDialog.close();
 					NewpassDialog npd = new NewpassDialog();
 					if (npd.cancelled()) {
 						closeSocket();
@@ -812,6 +824,9 @@ public class CodelabClient {
 						closeSocket();
 						return false;
 					}
+					if (!isAutoReconnect) {
+						WaitingDialog.open(CodeLab.LABEL("ConnectDialog_connecting"), this::closeSocket);
+					}
 					this.password = passwrd;
 					pass256 = MessagePackUtils.encodeSHA256(passwrd);
 					response = sendString(pass256);
@@ -819,6 +834,7 @@ public class CodelabClient {
 			}
 			else {
 				CodeLab.logger("Protocol error");
+				WaitingDialog.close();
 				if (!isAutoReconnect) {
 					String msg = CodeLab.LABEL("MepaClient_errorCode_0");
 					Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -832,6 +848,7 @@ public class CodelabClient {
 			// ----------------------------------------------------
 
 			if (response.equals(ERROR_CONNECTED)) {
+				WaitingDialog.close();
 				if (isAutoReconnect) {
 					// En reconnexion automatique, l'ancienne connexion est notre propre socket tombé
 					CodeLab.logger("Auto-reconnect: ejecting phantom connection on server...");
@@ -856,6 +873,7 @@ public class CodelabClient {
 
 			if (response.equals(ERROR_NOSESSION)) {
 				CodeLab.logger("No session available");
+				WaitingDialog.close();
 				if (!isAutoReconnect) {
 					String msg = CodeLab.LABEL("MepaClient_errorCode_6");
 					Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -894,11 +912,13 @@ public class CodelabClient {
 			// ----------------------------------------------------
 
 			if (response.equals(CONNECTION_OK)) {
+				socket.setSoTimeout(0); // Rétablir l'absence de timeout pour l'écoute asynchrone continue
 				server = new ServerFacade(socket, this);
 				return true;
 			}
 			else {
 				CodeLab.logger("Unexpected protocol response: " + response);
+				WaitingDialog.close();
 				closeSocket();
 				return false;
 			}
@@ -906,6 +926,7 @@ public class CodelabClient {
 		catch (IOException e) {
 			// Exception levée dans un sendString
 			CodeLab.logger("Socket error: " + e.getMessage());
+			WaitingDialog.close();
 			if (!isAutoReconnect) {
 				String msg = CodeLab.LABEL("MepaClient_errorCode_1c");
 				Utils.showMessageDialog("CONNECTION ERROR", msg);
@@ -1419,6 +1440,8 @@ public class CodelabClient {
 			codelab.printlnToConsole("INTERNAL ERROR: Unable to restaure distant folder. Try to delete your \"codelab.files\" folder.", Color.RED);
 			server.closeConnection();
 		}
+		WaitingDialog.setText(CodeLab.LABEL("Session_downloading"));
+		Utils.wait(1000);
 		WaitingDialog.close();
 	}
 
@@ -1458,6 +1481,8 @@ public class CodelabClient {
 	        codelab.printlnToConsole("INTERNAL ERROR: Unable to restaure distant folder. Try to delete your \"codelab.files\" folder.", Color.RED);
 	        server.closeConnection();
 	    }
+		WaitingDialog.setText(CodeLab.LABEL("Session_downloading"));
+		Utils.wait(1000);
 		WaitingDialog.close();
 	}
 	

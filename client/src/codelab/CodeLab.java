@@ -1085,8 +1085,21 @@ public class CodeLab extends AbstractCodeLab {
 			}
 		}
 
-		// Tentative de connexion au serveur
-		return client.connection(login, password);
+		// Tentative de connexion au serveur en tâche de fond (hors EDT pour éviter tout freeze UI)
+		final String finalLogin = login;
+		final String finalPassword = password;
+		WaitingDialog.open(LABEL("ConnectDialog_connecting"), () -> client.closeSocket());
+		new Thread(() -> {
+			try {
+				// Tempo ergonomique (1 s) : matérialise l'établissement de la liaison sécurisée (labor illusion)
+				Utils.wait(1000);
+				client.connection(finalLogin, finalPassword);
+			}
+			finally {
+				WaitingDialog.close();
+			}
+		}, "CodeLab-ConnectThread").start();
+		return true;
 	}
 
 	public String getSession() {
