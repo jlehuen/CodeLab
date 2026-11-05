@@ -126,6 +126,7 @@ public class UserTable extends JScrollPane {
 	public static final Color VERY_LIGHT_GREY = new Color(212,212,212);
 	public static final Color COLOR_CLOSED = new Color(255, 230, 230);
 	public static final Color COLOR_READONLY = new Color(255, 250, 225);
+	public static final Color COLOR_OPEN = new Color(225, 248, 225);
 
 	// Menu contextuel
 	private UserTableMenu menu;

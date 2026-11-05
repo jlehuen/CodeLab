@@ -1,6 +1,5 @@
 package codelab.client;
 
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -100,7 +99,7 @@ public class ServerPopupMenu extends JPopupMenu {
 				item.setEnabled(!isActive); // Disable la session courante
 				if (!isOpen) item.setBackground(UserTable.COLOR_CLOSED); // Couleur session fermée
 				else if (isReadOnly) item.setBackground(UserTable.COLOR_READONLY); // Couleur session lecture seule
-				else item.setBackground(Color.WHITE);
+				else item.setBackground(UserTable.COLOR_OPEN); // Couleur session ouverte
 				item.setOpaque(true); // Sinon pas de couleur de fond
 				item.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent event) {

@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.io.File;
 import java.awt.Color;
+import java.awt.Component;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -26,6 +27,9 @@ import org.apache.commons.io.FileUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
@@ -35,6 +39,7 @@ import codelab.PropertyBase;
 import codelab.console.Console;
 import codelab.modules.editeur.ModuleEditor;
 import codelab.modules.editeur.manager.FileManager;
+import codelab.modules.editeur.usertable.UserTable;
 import codelab.utils.WaitingDialog;
 import codelab.utils.Encryption;
 import codelab.utils.MyFileUtils;
@@ -370,9 +375,7 @@ public class CodelabClient {
 	private HashMap<String, Boolean> sessionsReadOnly = new HashMap<>();
 
 	private String CLOSED_TAG = "[closed]"; // Ajouté par le serveur
-	private String CLOSED_TAG2 = " [closed]"; // Juste pour l'affichage
 	private String READONLY_TAG = "[readonly]"; // Ajouté par le serveur
-	private String READONLY_TAG2 = " [lecture seule]"; // Juste pour l'affichage
 
 	private void storeSessions(String str) {
 		// Remplissage de la HashMap à partir de la chaîne en provenance du serveur
@@ -440,24 +443,64 @@ public class CodelabClient {
 		String[] array = getSessions();
 		// Une seule session disponible
 		if (array.length == 1) return array[0];
-		// Ajouter les tags [closed] et [lecture seule]
-		int i = 0;
-		for (String sessionId : array) {
-			if (!isOpen(sessionId)) array[i] += CLOSED_TAG2;
-			else if (isReadOnly(sessionId)) array[i] += READONLY_TAG2;
-			i++;
-		}
 
-		String choice = (String) JOptionPane.showInputDialog(
+		JComboBox<String> combo = new JComboBox<>(array);
+		combo.setRenderer(new DefaultListCellRenderer() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+				Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				String sId = (value != null) ? value.toString() : "";
+
+				Color bg;
+				Color fg;
+				if (!isOpen(sId)) {
+					bg = UserTable.COLOR_CLOSED;
+					fg = new Color(175, 25, 25);
+				} else if (isReadOnly(sId)) {
+					bg = UserTable.COLOR_READONLY;
+					fg = new Color(135, 80, 0);
+				} else {
+					bg = UserTable.COLOR_OPEN;
+					fg = new Color(20, 105, 35);
+				}
+
+				if (isSelected && index >= 0) {
+					c.setBackground(bg.darker());
+					c.setForeground(fg);
+				} else {
+					c.setBackground(bg);
+					c.setForeground(fg);
+				}
+				return c;
+			}
+		});
+
+		Runnable updateComboBg = () -> {
+			String sId = (String) combo.getSelectedItem();
+			if (sId == null) return;
+			Color bg;
+			if (!isOpen(sId)) bg = UserTable.COLOR_CLOSED;
+			else if (isReadOnly(sId)) bg = UserTable.COLOR_READONLY;
+			else bg = UserTable.COLOR_OPEN;
+			combo.setBackground(bg);
+		};
+		updateComboBg.run();
+		combo.addActionListener(e -> updateComboBg.run());
+
+		int res = JOptionPane.showConfirmDialog(
 			CodeLab.FRAME,
-			CodeLab.LABEL("CodeLab_session"), "CodeLab",
+			new Object[] { CodeLab.LABEL("CodeLab_session"), combo },
+			"CodeLab",
+			JOptionPane.OK_CANCEL_OPTION,
 			JOptionPane.QUESTION_MESSAGE,
-			CodeLab.ICON,
-			array,
-			array[0]);
+			CodeLab.ICON);
 
-		if (choice == null) return CANCELLED; // Annulation
-		return choice.replace(CLOSED_TAG2, "").replace(READONLY_TAG2, "");
+		if (res != JOptionPane.OK_OPTION) return CANCELLED; // Annulation
+		String choice = (String) combo.getSelectedItem();
+		if (choice == null) return CANCELLED;
+		return choice;
 	}
 
 	public boolean actionChangeSession(String newSession) {

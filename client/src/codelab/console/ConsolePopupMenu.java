@@ -15,7 +15,6 @@ import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
 
 import codelab.CodeLab;
-import codelab.PropertyBase;
 
 /**
  *	Classe des menus popup de la console

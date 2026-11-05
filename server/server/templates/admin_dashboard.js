@@ -294,7 +294,7 @@ async function loadUsersData() {
     } catch (error) {
         debugLog(`Exception Users: ${error.message}`, 'error');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #e74c3c;">⌘ Erreur de connexion</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #e74c3c;">⌘ Erreur : ${error.message}</td></tr>`;
         }
     }
 }
@@ -325,7 +325,7 @@ async function loadSessionsData() {
     } catch (error) {
         debugLog(`Exception Sessions: ${error.message}`, 'error');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">⌘ Erreur de connexion</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #e74c3c;">⌘ Erreur : ${error.message}</td></tr>`;
         }
     }
 }
@@ -345,19 +345,19 @@ function updateSessionsTable() {
     debugLog(`Affichage de ${sortedSessions.length} sessions`, 'info');
     
     tbody.innerHTML = sortedSessions.map(session => {
+        const escapedSessionId = (session.id || '').replace(/'/g, "\\'");
         let statusHtml = '';
         if (!session.openned) {
-            statusHtml = `<span class="session-closed clickable-status" onclick="toggleSessionState('${escapedSessionId}', false)" title="Cliquer pour ouvrir">🔒 Fermée</span>`;
+            statusHtml = '<span class="session-closed">🔒 Fermée</span>';
         } else if (session.readonly) {
-            statusHtml = `<span class="clickable-status" style="background: #fef5e7; color: #d35400; border: 1px solid #f39c12; border-radius: 4px; padding: 2px 6px; font-weight: bold;" onclick="toggleSessionReadonly('${escapedSessionId}', true)" title="Cliquer pour désactiver la lecture seule">📖 Lecture seule</span>`;
+            statusHtml = '<span class="session-readonly">📖 Lecture</span>';
         } else {
-            statusHtml = `<span class="session-open clickable-status" onclick="toggleSessionState('${escapedSessionId}', true)" title="Cliquer pour fermer">✅ Ouverte</span>`;
+            statusHtml = '<span class="session-open">✅ Ouverte</span>';
         }
 
         const toggleBtnClass = session.openned ? 'btn-close-session' : 'btn-open-session';
         const toggleBtnText = session.openned ? 'Fermer' : 'Ouvrir';
         const toggleBtnIcon = session.openned ? '🔒' : '🔓';
-        const escapedSessionId = (session.id || '').replace(/'/g, "\\'");
         
         const groupsBadges = session.groups && session.groups.trim()
             ? session.groups.split(' ').filter(g => g.trim())
@@ -369,11 +369,15 @@ function updateSessionsTable() {
                 .map(user => `<span class="badge" style="background: #e67e22;">${user}</span>`).join(' ')
             : '';
         
-        const readonlyBtn = `<button class="btn" style="background: ${session.readonly ? '#27ae60' : '#e67e22'}; color: white; margin-left: 4px;"
+        const readonlyBtnClass = session.readonly ? 'btn-edit-session' : 'btn-readonly-session';
+        const readonlyBtnText = session.readonly ? '✏️ Édition' : '📖 Lecture';
+        const readonlyBtnTitle = session.readonly ? 'Autoriser l\'édition par les étudiants' : 'Mettre en lecture seule pour les étudiants';
+
+        const readonlyBtn = `<button class="btn ${readonlyBtnClass}"
                     onclick="toggleSessionReadonly('${escapedSessionId}', ${session.readonly || false})"
                     ${serverStopped ? 'disabled' : ''}
-                    title="${session.readonly ? 'Autoriser l\'édition par les étudiants' : 'Mettre en lecture seule pour les étudiants'}">
-                ${session.readonly ? '✏️ Édition' : '📖 Lecture seule'}
+                    title="${readonlyBtnTitle}">
+                ${readonlyBtnText}
             </button>`;
 
         return `<tr>
@@ -800,7 +804,7 @@ function updateUsersTable() {
                     onclick="deleteUserAccount('${escapedLogin}', '${escapedFullname}')" 
                     ${serverStopped ? 'disabled' : ''} 
                     title="Supprimer définitivement cet utilisateur">
-                🗑️
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>` : '';
 
         return `<tr>

@@ -76,16 +76,14 @@ public class GlassPanePopupMenu extends JPopupMenu {
 				}
 			});
 
-			/*
 			itemControl.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					UserData udata = editor.getCurrentUdata();
 					if (udata == null) return;
 					boolean value = udata.isControlled();
-					CodeLab.INSTANCE.askControlMode(udata.getLogin(), !value);
+					CodeLab.INSTANCE.getClient().askControlMode(udata.getLogin(), !value);
 				}
 			});
-			*/
 
 			itemResetHelp.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {

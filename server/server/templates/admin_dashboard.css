@@ -241,6 +241,11 @@ body {
     font-weight: bold; 
 }
 
+.session-readonly {
+    color: #2980b9;
+    font-weight: bold;
+}
+
 /* Tableau des clients connectés */
 .clients-table { 
     background: white; 
@@ -942,9 +947,10 @@ body {
 }
 
 /* Boutons gestion sessions */
-.btn-open-session {
-    background: #27ae60;
-    color: white;
+.btn-open-session,
+.btn-close-session,
+.btn-readonly-session,
+.btn-edit-session {
     padding: 5px 10px;
     font-size: 12px;
     border-radius: 4px;
@@ -952,6 +958,16 @@ body {
     cursor: pointer;
     transition: background 0.2s;
     font-weight: 500;
+    min-width: 90px;
+    text-align: center;
+    box-sizing: border-box;
+    margin: 0 3px;
+    vertical-align: middle;
+}
+
+.btn-open-session {
+    background: #27ae60;
+    color: white;
 }
 .btn-open-session:hover {
     background: #219150;
@@ -960,16 +976,33 @@ body {
 .btn-close-session {
     background: #e74c3c;
     color: white;
-    padding: 5px 10px;
-    font-size: 12px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-weight: 500;
 }
 .btn-close-session:hover {
     background: #c0392b;
+}
+
+.btn-readonly-session {
+    background: #e67e22;
+    color: white;
+}
+.btn-readonly-session:hover {
+    background: #d35400;
+}
+
+.btn-edit-session {
+    background: #27ae60;
+    color: white;
+}
+.btn-edit-session:hover {
+    background: #219150;
+}
+
+.btn-open-session:disabled,
+.btn-close-session:disabled,
+.btn-readonly-session:disabled,
+.btn-edit-session:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .clickable-status {
@@ -986,17 +1019,26 @@ body {
 /* Bouton suppression utilisateur */
 .btn-delete-user {
     background: #e74c3c;
-    color: white;
-    padding: 5px 8px;
+    color: #ffffff;
+    padding: 6px 10px;
     font-size: 12px;
-    border-radius: 3px;
+    border-radius: 4px;
     border: none;
     cursor: pointer;
     transition: background 0.2s;
-    margin-left: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
-.btn-delete-user:hover {
+.btn-delete-user:hover:not(:disabled) {
     background: #c0392b;
+}
+.btn-delete-user:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 /* Items case à cocher groupes */
