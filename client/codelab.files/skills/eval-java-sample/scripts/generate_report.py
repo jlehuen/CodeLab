@@ -159,25 +159,14 @@ def format_report_markdown(results: dict) -> str:
     style_s = scores.get('style', 0.0)
     tests_s = scores.get('tests', 0.0)
 
-    compil_desc = 'Compilation réussie sans erreur javac' if results.get('compilation_ok') else 'Erreurs de compilation relevées'
-    scores_table = f"""<table width="100%" border="0" cellspacing="0" cellpadding="0">
-<thead>
-<tr style="background-color: #f1f5f9;">
-<th width="30%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Axe d'Évaluation</th>
-<th width="15%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note Attribuée</th>
-<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Barème Officiel</th>
-<th width="43%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Critères & Observations</th>
-</tr>
-</thead>
-<tbody>
-<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 1 : Compilation Java</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{compil_s:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 6.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{compil_desc}</td></tr>
-<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 2 : Modélisation Objet & Encapsulation</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{arch_s:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 8.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Découpage des classes, champs privés et contrats d'interface</td></tr>
-<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 3 : Javadoc & Conventions Java</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{style_s:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 4.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Documentation formelle, lisibilité et conventions de casse</td></tr>
-<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 4 : Démarche de Test</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{tests_s:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 2.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Présence de classes de validation ou méthodes de test</td></tr>
-<tr style="background-color: #f8fafc;"><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note sans malus (IA / Similarité)</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{note_sans_malus:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Somme technique brute des 4 axes</b></td></tr>
-<tr style="background-color: #e2e8f0; font-weight: bold;"><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>TOTAL GÉNÉRAL (Avec malus)</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{total:.1f}</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>Bilan global de l'évaluation</b></td></tr>
-</tbody>
-</table>"""
+    scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Critères & Observations |
+| :--- | :---: | :---: | :--- |
+| **Axe 1 : Compilation Java** | **{compil_s:.1f}** | / 6.0 | {'Compilation réussie sans erreur javac' if results.get('compilation_ok') else 'Erreurs de compilation relevées'} |
+| **Axe 2 : Modélisation Objet & Encapsulation** | **{arch_s:.1f}** | / 8.0 | Découpage des classes, champs privés et contrats d'interface |
+| **Axe 3 : Javadoc & Conventions Java** | **{style_s:.1f}** | / 4.0 | Documentation formelle, lisibilité et conventions de casse |
+| **Axe 4 : Démarche de Test** | **{tests_s:.1f}** | / 2.0 | Présence de classes de validation ou méthodes de test |
+| **Note sans malus (IA / Similarité)** | **{note_sans_malus:.1f}** | **/ 20.0** | **Somme technique brute des 4 axes** |
+| **TOTAL GÉNÉRAL (Avec malus)** | **{total:.1f}** | **/ 20.0** | **Bilan global de l'évaluation** |"""
 
     # Calcul des radars et profil dominant
     radars = generate_mermaid_radars(results, student_name or student_id)

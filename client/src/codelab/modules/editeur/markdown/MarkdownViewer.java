@@ -443,9 +443,10 @@ public class MarkdownViewer extends AbstractEditor {
 
 	/**
 	 * Calibre tous les tableaux HTML à 100% de la largeur du conteneur.
-	 * Pour les tableaux issus de CommonMark sans attribut width explicite, distribue
-	 * automatiquement des pourcentages équitables sur les colonnes de l'en-tête,
-	 * garantissant ainsi sous Swing HTMLEditorKit un étirement fluide et proportionnel.
+	 * Pour les tableaux issus de CommonMark sans attribut width explicite, analyse
+	 * le contenu des colonnes pour calculer et distribuer automatiquement des pourcentages
+	 * pondérés intelligents sur les cellules de tête, garantissant ainsi sous Swing HTMLEditorKit
+	 * un étirement fluide et proportionnel à 100% de la largeur disponible.
 	 */
 	public static String formatTables100(String html) {
 		if (html == null || !html.contains("<table")) return html;
@@ -467,34 +468,90 @@ public class MarkdownViewer extends AbstractEditor {
 			}
 
 			// Trouver le premier <tr>
-			Pattern trPattern = Pattern.compile("(?is)(<tr\\b[^>]*>)(.*?)(</tr>)");
+			Pattern trPattern = Pattern.compile("(?is)<tr\\b[^>]*>(.*?)</tr>");
 			Matcher trMatcher = trPattern.matcher(fullTable);
 			if (trMatcher.find()) {
-				String trOpen = trMatcher.group(1);
-				String trContent = trMatcher.group(2);
-				String trClose = trMatcher.group(3);
+				int firstTrStart = trMatcher.start();
+				int firstTrEnd = trMatcher.end();
+				String trTagAndContent = trMatcher.group(0);
+				String firstTrOpen = trTagAndContent.substring(0, trTagAndContent.indexOf('>') + 1);
+				String firstTrContent = trMatcher.group(1);
+				String firstTrClose = "</tr>";
 
 				Pattern cellPattern = Pattern.compile("(?is)<(th|td)(\\b[^>]*)>(.*?)</\\1>");
-				Matcher cellMatcher = cellPattern.matcher(trContent);
-				List<String[]> cells = new ArrayList<>();
-				while (cellMatcher.find()) {
-					cells.add(new String[]{cellMatcher.group(1), cellMatcher.group(2), cellMatcher.group(3)});
+				Matcher headCellMatcher = cellPattern.matcher(firstTrContent);
+				List<String[]> headCells = new ArrayList<>();
+				while (headCellMatcher.find()) {
+					headCells.add(new String[]{headCellMatcher.group(1), headCellMatcher.group(2), headCellMatcher.group(3)});
 				}
 
-				int n = cells.size();
+				int n = headCells.size();
 				if (n > 0) {
-					int basePct = 100 / n;
-					int remPct = 100 - (basePct * (n - 1));
+					// Analyser la longueur moyenne de texte par colonne pour pondérer intelligemment les largeurs
+					double[] colWeights = new double[n];
+					int[] colCounts = new int[n];
+					Arrays.fill(colWeights, 0.0);
+					Arrays.fill(colCounts, 0);
+
+					Matcher rowMatcher = trPattern.matcher(fullTable);
+					while (rowMatcher.find()) {
+						String rowContent = rowMatcher.group(1);
+						Matcher rowCellMatcher = cellPattern.matcher(rowContent);
+						int colIdx = 0;
+						while (rowCellMatcher.find() && colIdx < n) {
+							String cellHtml = rowCellMatcher.group(3);
+							String textOnly = cellHtml.replaceAll("<[^>]*>", "").trim();
+							textOnly = textOnly.replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">");
+							int len = Math.max(4, Math.min(80, textOnly.length()));
+							colWeights[colIdx] += len;
+							colCounts[colIdx]++;
+							colIdx++;
+						}
+					}
+
+					// Calculer le poids moyen par colonne (avec plancher de 8)
+					double totalWeight = 0.0;
+					for (int i = 0; i < n; i++) {
+						if (colCounts[i] > 0) {
+							colWeights[i] = Math.max(8.0, colWeights[i] / colCounts[i]);
+						} else {
+							colWeights[i] = 10.0;
+						}
+						totalWeight += colWeights[i];
+					}
+
+					// Convertir en pourcentages entiers totalisant 100%
+					int[] colPct = new int[n];
+					int allocated = 0;
+					int minPct = Math.max(6, 100 / (n * 3));
+					for (int i = 0; i < n - 1; i++) {
+						int pct = (int) Math.round((colWeights[i] / totalWeight) * 100.0);
+						pct = Math.max(minPct, pct);
+						colPct[i] = pct;
+						allocated += pct;
+					}
+					colPct[n - 1] = Math.max(minPct, 100 - allocated);
+
+					int totalAlloc = 0;
+					for (int p : colPct) totalAlloc += p;
+					if (totalAlloc != 100 && n > 1) {
+						int diff = 100 - totalAlloc;
+						int maxIdx = 0;
+						for (int i = 1; i < n; i++) {
+							if (colPct[i] > colPct[maxIdx]) maxIdx = i;
+						}
+						colPct[maxIdx] += diff;
+					}
+
 					StringBuilder newTrContent = new StringBuilder();
 					for (int i = 0; i < n; i++) {
-						String[] c = cells.get(i);
-						int colWidth = (i == n - 1) ? remPct : basePct;
+						String[] c = headCells.get(i);
 						newTrContent.append("<").append(c[0]).append(c[1])
-							.append(" width=\"").append(colWidth).append("%\">")
+							.append(" width=\"").append(colPct[i]).append("%\">")
 							.append(c[2]).append("</").append(c[0]).append(">");
 					}
-					String newTr = trOpen + newTrContent.toString() + trClose;
-					String updatedTable = fullTable.substring(0, trMatcher.start()) + newTr + fullTable.substring(trMatcher.end());
+					String newTr = firstTrOpen + newTrContent.toString() + firstTrClose;
+					String updatedTable = fullTable.substring(0, firstTrStart) + newTr + fullTable.substring(firstTrEnd);
 					tableMatcher.appendReplacement(sb, Matcher.quoteReplacement(updatedTable));
 					continue;
 				}

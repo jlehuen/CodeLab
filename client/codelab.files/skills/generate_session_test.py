@@ -586,54 +586,14 @@ def build_student_report(st: dict, radars: dict) -> str:
 
 ## 🎯 Bilan Chiffré & Notation Technique
 
-<table width="100%" border="0" cellspacing="0" cellpadding="0">
-<thead>
-<tr style="background-color: #f1f5f9;">
-<th width="30%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Pilier d'Évaluation</th>
-<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note Obtenue</th>
-<th width="10%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Barème</th>
-<th width="48%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Critères & Observations Didactiques</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 1 : Syntaxe & Structure</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['syntax']:.1f}</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 6.0</td>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Analyse statique et conformité de la grammaire syntaxique</td>
-</tr>
-<tr>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 2 : Conception & Modularité</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['arch']:.1f}</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 8.0</td>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Découpage fonctionnel, modularité et algorithmique</td>
-</tr>
-<tr>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 3 : Style & Bonnes Pratiques</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['style']:.1f}</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 4.0</td>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">PEP8, clarté, lisibilité et conventions de nommage</td>
-</tr>
-<tr>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 4 : Validation & Assertions</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['tests']:.1f}</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 2.0</td>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Tests unitaires, gestion des cas limites et assertions</td>
-</tr>
-<tr style="background-color: #f8fafc;">
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note Technique Brute</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{(st['syntax'] + st['arch'] + st['style'] + st['tests']):.1f}</b></td>
-<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td>
-<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Somme des piliers d'évaluation technique</td>
-</tr>
-<tr style="background-color: #e2e8f0; font-weight: bold;">
-<td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>NOTE FINALE</b></td>
-<td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{st['total']:.1f}</b></td>
-<td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td>
-<td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>Profil : {radars.get('profil_dominant', 'Évalué')}</b></td>
-</tr>
-</tbody>
-</table>
+| Pilier d'Évaluation | Note Obtenue | Barème | Critères & Observations Didactiques |
+| :--- | :---: | :---: | :--- |
+| **Axe 1 : Syntaxe & Structure** | **{st['syntax']:.1f}** | / 6.0 | Analyse statique et conformité de la grammaire syntaxique |
+| **Axe 2 : Conception & Modularité** | **{st['arch']:.1f}** | / 8.0 | Découpage fonctionnel, modularité et algorithmique |
+| **Axe 3 : Style & Bonnes Pratiques** | **{st['style']:.1f}** | / 4.0 | PEP8, clarté, lisibilité et conventions de nommage |
+| **Axe 4 : Validation & Assertions** | **{st['tests']:.1f}** | / 2.0 | Tests unitaires, gestion des cas limites et assertions |
+| **Note Technique Brute** | **{(st['syntax'] + st['arch'] + st['style'] + st['tests']):.1f}** | **/ 20.0** | Somme des piliers d'évaluation technique |
+| **NOTE FINALE** | **{st['total']:.1f}** | **/ 20.0** | **Profil : {radars.get('profil_dominant', 'Évalué')}** |
 
 ---
 
@@ -718,20 +678,8 @@ def generate_cohort_summary(students_results: list) -> str:
         f"- **Moyenne générale de la cohorte :** **{avg_note:.2f} / 20.0**\n",
         "---\n",
         "## 📊 Récapitulatif Global de la Cohorte\n",
-        '<table width="100%" border="0" cellspacing="0" cellpadding="0">',
-        '<thead>',
-        '<tr>',
-        '  <th align="left" width="20%">Étudiant</th>',
-        '  <th align="center" width="10%">Login</th>',
-        '  <th align="center" width="12%">Note Finale</th>',
-        '  <th align="left" width="18%">Profil Dominant</th>',
-        '  <th align="center" width="10%">$S_{auth}$</th>',
-        '  <th align="center" width="10%">$I_{nav}$</th>',
-        '  <th align="center" width="8%">Runs</th>',
-        '  <th align="left" width="12%">Alertes</th>',
-        '</tr>',
-        '</thead>',
-        '<tbody>'
+        "| Étudiant | Login | Note Finale | Profil Dominant | $S_{auth}$ | $I_{nav}$ | Runs | Alertes |",
+        "| :--- | :---: | :---: | :--- | :---: | :---: | :---: | :--- |"
     ]
 
     for s in students_results:
@@ -744,51 +692,18 @@ def generate_cohort_summary(students_results: list) -> str:
         elif s["i_thrash"] > 0.3:
             alt_str = "⚠️ THRASH"
 
-        lines.append(
-            f'<tr>'
-            f'<td align="left"><strong>{s["name"]}</strong></td>'
-            f'<td align="center"><code>{s["login"]}</code></td>'
-            f'<td align="center"><strong>{s["total"]:.1f}</strong> / 20</td>'
-            f'<td align="left">{dom}</td>'
-            f'<td align="center">{s["s_auth"]:.1f}%</td>'
-            f'<td align="center">{s["i_nav"]:.1f}%</td>'
-            f'<td align="center">{s["runs"]}</td>'
-            f'<td align="left">{alt_str}</td>'
-            f'</tr>'
-        )
+        lines.append(f"| **{s['name']}** | `{s['login']}` | **{s['total']:.1f}** / 20 | {dom} | {s['s_auth']:.1f}% | {s['i_nav']:.1f}% | {s['runs']} | {alt_str} |")
 
-    lines.append('</tbody>')
-    lines.append('</table>\n')
-    lines.append("---\n")
+    lines.append("\n---\n")
     lines.append("## 🧭 Typologies & Répartition par Clusters d'Étudiants Types\n")
-    lines.append('<table width="100%" border="0" cellspacing="0" cellpadding="0">')
-    lines.append('<thead>')
-    lines.append('<tr>')
-    lines.append('  <th align="left" width="20%">Cluster Typologique</th>')
-    lines.append('  <th align="left" width="28%">Intitulé Didactique</th>')
-    lines.append('  <th align="center" width="10%">Effectif</th>')
-    lines.append('  <th align="center" width="12%">Proportion</th>')
-    lines.append('  <th align="left" width="30%">Étudiants Associés</th>')
-    lines.append('</tr>')
-    lines.append('</thead>')
-    lines.append('<tbody>')
+    lines.append("| Cluster Typologique | Intitulé Didactique | Effectif | Proportion | Étudiants Associés |")
+    lines.append("| :--- | :--- | :---: | :---: | :--- |")
 
     for c in clusters_def:
         cnt = len(c["members"])
         pct = (cnt / len(students_results)) * 100.0
         m_str = ", ".join(c["members"]) if c["members"] else "—"
-        lines.append(
-            f'<tr>'
-            f'<td align="left">{c["label"]}</td>'
-            f'<td align="left">{c["sub"]}</td>'
-            f'<td align="center"><strong>{cnt}</strong></td>'
-            f'<td align="center">{pct:.1f}%</td>'
-            f'<td align="left">{m_str}</td>'
-            f'</tr>'
-        )
-
-    lines.append('</tbody>')
-    lines.append('</table>\n')
+        lines.append(f"| {c['label']} | {c['sub']} | **{cnt}** | {pct:.1f}% | {m_str} |")
 
     lines.append("")
     lines.append(generate_cohort_radar(clusters_def, len(students_results)))

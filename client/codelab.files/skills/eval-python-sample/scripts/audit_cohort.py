@@ -311,26 +311,14 @@ def build_cohort_clusters(results, suspicious_logins):
 
     lines = [
         "## Typologies & Répartition par Clusters d'Étudiants Types\n",
-        '<table width="100%" border="0" cellspacing="0" cellpadding="0">',
-        '<thead>',
-        '<tr style="background-color: #f1f5f9;">',
-        '<th width="18%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Cluster Typologique</th>',
-        '<th width="16%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Profil Pédagogique</th>',
-        '<th width="8%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Effectif</th>',
-        '<th width="10%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Proportion</th>',
-        '<th width="28%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Caractéristiques & Recommandations</th>',
-        '<th width="20%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Étudiants Associés</th>',
-        '</tr>',
-        '</thead>',
-        '<tbody>'
+        "| Cluster Typologique | Profil Pédagogique | Effectif | Proportion | Caractéristiques & Recommandations | Étudiants Associés |",
+        "| :--- | :--- | :---: | :---: | :--- | :--- |"
     ]
     for c in clusters:
         cnt = len(c['members'])
         pct = (cnt / total_st * 100.0) if total_st > 0 else 0.0
         m_str = ", ".join(c['members']) if c['members'] else "—"
-        lines.append(f'<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{c["label"]}</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{c["sub"]}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{cnt}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{pct:.1f}%</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{c["desc"]}</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{m_str}</td></tr>')
-    lines.append('</tbody>')
-    lines.append('</table>')
+        lines.append(f"| {c['label']} | {c['sub']} | {cnt} | {pct:.1f}% | {c['desc']} | {m_str} |")
     lines.append("")
 
     try:
@@ -446,41 +434,17 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
     if suspicions:
         md.append("## Analyse de Similarités & Copier-Collé Inter-Étudiants")
         md.append(f"> **{len(suspicions)} paire(s) d'étudiants présentent une similarité suspecte** :\n")
-        md.append('<table width="100%" border="0" cellspacing="0" cellpadding="0">')
-        md.append('<thead>')
-        md.append('<tr style="background-color: #f1f5f9;">')
-        md.append('<th width="18%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Étudiant 1</th>')
-        md.append('<th width="18%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Étudiant 2</th>')
-        md.append('<th width="34%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Fichiers Suspects</th>')
-        md.append('<th width="14%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Similarité Max</th>')
-        md.append('<th width="16%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Gravité</th>')
-        md.append('</tr>')
-        md.append('</thead>')
-        md.append('<tbody>')
+        md.append("| Étudiant 1 | Étudiant 2 | Fichiers Suspects | Similarité Max | Gravité |")
+        md.append("| :--- | :--- | :--- | :---: | :--- |")
         for susp in suspicions:
-            f_str = ", ".join(f"<code>{f}</code> ({sim}%)" for f, sim in susp['similar_files'])
-            md.append(f'<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><code>{susp["s1"]}</code></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><code>{susp["s2"]}</code></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{f_str}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{susp["max_sim"]}%</b></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{susp["severity"]}</td></tr>')
-        md.append('</tbody>')
-        md.append('</table>')
+            f_str = ", ".join(f"`{f}` ({sim}%)" for f, sim in susp['similar_files'])
+            md.append(f"| `{susp['s1']}` | `{susp['s2']}` | {f_str} | **{susp['max_sim']}%** | {susp['severity']} |")
         md.append("")
         md.append("---")
         md.append("")
 
-    md.append('<table width="100%" border="0" cellspacing="0" cellpadding="0">')
-    md.append('<thead>')
-    md.append('<tr style="background-color: #f1f5f9;">')
-    md.append('<th width="20%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Étudiant / Dossier</th>')
-    md.append('<th width="8%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Syntaxe (/6)</th>')
-    md.append('<th width="9%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Arch. (/8)</th>')
-    md.append('<th width="8%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Style (/4)</th>')
-    md.append('<th width="8%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Tests (/2)</th>')
-    md.append('<th width="11%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Sans malus</th>')
-    md.append('<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note finale</th>')
-    md.append('<th width="12%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Indice IA</th>')
-    md.append('<th width="12%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Alertes</th>')
-    md.append('</tr>')
-    md.append('</thead>')
-    md.append('<tbody>')
+    md.append("| Étudiant / Dossier | Syntaxe (/6) | Architecture (/8) | Style (/4) | Tests (/2) | Note sans malus (/20) | Note avec malus (/20) | Indice IA | Alertes |")
+    md.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :--- |")
     for r in results:
         sc = r.get("scores", {})
         note_sans_malus = sc.get("note_technique_brute", round(sc.get("syntax", 0) + sc.get("architecture", 0) + sc.get("style", 0) + sc.get("tests", 0), 1))
@@ -495,9 +459,7 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
         elif ai_level.startswith('Modéré'):
             alerts.append("Idiomes IA")
         alert_str = " | ".join(alerts) if alerts else "Aucune"
-        md.append(f'<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><code>{login}</code></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{sc.get("syntax", 0):.1f}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{sc.get("architecture", 0):.1f}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{sc.get("style", 0):.1f}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{sc.get("tests", 0):.1f}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{note_sans_malus:.1f}</td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{sc.get("total", 0):.1f}</b></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{ai_level}</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{alert_str}</td></tr>')
-    md.append('</tbody>')
-    md.append('</table>')
+        md.append(f"| `{login}` | {sc.get('syntax', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | {note_sans_malus:.1f} | **{sc.get('total', 0):.1f}** | {ai_level} | {alert_str} |")
     md.append("")
     md.append(build_cohort_clusters(results, suspicious_logins))
     with open(out_path, "w", encoding="utf-8") as f:
