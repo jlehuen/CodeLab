@@ -617,15 +617,36 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         md_lines.append("")
         md_lines.append("- **Dynamique Temporelle & Chronologie (Tranches de 15 min)** :")
         md_lines.append("")
-        md_lines.append("| Intervalle | Saisie | Collages / Bursts | $S_{auth}$ | Hors IDE | Tests (Erreurs) | Diagnostic de Phase |")
-        md_lines.append("| :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
+        md_lines.append('<table width="100%" border="0" cellspacing="0" cellpadding="0">')
+        md_lines.append('<thead>')
+        md_lines.append('<tr style="background-color: #f1f5f9;">')
+        md_lines.append('<th width="14%" align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">Intervalle</th>')
+        md_lines.append('<th width="12%" align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">Saisie</th>')
+        md_lines.append('<th width="14%" align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">Collages / Bursts</th>')
+        md_lines.append('<th width="10%" align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">$S_{auth}$</th>')
+        md_lines.append('<th width="10%" align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">Hors IDE</th>')
+        md_lines.append('<th width="14%" align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">Tests (Erreurs)</th>')
+        md_lines.append('<th width="26%" align="left" style="padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: bold;">Diagnostic de Phase</th>')
+        md_lines.append('</tr>')
+        md_lines.append('</thead>')
+        md_lines.append('<tbody>')
         for sw in sliding_windows:
-            auth_col = f"**{sw['s_auth']}%**" if sw['s_auth'] is not None else "*--*"
+            auth_col = f"<b>{sw['s_auth']}%</b>" if sw['s_auth'] is not None else "<i>--</i>"
             burst_str = f" +{sw['burst_lines']}L ({sw['burst_count']}b)" if sw['burst_count'] > 0 else ""
-            paste_col = f"`{sw['paste_lines']}L`{burst_str}" if (sw['paste_lines'] > 0 or sw['burst_count'] > 0) else "0"
+            paste_col = f"<code>{sw['paste_lines']}L</code>{burst_str}" if (sw['paste_lines'] > 0 or sw['burst_count'] > 0) else "0"
             runs_cnt = sw['compiles'] + sw['execs']
             runs_col = f"{runs_cnt} ({sw['errors']} err)" if runs_cnt > 0 else "0"
-            md_lines.append(f"| {sw['t0_str']} - {sw['t1_str']} | `{sw['keys']}` c. | {paste_col} | {auth_col} | `{sw['inav']}%` | {runs_col} | {sw['diagnostic']} |")
+            md_lines.append('<tr>')
+            md_lines.append(f'<td align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1;">{sw["t0_str"]} - {sw["t1_str"]}</td>')
+            md_lines.append(f'<td align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1;"><code>{sw["keys"]}</code> c.</td>')
+            md_lines.append(f'<td align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1;">{paste_col}</td>')
+            md_lines.append(f'<td align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1;">{auth_col}</td>')
+            md_lines.append(f'<td align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1;"><code>{sw["inav"]}%</code></td>')
+            md_lines.append(f'<td align="center" style="padding: 6px 10px; border: 1px solid #cbd5e1;">{runs_col}</td>')
+            md_lines.append(f'<td align="left" style="padding: 6px 10px; border: 1px solid #cbd5e1;">{sw["diagnostic"]}</td>')
+            md_lines.append('</tr>')
+        md_lines.append('</tbody>')
+        md_lines.append('</table>')
 
     if alerts:
         md_lines.append("")
@@ -795,24 +816,40 @@ radar-beta
     else:
         table_lines.append("")
 
-    table_lines.append("| Profil Didactique Type | Démarche & Caractéristiques | Affinité / 20 | Adéquation & Diagnostic |")
-    table_lines.append("| :--- | :--- | :---: | :--- |")
+    table_lines.append('<table width="100%" border="0" cellspacing="0" cellpadding="0">')
+    table_lines.append('<thead>')
+    table_lines.append('<tr style="background-color: #f1f5f9;">')
+    table_lines.append('<th width="22%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Profil Didactique Type</th>')
+    table_lines.append('<th width="38%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Démarche & Caractéristiques</th>')
+    table_lines.append('<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Affinité / 20</th>')
+    table_lines.append('<th width="28%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Adéquation & Diagnostic</th>')
+    table_lines.append('</tr>')
+    table_lines.append('</thead>')
+    table_lines.append('<tbody>')
 
     for p in profiles_list:
         val = p["val"]
         pct = (val / 20.0) * 100.0
         if p["id"] == dominant["id"]:
-            diag = f"🟢 **Profil dominant** ({pct:.0f}%) : correspond au comportement observé en séance."
+            diag = f"🟢 <b>Profil dominant</b> ({pct:.0f}%) : correspond au comportement observé en séance."
         elif val >= 14.0:
-            diag = f"🔵 **Forte composante** ({pct:.0f}%) : traits observables très marqués."
+            diag = f"🔵 <b>Forte composante</b> ({pct:.0f}%) : traits observables très marqués."
         elif val >= 9.0:
-            diag = f"🟡 **Affinité modérée** ({pct:.0f}%) : traits observables occasionnels."
+            diag = f"🟡 <b>Affinité modérée</b> ({pct:.0f}%) : traits observables occasionnels."
         elif val >= 4.0:
-            diag = f"⚪ **Faible** ({pct:.0f}%) : comportement marginal ou peu significatif."
+            diag = f"⚪ <b>Faible</b> ({pct:.0f}%) : comportement marginal ou peu significatif."
         else:
-            diag = f"⚪ **Négligeable** ({pct:.0f}%) : aucun signe comportemental associé."
+            diag = f"⚪ <b>Négligeable</b> ({pct:.0f}%) : aucun signe comportemental associé."
 
-        table_lines.append(f"| {p['icon']} **{p['name']}** | {p['desc']} | **{val:.1f}** | {diag} |")
+        table_lines.append('<tr>')
+        table_lines.append(f'<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{p["icon"]} <b>{p["name"]}</b></td>')
+        table_lines.append(f'<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{p["desc"]}</td>')
+        table_lines.append(f'<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{val:.1f}</b></td>')
+        table_lines.append(f'<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{diag}</td>')
+        table_lines.append('</tr>')
+
+    table_lines.append('</tbody>')
+    table_lines.append('</table>')
 
     table_md = "\n".join(table_lines)
 

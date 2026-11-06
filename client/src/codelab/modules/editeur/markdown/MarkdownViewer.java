@@ -35,6 +35,10 @@ import javax.swing.text.html.ImageView;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import codelab.utils.CleanListView;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -437,6 +441,71 @@ public class MarkdownViewer extends AbstractEditor {
 		return text;
 	}
 
+	/**
+	 * Calibre tous les tableaux HTML à 100% de la largeur du conteneur.
+	 * Pour les tableaux issus de CommonMark sans attribut width explicite, distribue
+	 * automatiquement des pourcentages équitables sur les colonnes de l'en-tête,
+	 * garantissant ainsi sous Swing HTMLEditorKit un étirement fluide et proportionnel.
+	 */
+	public static String formatTables100(String html) {
+		if (html == null || !html.contains("<table")) return html;
+
+		// 1. S'assurer que chaque <table a width="100%"
+		String res = html.replaceAll("(?i)<table(?![^>]*width=)", "<table width=\"100%\"");
+
+		// 2. Pour les tables sans width sur les cellules de tête, répartir les largeurs relatives
+		Pattern tablePattern = Pattern.compile("(?is)<table\\b[^>]*>(.*?)</table>");
+		Matcher tableMatcher = tablePattern.matcher(res);
+		StringBuffer sb = new StringBuffer();
+
+		while (tableMatcher.find()) {
+			String fullTable = tableMatcher.group(0);
+			// Si la table contient déjà width= sur une cellule th ou td, on conserve son calibrage spécifique
+			if (Pattern.compile("(?i)<(th|td)\\b[^>]*\\bwidth=").matcher(fullTable).find()) {
+				tableMatcher.appendReplacement(sb, Matcher.quoteReplacement(fullTable));
+				continue;
+			}
+
+			// Trouver le premier <tr>
+			Pattern trPattern = Pattern.compile("(?is)(<tr\\b[^>]*>)(.*?)(</tr>)");
+			Matcher trMatcher = trPattern.matcher(fullTable);
+			if (trMatcher.find()) {
+				String trOpen = trMatcher.group(1);
+				String trContent = trMatcher.group(2);
+				String trClose = trMatcher.group(3);
+
+				Pattern cellPattern = Pattern.compile("(?is)<(th|td)(\\b[^>]*)>(.*?)</\\1>");
+				Matcher cellMatcher = cellPattern.matcher(trContent);
+				List<String[]> cells = new ArrayList<>();
+				while (cellMatcher.find()) {
+					cells.add(new String[]{cellMatcher.group(1), cellMatcher.group(2), cellMatcher.group(3)});
+				}
+
+				int n = cells.size();
+				if (n > 0) {
+					int basePct = 100 / n;
+					int remPct = 100 - (basePct * (n - 1));
+					StringBuilder newTrContent = new StringBuilder();
+					for (int i = 0; i < n; i++) {
+						String[] c = cells.get(i);
+						int colWidth = (i == n - 1) ? remPct : basePct;
+						newTrContent.append("<").append(c[0]).append(c[1])
+							.append(" width=\"").append(colWidth).append("%\">")
+							.append(c[2]).append("</").append(c[0]).append(">");
+					}
+					String newTr = trOpen + newTrContent.toString() + trClose;
+					String updatedTable = fullTable.substring(0, trMatcher.start()) + newTr + fullTable.substring(trMatcher.end());
+					tableMatcher.appendReplacement(sb, Matcher.quoteReplacement(updatedTable));
+					continue;
+				}
+			}
+
+			tableMatcher.appendReplacement(sb, Matcher.quoteReplacement(fullTable));
+		}
+		tableMatcher.appendTail(sb);
+		return sb.toString();
+	}
+
 	public void renderMarkdown() {
 		renderMarkdown(false);
 	}
@@ -486,7 +555,7 @@ public class MarkdownViewer extends AbstractEditor {
 			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, mathInline, mathDisplay);
 			Node document = MD_PARSER.parse(processed);
 			String body = CodeBlockUtils.tagLanguage(HTML_RENDERER.render(document));
-			body = body.replaceAll("(?i)<table(?![^>]*width=)", "<table width=\"100%\"");
+			body = formatTables100(body);
 
 			// Nettoyage des commentaires CSS pour préserver le parseur Swing
 			String cleanCss = css != null ? css.replaceAll("/\\*[\\s\\S]*?\\*/", "") : "";
@@ -539,7 +608,7 @@ public class MarkdownViewer extends AbstractEditor {
 			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, mathInline, mathDisplay);
 			Node document = MD_PARSER.parse(processed);
 			String body = CodeBlockUtils.tagLanguage(HTML_RENDERER.render(document));
-			body = body.replaceAll("(?i)<table(?![^>]*width=)", "<table width=\"100%\"");
+			body = formatTables100(body);
 
 			String fullHtml = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset='utf-8'>\n<title>Rapport d'évaluation CodeLab</title>\n<style>\n"
 				+ (css != null ? css : "") + "\n"

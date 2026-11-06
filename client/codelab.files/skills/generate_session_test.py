@@ -586,14 +586,54 @@ def build_student_report(st: dict, radars: dict) -> str:
 
 ## 🎯 Bilan Chiffré & Notation Technique
 
-| Pilier d'Évaluation | Note Obtenue | Barème | Critères & Observations Didactiques |
-| :--- | :---: | :---: | :--- |
-| **Axe 1 : Syntaxe & Structure** | **{st['syntax']:.1f}** | / 6.0 | Analyse statique et conformité de la grammaire syntaxique |
-| **Axe 2 : Conception & Modularité** | **{st['arch']:.1f}** | / 8.0 | Découpage fonctionnel, modularité et algorithmique |
-| **Axe 3 : Style & Bonnes Pratiques** | **{st['style']:.1f}** | / 4.0 | PEP8, clarté, lisibilité et conventions de nommage |
-| **Axe 4 : Validation & Assertions** | **{st['tests']:.1f}** | / 2.0 | Tests unitaires, gestion des cas limites et assertions |
-| **Note Technique Brute** | **{(st['syntax'] + st['arch'] + st['style'] + st['tests']):.1f}** | **/ 20.0** | Somme des piliers d'évaluation technique |
-| **NOTE FINALE** | **{st['total']:.1f}** | **/ 20.0** | **Profil : {radars.get('profil_dominant', 'Évalué')}** |
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th width="30%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Pilier d'Évaluation</th>
+<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note Obtenue</th>
+<th width="10%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Barème</th>
+<th width="48%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Critères & Observations Didactiques</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 1 : Syntaxe & Structure</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['syntax']:.1f}</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 6.0</td>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Analyse statique et conformité de la grammaire syntaxique</td>
+</tr>
+<tr>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 2 : Conception & Modularité</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['arch']:.1f}</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 8.0</td>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Découpage fonctionnel, modularité et algorithmique</td>
+</tr>
+<tr>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 3 : Style & Bonnes Pratiques</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['style']:.1f}</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 4.0</td>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">PEP8, clarté, lisibilité et conventions de nommage</td>
+</tr>
+<tr>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 4 : Validation & Assertions</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st['tests']:.1f}</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 2.0</td>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Tests unitaires, gestion des cas limites et assertions</td>
+</tr>
+<tr style="background-color: #f8fafc;">
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note Technique Brute</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{(st['syntax'] + st['arch'] + st['style'] + st['tests']):.1f}</b></td>
+<td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td>
+<td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Somme des piliers d'évaluation technique</td>
+</tr>
+<tr style="background-color: #e2e8f0; font-weight: bold;">
+<td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>NOTE FINALE</b></td>
+<td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{st['total']:.1f}</b></td>
+<td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td>
+<td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>Profil : {radars.get('profil_dominant', 'Évalué')}</b></td>
+</tr>
+</tbody>
+</table>
 
 ---
 

@@ -1022,8 +1022,16 @@ def build_generic_scores_table(scores, data, profil):
         "score_transversal": ("Transversal : Style Pythonique", "/ 2.0", "Idiomes et vectorisation"),
     }
     rows = [
-        "| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |",
-        "| :--- | :---: | :---: | :--- |"
+        '<table width="100%" border="0" cellspacing="0" cellpadding="0">',
+        '<thead>',
+        '<tr style="background-color: #f1f5f9;">',
+        '<th width="30%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Axe d\'Évaluation</th>',
+        '<th width="15%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note Attribuée</th>',
+        '<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Barème Officiel</th>',
+        '<th width="43%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Appréciation Synthétique</th>',
+        '</tr>',
+        '</thead>',
+        '<tbody>'
     ]
     has_custom_axes = False
     raw_sum = 0.0
@@ -1037,7 +1045,7 @@ def build_generic_scores_table(scores, data, profil):
         except (ValueError, TypeError):
             val_str = str(v)
         lbl, bareme, desc = axis_labels.get(k, (f"Axe : {k.replace('_', ' ').capitalize()}", "", "Évaluation spécifique"))
-        rows.append(f"| **{lbl}** | **{val_str}** | {bareme} | {desc} |")
+        rows.append(f'<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{lbl}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{val_str}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{bareme}</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{desc}</td></tr>')
         has_custom_axes = True
     
     try:
@@ -1053,11 +1061,13 @@ def build_generic_scores_table(scores, data, profil):
         nsm_str = str(note_sans_malus)
 
     if not has_custom_axes:
-        rows.append(f"| **Note sans malus (IA / Similarité)** | **{nsm_str}** | / 20.0 | Note technique brute |")
-        rows.append(f"| **Note Globale (Avec malus)** | **{tot_str}** | / 20.0 | Bilan global de l'évaluation |")
+        rows.append(f'<tr style="background-color: #f8fafc;"><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note sans malus (IA / Similarité)</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{nsm_str}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 20.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Note technique brute</td></tr>')
+        rows.append(f'<tr style="background-color: #e2e8f0; font-weight: bold;"><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>Note Globale (Avec malus)</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{tot_str}</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>Bilan global de l\'évaluation</b></td></tr>')
     else:
-        rows.append(f"| **Note sans malus (IA / Similarité)** | **{nsm_str}** | **/ 20.0** | **Somme technique brute des axes** |")
-        rows.append(f"| **TOTAL GÉNÉRAL (Avec malus)** | **{tot_str}** | **/ 20.0** | **{profil}** |")
+        rows.append(f'<tr style="background-color: #f8fafc;"><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note sans malus (IA / Similarité)</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{nsm_str}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Somme technique brute des axes</b></td></tr>')
+        rows.append(f'<tr style="background-color: #e2e8f0; font-weight: bold;"><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>TOTAL GÉNÉRAL (Avec malus)</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{tot_str}</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>{profil}</b></td></tr>')
+    rows.append('</tbody>')
+    rows.append('</table>')
     return "\n".join(rows)
 
 def build_deterministic_pedagogical_sections(skill_name, data, identity):
@@ -1290,13 +1300,23 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         if tot < note_sans_malus:
             sec_commentaire += f" Attention : la note finale avec malus est ajustée à **{tot:.1f}/20** en raison des alertes d'intégrité (similarité inter-étudiants et/ou suspicion d'aide IA)."
 
-    scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
-| :--- | :---: | :---: | :--- |
-| **Axe 1 : Progression & Couverture des TP** | **{a1:.1f}** | / 10.0 | {app_a1} |
-| **Axe 2 : Architecture & Qualité Algorithmique** | **{a2:.1f}** | / 8.0 | {app_a2} |
-| **Axe 3 : Style, Rigueur & Bonnes Pratiques** | **{a3:.1f}** | / 2.0 | {app_a3} |
-| **Note sans malus (IA / Similarité)** | **{note_sans_malus:.1f}** | **/ 20.0** | **Somme technique brute des 3 axes** |
-| **TOTAL GÉNÉRAL (Avec malus)** | **{tot:.1f}** | **/ 20.0** | **{profil}** |"""
+    scores_table = f"""<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th width="30%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Axe d'Évaluation</th>
+<th width="15%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note Attribuée</th>
+<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Barème Officiel</th>
+<th width="43%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Appréciation Synthétique</th>
+</tr>
+</thead>
+<tbody>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 1 : Progression & Couverture des TP</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{a1:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 10.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{app_a1}</td></tr>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 2 : Architecture & Qualité Algorithmique</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{a2:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 8.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{app_a2}</td></tr>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 3 : Style, Rigueur & Bonnes Pratiques</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{a3:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 2.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{app_a3}</td></tr>
+<tr style="background-color: #f8fafc;"><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note sans malus (IA / Similarité)</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{note_sans_malus:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Somme technique brute des 3 axes</b></td></tr>
+<tr style="background-color: #e2e8f0; font-weight: bold;"><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>TOTAL GÉNÉRAL (Avec malus)</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{tot:.1f}</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>{profil}</b></td></tr>
+</tbody>
+</table>"""
 
     radars_dict = {}
     try:
@@ -1838,13 +1858,23 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
         nsm_f = 0.0
         profil = "Standard"
 
-    scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
-| :--- | :---: | :---: | :--- |
-| **Partie 1 : Flux & Regex** | **{p1:.2f}** | / 8.0 | Traitement des flux de données et expressions régulières |
-| **Partie 2 : Numpy & Matplotlib** | **{p2:.2f}** | / 10.0 | Calculs matriciels vectorisés et visualisations |
-| **Transversal : Style Pythonique** | **{data.get('score_transversal', 0.0):.2f}** | / 2.0 | Idiomes Python, propreté et bonnes pratiques |
-| **Note sans malus (IA / Similarité)** | **{nsm_f:.2f}** | **/ 20.0** | **Somme technique brute des 3 axes** |
-| **TOTAL GÉNÉRAL (Avec malus)** | **{note_f:.2f}** | **/ 20.0** | **{profil}** |"""
+    scores_table = f"""<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th width="30%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Axe d'Évaluation</th>
+<th width="15%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note Attribuée</th>
+<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Barème Officiel</th>
+<th width="43%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Appréciation Synthétique</th>
+</tr>
+</thead>
+<tbody>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Partie 1 : Flux & Regex</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{p1:.2f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 8.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Traitement des flux de données et expressions régulières</td></tr>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Partie 2 : Numpy & Matplotlib</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{p2:.2f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 10.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Calculs matriciels vectorisés et visualisations</td></tr>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Transversal : Style Pythonique</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{data.get('score_transversal', 0.0):.2f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 2.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Idiomes Python, propreté et bonnes pratiques</td></tr>
+<tr style="background-color: #f8fafc;"><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note sans malus (IA / Similarité)</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{nsm_f:.2f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Somme technique brute des 3 axes</b></td></tr>
+<tr style="background-color: #e2e8f0; font-weight: bold;"><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>TOTAL GÉNÉRAL (Avec malus)</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{note_f:.2f}</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>{profil}</b></td></tr>
+</tbody>
+</table>"""
 
     api_key = ai_props.get("GEMINI_API_KEY") if ai_props else None
     model = ai_props.get("GEMINI_MODEL", "gemini-3.5-flash-lite") if ai_props else "gemini-3.5-flash-lite"

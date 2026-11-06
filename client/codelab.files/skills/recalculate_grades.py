@@ -145,18 +145,29 @@ def update_student_report_markdown(report_file, st_info, a1_max=10.0, a2_max=8.0
                     app_a3 = m3.group(1).strip()
 
             note_sans_malus = st_info.get('raw_subtotal', round(st_info['a1'] + st_info['a2'] + st_info['a3'], 1))
-            new_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
-| :--- | :---: | :---: | :--- |
-| **Axe 1 : Progression & Couverture des TP** | **{st_info['a1']:.1f}** | / {a1_max:.1f} | {app_a1} |
-| **Axe 2 : Architecture & Qualité Algorithmique** | **{st_info['a2']:.1f}** | / {a2_max:.1f} | {app_a2} |
-| **Axe 3 : Style, Rigueur & Bonnes Pratiques** | **{st_info['a3']:.1f}** | / {a3_max:.1f} | {app_a3} |
-| **Note sans malus (IA / Similarité)** | **{note_sans_malus:.1f}** | / 20.0 | Somme technique brute des 3 axes |
-| **TOTAL GÉNÉRAL (Avec malus)** | **{st_info['new']:.1f}** | **/ 20.0** | **{s_profil}** |"""
+            new_table = f"""<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th width="30%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Axe d'Évaluation</th>
+<th width="15%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Note Attribuée</th>
+<th width="12%" align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Barème Officiel</th>
+<th width="43%" align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1; font-weight: bold;">Appréciation Synthétique</th>
+</tr>
+</thead>
+<tbody>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 1 : Progression & Couverture des TP</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st_info['a1']:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ {a1_max:.1f}</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{app_a1}</td></tr>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 2 : Architecture & Qualité Algorithmique</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st_info['a2']:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ {a2_max:.1f}</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{app_a2}</td></tr>
+<tr><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Axe 3 : Style, Rigueur & Bonnes Pratiques</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{st_info['a3']:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ {a3_max:.1f}</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">{app_a3}</td></tr>
+<tr style="background-color: #f8fafc;"><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>Note sans malus (IA / Similarité)</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;"><b>{note_sans_malus:.1f}</b></td><td align="center" style="padding: 7px 12px; border: 1px solid #cbd5e1;">/ 20.0</td><td align="left" style="padding: 7px 12px; border: 1px solid #cbd5e1;">Somme technique brute des 3 axes</td></tr>
+<tr style="background-color: #e2e8f0; font-weight: bold;"><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>TOTAL GÉNÉRAL (Avec malus)</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b style="font-size: 1.15em;">{st_info['new']:.1f}</b></td><td align="center" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>/ 20.0</b></td><td align="left" style="padding: 8px 12px; border: 1px solid #cbd5e1;"><b>{s_profil}</b></td></tr>
+</tbody>
+</table>"""
 
             content = re.sub(
-                r'\|[ \t]*(?:Axe[ \t]*d[’\']?[EÉeé]valuation|Axe)[ \t]*\|[\s\S]*?\|\s*\*\*(?:TOTAL GÉNÉRAL|Total Global|NOTE FINALE)[^\n]*\|',
+                r'(?:\|[ \t]*(?:Axe[ \t]*d[’\']?[EÉeé]valuation|Axe)[ \t]*\|[\s\S]*?\|\s*\*\*(?:TOTAL GÉNÉRAL|Total Global|NOTE FINALE)[^\n]*\||<table[\s\S]*?</table>)',
                 new_table,
                 content,
+                count=1,
                 flags=re.IGNORECASE
             )
             content = re.sub(r'###\s*Tableau[^\n]*', '### Tableau Récapitulatif des Notes Calibrées', content)
