@@ -384,7 +384,7 @@ blockquote.danger {
 table {
     border-collapse: collapse;
     margin: 4px 0;
-    max-width: 100%;
+    width: 100%;
 }
 
 th, td {

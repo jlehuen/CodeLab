@@ -129,7 +129,7 @@ pre code, pre tt {
 table {
     border-collapse: collapse;
     margin: 6px 0;
-    max-width: 100%;
+    width: 100%;
 }
 
 th, td {

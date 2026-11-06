@@ -1281,7 +1281,7 @@ public class NotebookCellPane extends JPanel {
 
 			// Supprimer les commentaires CSS pour éviter que d'éventuels chevrons (<...>) dans les commentaires ne perturbent le parseur HTML de Swing
 			String cleanCss = css != null ? css.replaceAll("/\\*[\\s\\S]*?\\*/", "") : "";
-			cleanCss += "\npre, table, img { max-width: 100%; }\n";
+			cleanCss += "\npre, img { max-width: 100%; }\ntable { width: 100%; max-width: 100%; }\n";
 			String fullHtml = "<html><head><style>\n" + cleanCss + "\n</style></head><body>" + body + "</body></html>";
 			mdHtmlView.setText(fullHtml);
 			mdHtmlView.setCaretPosition(0);

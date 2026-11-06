@@ -332,6 +332,7 @@ public class MarkdownViewer extends AbstractEditor {
 		patch.append("ul li { margin-top: 2px; margin-bottom: 4px; }\n");
 		patch.append("pre { font-family: monospace; max-width: 100%; }\n");
 		patch.append("code, tt { font-family: monospace; }\n");
+		patch.append("table { width: 100%; }\n");
 
 		return css + patch.toString();
 	}
