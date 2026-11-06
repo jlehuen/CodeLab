@@ -426,15 +426,14 @@ public class CodeLab extends AbstractCodeLab {
 	};
 
 	public static void initStylesFolder() {
-		File target = new File(STYLES_FOLDER);
-		if (!target.exists()) target.mkdirs();
+		// En Cas A (styles intégrés dans le JAR), la création automatique d'un dossier vide n'est plus requise.
 	}
 
 	public static java.util.List<String> getAvailableReportStyles() {
 		initStylesFolder();
 		java.util.Set<String> styles = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
-		// 1. Scan des styles dans le dossier STYLES_FOLDER (~/codelab.files/.hidden/styles)
+		// 1. Scan des styles dans le dossier STYLES_FOLDER (~/codelab.files/.hidden/styles) si l'utilisateur en a ajouté
 		File target = new File(STYLES_FOLDER);
 		if (target.exists() && target.isDirectory()) {
 			File[] files = target.listFiles((dir, name) -> name.endsWith(".css"));
@@ -446,19 +445,7 @@ public class CodeLab extends AbstractCodeLab {
 			}
 		}
 
-		// 2. Mode dev : client/codelab.files/hidden/styles
-		File devDir = new File("client/codelab.files/hidden/styles");
-		if (devDir.exists() && devDir.isDirectory()) {
-			File[] files = devDir.listFiles((dir, name) -> name.endsWith(".css"));
-			if (files != null) {
-				for (File f : files) {
-					String n = f.getName();
-					styles.add(n.substring(0, n.length() - 4));
-				}
-			}
-		}
-
-		// 3. Si le dossier est vide (aucun fichier CSS), repli sur le CSS standard du dossier de l'exécutable
+		// 2. Si le dossier est vide (aucun fichier CSS), repli sur le CSS standard du dossier de l'exécutable
 		if (styles.isEmpty()) {
 			File standardCss = getExecutableStandardCssFile();
 			if (standardCss != null && standardCss.exists() && standardCss.length() > 0) {
@@ -488,16 +475,7 @@ public class CodeLab extends AbstractCodeLab {
 			if (files != null && files.length > 0 && files[0].length() > 0) return files[0];
 		}
 
-		// 2. Mode dev : client/codelab.files/hidden/styles
-		File dev = new File("client/codelab.files/hidden/styles", targetCssName);
-		if (dev.exists() && dev.length() > 0) return dev;
-		File devDir = new File("client/codelab.files/hidden/styles");
-		if (devDir.exists() && devDir.isDirectory()) {
-			File[] files = devDir.listFiles((dir, name) -> name.equalsIgnoreCase(targetCssName));
-			if (files != null && files.length > 0 && files[0].length() > 0) return files[0];
-		}
-
-		// 3. CSS standard dans le dossier de l'exécutable si dossier vide ou demandé
+		// 2. CSS standard dans le dossier de l'exécutable si dossier vide ou demandé
 		File standardCss = getExecutableStandardCssFile();
 		if (standardCss != null && standardCss.exists() && standardCss.length() > 0) {
 			if (styleName.equalsIgnoreCase("report") || styleName.equalsIgnoreCase("standard")
@@ -506,7 +484,7 @@ public class CodeLab extends AbstractCodeLab {
 			}
 		}
 
-		// 4. Repli sur le CSS standard de l'exécutable s'il existe
+		// 3. Repli sur le CSS standard de l'exécutable s'il existe
 		if (standardCss != null && standardCss.exists() && standardCss.length() > 0) {
 			return standardCss;
 		}

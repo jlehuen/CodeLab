@@ -353,7 +353,7 @@ To build standalone, ready-to-run distributions (bundling their own JVM without 
 Once the JDKs are in place, run the script for your target platform:
 - **macOS** (Universal DMG for Apple Silicon & Intel): `./distrib-mac.sh`
 - **Linux** (Standalone FreeDesktop archive): `./distrib-linux.sh`
-- **Windows** (NSIS Installer): `./distrib-win64-nsis.sh`
+- **Windows** (NSIS Installer): `./distrib-win64.sh`
 
 ### 2. Building the Rust Server
 

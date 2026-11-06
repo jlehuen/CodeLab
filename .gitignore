@@ -23,7 +23,9 @@ server/server/config/sessions.xml
 server/server/config/sessions_new.xml
 server/server/sessions/
 server/scripts-admin/
-client/codelab.files/evaluations/
+client/codelab.files/evaluations/*
+!client/codelab.files/evaluations/README.TXT
+!client/codelab.files/evaluations/.gitkeep
 
 # Tableurs de promotions d'étudiants (L1, L2, etc.)
 *.xlsx
@@ -52,7 +54,6 @@ release.sh
 github-release.sh
 client/release.sh
 client/update-version.sh
-client/refresh-icon.command
 client/build-test.command
 server/compile-server.sh
 server/get-log.command

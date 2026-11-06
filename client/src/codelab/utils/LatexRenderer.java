@@ -29,6 +29,33 @@ public class LatexRenderer {
 	private static final Pattern DISPLAY_MATH = Pattern.compile("\\$\\$([\\s\\S]+?)\\$\\$");
 	private static final Pattern INLINE_MATH = Pattern.compile("(?<!\\$)\\$(?!\\$)([^\\$\\n\\r]+?)(?<!\\$)\\$(?!\\$)");
 
+	private static final Pattern CSS_GLOBAL_SCALE = Pattern.compile("--math-scale\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
+	private static final Pattern CSS_INLINE_SCALE = Pattern.compile("--math-inline-scale\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
+	private static final Pattern CSS_DISPLAY_SCALE = Pattern.compile("--math-display-scale\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)");
+
+	private static float parseCssFloat(String css, Pattern pattern, float defaultValue) {
+		if (css == null) return defaultValue;
+		String clean = css.replaceAll("/\\*[\\s\\S]*?\\*/", "");
+		Matcher m = pattern.matcher(clean);
+		if (m.find()) {
+			try {
+				return Float.parseFloat(m.group(1));
+			} catch (Exception ignored) {
+			}
+		}
+		return defaultValue;
+	}
+
+	public static float cssInlineScale(String css) {
+		float global = parseCssFloat(css, CSS_GLOBAL_SCALE, 1.0f);
+		return parseCssFloat(css, CSS_INLINE_SCALE, 1.15f) * global;
+	}
+
+	public static float cssDisplayScale(String css) {
+		float global = parseCssFloat(css, CSS_GLOBAL_SCALE, 1.0f);
+		return parseCssFloat(css, CSS_DISPLAY_SCALE, 1.60f) * global;
+	}
+
 	public static class RenderResult {
 		public final File file;
 		public final int width;
@@ -67,7 +94,7 @@ public class LatexRenderer {
 	 * @return Texte avec les balises <img> prêtes pour le rendu HTML
 	 */
 	public static String renderMarkdownMath(String markdown, int baseFontSize) {
-		return renderMarkdownMath(markdown, baseFontSize, 2.00f, 3.00f);
+		return renderMarkdownMath(markdown, baseFontSize, 1.15f, 1.60f);
 	}
 
 	public static String renderMarkdownMath(String markdown, int baseFontSize, float inlineScale, float displayScale) {
@@ -76,8 +103,8 @@ public class LatexRenderer {
 		}
 
 		int size = baseFontSize > 0 ? baseFontSize : 13;
-		float iScale = inlineScale > 0 ? inlineScale : 2.00f;
-		float dScale = displayScale > 0 ? displayScale : 3.00f;
+		float iScale = inlineScale > 0 ? inlineScale : 1.15f;
+		float dScale = displayScale > 0 ? displayScale : 1.60f;
 
 		// Utilisation directe des facteurs d'échelle sans plancher rigide bloquant
 		int inlineSize = Math.max(8, (int) Math.round(size * iScale));

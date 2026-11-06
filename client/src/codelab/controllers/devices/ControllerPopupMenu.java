@@ -53,6 +53,12 @@ public class ControllerPopupMenu extends JPopupMenu {
 
 		add(new JSeparator());
 
+		if (AbstractCodeLab.IS_OSX) {
+			JMenuItem itemMacPerm = new JMenuItem(CodeLab.LABEL("EventViewer_mac_settings_menu"));
+			itemMacPerm.addActionListener(e -> MacPermissions.openInputMonitoring());
+			add(itemMacPerm);
+		}
+
 		JMenuItem itemRescan = new JMenuItem(CodeLab.LABEL("EventViewer_rescan"));
 		itemRescan.addActionListener(e -> {
 			int nb = reader.scan();
@@ -60,12 +66,6 @@ public class ControllerPopupMenu extends JPopupMenu {
 			CodeLab.INSTANCE.toolbar_update();
 		});
 		add(itemRescan);
-
-		if (AbstractCodeLab.IS_OSX) {
-			JMenuItem itemMacPerm = new JMenuItem(CodeLab.LABEL("EventViewer_mac_settings_menu"));
-			itemMacPerm.addActionListener(e -> MacPermissions.openInputMonitoring());
-			add(itemMacPerm);
-		}
 
 		show(component, x, y);
 	}

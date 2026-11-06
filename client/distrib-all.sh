@@ -27,7 +27,7 @@ echo "================================================================"
 ./distrib-mac.sh -arm
 
 # 3. Distribution Windows 64-bit
-./distrib-win64-nsis.sh
+./distrib-win64.sh
 
 # 4. Distribution Linux 64-bit
 ./distrib-linux.sh

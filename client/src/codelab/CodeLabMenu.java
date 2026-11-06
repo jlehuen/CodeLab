@@ -225,44 +225,6 @@ public class CodeLabMenu extends JPopupMenu {
 			}
 		});
 
-		// ---------------------------------------
-		// Sauvegardes
-		// ---------------------------------------
-
-		JMenuItem itemCreateRecoveryBackup = new JMenuItem(CodeLab.LABEL("itemCreateRecoveryBackup"));
-		itemCreateRecoveryBackup.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				codelab.createManualRecoveryBackup();
-			}
-		});
-
-		JMenuItem itemRestoreRecoveryBackup = new JMenuItem(CodeLab.LABEL("itemRestoreRecoveryBackup"));
-		itemRestoreRecoveryBackup.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				codelab.restoreRecoveryBackup();
-			}
-		});
-
-		JMenuItem itemRecoveryFolder = new JMenuItem(CodeLab.LABEL("itemRecoveryFolder"));
-		itemRecoveryFolder.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				codelab.openRecoveryFolder();
-			}
-		});
-
-		JMenuItem itemCleanRecoveryFolder = new JMenuItem(CodeLab.LABEL("itemCleanRecoveryFolder"));
-		itemCleanRecoveryFolder.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				codelab.cleanRecoveryFolder();
-			}
-		});
-
-		JMenuItem itemExportZip = new JMenuItem(CodeLab.LABEL("itemExportZip"));
-		itemExportZip.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				codelab.exportWorkspaceZip();
-			}
-		});
 
 		// ---------------------------------------
 		// Ouvrir le dossier des plugins
@@ -521,24 +483,23 @@ public class CodeLabMenu extends JPopupMenu {
 		menuFinders.add(itemSearchHaskell);
 		menuFinders.add(itemSearchPython);
 
+		JMenu menuMaintenance = new JMenu(CodeLab.LABEL("menuMaintenance"));
+		menuMaintenance.add(itemRestoreConfigFile);
+		menuMaintenance.add(itemRestoreCodelabFiles);
+		if (CodeLab.REDIRECT) menuMaintenance.add(itemShowLogfile);
+
 		JMenu menuConfigFile = new JMenu(CodeLab.LABEL("menuConfigFile"));
 		menuConfigFile.add(itemLanguage);
+		menuConfigFile.add(itemSoundButton);
+		menuConfigFile.add(itemTextButton);
+		menuConfigFile.add(new JSeparator());
 		menuConfigFile.add(itemEnableProxy);
 		if (AbstractCodeLab.IS_OSX) menuConfigFile.add(itemMacPermissions);
-		menuConfigFile.add(itemEditConfigFile);
-		menuConfigFile.add(itemRestoreConfigFile);
-		menuConfigFile.add(itemRestoreCodelabFiles);
-		if (CodeLab.REDIRECT) menuConfigFile.add(itemShowLogfile);
+		menuConfigFile.add(new JSeparator());
 		menuConfigFile.add(menuFinders);
-
-		JMenu menuBackups = new JMenu(CodeLab.LABEL("menuBackups"));
-		menuBackups.add(itemCreateRecoveryBackup);
-		menuBackups.add(itemRestoreRecoveryBackup);
-		menuBackups.add(itemCleanRecoveryFolder);
-		// Pour ne pas révéler le .hidden de l'utilisateur
-		// if (Desktop.isDesktopSupported()) menuBackups.add(itemRecoveryFolder);
-		menuBackups.add(new JSeparator());
-		menuBackups.add(itemExportZip);
+		menuConfigFile.add(itemEditConfigFile);
+		menuConfigFile.add(new JSeparator());
+		menuConfigFile.add(menuMaintenance);
 
 		JMenu menuEditor = new JMenu(CodeLab.LABEL("menuEditor"));
 		menuEditor.add(itemAutoCompletion);
@@ -557,15 +518,10 @@ public class CodeLabMenu extends JPopupMenu {
 		menuPlugins.add(itemNewModule);
 		if (Desktop.isDesktopSupported()) menuPlugins.add(itemModuleFolder);
 
-		add(itemSoundButton);
-		add(itemTextButton);
-		//add(itemIconButton);
-		add(new JSeparator());
 		add(menuEditor);
 		add(menuConsole);
 		add(menuPlugins);
 		add(menuConfigFile);
-		add(menuBackups);
 		add(new JSeparator());
 		add(itemGotoHomepage);
 		add(itemInformations);

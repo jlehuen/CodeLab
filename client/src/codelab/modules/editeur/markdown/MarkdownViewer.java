@@ -295,7 +295,7 @@ public class MarkdownViewer extends AbstractEditor {
 			}
 		}
 
-		try (InputStream is = MarkdownViewer.class.getResourceAsStream("/data/report.css")) {
+		try (InputStream is = MarkdownViewer.class.getResourceAsStream("/data/css/report.css")) {
 			if (is != null) {
 				return new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			}
@@ -476,7 +476,9 @@ public class MarkdownViewer extends AbstractEditor {
 			String preprocessed = MarkdownUtils.underline(preprocessMarkdown(raw));
 			float mermaidScale = MermaidRenderer.cssScale(css);
 			String withDiagrams = MermaidRenderer.renderMarkdownMermaid(preprocessed, maxDiagramWidth, mermaidScale, this, () -> renderMarkdown(true));
-			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, 2.2f, 3.4f);
+			float mathInline = LatexRenderer.cssInlineScale(css);
+			float mathDisplay = LatexRenderer.cssDisplayScale(css);
+			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, mathInline, mathDisplay);
 			Node document = MD_PARSER.parse(processed);
 			String body = CodeBlockUtils.tagLanguage(HTML_RENDERER.render(document));
 
@@ -526,7 +528,9 @@ public class MarkdownViewer extends AbstractEditor {
 			String css = rawCss != null && !rawCss.isBlank() ? rawCss : getReportCss(fontSize);
 			String preprocessed = MarkdownUtils.underline(preprocessMarkdown(raw));
 			String withDiagrams = MermaidRenderer.renderMarkdownMermaidBlocking(preprocessed, 780, MermaidRenderer.cssScale(css), 120);
-			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, 2.2f, 3.4f);
+			float mathInline = LatexRenderer.cssInlineScale(css);
+			float mathDisplay = LatexRenderer.cssDisplayScale(css);
+			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, mathInline, mathDisplay);
 			Node document = MD_PARSER.parse(processed);
 			String body = CodeBlockUtils.tagLanguage(HTML_RENDERER.render(document));
 

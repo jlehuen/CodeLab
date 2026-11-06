@@ -9,8 +9,8 @@
    -------------------------------------------------------------------------- */
 :root {
     --math-scale: 1.0;
-    --math-inline-scale: 1.75;
-    --math-display-scale: 2.00;
+    --math-inline-scale: 1.15;
+    --math-display-scale: 1.60;
     --mermaid-scale: 0.22;
 }
 

@@ -5,12 +5,22 @@ cd "$(dirname "$0")"
 BASE=$(pwd)
 TARGET="${TARGET:-$HOME/Desktop}"
 
-## brew install pcre
+## 1. Vérification des outils nécessaires
 if ! command -v pcregrep >/dev/null 2>&1; then
     echo "Erreur : 'pcregrep' est introuvable. Installez-le avec 'brew install pcre'." >&2
     exit 1
 fi
 
+if ! command -v makensis >/dev/null 2>&1; then
+    echo "================================================================" >&2
+    echo "Erreur : 'makensis' (NSIS) est introuvable." >&2
+    echo "Pour installer le compilateur d'installateurs Windows sur macOS :" >&2
+    echo "    brew install makensis" >&2
+    echo "================================================================" >&2
+    exit 1
+fi
+
+## 2. Extraction dynamique de la version et du build
 if [ -f "../VERSION" ]; then
     VERSION=$(tr -d '[:space:]' < ../VERSION)
 elif [ -f "./VERSION" ]; then
@@ -25,59 +35,59 @@ if [ -z "$VERSION" ] || [ -z "$BUILD" ]; then
     exit 1
 fi
 
-FILENAME="CodeLab-Win64"
-DISTRIB="$TARGET/$FILENAME"
-ZIPNAME="$FILENAME-$VERSION"
+FILENAME="CodeLab-Win64-Payload"
+PAYLOAD="$TARGET/$FILENAME"
+SETUP_NAME="CodeLab-Win64-$VERSION-Setup"
+OUTPUT_DIR="$TARGET/$VERSION"
+OUTPUT_EXE="$OUTPUT_DIR/$SETUP_NAME.exe"
 
 echo "================================================================"
-echo "Génération de la distribution Windows 64-bit"
+echo "Génération de l'installateur Windows 64-bit (NSIS)"
 echo "CodeLab $VERSION (build $BUILD)"
-echo "Dossier cible : $DISTRIB"
-echo "Archive finale : $TARGET/$VERSION/$ZIPNAME.zip"
+echo "Livrable cible : $OUTPUT_EXE"
 echo "================================================================"
 
-# Vérification des prérequis essentiels
-for required_path in "hidden" "codelab.files" "java/windows_64/JDK-17.0.8.1+1" "natives/windows_64" "bin/windows_64" "launchers/windows"; do
+## 3. Contrôle des prérequis
+for required_path in "hidden" "codelab.files" "java/windows_64/JDK-17.0.8.1+1" "natives/windows_64" "bin/windows_64" "launchers/windows/codelab.nsi" "launchers/icon/codelab.ico"; do
     if [ ! -e "$required_path" ]; then
         echo "Erreur critique : le composant '$required_path' est introuvable." >&2
         exit 1
     fi
 done
 
-echo "Préparation et nettoyage du dossier $FILENAME..."
-rm -rf "$DISTRIB"
-mkdir -p "$DISTRIB"
-cp -r hidden "$DISTRIB/.hidden"
+## 4. Préparation du dossier payload applicatif
+echo "1. Assemblage du payload applicatif..."
+rm -rf "$PAYLOAD"
+mkdir -p "$PAYLOAD"
+cp -r hidden "$PAYLOAD/.hidden"
 
-echo "Copie des fichiers de configuration..."
-cp sys-properties/sysconfig-win.properties "$DISTRIB/.hidden/codelab/sysconfig.properties"
-cp user-properties/user-win.properties "$DISTRIB/.hidden/codelab/user.properties.bak"
+echo "   - Copie des configurations Windows..."
+cp sys-properties/sysconfig-win.properties "$PAYLOAD/.hidden/codelab/sysconfig.properties"
+cp user-properties/user-win.properties "$PAYLOAD/.hidden/codelab/user.properties.bak"
 
-echo "Copie des librairies natives..."
-mkdir -p "$DISTRIB/.hidden/codelab/natives"
-cp -f natives/windows_64/* "$DISTRIB/.hidden/codelab/natives/"
+echo "   - Copie des librairies natives (JInput)..."
+mkdir -p "$PAYLOAD/.hidden/codelab/natives"
+cp -f natives/windows_64/* "$PAYLOAD/.hidden/codelab/natives/"
 
-echo "Copie des utilitaires..."
-mkdir -p "$DISTRIB/.hidden/bin"
-cp -f bin/windows_64/* "$DISTRIB/.hidden/bin/"
+echo "   - Copie des utilitaires (AStyle, CLIPS)..."
+mkdir -p "$PAYLOAD/.hidden/bin"
+cp -f bin/windows_64/* "$PAYLOAD/.hidden/bin/"
 
-echo "Copie du dossier JDK-17.0.8.1+1..."
-cp -r java/windows_64/JDK-17.0.8.1+1 "$DISTRIB/.hidden/"
+echo "   - Copie du runtime JDK 17 Windows..."
+cp -r java/windows_64/JDK-17.0.8.1+1 "$PAYLOAD/.hidden/"
 
-echo "Copie des launchers et métadonnées..."
-cp launchers/windows/codelab.exe "$DISTRIB/"
-cp launchers/windows/codelab.bat "$DISTRIB/"
-cp launchers/windows/kill-codelab.bat "$DISTRIB/"
-cp launchers/windows/patch-codelab.bat "$DISTRIB/"
-cp launchers/windows/install.bat "$DISTRIB/"
-cp launchers/icon/codelab.ico "$DISTRIB/"
-cp launchers/README.TXT "$DISTRIB/"
-cp data/report.css "$DISTRIB/report.css"
+echo "   - Copie des launchers et documentations..."
+cp launchers/windows/codelab.exe "$PAYLOAD/"
+cp launchers/windows/codelab.bat "$PAYLOAD/"
+cp launchers/windows/kill-codelab.bat "$PAYLOAD/"
+cp launchers/windows/patch-codelab.bat "$PAYLOAD/"
+cp launchers/icon/codelab.ico "$PAYLOAD/"
+cp launchers/README.TXT "$PAYLOAD/"
 
-echo "Préparation du dossier codelab.files..."
-cp -r codelab.files "$DISTRIB/.hidden/codelab/"
+echo "   - Compression de codelab.files..."
+cp -r codelab.files "$PAYLOAD/.hidden/codelab/"
 (
-    cd "$DISTRIB/.hidden/codelab/"
+    cd "$PAYLOAD/.hidden/codelab/"
     find codelab.files -name ".DS_Store" -delete 2>/dev/null || true
     find codelab.files -name "._*" -delete 2>/dev/null || true
     cp user.properties.bak codelab.files/userdata/user.properties
@@ -86,27 +96,32 @@ cp -r codelab.files "$DISTRIB/.hidden/codelab/"
     rm -rf codelab.files
 )
 
-echo "Suppression des fichiers cachés et attributs macOS..."
-chmod -R u+w "$DISTRIB"
-find "$DISTRIB" -name ".DS_Store" -delete 2>/dev/null || true
-find "$DISTRIB" -name "._*" -delete 2>/dev/null || true
-xattr -cr "$DISTRIB" 2>/dev/null || true
+echo "   - Nettoyage des attributs et fichiers cachés macOS..."
+chmod -R u+w "$PAYLOAD"
+find "$PAYLOAD" -name ".DS_Store" -delete 2>/dev/null || true
+find "$PAYLOAD" -name "._*" -delete 2>/dev/null || true
+xattr -cr "$PAYLOAD" 2>/dev/null || true
 export COPYFILE_DISABLE=1
-dot_clean "$DISTRIB" 2>/dev/null || true
+dot_clean "$PAYLOAD" 2>/dev/null || true
 
-echo "Compression du dossier $FILENAME..."
-(
-    cd "$TARGET"
-    zip -r -q "$ZIPNAME.zip" "$FILENAME" -x "*.DS_Store*" -x "*._*" -x "*__MACOSX*"
-    
-    echo "Déplacement dans le dossier $VERSION..."
-    mkdir -p "$VERSION"
-    mv "$ZIPNAME.zip" "$VERSION/"
-    
-    echo "Nettoyage du répertoire temporaire..."
-    rm -rf "$FILENAME"
-)
+## 5. Compilation de l'installateur NSIS
+echo "2. Compilation de l'installateur avec makensis (compression LZMA solide)..."
+mkdir -p "$OUTPUT_DIR"
+rm -f "$OUTPUT_EXE"
+
+makensis \
+    -DVERSION="$VERSION" \
+    -DBUILD="$BUILD" \
+    -DPAYLOAD_DIR="$PAYLOAD" \
+    -DOUTPUT_EXE="$OUTPUT_EXE" \
+    -DICON_FILE="$BASE/launchers/icon/codelab.ico" \
+    "$BASE/launchers/windows/codelab.nsi"
+
+## 6. Nettoyage du payload temporaire
+echo "3. Nettoyage de l'espace de staging..."
+rm -rf "$PAYLOAD"
 
 echo "================================================================"
-echo "Succès : distribution Windows créée dans $TARGET/$VERSION/$ZIPNAME.zip"
+echo "Succès : installateur Windows créé avec succès !"
+echo "Exécutable : $OUTPUT_EXE"
 echo "================================================================"

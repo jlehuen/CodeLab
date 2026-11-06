@@ -20,7 +20,7 @@ import codelab.utils.JupyterUtils;
 import codelab.utils.MyFileUtils;
 import codelab.utils.Utils;
 
-import static codelab.CodeLab.LABEL;
+import static codelab.AbstractCodeLab.LABEL;
 
 /**
  * Gestionnaire des menus contextuels (clic droit) du FileManager.
@@ -89,6 +89,7 @@ public class FileManagerMenu {
 
 		// 1. Retour vers l'arborescence des programmes
 		JMenuItem itemReturn = new JMenuItem(LABEL("menuViewPrograms"));
+		itemReturn.setIcon(FileDescr.icon_programs);
 		itemReturn.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_PROGRAMS));
 		menu.add(itemReturn);
 		menu.add(new JSeparator());
@@ -150,13 +151,9 @@ public class FileManagerMenu {
 	}
 
 	/**
-	 * Ajoute les entrées d'édition des pondérations et de recalcul des notes.
+	 * Ajoute l'entrée de recalcul des notes.
 	 */
 	private void addEvaluationTools(JPopupMenu menu, File targetDir) {
-		JMenuItem itemEditWeights = new JMenuItem(LABEL("menuEditWeights"));
-		itemEditWeights.addActionListener(ev -> SessionEvaluator.openWeightsFile(codelab, null));
-		menu.add(itemEditWeights);
-
 		JMenuItem itemRecalc = new JMenuItem(LABEL("menuRecalculateGrades"));
 		itemRecalc.addActionListener(ev -> SessionEvaluator.recalculateSessionGrades(codelab, targetDir));
 		menu.add(itemRecalc);
@@ -170,12 +167,15 @@ public class FileManagerMenu {
 		JPopupMenu menu = new JPopupMenu();
 
 		JMenuItem itemEval = new JMenuItem(LABEL("menuViewEvaluations"));
+		itemEval.setIcon(FileDescr.icon_eval);
 		itemEval.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
 		menu.add(itemEval);
 		menu.add(new JSeparator());
 
 		if (selectedNode == null) {
 			addNavigationControls(menu, false);
+			menu.add(new JSeparator());
+			addWorkspaceBackupMenu(menu);
 		} else {
 			FileDescr fd = manager.getFileDescr(selectedNode);
 			if (fd == null) return;
@@ -228,6 +228,7 @@ public class FileManagerMenu {
 			// Clic dans le fond de l'arbre
 			if (!codelab.isStudent()) {
 				JMenuItem itemEvalRoot = new JMenuItem(LABEL("menuViewEvaluations"));
+				itemEvalRoot.setIcon(FileDescr.icon_eval);
 				itemEvalRoot.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
 				menu.add(itemEvalRoot);
 				menu.add(new JSeparator());
@@ -245,6 +246,8 @@ public class FileManagerMenu {
 			}
 
 			addNavigationControls(menu, false);
+			menu.add(new JSeparator());
+			addWorkspaceBackupMenu(menu);
 
 			if (!codelab.isConnected()) {
 				menu.add(new JSeparator());
@@ -261,6 +264,7 @@ public class FileManagerMenu {
 			if (selectionMultiple) {
 				if (!codelab.isStudent()) {
 					JMenuItem itemEvalMulti = new JMenuItem(LABEL("menuViewEvaluations"));
+					itemEvalMulti.setIcon(FileDescr.icon_eval);
 					itemEvalMulti.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
 					menu.add(itemEvalMulti);
 				}
@@ -281,6 +285,7 @@ public class FileManagerMenu {
 				if (fd.isDirectory()) {
 					if (!codelab.isStudent()) {
 						JMenuItem itemEvalFolder = new JMenuItem(LABEL("menuViewEvaluations"));
+						itemEvalFolder.setIcon(FileDescr.icon_eval);
 						itemEvalFolder.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
 						menu.add(itemEvalFolder);
 						menu.add(new JSeparator());
@@ -322,6 +327,7 @@ public class FileManagerMenu {
 				} else if (fd.isFile()) {
 					if (!codelab.isStudent()) {
 						JMenuItem itemEvalFile = new JMenuItem(LABEL("menuViewEvaluations"));
+						itemEvalFile.setIcon(FileDescr.icon_eval);
 						itemEvalFile.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
 						menu.add(itemEvalFile);
 						menu.add(new JSeparator());
@@ -348,6 +354,7 @@ public class FileManagerMenu {
 						JMenuItem itemDup = new JMenuItem(String.format(LABEL("Duplicate_program"), filename));
 						itemDup.addActionListener(ev -> manager.duplicate_file());
 						menu.add(itemDup);
+						menu.add(new JSeparator());
 
 						JMenuItem itemBak = new JMenuItem(String.format(LABEL("Backup_program"), filename));
 						itemBak.addActionListener(ev -> manager.backup_file());
@@ -403,6 +410,37 @@ public class FileManagerMenu {
 		menu.add(itemRef);
 		menu.add(itemExp);
 		menu.add(itemCol);
+	}
+
+	/**
+	 * Sous-menu Sauvegardes de l'espace de travail (Snapshots de secours & Export ZIP).
+	 */
+	private void addWorkspaceBackupMenu(JPopupMenu menu) {
+		JMenu menuBackups = new JMenu(LABEL("menuBackups"));
+		boolean readOnly = editor.isReadOnlySession();
+
+		JMenuItem itemCreateRecoveryBackup = new JMenuItem(LABEL("itemCreateRecoveryBackup"));
+		itemCreateRecoveryBackup.setEnabled(!readOnly);
+		itemCreateRecoveryBackup.addActionListener(ev -> codelab.createManualRecoveryBackup());
+		menuBackups.add(itemCreateRecoveryBackup);
+
+		JMenuItem itemRestoreRecoveryBackup = new JMenuItem(LABEL("itemRestoreRecoveryBackup"));
+		itemRestoreRecoveryBackup.setEnabled(!readOnly && !codelab.isRunning());
+		itemRestoreRecoveryBackup.addActionListener(ev -> codelab.restoreRecoveryBackup());
+		menuBackups.add(itemRestoreRecoveryBackup);
+
+		JMenuItem itemCleanRecoveryFolder = new JMenuItem(LABEL("itemCleanRecoveryFolder"));
+		itemCleanRecoveryFolder.setEnabled(!readOnly);
+		itemCleanRecoveryFolder.addActionListener(ev -> codelab.cleanRecoveryFolder());
+		menuBackups.add(itemCleanRecoveryFolder);
+
+		menuBackups.add(new JSeparator());
+
+		JMenuItem itemExportZip = new JMenuItem(LABEL("itemExportZip"));
+		itemExportZip.addActionListener(ev -> codelab.exportWorkspaceZip());
+		menuBackups.add(itemExportZip);
+
+		menu.add(menuBackups);
 	}
 
 	// -----------------------------------------------------------

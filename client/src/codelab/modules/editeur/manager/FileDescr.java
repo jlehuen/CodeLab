@@ -33,12 +33,15 @@ public class FileDescr {
 	public static final ImageIcon icon_jupyter = ResourceUtils.loadImageIcon("icons/mini_icon_jupyter.png");
 	public static final ImageIcon icon_haskell = ResourceUtils.loadImageIcon("icons/mini_icon_haskell.png");
 	public static final ImageIcon icon_blocs = ResourceUtils.loadImageIcon("icons/mini_icon_blocs.png");
+	public static final ImageIcon icon_programs = ResourceUtils.loadImageIcon("icons/mini_icon_folder.png");
 	public static final ImageIcon icon_processing = ResourceUtils.loadImageIcon("icons/mini_icon_process.png");
 	public static final ImageIcon icon_folder = ResourceUtils.loadImageIcon("icons/mini_icon_folder.png");
 	public static final ImageIcon icon_text = ResourceUtils.loadImageIcon("icons/mini_icon_text.png");
 	public static final ImageIcon icon_html = ResourceUtils.loadImageIcon("icons/mini_icon_html.png");
 	public static final ImageIcon icon_image = ResourceUtils.loadImageIcon("icons/mini_icon_eye.png");
 	public static final ImageIcon icon_array = ResourceUtils.loadImageIcon("icons/mini_icon_numpy.png");
+	public static final ImageIcon icon_eval = ResourceUtils.loadImageIcon("icons/mini_icon_eval.png");
+	public static final ImageIcon icon_md = ResourceUtils.loadImageIcon("icons/mini_icon_md.png");
 
 	private String label = null;
 
@@ -87,6 +90,7 @@ public class FileDescr {
 			case ".pde": return icon_processing;
 			case ".java": return icon_java;
 			case ".blocs": return icon_blocs;
+			case ".md": return icon_md;
 			case ".txt":
 			case ".csv":
 			case ".log": return icon_text;

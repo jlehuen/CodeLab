@@ -1265,9 +1265,8 @@ public class NotebookCellPane extends JPanel {
 			int baseFontSize = CodeLab.FONT_SIZE > 0 ? CodeLab.FONT_SIZE : 13;
 			int fontSize = Math.max(10, baseFontSize - 2);
 			String css = getMarkdownCss(editor, fontSize);
-			float globalScale = parseCssFloat(css, "--math-scale", 1.0f);
-			float inlineScale = parseCssFloat(css, "--math-inline-scale", 2.20f) * globalScale;
-			float displayScale = parseCssFloat(css, "--math-display-scale", 3.40f) * globalScale;
+			float inlineScale = LatexRenderer.cssInlineScale(css);
+			float displayScale = LatexRenderer.cssDisplayScale(css);
 			float mermaidScale = parseCssFloat(css, "--mermaid-scale", 3.40f);
 
 			// Diagrammes Mermaid en premier (avant LaTeX, pour que d'éventuels "$" du diagramme ne soient pas interprétés)
@@ -1344,7 +1343,7 @@ public class NotebookCellPane extends JPanel {
 		// Repli sur la ressource du jar si nécessaire
 		if (css == null) {
 			if (DEFAULT_CSS_RESOURCE == null) {
-				try (InputStream is = NotebookCellPane.class.getResourceAsStream("/data/markdown.css")) {
+				try (InputStream is = NotebookCellPane.class.getResourceAsStream("/data/css/markdown.css")) {
 					if (is != null) {
 						DEFAULT_CSS_RESOURCE = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 					}

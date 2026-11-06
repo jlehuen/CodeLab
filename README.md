@@ -355,7 +355,7 @@ Pour construire les distributions autonomes prêtes à l'emploi (embarquant leur
 Une fois les JDK placés, lancez le script correspondant à votre cible :
 - **macOS** (DMG universel Apple Silicon & Intel) : `./distrib-mac.sh`
 - **Linux** (archive autonome FreeDesktop) : `./distrib-linux.sh`
-- **Windows** (Installateur NSIS) : `./distrib-win64-nsis.sh`
+- **Windows** (Installateur NSIS) : `./distrib-win64.sh`
 
 ### 2. Compilation du serveur Rust
 

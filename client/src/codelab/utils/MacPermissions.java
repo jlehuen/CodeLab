@@ -1,26 +1,26 @@
 package codelab.utils;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.FlowLayout;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
-import javax.swing.SwingUtilities;
+import javax.swing.KeyStroke;
 
 import codelab.AbstractCodeLab;
 import codelab.CodeLab;
@@ -51,7 +51,7 @@ public class MacPermissions {
 			"🌐"
 		),
 		FILES_AND_FOLDERS(
-			"Privacy_AllFiles",
+			"Privacy_FilesAndFolders",
 			"MacPermissions_files_title",
 			"MacPermissions_files_msg",
 			"MacPermissions_files_name",
@@ -170,24 +170,26 @@ public class MacPermissions {
 		JPanel content = new JPanel();
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 		content.setBorder(BorderFactory.createEmptyBorder(15, 20, 10, 20));
+		content.setFocusable(true);
 
 		JLabel header = new JLabel("<html><b>" + CodeLab.LABEL("MacPermissions_dialog_header") + "</b><br><font color='#555555'>"
 			+ CodeLab.LABEL("MacPermissions_dialog_desc") + "</font></html>");
 		header.setAlignmentX(Component.LEFT_ALIGNMENT);
 		content.add(header);
-		content.add(Box.createVerticalStrut(15));
+		content.add(Box.createVerticalStrut(10));
 		content.add(new JSeparator());
 		content.add(Box.createVerticalStrut(10));
 
 		for (Permission p : Permission.values()) {
-			JPanel row = new JPanel(new BorderLayout(10, 5));
+			JPanel row = new JPanel(new BorderLayout(12, 5));
 			row.setAlignmentX(Component.LEFT_ALIGNMENT);
-			row.setMaximumSize(new Dimension(540, 55));
-			row.setPreferredSize(new Dimension(540, 50));
+			row.setMaximumSize(new Dimension(Short.MAX_VALUE, 55));
+			row.setPreferredSize(new Dimension(690, 50));
 
-			JLabel lbl = new JLabel("<html><b>" + p.getIcon() + " " + p.getName() + "</b><br><small><font color='#666666'>"
-				+ p.getMessage() + "</font></small></html>");
+			JLabel lbl = new JLabel("<html><b>" + p.getIcon() + " " + p.getName() + "</b><br><nobr><font color='#444444'>"
+				+ p.getMessage() + "</font></nobr></html>");
 			JButton btn = new JButton(CodeLab.LABEL("MacPermissions_open_btn"));
+			btn.setFocusPainted(false);
 			btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 			btn.addActionListener(e -> openSettings(p.getPane()));
 
@@ -198,20 +200,33 @@ public class MacPermissions {
 			content.add(Box.createVerticalStrut(8));
 		}
 
-		JPanel bottom = new JPanel(new BorderLayout());
+		JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 		bottom.setBorder(BorderFactory.createEmptyBorder(0, 20, 15, 20));
 
-		JButton btnGeneral = new JButton(CodeLab.LABEL("MacPermissions_open_general_btn"));
-		btnGeneral.addActionListener(e -> openSecurityGeneral());
-
 		JButton btnClose = new JButton(CodeLab.LABEL("Close"));
+		btnClose.setFocusPainted(false);
 		btnClose.addActionListener(e -> dialog.dispose());
 
-		bottom.add(btnGeneral, BorderLayout.WEST);
-		bottom.add(btnClose, BorderLayout.EAST);
+		bottom.add(btnClose);
 
 		dialog.add(content, BorderLayout.CENTER);
 		dialog.add(bottom, BorderLayout.SOUTH);
+
+		// Fermeture propre sur la touche Échap
+		dialog.getRootPane().registerKeyboardAction(
+			e -> dialog.dispose(),
+			KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+			JComponent.WHEN_IN_FOCUSED_WINDOW
+		);
+
+		// Éviter qu'un bouton ne soit sélectionné/focusé par défaut à l'ouverture
+		dialog.getRootPane().setDefaultButton(null);
+		dialog.addWindowListener(new WindowAdapter() {
+			public void windowOpened(WindowEvent e) {
+				content.requestFocusInWindow();
+			}
+		});
+
 		dialog.pack();
 		dialog.setLocationRelativeTo(parent != null ? parent : CodeLab.FRAME);
 		dialog.setVisible(true);
