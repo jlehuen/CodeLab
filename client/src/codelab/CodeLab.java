@@ -596,31 +596,29 @@ public class CodeLab extends AbstractCodeLab {
 	public static void reloadProxySettings() {
 		String host = CodeLab.PROP("PROXY_HOST");
 		String port = CodeLab.PROP("PROXY_PORT");
-		String proxyEnabledProp = CodeLab.PROP("PROXY_ENABLED");
 
-		boolean shouldEnable = false;
-		if (proxyEnabledProp != null && !proxyEnabledProp.equals(UNDEFINED) && !proxyEnabledProp.isBlank()) {
-			shouldEnable = PropertyBase.getBooleanProperty("PROXY_ENABLED");
+		if (host != null && !host.isBlank() && !host.equals(UNDEFINED)) {
+			PROXY_HOST = host;
+		}
+		if (port != null && !port.isBlank() && !port.equals(UNDEFINED)) {
+			PROXY_PORT = port;
+		} else {
+			PROXY_PORT = "3128";
 		}
 
-		if (shouldEnable && host != null && !host.isBlank() 
-			&& !host.equalsIgnoreCase("NO") 
-			&& !host.equalsIgnoreCase("NO_PROXY") 
-			&& !host.equalsIgnoreCase("NONE") 
-			&& !host.equals(UNDEFINED)) {
-			PROXY_HOST = host;
-			PROXY_PORT = (port != null && !port.isBlank() && !port.equals(UNDEFINED)) ? port : "3128";
-			PROXY_CONFIGURED = true;
-			System.setProperty("http.proxyHost", PROXY_HOST);
-			System.setProperty("http.proxyPort", PROXY_PORT);
-			System.setProperty("https.proxyHost", PROXY_HOST);
-			System.setProperty("https.proxyPort", PROXY_PORT);
-		} else {
-			PROXY_CONFIGURED = false;
-			System.clearProperty("http.proxyHost");
-			System.clearProperty("http.proxyPort");
-			System.clearProperty("https.proxyHost");
-			System.clearProperty("https.proxyPort");
+		if (PROXY_CONFIGURED) {
+			if (PROXY_HOST != null && !PROXY_HOST.isBlank() 
+				&& !PROXY_HOST.equalsIgnoreCase("NO") 
+				&& !PROXY_HOST.equalsIgnoreCase("NO_PROXY") 
+				&& !PROXY_HOST.equalsIgnoreCase("NONE") 
+				&& !PROXY_HOST.equals(UNDEFINED)) {
+				System.setProperty("http.proxyHost", PROXY_HOST);
+				System.setProperty("http.proxyPort", PROXY_PORT);
+				System.setProperty("https.proxyHost", PROXY_HOST);
+				System.setProperty("https.proxyPort", PROXY_PORT);
+			} else {
+				setProxyEnabled(false, false);
+			}
 		}
 
 		if (CodeLabMenu.itemEnableProxy != null && CodeLabMenu.itemEnableProxy.isSelected() != PROXY_CONFIGURED) {
@@ -629,10 +627,10 @@ public class CodeLab extends AbstractCodeLab {
 	}
 
 	public static void setProxyEnabled(boolean enable) {
-		setProxyEnabled(enable, false, true);
+		setProxyEnabled(enable, true);
 	}
 
-	public static void setProxyEnabled(boolean enable, boolean saveProperty, boolean notify) {
+	public static void setProxyEnabled(boolean enable, boolean notify) {
 		if (enable) {
 			PropertyBase.load();
 			String host = CodeLab.PROP("PROXY_HOST");
@@ -675,9 +673,6 @@ public class CodeLab extends AbstractCodeLab {
 			System.setProperty("https.proxyHost", PROXY_HOST);
 			System.setProperty("https.proxyPort", PROXY_PORT);
 
-			if (saveProperty) {
-				PropertyBase.setUserProperty("PROXY_ENABLED", "yes");
-			}
 			if (notify && INSTANCE != null) {
 				INSTANCE.printlnToConsole(String.format(CodeLab.LABEL("proxyActivated"), PROXY_HOST, PROXY_PORT));
 			}
@@ -688,9 +683,6 @@ public class CodeLab extends AbstractCodeLab {
 			System.clearProperty("https.proxyHost");
 			System.clearProperty("https.proxyPort");
 
-			if (saveProperty) {
-				PropertyBase.setUserProperty("PROXY_ENABLED", "no");
-			}
 			if (notify && INSTANCE != null) {
 				INSTANCE.printlnToConsole(CodeLab.LABEL("proxyDeactivated"));
 			}

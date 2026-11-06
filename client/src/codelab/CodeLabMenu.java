@@ -515,6 +515,7 @@ public class CodeLabMenu extends JPopupMenu {
 
 		JMenu menuConfigFile = new JMenu(CodeLab.LABEL("menuConfigFile"));
 		menuConfigFile.add(itemLanguage);
+		menuConfigFile.add(itemEnableProxy);
 		menuConfigFile.add(itemEditConfigFile);
 		menuConfigFile.add(itemRestoreConfigFile);
 		menuConfigFile.add(itemRestoreCodelabFiles);
@@ -561,7 +562,6 @@ public class CodeLabMenu extends JPopupMenu {
 		add(itemInformations);
 		add(itemCheckVersion);
 		add(new JSeparator());
-		add(itemEnableProxy);
 		add(itemRelaunchCodeLab);
 		add(itemQuitCodeLab);
 		if (CodeLab.TEST_REPORTING) add(itemTest1);
