@@ -2,6 +2,7 @@
 #import <unistd.h>
 #import <libgen.h>
 #import <mach-o/dyld.h>
+#include <IOKit/hidsystem/IOHIDLib.h>
 
 @interface LauncherDelegate : NSObject <NSApplicationDelegate>
 @property (strong) NSMutableArray<NSString *> *files;
@@ -64,6 +65,9 @@
         newArgv[idx++] = strdup([file UTF8String]);
     }
     newArgv[idx] = NULL;
+
+    // Solliciter proactivement auprès de macOS l'accès aux périphériques d'entrée (Surveillance de l'entrée)
+    IOHIDRequestAccess(kIOHIDRequestTypeListenEvent);
 
     execv(scriptPath, newArgv);
     perror("execv failed");

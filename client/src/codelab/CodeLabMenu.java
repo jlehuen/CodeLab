@@ -23,6 +23,7 @@ import codelab.console.ConsolePopupMenu;
 import codelab.utils.MyFileUtils;
 import codelab.utils.HTMLInfoDialog;
 import codelab.utils.FontChooser;
+import codelab.utils.MacPermissions;
 import codelab.utils.Utils;
 
 /**
@@ -504,6 +505,13 @@ public class CodeLabMenu extends JPopupMenu {
 			}
 		});
 
+		JMenuItem itemMacPermissions = new JMenuItem(CodeLab.LABEL("itemMacPermissions"));
+		itemMacPermissions.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				MacPermissions.showAllPermissionsDialog(component);
+			}
+		});
+
 		// ---------------------------------------
 		// Création et affichage du menu
 
@@ -516,6 +524,7 @@ public class CodeLabMenu extends JPopupMenu {
 		JMenu menuConfigFile = new JMenu(CodeLab.LABEL("menuConfigFile"));
 		menuConfigFile.add(itemLanguage);
 		menuConfigFile.add(itemEnableProxy);
+		if (AbstractCodeLab.IS_OSX) menuConfigFile.add(itemMacPermissions);
 		menuConfigFile.add(itemEditConfigFile);
 		menuConfigFile.add(itemRestoreConfigFile);
 		menuConfigFile.add(itemRestoreCodelabFiles);

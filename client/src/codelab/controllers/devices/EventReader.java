@@ -43,11 +43,17 @@ public class EventReader implements Runnable {
 	public EventReader(EventViewer viewer) {
 		this.viewer = viewer;
 		queue = new ConcurrentLinkedQueue<String>();
-		if (!natives_OK) return;
+		scan();
+		new Thread(this).start();
+	}
+
+	public synchronized int scan() {
+		if (!natives_OK) return 0;
 		try {
 			System.out.println("   Scanning controllers...");
 			controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
 			contollerType = new ControllerType[controllers.length];
+			controlEnabled.clear();
 			for (int i = 0; i < controllers.length; i++) {
 				if (controllers[i].getName() == null) continue;
 				String name = controllers[i].getName();
@@ -59,10 +65,15 @@ public class EventReader implements Runnable {
 					name,
 					controllers[i].getPortType().toString());
 			}
+			return controllers.length;
 		} catch (Throwable t) {
 			System.err.println("   Erreur scan controllers: " + t.getMessage());
+			return 0;
 		}
-		new Thread(this).start();
+	}
+
+	public boolean hasControllers() {
+		return controllers != null && controllers.length > 0;
 	}
 
 	///////////////////////////////////////////////////

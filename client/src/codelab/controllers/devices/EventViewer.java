@@ -15,8 +15,10 @@ import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 
+import codelab.AbstractCodeLab;
 import codelab.CodeLab;
 import codelab.ExceptionManager;
+import codelab.utils.MacPermissions;
 
 /**
 *	Classe du singleton EventViewer
@@ -88,6 +90,7 @@ public class EventViewer extends JFrame implements MouseListener {
 			setLocationRelativeTo(CodeLab.INSTANCE);
 			setVisible(true);
 			requestFocus();
+			checkMacPermissions();
 		});
 	}
 
@@ -99,7 +102,17 @@ public class EventViewer extends JFrame implements MouseListener {
 			setLocation(p);
 			setVisible(true);
 			requestFocus();
+			checkMacPermissions();
 		});
+	}
+
+	private boolean macPrompted = false;
+
+	private void checkMacPermissions() {
+		if (AbstractCodeLab.IS_OSX && !reader.hasControllers() && !macPrompted) {
+			macPrompted = true;
+			MacPermissions.prompt(MacPermissions.Permission.INPUT_MONITORING, this);
+		}
 	}
 	///////////////////////////////////////////////////
 	// Méthodes puliques

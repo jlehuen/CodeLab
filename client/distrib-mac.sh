@@ -86,9 +86,9 @@ fi
 
 if [ -f "$LAUNCHER_SRC" ]; then
     if [ "$ARCH" = "arm" ]; then
-        clang -O2 -framework Cocoa -arch arm64 -o "$MAC_APP_DIR/Contents/MacOS/CodeLabApp" "$LAUNCHER_SRC"
+        clang -O2 -framework Cocoa -framework IOKit -arch arm64 -o "$MAC_APP_DIR/Contents/MacOS/CodeLabApp" "$LAUNCHER_SRC"
     else
-        clang -O2 -framework Cocoa -arch x86_64 -o "$MAC_APP_DIR/Contents/MacOS/CodeLabApp" "$LAUNCHER_SRC"
+        clang -O2 -framework Cocoa -framework IOKit -arch x86_64 -o "$MAC_APP_DIR/Contents/MacOS/CodeLabApp" "$LAUNCHER_SRC"
     fi
     chmod +x "$MAC_APP_DIR/Contents/MacOS/CodeLabApp"
 fi
@@ -133,8 +133,8 @@ echo "Nettoyage des attributs étendus..."
 chmod -R u+w "$APP"
 xattr -cr "$APP"
 
-echo "Signature ad-hoc de l'application..."
-codesign --force --deep --sign - "$APP"
+echo "Signature ad-hoc de l'application (exigence désignée stable)..."
+codesign --force --deep -s - -r='designated => identifier "fr.univlemans.codelab"' "$APP"
 
 echo "Actualisation du cache LaunchServices et Finder..."
 touch "$APP"

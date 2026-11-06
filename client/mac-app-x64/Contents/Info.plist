@@ -30,6 +30,30 @@
 		<key>NSHumanReadableCopyright</key>
 		<string>Copyright © 2025 Le Mans Université. All Rights Reserved.</string>
 
+		<key>NSInputMonitoringUsageDescription</key>
+		<string>CodeLab requiert l'accès aux contrôleurs et périphériques d'entrée pour piloter les modules et simulateurs.</string>
+
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>CodeLab utilise le réseau local pour les fonctionnalités pédagogiques collaboratives et le contrôle de session.</string>
+
+		<key>NSDocumentsFolderUsageDescription</key>
+		<string>CodeLab a besoin d'accéder au dossier Documents pour ouvrir et enregistrer vos projets et programmes.</string>
+
+		<key>NSDesktopFolderUsageDescription</key>
+		<string>CodeLab a besoin d'accéder au Bureau pour ouvrir et enregistrer vos projets et programmes.</string>
+
+		<key>NSDownloadsFolderUsageDescription</key>
+		<string>CodeLab accède au dossier Téléchargements pour charger les devoirs et exercices distribués.</string>
+
+		<key>NSMicrophoneUsageDescription</key>
+		<string>CodeLab peut utiliser le microphone pour les projets et modules d'analyse et de traitement audio.</string>
+
+		<key>NSCameraUsageDescription</key>
+		<string>CodeLab peut utiliser la caméra pour les modules de vision artificielle et robotique pédagogique.</string>
+
+		<key>NSAccessibilityUsageDescription</key>
+		<string>CodeLab peut requérir l'accessibilité pour l'automatisation d'interface et les simulateurs interactifs.</string>
+
 		<key>CFBundleDocumentTypes</key>
 		<array>
 			<dict>
