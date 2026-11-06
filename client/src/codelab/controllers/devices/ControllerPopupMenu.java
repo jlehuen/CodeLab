@@ -65,10 +65,6 @@ public class ControllerPopupMenu extends JPopupMenu {
 			JMenuItem itemMacPerm = new JMenuItem(CodeLab.LABEL("EventViewer_mac_settings_menu"));
 			itemMacPerm.addActionListener(e -> MacPermissions.openInputMonitoring());
 			add(itemMacPerm);
-
-			JMenuItem itemAllPerm = new JMenuItem(CodeLab.LABEL("itemMacPermissions"));
-			itemAllPerm.addActionListener(e -> MacPermissions.showAllPermissionsDialog(component));
-			add(itemAllPerm);
 		}
 
 		show(component, x, y);
