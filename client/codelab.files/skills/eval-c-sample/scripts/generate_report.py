@@ -188,7 +188,7 @@ def format_report_markdown(results: dict) -> str:
     plag = results.get("plagiarism_alert", {})
     if plag and plag.get("max_sim", 0) >= 75.0:
         similarite_courte = f"⚠️ Partage avec {plag.get('partner', 'Camarade')} ({plag.get('max_sim', 0)}%)"
-        similarite_block = f"> [!CAUTION]\n> **Suspicion de code partagé** avec **{plag.get('partner', 'Camarade')}** (similarité : **{plag.get('max_sim', 0)}%**)."
+        similarite_block = f"> 🚨 **Suspicion de code partagé** avec **{plag.get('partner', 'Camarade')}** (similarité : **{plag.get('max_sim', 0)}%**)."
     else:
         similarite_courte = "Original (0% partage)"
         similarite_block = "✅ **Travail original authentique** : Analyse croisée de similarité négative."

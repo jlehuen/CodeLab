@@ -782,8 +782,7 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         if chrono_markers:
             extra_lines = [
                 "",
-                "> [!WARNING]",
-                f"> **Anomalies d'horodatage de fichiers ({len(chrono_markers)} marqueur(s))** :"
+                f"> ⚠️ **Anomalies d'horodatage de fichiers ({len(chrono_markers)} marqueur(s))** :"
             ]
             for cm in chrono_markers:
                 extra_lines.append(f"> - `{cm.get('file', '')}` : {cm.get('description', '')}")
@@ -802,8 +801,7 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         if chrono_markers:
             chrono_courte = f"⚠️ {len(chrono_markers)} anomalie(s) temporelle(s)"
             chrono_lines = [
-                "> [!WARNING]",
-                f"> **Anomalies chronométriques détectées ({len(chrono_markers)} événement(s))** :",
+                f"> ⚠️ **Anomalies chronométriques détectées ({len(chrono_markers)} événement(s))** :",
             ]
             for cm in chrono_markers:
                 chrono_lines.append(f"> - `{cm.get('file', '')}` : {cm.get('description', '')}")
@@ -828,8 +826,7 @@ def extract_integrity_indicators(res, plagiarism_info=None):
 
     if style_markers:
         style_lines = [
-            "> [!WARNING]",
-            f"> **Ruptures stylométriques & d'indentation détectées ({len(style_markers)} marqueur(s))** :"
+            f"> ⚠️ **Ruptures stylométriques & d'indentation détectées ({len(style_markers)} marqueur(s))** :"
         ]
         for sm in style_markers:
             style_lines.append(f"> - `{sm.get('file', '')}` : {sm.get('description', '')}")
@@ -851,8 +848,7 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         
         similarite_courte = f"Partage avec {p_id or p_name} ({max_s}%)"
         sim_lines = [
-            "> [!CAUTION]",
-            f"> **{sev} de partage de code inter-étudiants** :",
+            f"> 🚨 **{sev} de partage de code inter-étudiants** :",
             f"> - **Binôme ou tiers identifié** : **{p_name}**" + (f" (`{p_id}`)" if p_id else ""),
             f"> - **Taux maximal de similarité syntaxique (Jaccard)** : **{max_s}%**",
             f"> - **Fichiers suspects en doublon** : {files_str}",
@@ -1208,7 +1204,7 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
             bilan_lines.append(f"- **Régularité du travail** : {dinfo['distinct_days']} jours d'activité sur CodeLab étalés sur {dinfo.get('span_days', 0)} jours (du {dinfo.get('first_date', '')} au {dinfo.get('last_date', '')}).")
         bilan_lines.append(f"- **Fonctions écrites** : {res.get('total_functions', 0)} fonctions (dont {res.get('documented_functions', 0)} formellement documentées, soit {res.get('doc_ratio', 0.0)}%).")
         if res.get("compilation_errors"):
-            bilan_lines.append(f"\n> [!WARNING]\n> **Erreurs de syntaxe / compilation C détectées ({len(res['compilation_errors'])} fichier(s))** :")
+            bilan_lines.append(f"\n> ⚠️ **Erreurs de syntaxe / compilation C détectées ({len(res['compilation_errors'])} fichier(s))** :")
             for err_info in res["compilation_errors"]:
                 bilan_lines.append(f"> - `{err_info['file']}` : `{err_info['error']}`")
             if snippets.get("compilation_errors"):
@@ -1217,7 +1213,7 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
                     code_quoted = "\n".join(f"> {l}" for l in c_err["code"].splitlines())
                     bilan_lines.append(f"> ```c\n> // {c_err['file']} (ligne {c_err['line']})\n{code_quoted}\n> ```")
         if res.get("critical_skips"):
-            bilan_lines.append("\n> [!CAUTION]\n> **Activités majeures sautées détectées** :")
+            bilan_lines.append("\n> 🚨 **Activités majeures sautées détectées** :")
             for sk in res["critical_skips"]:
                 bilan_lines.append(f"> - `{sk['tp']}` : **{sk['id']}** ({sk['description']})")
         if milestones_details:

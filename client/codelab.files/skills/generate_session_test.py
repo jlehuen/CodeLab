@@ -708,7 +708,7 @@ def generate_cohort_summary(students_results: list) -> str:
     lines.append("")
     lines.append(generate_cohort_radar(clusters_def, len(students_results)))
     lines.append("\n---\n")
-    lines.append("> [!NOTE]\n> **Exploitation didactique** : Cette cohorte d'évaluation montre comment l'analyse conjointe des indicateurs de code et de la télémétrie permet d'adapter l'accompagnement pédagogique à chaque profil d'apprenant.")
+    lines.append("> 💡 **Exploitation didactique** : Cette cohorte d'évaluation montre comment l'analyse conjointe des indicateurs de code et de la télémétrie permet d'adapter l'accompagnement pédagogique à chaque profil d'apprenant.")
     return "\n".join(lines)
 
 def main():

@@ -412,6 +412,21 @@ public class MarkdownViewer extends AbstractEditor {
 		// pour garantir que les listes soient interprétées en véritables <ul><li> et affichées l'une au-dessus de l'autre
 		text = java.util.regex.Pattern.compile("(?m)^([ \t]*)[•·▪⁃][ \t]*").matcher(text).replaceAll("$1- ");
 
+		// 1c. Normalisation des balises de callouts GitHub (> [!NOTE], > [!WARNING], etc.)
+		// pour éviter l'affichage de texte brut '[!NOTE]' dans le visualiseur Swing
+		text = java.util.regex.Pattern.compile("(?mi)^[ \t]*>[ \t]*\\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\\][ \t]*\r?\n([ \t]*>[ \t]*\\*\\*)")
+					  .matcher(text).replaceAll("$2");
+		text = java.util.regex.Pattern.compile("(?mi)^[ \t]*>[ \t]*\\[!NOTE\\][ \t]*(\r?\n[ \t]*>[ \t]*)?")
+					  .matcher(text).replaceAll("> 💡 **Note :** ");
+		text = java.util.regex.Pattern.compile("(?mi)^[ \t]*>[ \t]*\\[!TIP\\][ \t]*(\r?\n[ \t]*>[ \t]*)?")
+					  .matcher(text).replaceAll("> 💡 **Conseil :** ");
+		text = java.util.regex.Pattern.compile("(?mi)^[ \t]*>[ \t]*\\[!IMPORTANT\\][ \t]*(\r?\n[ \t]*>[ \t]*)?")
+					  .matcher(text).replaceAll("> 📌 **Important :** ");
+		text = java.util.regex.Pattern.compile("(?mi)^[ \t]*>[ \t]*\\[!WARNING\\][ \t]*(\r?\n[ \t]*>[ \t]*)?")
+					  .matcher(text).replaceAll("> ⚠️ **Avertissement :** ");
+		text = java.util.regex.Pattern.compile("(?mi)^[ \t]*>[ \t]*\\[!CAUTION\\][ \t]*(\r?\n[ \t]*>[ \t]*)?")
+					  .matcher(text).replaceAll("> 🚨 **Attention :** ");
+
 		// 2. Insérer une ligne vide avant les items de liste numérotée (1., 2.) s'ils sont collés au texte précédent
 		text = java.util.regex.Pattern.compile("([^\n])\r?\n([ \t]*[0-9]+\\.\\s+)").matcher(text).replaceAll("$1\n\n$2");
 

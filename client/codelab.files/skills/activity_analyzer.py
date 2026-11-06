@@ -629,8 +629,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
 
     if alerts:
         md_lines.append("")
-        md_lines.append("> [!WARNING]")
-        md_lines.append(f"> **Alertes de télémétrie ({len(alerts)} signalement(s))** :")
+        md_lines.append(f"> ⚠️ **Alertes de télémétrie ({len(alerts)} signalement(s))** :")
         for a in alerts[:6]:  # max 6 alertes pour ne pas saturer
             md_lines.append(f"> - {a}")
         if len(alerts) > 6:
@@ -818,8 +817,7 @@ radar-beta
 
     combined = f"""### 📊 Profil Visuel Multidimensionnel (Diagrammes Radar)
 
-> [!NOTE]
-> **Lecture des Deux Radars Complémentaires** :
+> 💡 **Lecture des Deux Radars Complémentaires** :
 > - **Radar de gauche (Indicateurs)** : Évalue les 6 piliers de compétence technique sur 20 (code, concentration, validation et authenticité). Un polygone large et équilibré témoigne d'une maîtrise homogène.
 > - **Radar de droite (Profils Types)** : Mesure l'affinité comportementale selon 3 axes opposés deux à deux :
 >   - 👑 **Le Boss** $\\longleftrightarrow$ 🚪 **Le Décrocheur** : aisance et réussite autonome face au décrochage silencieux.
@@ -934,8 +932,7 @@ radar-beta
 </tr>
 </table>
 
-> [!NOTE]
-> **Lecture du Radar de Cohorte (Effectifs par Profil Type)** :
+> 💡 **Lecture du Radar de Cohorte (Effectifs par Profil Type)** :
 > Ce diagramme met en évidence la répartition des effectifs d'étudiants ({tot} étudiants au total) selon les 3 axes opposés deux à deux :
 > - 👑 **Le Boss** $\\longleftrightarrow$ 🚪 **Le Décrocheur** : autonomie et excellence face au décrochage silencieux.
 > - 🔨 **L'Artisan** $\\longleftrightarrow$ 🤖 **Le Cyborg** : démarche d'apprentissage authentique face à la délégation externe / IA.
