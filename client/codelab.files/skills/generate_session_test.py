@@ -678,8 +678,20 @@ def generate_cohort_summary(students_results: list) -> str:
         f"- **Moyenne générale de la cohorte :** **{avg_note:.2f} / 20.0**\n",
         "---\n",
         "## 📊 Récapitulatif Global de la Cohorte\n",
-        "| Étudiant | Login | Note Finale | Profil Dominant | $S_{auth}$ | $I_{nav}$ | Runs | Alertes |",
-        "| :--- | :---: | :---: | :--- | :---: | :---: | :---: | :--- |"
+        '<table width="100%" border="0" cellspacing="0" cellpadding="0">',
+        '<thead>',
+        '<tr>',
+        '  <th align="left" width="20%">Étudiant</th>',
+        '  <th align="center" width="10%">Login</th>',
+        '  <th align="center" width="12%">Note Finale</th>',
+        '  <th align="left" width="18%">Profil Dominant</th>',
+        '  <th align="center" width="10%">$S_{auth}$</th>',
+        '  <th align="center" width="10%">$I_{nav}$</th>',
+        '  <th align="center" width="8%">Runs</th>',
+        '  <th align="left" width="12%">Alertes</th>',
+        '</tr>',
+        '</thead>',
+        '<tbody>'
     ]
 
     for s in students_results:
@@ -692,18 +704,51 @@ def generate_cohort_summary(students_results: list) -> str:
         elif s["i_thrash"] > 0.3:
             alt_str = "⚠️ THRASH"
 
-        lines.append(f"| **{s['name']}** | `{s['login']}` | **{s['total']:.1f}** / 20 | {dom} | {s['s_auth']:.1f}% | {s['i_nav']:.1f}% | {s['runs']} | {alt_str} |")
+        lines.append(
+            f'<tr>'
+            f'<td align="left"><strong>{s["name"]}</strong></td>'
+            f'<td align="center"><code>{s["login"]}</code></td>'
+            f'<td align="center"><strong>{s["total"]:.1f}</strong> / 20</td>'
+            f'<td align="left">{dom}</td>'
+            f'<td align="center">{s["s_auth"]:.1f}%</td>'
+            f'<td align="center">{s["i_nav"]:.1f}%</td>'
+            f'<td align="center">{s["runs"]}</td>'
+            f'<td align="left">{alt_str}</td>'
+            f'</tr>'
+        )
 
-    lines.append("\n---\n")
+    lines.append('</tbody>')
+    lines.append('</table>\n')
+    lines.append("---\n")
     lines.append("## 🧭 Typologies & Répartition par Clusters d'Étudiants Types\n")
-    lines.append("| Cluster Typologique | Intitulé Didactique | Effectif | Proportion | Étudiants Associés |")
-    lines.append("| :--- | :--- | :---: | :---: | :--- |")
+    lines.append('<table width="100%" border="0" cellspacing="0" cellpadding="0">')
+    lines.append('<thead>')
+    lines.append('<tr>')
+    lines.append('  <th align="left" width="20%">Cluster Typologique</th>')
+    lines.append('  <th align="left" width="28%">Intitulé Didactique</th>')
+    lines.append('  <th align="center" width="10%">Effectif</th>')
+    lines.append('  <th align="center" width="12%">Proportion</th>')
+    lines.append('  <th align="left" width="30%">Étudiants Associés</th>')
+    lines.append('</tr>')
+    lines.append('</thead>')
+    lines.append('<tbody>')
 
     for c in clusters_def:
         cnt = len(c["members"])
         pct = (cnt / len(students_results)) * 100.0
         m_str = ", ".join(c["members"]) if c["members"] else "—"
-        lines.append(f"| {c['label']} | {c['sub']} | **{cnt}** | {pct:.1f}% | {m_str} |")
+        lines.append(
+            f'<tr>'
+            f'<td align="left">{c["label"]}</td>'
+            f'<td align="left">{c["sub"]}</td>'
+            f'<td align="center"><strong>{cnt}</strong></td>'
+            f'<td align="center">{pct:.1f}%</td>'
+            f'<td align="left">{m_str}</td>'
+            f'</tr>'
+        )
+
+    lines.append('</tbody>')
+    lines.append('</table>\n')
 
     lines.append("")
     lines.append(generate_cohort_radar(clusters_def, len(students_results)))

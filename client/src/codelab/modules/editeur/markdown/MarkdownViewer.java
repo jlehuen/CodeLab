@@ -486,6 +486,7 @@ public class MarkdownViewer extends AbstractEditor {
 			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, mathInline, mathDisplay);
 			Node document = MD_PARSER.parse(processed);
 			String body = CodeBlockUtils.tagLanguage(HTML_RENDERER.render(document));
+			body = body.replaceAll("(?i)<table(?![^>]*width=)", "<table width=\"100%\"");
 
 			// Nettoyage des commentaires CSS pour préserver le parseur Swing
 			String cleanCss = css != null ? css.replaceAll("/\\*[\\s\\S]*?\\*/", "") : "";
@@ -538,6 +539,7 @@ public class MarkdownViewer extends AbstractEditor {
 			String processed = LatexRenderer.renderMarkdownMath(withDiagrams, fontSize, mathInline, mathDisplay);
 			Node document = MD_PARSER.parse(processed);
 			String body = CodeBlockUtils.tagLanguage(HTML_RENDERER.render(document));
+			body = body.replaceAll("(?i)<table(?![^>]*width=)", "<table width=\"100%\"");
 
 			String fullHtml = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset='utf-8'>\n<title>Rapport d'évaluation CodeLab</title>\n<style>\n"
 				+ (css != null ? css : "") + "\n"
