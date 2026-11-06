@@ -902,6 +902,21 @@ def render_template_if_exists(template_candidates, template_vars):
                 print(f"[WARN] Erreur lors de la lecture du gabarit {cand}: {e}", flush=True)
     return None
 
+def normalize_bullet_list(text):
+    """Garantit que chaque point d'énumération textuel commence par un tiret Markdown '- ' pour un affichage vertical."""
+    if not text:
+        return text
+    lines = []
+    for raw_line in str(text).strip().splitlines():
+        line = raw_line.strip()
+        if not line:
+            lines.append("")
+            continue
+        if line.startswith("•") or line.startswith("·") or line.startswith("▪") or line.startswith("⁃"):
+            line = "- " + line[1:].strip()
+        lines.append(line)
+    return "\n".join(lines)
+
 def extract_pedagogical_sections(markdown_text):
     """Extrait les 4 sections pédagogiques standards depuis un texte Markdown brut."""
     sec_bilan = ""
@@ -918,8 +933,8 @@ def extract_pedagogical_sections(markdown_text):
     m_comm = re.search(r'###?\s*(?:Commentaire|Appréciation)[\s\S]*?$', markdown_text, re.IGNORECASE)
 
     if m_bilan: sec_bilan = re.sub(r'^###?[^\n]*\n+', '', m_bilan.group(0)).strip()
-    if m_forts: sec_points_forts = re.sub(r'^###?[^\n]*\n+', '', m_forts.group(0)).strip()
-    if m_amel: sec_ameliorations = re.sub(r'^###?[^\n]*\n+', '', m_amel.group(0)).strip()
+    if m_forts: sec_points_forts = normalize_bullet_list(re.sub(r'^###?[^\n]*\n+', '', m_forts.group(0)).strip())
+    if m_amel: sec_ameliorations = normalize_bullet_list(re.sub(r'^###?[^\n]*\n+', '', m_amel.group(0)).strip())
     if m_comm:
         sec_commentaire = re.sub(r'^###?[^\n]*\n+', '', m_comm.group(0)).strip()
         # Suppression des signatures résiduelles de l'IA (ex: Jérôme Lehuen / Enseignant-chercheur)
@@ -1646,10 +1661,10 @@ FORMAT DE SORTIE IMPÉRATIF :
 (analyse de l'assiduité, jalons validés, régularité des dates, et compilation Clang en rappelant que void main() est autorisé sans malus)
 
 ### Points Forts Observés
-(valoriser l'effort, la modularité et les initiatives réelles en citant des extraits réels du code de l'élève dans des blocs ```c ... ```)
+(rédiger sous forme de liste à puces avec un tiret '- ' au début de chaque point, valoriser l'effort, la modularité et les initiatives réelles en citant des extraits réels du code de l'élève dans des blocs ```c ... ```)
 
 ### Axes d'Amélioration & Conseils Méthodologiques
-(expliquer de façon socratique sans donner la solution brute, cibler les erreurs de compilation ou anti-patterns avec blocs ```c ... ```, et rappeler l'importance du travail personnel si IA ou similarité détectée)
+(rédiger sous forme de liste à puces avec un tiret '- ' au début de chaque point, expliquer de façon socratique sans donner la solution brute, cibler les erreurs de compilation ou anti-patterns avec blocs ```c ... ```, et rappeler l'importance du travail personnel si IA ou similarité détectée)
 
 ### Commentaire de l'Enseignant
 (mot personnalisé et encourageant de l'enseignant pour la progression de l'étudiant. IMPORTANT : ne signe PAS avec un nom propre ou un titre comme 'Jérôme Lehuen' ou 'Enseignant-chercheur', termine directement sur le mot d'encouragement.)
@@ -1854,10 +1869,10 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
 (analyse de l'assiduité, de la Partie 1 flux/regex et Partie 2 numpy/matplotlib, et respect du style pythonique)
 
 ### Points Forts Observés
-(valoriser l'effort et la vectorisation en citant des extraits réels du code de l'élève dans des blocs ```python ... ```)
+(rédiger sous forme de liste à puces avec un tiret '- ' au début de chaque point, valoriser l'effort et la vectorisation en citant des extraits réels du code de l'élève dans des blocs ```python ... ```)
 
 ### Axes d'Amélioration & Conseils Méthodologiques
-(chasse aux anti-patterns comme les boucles for Numpy inutiles ou re.compile dans une boucle, questions socratiques avec blocs ```python ... ```)
+(rédiger sous forme de liste à puces avec un tiret '- ' au début de chaque point, chasse aux anti-patterns comme les boucles for Numpy inutiles ou re.compile dans une boucle, questions socratiques avec blocs ```python ... ```)
 
 ### Commentaire de l'Enseignant
 (mot personnalisé et encourageant de l'enseignant pour la poursuite d'études en L3. IMPORTANT : ne signe PAS avec un nom propre ou un titre comme 'Jérôme Lehuen' ou 'Enseignant-chercheur', termine directement sur le mot d'encouragement.)
@@ -2132,10 +2147,10 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 (analyse synthétique du travail, de la compilation et des réalisations)
 
 ### Points Forts Observés
-(valoriser concrètement les réussites en citant des extraits réels du code de l'élève si disponibles dans snippets.highlights)
+(rédiger sous forme de liste à puces avec un tiret '- ' au début de chaque point, valoriser concrètement les réussites en citant des extraits réels du code de l'élève si disponibles dans snippets.highlights)
 
 ### Axes d'Amélioration & Conseils Méthodologiques
-(conseils socratiques sans donner directement le code solution, ciblant les erreurs de compilation ou anti-patterns de snippets)
+(rédiger sous forme de liste à puces avec un tiret '- ' au début de chaque point, conseils socratiques sans donner directement le code solution, ciblant les erreurs de compilation ou anti-patterns de snippets)
 
 ### Commentaire de l'Enseignant
 (mot personnalisé et encourageant de l'enseignant pour la progression de l'étudiant. IMPORTANT : ne signe PAS avec un nom propre ou un titre comme 'Jérôme Lehuen' ou 'Enseignant-chercheur', termine directement sur le mot d'encouragement.)

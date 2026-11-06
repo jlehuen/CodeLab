@@ -444,8 +444,8 @@ STUDENTS_CONFIG = [
         "runs": 12, "backspaces": 31, "ttf": 15.0, "idle_max": 90.0, "q_read": 18.0, "q_edit": 72.0,
         "is_suspicious_copy": False, "ai_prob": 2.0,
         "bilan": "Prestation exceptionnelle. L'étudiant a abordé le sujet avec une parfaite compréhension des structures de données (dictionnaires, compréhension de liste) et a conçu d'emblée une architecture fonctionnelle propre et réutilisable. Démarche fluide sans aucune friction ni bogue bloquant.",
-        "points_forts": "• Code élégant, concis et parfaitement conforme aux conventions PEP 8.\n• Gestion rigoureuse des cas limites (lignes vides, erreurs HTTP >= 400).\n• Autonomie totale : 100% de frappe personnelle au clavier (S_auth = 98.2%) et zéro demande d'aide.",
-        "axes_amelioration": "• Pousser plus loin la robustesse en intégrant le module de logging standard plutôt que de simples print.\n• Peut être sollicité pour du tutorat par les pairs ou sur les défis bonus d'algorithmique avancée.",
+        "points_forts": "- Code élégant, concis et parfaitement conforme aux conventions PEP 8.\n- Gestion rigoureuse des cas limites (lignes vides, erreurs HTTP >= 400).\n- Autonomie totale : 100% de frappe personnelle au clavier (S_auth = 98.2%) et zéro demande d'aide.",
+        "axes_amelioration": "- Pousser plus loin la robustesse en intégrant le module de logging standard plutôt que de simples print.\n- Peut être sollicité pour du tutorat par les pairs ou sur les défis bonus d'algorithmique avancée.",
         "commentaire": "Travail remarquable James. Tu maîtrises parfaitement les concepts du cours et ta démarche est d'une grande rigueur. Continue ainsi !"
     },
     {
@@ -455,8 +455,8 @@ STUDENTS_CONFIG = [
         "runs": 8, "backspaces": 78, "ttf": 25.0, "idle_max": 140.0, "q_read": 25.0, "q_edit": 65.0,
         "is_suspicious_copy": False, "ai_prob": 5.0,
         "bilan": "Démarche d'apprentissage exemplaire. Anthony a progressé de manière incrémentale par jalons successifs, testant chaque fonction au fur et à mesure. Les traces révèlent de nombreuses réécritures et ajustements manuels au clavier témoignant d'une réelle appropriation conceptuelle.",
-        "points_forts": "• Écriture progressive et soignée du code avec un découpage modulaire clair.\n• Prise en compte active des remarques du compilateur et correction rapide des erreurs (TTF = 25s).\n• Forte concentration locale tout au long de la séance (I_nav = 8.0%).",
-        "axes_amelioration": "• Optimiser la conversion des types en intégrant une clause try/except ValueError pour parer à des logs corrompus.\n• Enrichir les jeux de tests unitaires avec des cas d'assertions supplémentaires.",
+        "points_forts": "- Écriture progressive et soignée du code avec un découpage modulaire clair.\n- Prise en compte active des remarques du compilateur et correction rapide des erreurs (TTF = 25s).\n- Forte concentration locale tout au long de la séance (I_nav = 8.0%).",
+        "axes_amelioration": "- Optimiser la conversion des types en intégrant une clause try/except ValueError pour parer à des logs corrompus.\n- Enrichir les jeux de tests unitaires avec des cas d'assertions supplémentaires.",
         "commentaire": "Très bon travail Anthony. Ta régularité et ta méthode de travail pas à pas sont exactement ce qui est attendu. C'est très encourageant !"
     },
     {
@@ -466,8 +466,8 @@ STUDENTS_CONFIG = [
         "runs": 28, "backspaces": 94, "ttf": 40.0, "idle_max": 110.0, "q_read": 15.0, "q_edit": 75.0,
         "is_suspicious_copy": False, "ai_prob": 4.0,
         "bilan": "Belle pugnacité face aux difficultés. Confrontée à plusieurs erreurs de conversion et de découpage de chaînes, l'étudiante n'a jamais baissé les bras : 28 exécutions au total pour tester, comprendre et affiner sa logique empiriquement. L'authenticité reste irréprochable (S_auth = 91.0%).",
-        "points_forts": "• Persévérance exemplaire : 11 erreurs d'exécution surmontées par elle-même sans abandonner.\n• Utilisation active des sorties console pour inspecter l'état des variables.\n• Saisie artisanale intégrale sans chercher de raccourci artificiel.",
-        "axes_amelioration": "• Prendre davantage de recul sur papier avant de lancer compulsivement les runs pour diviser par deux les tâtonnements.\n• Nettoyer les instructions print de débogage temporaires avant le rendu final.",
+        "points_forts": "- Persévérance exemplaire : 11 erreurs d'exécution surmontées par elle-même sans abandonner.\n- Utilisation active des sorties console pour inspecter l'état des variables.\n- Saisie artisanale intégrale sans chercher de raccourci artificiel.",
+        "axes_amelioration": "- Prendre davantage de recul sur papier avant de lancer compulsivement les runs pour diviser par deux les tâtonnements.\n- Nettoyer les instructions print de débogage temporaires avant le rendu final.",
         "commentaire": "Bravo pour ta persévérance Winnie ! Tu as su résoudre tes bogues par toi-même. Pense à poser ta démarche sur brouillon avant de coder pour gagner en temps et en sérénité."
     },
     {
@@ -477,8 +477,8 @@ STUDENTS_CONFIG = [
         "runs": 4, "backspaces": 3, "ttf": None, "idle_max": 310.0, "q_read": 5.0, "q_edit": 25.0,
         "is_suspicious_copy": False, "ai_prob": 96.0,
         "bilan": "Forte présomption d'assistance externe non maîtrisée. L'étudiante a passé 65% de la séance hors de l'IDE, entrecoupée de deux injections brutales de blocs de code complexes (55 et 68 lignes insérées en 1 seconde chacune). Le code utilise des idiomes (__slots__, NamedTuple) totalement déconnectés des objectifs pédagogiques du niveau.",
-        "points_forts": "• Le code fourni est syntaxiquement correct et s'exécute sans erreur.",
-        "axes_amelioration": "• Revenir impérativement à une démarche de programmation personnelle : l'évaluation mesure la compréhension et non la capacité à copier-coller.\n• Une soutenance orale individuelle est requise pour vérifier l'aptitude à expliquer le code.",
+        "points_forts": "- Le code fourni est syntaxiquement correct et s'exécute sans erreur.",
+        "axes_amelioration": "- Revenir impérativement à une démarche de programmation personnelle : l'évaluation mesure la compréhension et non la capacité à copier-coller.\n- Une soutenance orale individuelle est requise pour vérifier l'aptitude à expliquer le code.",
         "commentaire": "Katherine, l'injection de code sur-ingénié via un modèle externe est immédiatement détectée par la télémétrie. Nous ferons un point en tête-à-tête pour évaluer ce que tu as réellement assimilé."
     },
     {
@@ -488,8 +488,8 @@ STUDENTS_CONFIG = [
         "runs": 6, "backspaces": 28, "ttf": 55.0, "idle_max": 280.0, "q_read": 20.0, "q_edit": 50.0,
         "is_suspicious_copy": False, "ai_prob": 55.0,
         "bilan": "Profil hybride. Dana a débuté la séance de manière très appliquée en écrivant elle-même ses fonctions de base. Face à un blocage conceptuel sur le comptage, elle a basculé sur un outil IA externe pour générer une fonction avancée (burst de 45 lignes), avant de tenter de l'intégrer à son propre flux.",
-        "points_forts": "• Première moitié de séance encourageante avec une démarche personnelle et du code clair.\n• Volonté manifeste d'arriver au bout du problème.",
-        "axes_amelioration": "• Préférer appeler le tuteur plutôt que de se tourner vers une solution toute faite qui crée une rupture stylistique évidente.\n• Savoir réécrire et s'approprier les blocs de code empruntés.",
+        "points_forts": "- Première moitié de séance encourageante avec une démarche personnelle et du code clair.\n- Volonté manifeste d'arriver au bout du problème.",
+        "axes_amelioration": "- Préférer appeler le tuteur plutôt que de se tourner vers une solution toute faite qui crée une rupture stylistique évidente.\n- Savoir réécrire et s'approprier les blocs de code empruntés.",
         "commentaire": "Dana, le début de ton travail montre que tu as le potentiel pour réussir seule. Ne cède pas à la facilité de l'IA dès que tu rencontres un obstacle : c'est précisément dans le blocage que se construit l'apprentissage."
     },
     {
@@ -499,8 +499,8 @@ STUDENTS_CONFIG = [
         "runs": 16, "backspaces": 22, "ttf": 210.0, "idle_max": 80.0, "q_read": 8.0, "q_edit": 82.0,
         "is_suspicious_copy": False, "ai_prob": 6.0,
         "bilan": "Séance marquée par un fort acharnement stérile. Bloquée sur une erreur de découpage, l'étudiante a enchaîné 16 lancements de compilateur espacés de moins de 10 secondes chacun, en modifiant des caractères au hasard sans lire les messages d'erreur de la console (I_thrash = 0.44).",
-        "points_forts": "• Énergie et persévérance continue pour chercher à faire fonctionner son programme.\n• Frappe manuelle honnête et authentique (S_auth = 88.0%).",
-        "axes_amelioration": "• Impératif : lire attentivement le traceback et le numéro de ligne dans le terminal avant toute modification.\n• Réduire la cadence d'exécution : s'interdire de relancer dans les 30 secondes suivant une erreur sans avoir posé une hypothèse.",
+        "points_forts": "- Énergie et persévérance continue pour chercher à faire fonctionner son programme.\n- Frappe manuelle honnête et authentique (S_auth = 88.0%).",
+        "axes_amelioration": "- Impératif : lire attentivement le traceback et le numéro de ligne dans le terminal avant toute modification.\n- Réduire la cadence d'exécution : s'interdire de relancer dans les 30 secondes suivant une erreur sans avoir posé une hypothèse.",
         "commentaire": "Piper, coder ce n'est pas jouer à la loterie avec le compilateur. Prends le temps de respirer, lis le message d'erreur et utilise des print ciblés pour inspecter tes données."
     },
     {
@@ -510,8 +510,8 @@ STUDENTS_CONFIG = [
         "runs": 2, "backspaces": 5, "ttf": None, "idle_max": 2280.0, "q_read": 60.0, "q_edit": 15.0,
         "is_suspicious_copy": False, "ai_prob": 3.0,
         "bilan": "Séance avortée. Confronté à un message d'erreur dès les premières minutes, Donald s'est résigné : 38 minutes consécutives d'inactivité totale, aucune modification apportée et aucune sollicitation de l'équipe pédagogique.",
-        "points_forts": "• Début de syntaxe correct pour l'en-tête de fonction initiale.",
-        "axes_amelioration": "• Oser lever la main ou utiliser le bouton d'aide (HELP) : les tuteurs sont présents spécifiquement pour débloquer ces impasses.\n• Participer activement aux séances de soutien de début de semestre.",
+        "points_forts": "- Début de syntaxe correct pour l'en-tête de fonction initiale.",
+        "axes_amelioration": "- Oser lever la main ou utiliser le bouton d'aide (HELP) : les tuteurs sont présents spécifiquement pour débloquer ces impasses.\n- Participer activement aux séances de soutien de début de semestre.",
         "commentaire": "Donald, rester bloqué en silence pendant 40 minutes est dommage et contre-productif. L'apprentissage de la programmation est fait d'erreurs normales : la prochaine fois, sollicite-nous dès les 5 premières minutes !"
     },
     {
@@ -521,8 +521,8 @@ STUDENTS_CONFIG = [
         "runs": 6, "backspaces": 44, "ttf": 75.0, "idle_max": 180.0, "q_read": 35.0, "q_edit": 55.0,
         "is_suspicious_copy": False, "ai_prob": 5.0,
         "bilan": "Attitude exemplaire malgré des lacunes initiales. Joshua a su reconnaître ses limites et a fait appel au tuteur à 3 reprises de manière constructive. Grâce aux indications reçues, il a débloqué chaque étape et est parvenu à un script fonctionnel tout en assurant 100% de la frappe lui-même.",
-        "points_forts": "• Excellente écoute et réactivité face aux conseils des enseignants.\n• Progression constante tout au long de la séance.\n• Zéro triche, travail honnête et méritant (S_auth = 92.0%).",
-        "axes_amelioration": "• Revoir les manipulations fondamentales sur les chaînes de caractères et les dictionnaires pour gagner en autonomie.\n• Consolider les mécanismes de conversion de types en Python (int, float).",
+        "points_forts": "- Excellente écoute et réactivité face aux conseils des enseignants.\n- Progression constante tout au long de la séance.\n- Zéro triche, travail honnête et méritant (S_auth = 92.0%).",
+        "axes_amelioration": "- Revoir les manipulations fondamentales sur les chaînes de caractères et les dictionnaires pour gagner en autonomie.\n- Consolider les mécanismes de conversion de types en Python (int, float).",
         "commentaire": "Bravo Joshua pour ton investissement ! Tu as su poser les bonnes questions au bon moment et appliquer les explications avec méthode. Continue avec cette belle énergie."
     },
     {
@@ -532,8 +532,8 @@ STUDENTS_CONFIG = [
         "runs": 3, "backspaces": 0, "ttf": 10.0, "idle_max": 120.0, "q_read": 10.0, "q_edit": 10.0,
         "is_suspicious_copy": True, "ai_prob": 10.0,
         "bilan": "Incident d'intégrité caractérisé. L'étudiante a glissé-déposé un fichier externe (FILE_DROP) contenant l'intégralité de la solution 20 minutes après le début de la séance, sans aucune frappe préalable (S_auth = 5.0%). L'analyse stylométrique confirme une similarité textuelle de 88% avec le code d'un poste voisin.",
-        "points_forts": "• Le script déposé est fonctionnel.",
-        "axes_amelioration": "• Respecter impérativement la charte d'intégrité académique : le partage de code entre étudiants lors d'une séance évaluée est strictement proscrit.\n• Une note de 5/20 conservatoire est appliquée en attente d'un entretien avec le responsable pédagogique.",
+        "points_forts": "- Le script déposé est fonctionnel.",
+        "axes_amelioration": "- Respecter impérativement la charte d'intégrité académique : le partage de code entre étudiants lors d'une séance évaluée est strictement proscrit.\n- Une note de 5/20 conservatoire est appliquée en attente d'un entretien avec le responsable pédagogique.",
         "commentaire": "Judith, l'import direct d'un fichier externe a déclenché une alerte critique immédiate sur le tableau de bord enseignant. Nous te recevrons en entretien individuel dès la semaine prochaine."
     },
     {
@@ -543,8 +543,8 @@ STUDENTS_CONFIG = [
         "runs": 3, "backspaces": 8, "ttf": 20.0, "idle_max": 300.0, "q_read": 55.0, "q_edit": 40.0,
         "is_suspicious_copy": False, "ai_prob": 3.0,
         "bilan": "Démarche analytique remarquable. Michael a consacré plus de la moitié de son temps à analyser le problème, concevoir l'algorithme sur papier et anticiper les structures de données. Résultat : une saisie d'un seul jet, 3 exécutions seulement et un code d'une concision et d'une clarté exemplaires.",
-        "points_forts": "• Très grande maturité algorithmique : analyse préalable poussée évitant les tâtonnements.\n• Code élégant et concis en très peu de lignes.\n• Zéro alerte, authenticité parfaite (S_auth = 97.5%).",
-        "axes_amelioration": "• Penser à ajouter des docstrings pour formaliser les contrats d'interface de ses fonctions.\n• Peut accélérer son passage au code pour aborder les questions subsidiaires.",
+        "points_forts": "- Très grande maturité algorithmique : analyse préalable poussée évitant les tâtonnements.\n- Code élégant et concis en très peu de lignes.\n- Zéro alerte, authenticité parfaite (S_auth = 97.5%).",
+        "axes_amelioration": "- Penser à ajouter des docstrings pour formaliser les contrats d'interface de ses fonctions.\n- Peut accélérer son passage au code pour aborder les questions subsidiaires.",
         "commentaire": "Excellente démarche Michael. Prendre le temps de concevoir sur papier avant de toucher au clavier est la marque des bons développeurs. Félicitations pour ce travail soigné."
     }
 ]
@@ -553,9 +553,27 @@ STUDENTS_CONFIG = [
 # 4. GÉNÉRATION GLOBALE DES RAPPORTS INDIVIDUELS ET DE COHORTE
 # -------------------------------------------------------------
 
+def format_bullet_list(text: str) -> str:
+    """Garantit que chaque point d'énumération forme un élément de liste Markdown '- ' sur sa propre ligne."""
+    if not text:
+        return ""
+    lines = []
+    for raw_line in str(text).strip().splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("•"):
+            line = "- " + line[1:].strip()
+        elif not line.startswith("- ") and not line.startswith("* "):
+            line = "- " + line
+        lines.append(line)
+    return "\n".join(lines)
+
 def build_student_report(st: dict, radars: dict) -> str:
     """Assemble la fiche d'évaluation individuelle en Markdown avec commentaires pédagogiques complets."""
     now_str = datetime.now().strftime("%d/%m/%Y à %H:%M")
+    points_forts = format_bullet_list(st.get("points_forts", ""))
+    axes_amelioration = format_bullet_list(st.get("axes_amelioration", ""))
     
     return f"""# Fiche d'Évaluation & Traçabilité Télémétrique : {st['name']}
 
@@ -603,13 +621,13 @@ def build_student_report(st: dict, radars: dict) -> str:
 
 ### Points Forts Observés
 
-{st['points_forts']}
+{points_forts}
 
 ---
 
 ### Axes d'Amélioration & Conseils Méthodologiques
 
-{st['axes_amelioration']}
+{axes_amelioration}
 
 ---
 

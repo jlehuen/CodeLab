@@ -403,6 +403,10 @@ public class MarkdownViewer extends AbstractEditor {
 		m.appendTail(sb);
 		text = sb.toString();
 
+		// 1b. Convertir les puces textuelles Unicode ('•', '·', '▪', '⁃') en tirets Markdown standard '- '
+		// pour garantir que les listes soient interprétées en véritables <ul><li> et affichées l'une au-dessus de l'autre
+		text = java.util.regex.Pattern.compile("(?m)^([ \t]*)[•·▪⁃][ \t]*").matcher(text).replaceAll("$1- ");
+
 		// 2. Insérer une ligne vide avant les items de liste numérotée (1., 2.) s'ils sont collés au texte précédent
 		text = java.util.regex.Pattern.compile("([^\n])\r?\n([ \t]*[0-9]+\\.\\s+)").matcher(text).replaceAll("$1\n\n$2");
 
