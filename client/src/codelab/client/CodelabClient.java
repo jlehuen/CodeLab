@@ -457,13 +457,13 @@ public class CodelabClient {
 				Color fg;
 				if (!isOpen(sId)) {
 					bg = UserTable.COLOR_CLOSED;
-					fg = new Color(175, 25, 25);
+					fg = UserTable.COLOR_CLOSED_FG;
 				} else if (isReadOnly(sId)) {
 					bg = UserTable.COLOR_READONLY;
-					fg = new Color(135, 80, 0);
+					fg = UserTable.COLOR_READONLY_FG;
 				} else {
 					bg = UserTable.COLOR_OPEN;
-					fg = new Color(20, 105, 35);
+					fg = UserTable.COLOR_OPEN_FG;
 				}
 
 				if (isSelected && index >= 0) {
@@ -481,10 +481,19 @@ public class CodelabClient {
 			String sId = (String) combo.getSelectedItem();
 			if (sId == null) return;
 			Color bg;
-			if (!isOpen(sId)) bg = UserTable.COLOR_CLOSED;
-			else if (isReadOnly(sId)) bg = UserTable.COLOR_READONLY;
-			else bg = UserTable.COLOR_OPEN;
+			Color fg;
+			if (!isOpen(sId)) {
+				bg = UserTable.COLOR_CLOSED;
+				fg = UserTable.COLOR_CLOSED_FG;
+			} else if (isReadOnly(sId)) {
+				bg = UserTable.COLOR_READONLY;
+				fg = UserTable.COLOR_READONLY_FG;
+			} else {
+				bg = UserTable.COLOR_OPEN;
+				fg = UserTable.COLOR_OPEN_FG;
+			}
 			combo.setBackground(bg);
+			combo.setForeground(fg);
 		};
 		updateComboBg.run();
 		combo.addActionListener(e -> updateComboBg.run());
@@ -1444,6 +1453,10 @@ public class CodelabClient {
 		WaitingDialog.open(CodeLab.LABEL("Session_downloading"));
 		Utils.wait(1000);
 		WaitingDialog.close();
+
+		if (isReadOnly(sessionId) && !isReconnecting.get()) {
+			Utils.showInfoDialog("CodeLab", CodeLab.LABEL("Session_readonly_info"));
+		}
 	}
 
 	public synchronized void INIT_SESSION(

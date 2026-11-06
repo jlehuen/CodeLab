@@ -59,8 +59,15 @@ public class FileManagerMenu {
 
 		DefaultMutableTreeNode selectedNode = manager.getSelectedNode();
 
+		if (codelab.isStudent() && manager.getMode() == FileManager.MODE_EVALUATIONS) {
+			editor.setExplorerMode(FileManager.MODE_PROGRAMS);
+			return;
+		}
+
 		if (manager.getMode() == FileManager.MODE_EVALUATIONS) {
-			showEvaluationsMenu(point, selectedNode);
+			if (!codelab.isStudent()) {
+				showEvaluationsMenu(point, selectedNode);
+			}
 		} else if (codelab.isTutor() || codelab.isAdmin()) {
 			showTutorMenu(point, selectedNode);
 		} else if (isMenuAllowed()) {
@@ -77,6 +84,7 @@ public class FileManagerMenu {
 	// -----------------------------------------------------------
 
 	private void showEvaluationsMenu(Point point, DefaultMutableTreeNode selectedNode) {
+		if (codelab.isStudent()) return;
 		JPopupMenu menu = new JPopupMenu();
 
 		// 1. Retour vers l'arborescence des programmes
@@ -218,10 +226,12 @@ public class FileManagerMenu {
 
 		if (selectedNode == null) {
 			// Clic dans le fond de l'arbre
-			JMenuItem itemEvalRoot = new JMenuItem(LABEL("menuViewEvaluations"));
-			itemEvalRoot.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
-			menu.add(itemEvalRoot);
-			menu.add(new JSeparator());
+			if (!codelab.isStudent()) {
+				JMenuItem itemEvalRoot = new JMenuItem(LABEL("menuViewEvaluations"));
+				itemEvalRoot.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
+				menu.add(itemEvalRoot);
+				menu.add(new JSeparator());
+			}
 
 			if (!readOnly) {
 				JMenuItem item8 = new JMenuItem(LABEL("New_root_program"));
@@ -249,9 +259,11 @@ public class FileManagerMenu {
 			boolean selectionMultiple = (selRows != null && selRows.length > 1);
 
 			if (selectionMultiple) {
-				JMenuItem itemEvalMulti = new JMenuItem(LABEL("menuViewEvaluations"));
-				itemEvalMulti.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
-				menu.add(itemEvalMulti);
+				if (!codelab.isStudent()) {
+					JMenuItem itemEvalMulti = new JMenuItem(LABEL("menuViewEvaluations"));
+					itemEvalMulti.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
+					menu.add(itemEvalMulti);
+				}
 
 				if (!readOnly) {
 					menu.add(new JSeparator());
@@ -267,10 +279,12 @@ public class FileManagerMenu {
 				String filename = fd.getFilename();
 
 				if (fd.isDirectory()) {
-					JMenuItem itemEvalFolder = new JMenuItem(LABEL("menuViewEvaluations"));
-					itemEvalFolder.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
-					menu.add(itemEvalFolder);
-					menu.add(new JSeparator());
+					if (!codelab.isStudent()) {
+						JMenuItem itemEvalFolder = new JMenuItem(LABEL("menuViewEvaluations"));
+						itemEvalFolder.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
+						menu.add(itemEvalFolder);
+						menu.add(new JSeparator());
+					}
 
 					if (!codelab.isConnected()) {
 						JMenu menuEvalFolder = new JMenu(LABEL("menuEvalFolder"));
@@ -306,10 +320,12 @@ public class FileManagerMenu {
 					addNavigationControls(menu, false);
 					menu.show(manager, point.x, point.y);
 				} else if (fd.isFile()) {
-					JMenuItem itemEvalFile = new JMenuItem(LABEL("menuViewEvaluations"));
-					itemEvalFile.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
-					menu.add(itemEvalFile);
-					menu.add(new JSeparator());
+					if (!codelab.isStudent()) {
+						JMenuItem itemEvalFile = new JMenuItem(LABEL("menuViewEvaluations"));
+						itemEvalFile.addActionListener(ev -> editor.setExplorerMode(FileManager.MODE_EVALUATIONS));
+						menu.add(itemEvalFile);
+						menu.add(new JSeparator());
+					}
 
 					if (filename.toLowerCase().endsWith(".ipynb")) {
 						boolean isC = JupyterUtils.isCNotebook(fd.getFile());

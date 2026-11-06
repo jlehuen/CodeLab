@@ -40,11 +40,11 @@ public class UserTableMenu extends JPopupMenu {
 
 	// Couleurs d'état de la session
 	private static final Color SESSION_OPEN_BG = UserTable.COLOR_OPEN;       // Vert clair
-	private static final Color SESSION_OPEN_FG = new Color(20, 105, 35);     // Vert foncé
+	private static final Color SESSION_OPEN_FG = UserTable.COLOR_OPEN_FG;    // Vert foncé
 	private static final Color SESSION_CLOSED_BG = UserTable.COLOR_CLOSED;   // Rouge clair / pastel
-	private static final Color SESSION_CLOSED_FG = new Color(175, 25, 25);   // Rouge foncé
-	private static final Color SESSION_RO_BG = UserTable.COLOR_READONLY;     // Jaune clair
-	private static final Color SESSION_RO_FG = new Color(135, 80, 0);        // Marron / Jaune foncé
+	private static final Color SESSION_CLOSED_FG = UserTable.COLOR_CLOSED_FG; // Rouge foncé
+	private static final Color SESSION_RO_BG = UserTable.COLOR_READONLY;     // Bleu clair
+	private static final Color SESSION_RO_FG = UserTable.COLOR_READONLY_FG;  // Bleu foncé
 
 	private final UserTable userTable;
 	private final CodeLab codelab = CodeLab.INSTANCE;
@@ -529,14 +529,7 @@ public class UserTableMenu extends JPopupMenu {
 					boolean isOpen = client.isOpen(sId);
 					boolean isRo = client.isReadOnly(sId);
 					boolean isActive = sId.equals(curSession);
-					JMenuItem item = new JMenuItem(sId);
-					if (isActive) item.setText("=> " + sId);
-					item.setEnabled(!isActive);
-					if (!isOpen) item.setBackground(UserTable.COLOR_CLOSED);
-					else if (isRo) item.setBackground(UserTable.COLOR_READONLY);
-					else item.setBackground(UserTable.COLOR_OPEN);
-					item.setOpaque(true);
-					item.addActionListener(new ActionListener() {
+					JMenuItem item = UserTable.createSessionMenuItem(sId, isActive, isOpen, isRo, new ActionListener() {
 						public void actionPerformed(ActionEvent event) {
 							client.actionChangeSession(sId);
 						}

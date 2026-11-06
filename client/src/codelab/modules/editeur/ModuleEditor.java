@@ -347,6 +347,7 @@ public class ModuleEditor extends AbstractModule {
 
 	public void setExplorerMode(int mode) {
 		if (manager == null) return;
+		if (codelab.isStudent() && mode == FileManager.MODE_EVALUATIONS) return;
 		if (editor != null && editor.isModified()) {
 			editor.save_content();
 		}

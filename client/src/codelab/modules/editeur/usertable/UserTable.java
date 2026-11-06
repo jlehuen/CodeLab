@@ -3,6 +3,8 @@ package codelab.modules.editeur.usertable;
 import codelab.utils.IpLocationService;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -13,7 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
@@ -28,6 +32,8 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.table.TableModel;
+
+import com.formdev.flatlaf.ui.FlatMenuItemUI;
 
 import codelab.CodeLab;
 import codelab.client.UserData;
@@ -125,8 +131,49 @@ public class UserTable extends JScrollPane {
 	// https://www.w3schools.com/colors/colors_picker.asp
 	public static final Color VERY_LIGHT_GREY = new Color(212,212,212);
 	public static final Color COLOR_CLOSED = new Color(255, 230, 230);
-	public static final Color COLOR_READONLY = new Color(255, 250, 225);
+	public static final Color COLOR_CLOSED_FG = new Color(175, 25, 25);
+	public static final Color COLOR_READONLY = new Color(220, 235, 252);
+	public static final Color COLOR_READONLY_FG = new Color(10, 55, 120);
 	public static final Color COLOR_OPEN = new Color(225, 248, 225);
+	public static final Color COLOR_OPEN_FG = new Color(20, 105, 35);
+
+	/**
+	 * Fabrique un élément de menu stylisé pour le choix d'une session (fond pastel + texte coloré contrasté).
+	 */
+	public static JMenuItem createSessionMenuItem(String sId, boolean isActive, boolean isOpen, boolean isReadOnly, ActionListener listener) {
+		JMenuItem item = new JMenuItem(isActive ? "=> " + sId : sId) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void updateUI() {
+				setUI(new FlatMenuItemUI() {
+					@Override
+					public void paint(Graphics g, JComponent c) {
+						this.disabledForeground = c.getForeground();
+						super.paint(g, c);
+					}
+				});
+			}
+		};
+		item.setEnabled(!isActive);
+		item.setOpaque(true);
+
+		if (!isOpen) {
+			item.setBackground(COLOR_CLOSED);
+			item.setForeground(COLOR_CLOSED_FG);
+		} else if (isReadOnly) {
+			item.setBackground(COLOR_READONLY);
+			item.setForeground(COLOR_READONLY_FG);
+		} else {
+			item.setBackground(COLOR_OPEN);
+			item.setForeground(COLOR_OPEN_FG);
+		}
+
+		if (listener != null) {
+			item.addActionListener(listener);
+		}
+		return item;
+	}
 
 	// Menu contextuel
 	private UserTableMenu menu;

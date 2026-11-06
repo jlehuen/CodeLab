@@ -590,6 +590,12 @@ public class Utils {
 		return panel;
 	}
 
+	public static void showInfoDialog(String title, String texte) {
+		SwingUtilities.invokeLater(() -> {
+			JOptionPane.showMessageDialog(CodeLab.FRAME, texte, title, JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);
+		});
+	}
+
 	public static void showMessageDialog(String title, String texte) {
 		SwingUtilities.invokeLater(() -> {
 			JOptionPane.showMessageDialog(CodeLab.FRAME, createCopyableMessage(texte), title, JOptionPane.INFORMATION_MESSAGE, CodeLab.ICON);

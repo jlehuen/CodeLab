@@ -81,6 +81,7 @@ public class FileManager extends JTree {
 	}
 
 	public void setMode(int newMode) {
+		if (codelab.isStudent() && newMode == MODE_EVALUATIONS) return;
 		if (this.mode == newMode) return;
 		this.mode = newMode;
 		if (this.mode == MODE_EVALUATIONS) {

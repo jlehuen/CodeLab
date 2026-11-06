@@ -91,17 +91,10 @@ public class ServerPopupMenu extends JPopupMenu {
 			JMenu item4 = new JMenu(CodeLab.LABEL("ServerPopupMenu_4"));
 			item4.setEnabled(client.nbSessions() > 1);
 			for (String sessionId : sessions) {
-				boolean isOpen =  client.isOpen(sessionId);
+				boolean isOpen = client.isOpen(sessionId);
 				boolean isReadOnly = client.isReadOnly(sessionId);
 				boolean isActive = sessionId.equals(session);
-				JMenuItem item = new JMenuItem(sessionId);
-				if (isActive) item.setText("=> " + sessionId);
-				item.setEnabled(!isActive); // Disable la session courante
-				if (!isOpen) item.setBackground(UserTable.COLOR_CLOSED); // Couleur session fermée
-				else if (isReadOnly) item.setBackground(UserTable.COLOR_READONLY); // Couleur session lecture seule
-				else item.setBackground(UserTable.COLOR_OPEN); // Couleur session ouverte
-				item.setOpaque(true); // Sinon pas de couleur de fond
-				item.addActionListener(new ActionListener() {
+				JMenuItem item = UserTable.createSessionMenuItem(sessionId, isActive, isOpen, isReadOnly, new ActionListener() {
 					public void actionPerformed(ActionEvent event) {
 						client.actionChangeSession(sessionId);
 					}
