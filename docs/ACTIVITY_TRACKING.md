@@ -1,6 +1,6 @@
 # Système Télémétrique de CodeLab : Observables, Indicateurs et Alertes Temps Réel
 > **Documentation Technique et Pédagogique de Référence**  
-> *Version du document : 2.0 (Novembre 2026) — CodeLab v1.5.2*
+> *Version du document : 2.1 (Novembre 2026) — CodeLab v1.5.3*
 
 ---
 
@@ -399,6 +399,57 @@ Dans le rapport de synthèse de promotion (`synthese_*.md`), le tableau des clus
 
 ---
 
+### E. Détection & Interprétation des Doubles-Profils Didactiques Cohérents
+
+En situation réelle d'apprentissage en laboratoire, les comportements observés ne se réduisent que rarement à un archétype unilatéral pur. Les 6 profils didactiques de CodeLab étant bâtis sur 3 axes orthogonaux indépendants, les croisements inter-axes traduisent des **signatures comportementales complexes et cohérentes**.
+
+#### 1. Principes et Démarche Didactique
+Un double-profil didactique n'est pas un artefact statistique, mais la manifestation simultanée de deux dimensions comportementales indépendantes :
+- **La maîtrise conceptuelle et algorithmique** (Axe Boss $\longleftrightarrow$ Décrocheur)
+- **La démarche d'assimilation et d'effort personnel** (Axe Artisan $\longleftrightarrow$ Cyborg)
+- **La gestion émotionnelle et stratégique de l'erreur** (Axe Casse-cou $\longleftrightarrow$ Pirate)
+
+L'intérêt didactique majeur réside dans la **finesse du diagnostic** : par exemple, un étudiant qui présente à la fois des traits d'*Artisan* et de *Casse-cou* (*« Le Travailleur Acharné »*) n'a pas du tout besoin du même accompagnement qu'un *Casse-cou* qui injecte du code IA (*« L'Apprenti Sorcier »*). Dans le premier cas, l'enseignant doit débloquer la méthode de débogage tout en valorisant l'effort authentique ; dans le second, un recadrage déontologique et méthodologique immédiat s'impose.
+
+#### 2. Règles Formelles de Détection Algorithmique
+Le moteur d'audit [`activity_analyzer.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/activity_analyzer.py) identifie automatiquement un **Double-Profil Hybride** lorsque les trois conditions cumulatives suivantes sont satisfaites :
+
+1. **Orthogonalité des dimensions** : Les deux profils avec les affinités les plus fortes ($P_1$ et $P_2$) appartiennent à des axes différents. Les pôles opposés d'un même axe à 180° (*Boss vs Décrocheur*, *Artisan vs Cyborg*, *Casse-cou vs Pirate*) s'excluent mutuellement par construction métrique et ne peuvent former un double-profil harmonieux.
+2. **Niveau d'affinité significatif** : Les deux scores d'affinité sont élevés ($S_1 \ge 11.0 / 20$ et $S_2 \ge 11.0 / 20$, soit au moins 55% d'adéquation comportementale).
+3. **Proximité des affinités** : L'écart entre les deux scores est resserré ($|S_1 - S_2| \le 3.5\text{ pts}$), garantissant que les deux dimensions sont au coude-à-coude et motrices dans la séance.
+
+Si l'écart est supérieur à 3.5 points, l'étudiant conserve son statut de profil dominant unique (avec simple composante secondaire mentionnée si $S_2 \ge 10.0$).
+
+#### 3. Matrice des 12 Doubles-Profils Didactiques Hybrides
+
+| Double-Profil Détecté | Surnom Pédagogique | Signification Didactique & Posture Observée | Posture & Conseil pour l'Enseignant |
+| :--- | :--- | :--- | :--- |
+| **👑 Boss + 🔨 Artisan** | **L'Architecte Méthodique** | **Le profil d'excellence absolue** : aisance théorique immédiate combinée à une rigueur de construction pas à pas (saisie personnelle continue, commits réguliers, tests propres). L'étudiant conçoit avec facilité sans survoler le travail. | Valoriser son autonomie, lui proposer des défis d'optimisation avancés, de la généricité ou un rôle de tuteur d'îlot pour stimuler ses pairs. |
+| **👑 Boss + ⚡ Casse-cou** | **Le Hacker Instinctif** | Grande vivacité d'esprit et aisance algorithmique, mais méthode de développement impulsive. Enchaîne les modifications et les runs à chaud sans plan écrit, comptant sur son intuition pour corriger en direct. | Canaliser sa vivacité vers des pratiques d'ingénierie logicielle pérennes : poser des assertions, structurer un plan de tests et documenter ses interfaces. |
+| **🔨 Artisan + ⚡ Casse-cou** | **Le Travailleur Acharné** | Investissement authentique remarquable et combativité totale (zéro triche, forte saisie manuelle), mais démarche pénalisée par le tâtonnement aveugle face aux erreurs bloquantes. | **Profil prioritaire pour le tuteur** : l'aider à décortiquer les tracebacks d'erreurs, poser des points d'arrêt et verbaliser son algorithme avant de relancer le compilateur. |
+| **🤖 Cyborg + ⚡ Casse-cou** | **L'Apprenti Sorcier** | Combinaison instable d'injections de code externe/IA et d'acharnement compulsif. L'étudiant injecte des blocs non maîtrisés, puis modifie des bribes au hasard pour tenter de faire passer les tests. | Recadrage pédagogique immédiat : suspendre temporairement les outils d'assistance, exiger un retour aux fondamentaux et une réécriture manuelle pas à pas avec verbalisation. |
+| **🚪 Décrocheur + 🤖 Cyborg** | **Le Délégataire Passif** | Difficultés ou passivité en séance masquées par le recours opportuniste à l'IA. L'étudiant reste inactif de longues périodes, puis parachute une solution externe complète d'un seul coup en fin de TP. | Entretien individuel bienveillant mais ferme : vérifier l'assimilation réelle par une soutenance orale et proposer une remédiation pas à pas sur les concepts fondamentaux. |
+| **🚪 Décrocheur + ⚡ Casse-cou** | **L'Épuisé Découragé** | Épuisement face aux échecs répétés. L'étudiant a d'abord lutté intensément en début de session (runs en boucle, frustration), avant de baisser les bras et de basculer dans l'inactivité prolongée. | Signe de détresse didactique : intervenir plus précocement en séance dès les premiers signes d'acharnement stérile pour éviter le renoncement. |
+| **👑 Boss + 🤖 Cyborg** | **L'Ingénieur Augmenté** | Forte maîtrise conceptuelle mise au service d'un copilotage IA assumé comme accélérateur de productivité. L'étudiant pilote l'outil mais risque de s'affranchir de l'effort d'implémentation fine. | S'assurer lors d'évaluations sur table ou d'oraux que la compétence de codage en autonomie complète sans assistance reste parfaitement acquise. |
+| **🏴‍☠️ Pirate + 🤖 Cyborg** | **Le Contrebandier Numérique** | Cumul de ruptures d'intégrité : importations de fichiers externes (clé USB), partage réseau et code généré par IA. L'authenticité de production personnelle est quasi inexistante. | Convocation pour manquement à la charte d'intégrité académique et nouvelle évaluation en conditions strictement surveillées. |
+| **👑 Boss + 🏴‍☠️ Pirate** | **L'Éclaireur Partageur** | Aisance technique indiscutable associée à des flux de partage de fichiers ou de code vers des pairs. L'étudiant maîtrise le sujet mais diffuse ou importe des ressources non autorisées. | Rappeler le cadre déontologique : faire la distinction entre tutorat bienveillant et diffusion/collusion directe en évaluation. |
+| **🚪 Décrocheur + 🏴‍☠️ Pirate** | **Le Copiste de Survie** | Démuni face au sujet et inactif, l'étudiant a importé la solution d'un voisin par clé USB ou partage réseau pour éviter la feuille blanche. | Traiter la cause didactique racine (blocage complet) tout en appliquant le règlement pédagogique sur la fraude. |
+| **🔨 Artisan + 🏴‍☠️ Pirate** | **L'Artisan Sous Influence** | L'étudiant a fourni un travail personnel appliqué sur une partie du sujet, mais a complété une fonction manquante par un emprunt externe direct. | Valoriser la partie authentique produite tout en invalidant le fragment collusoire pour encourager la persévérance honnête. |
+| **🔨 Artisan + 🚪 Décrocheur** | **L'Apprenti Hésitant** | Démarche artisanale soignée lorsqu'il est actif, mais progression ralentie par de longs moments d'hésitation ou de doute où il n'ose plus avancer. | Stimuler la confiance en soi, dédramatiser les erreurs d'exécution et fixer des micro-objectifs pour rythmer la séance. |
+
+#### 4. Restitution dans les Fiches Individuelles et Bilans de Cohorte
+Lorsqu'un double-profil est identifié :
+- **Dans la fiche individuelle d'évaluation** (`*_rapport.md`) :
+  - La note finale affiche l'intitulé combiné et le surnom didactique :  
+    `| **NOTE FINALE** | **18.3** | **/ 20.0** | **Profil : Le Boss + L'Artisan (L'Architecte Méthodique)** |`
+  - Un encadré pédagogique dédié explicite la posture constatée et les conseils d'action pour l'enseignant.
+  - Dans le tableau récapitulatif d'affinité, les deux profils moteurs sont labellisés `🟢 Double-profil actif`.
+- **Dans le rapport de synthèse de promotion** (`synthese_*.md`) :
+  - Le tableau récapitulatif des étudiants reporte le double-profil dans la colonne *Profil Dominant*.
+  - Une section dédiée intitulée `## 🧬 Analyse des Profils Hybrides & Doubles-Profils Remarquables` dresse l'inventaire des étudiants hybrides de la promotion avec le diagnostic croisé.
+
+---
+
 ## 7. Guide d'Exploitation pour les Enseignants & Tuteurs
 
 ### Pendant la Séance (Pilotage Temps Réel)
@@ -415,6 +466,9 @@ Dans le rapport de synthèse de promotion (`synthese_*.md`), le tableau des clus
    ```
 2. **Consulter les Fenêtres Glissantes** :
    - Le tableau chronologique des tranches de 15 minutes permet d'identifier à la minute près l'instant de bascule vers une IA générative (chute brutale de S_auth).
-3. **Valorisation à l'Évaluation** :
+3. **Exploitation Pédagogique des Doubles-Profils** :
+   - Cibler immédiatement les *Travailleurs Acharnés* (Artisan + Casse-cou) pour une séance de consolidation sur les méthodes de débogage et l'inspection de variables.
+   - Convoquer en entretien d'explication les profils *Apprenti Sorcier* (Cyborg + Casse-cou) et *Délégataire Passif* (Décrocheur + Cyborg) afin de rétablir une posture active de codage.
+4. **Valorisation à l'Évaluation** :
    - Deux étudiants obtenant la note de 14/20 aux tests unitaires automatiques peuvent être différenciés : accorder un bonus de démarche à un profil *Artisan* persévérant, et conditionner la note d'un profil *Cyborg* à une soutenance orale d'explication du code.
 
