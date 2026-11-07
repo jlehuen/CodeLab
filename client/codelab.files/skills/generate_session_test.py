@@ -441,7 +441,7 @@ STUDENTS_CONFIG = [
         "login": "test01", "name": "James Griffin", "ip": "192.168.1.101",
         "syntax": 6.0, "arch": 7.8, "style": 3.9, "tests": 2.0, "total": 19.7,
         "s_auth": 98.2, "i_nav": 1.5, "i_thrash": 0.0, "bursts": 0, "file_drops": 0, "helps": 0,
-        "runs": 12, "backspaces": 31, "ttf": 15.0, "idle_max": 90.0, "q_read": 18.0, "q_edit": 72.0,
+        "runs": 2, "backspaces": 8, "ttf": 12.0, "idle_max": 90.0, "q_read": 18.0, "q_edit": 72.0,
         "is_suspicious_copy": False, "ai_prob": 2.0,
         "bilan": "Prestation exceptionnelle. L'étudiant a abordé le sujet avec une parfaite compréhension des structures de données (dictionnaires, compréhension de liste) et a conçu d'emblée une architecture fonctionnelle propre et réutilisable. Démarche fluide sans aucune friction ni bogue bloquant.",
         "points_forts": "- Code élégant, concis et parfaitement conforme aux conventions PEP 8.\n- Gestion rigoureuse des cas limites (lignes vides, erreurs HTTP >= 400).\n- Autonomie totale : 100% de frappe personnelle au clavier (S_auth = 98.2%) et zéro demande d'aide.",
@@ -450,7 +450,7 @@ STUDENTS_CONFIG = [
     },
     {
         "login": "test02", "name": "Anthony Ford", "ip": "192.168.1.102",
-        "syntax": 5.5, "arch": 6.5, "style": 3.5, "tests": 1.8, "total": 17.3,
+        "syntax": 4.5, "arch": 5.0, "style": 3.0, "tests": 1.5, "total": 14.0,
         "s_auth": 94.5, "i_nav": 8.0, "i_thrash": 0.05, "bursts": 0, "file_drops": 0, "helps": 0,
         "runs": 8, "backspaces": 78, "ttf": 25.0, "idle_max": 140.0, "q_read": 25.0, "q_edit": 65.0,
         "is_suspicious_copy": False, "ai_prob": 5.0,
@@ -494,14 +494,14 @@ STUDENTS_CONFIG = [
     },
     {
         "login": "test06", "name": "Piper Dempsey", "ip": "192.168.1.106",
-        "syntax": 3.5, "arch": 3.0, "style": 2.0, "tests": 0.8, "total": 9.3,
-        "s_auth": 88.0, "i_nav": 9.0, "i_thrash": 0.44, "bursts": 0, "file_drops": 0, "helps": 0,
-        "runs": 16, "backspaces": 22, "ttf": 210.0, "idle_max": 80.0, "q_read": 8.0, "q_edit": 82.0,
+        "syntax": 3.8, "arch": 3.8, "style": 2.2, "tests": 1.2, "total": 11.0,
+        "s_auth": 88.0, "i_nav": 9.0, "i_thrash": 0.31, "bursts": 0, "file_drops": 0, "helps": 0,
+        "runs": 14, "backspaces": 65, "ttf": 140.0, "idle_max": 80.0, "q_read": 12.0, "q_edit": 75.0,
         "is_suspicious_copy": False, "ai_prob": 6.0,
-        "bilan": "Séance marquée par un fort acharnement stérile. Bloquée sur une erreur de découpage, l'étudiante a enchaîné 16 lancements de compilateur espacés de moins de 10 secondes chacun, en modifiant des caractères au hasard sans lire les messages d'erreur de la console (I_thrash = 0.44).",
+        "bilan": "Profil hybride de Travailleur Acharné. Bloquée sur une erreur de découpage, l'étudiante a fait preuve d'une ténacité impressionnante avec 14 exécutions et une saisie personnelle continue sans abandonner, mais a subi un acharnement compilatoire sans toujours lire les tracebacks (I_thrash = 0.31).",
         "points_forts": "- Énergie et persévérance continue pour chercher à faire fonctionner son programme.\n- Frappe manuelle honnête et authentique (S_auth = 88.0%).",
         "axes_amelioration": "- Impératif : lire attentivement le traceback et le numéro de ligne dans le terminal avant toute modification.\n- Réduire la cadence d'exécution : s'interdire de relancer dans les 30 secondes suivant une erreur sans avoir posé une hypothèse.",
-        "commentaire": "Piper, coder ce n'est pas jouer à la loterie avec le compilateur. Prends le temps de respirer, lis le message d'erreur et utilise des print ciblés pour inspecter tes données."
+        "commentaire": "Piper, ton énergie et ton honnêteté dans l'effort sont formidables. Prends le temps de respirer, lis le message d'erreur et utilise des print ciblés pour inspecter tes données avant de relancer."
     },
     {
         "login": "test07", "name": "Donald Craig", "ip": "192.168.1.107",
@@ -540,7 +540,7 @@ STUDENTS_CONFIG = [
         "login": "test10", "name": "Michael Moore", "ip": "192.168.1.110",
         "syntax": 5.5, "arch": 7.0, "style": 3.8, "tests": 2.0, "total": 18.3,
         "s_auth": 97.5, "i_nav": 6.0, "i_thrash": 0.0, "bursts": 0, "file_drops": 0, "helps": 0,
-        "runs": 3, "backspaces": 8, "ttf": 20.0, "idle_max": 300.0, "q_read": 55.0, "q_edit": 40.0,
+        "runs": 5, "backspaces": 25, "ttf": 20.0, "idle_max": 300.0, "q_read": 55.0, "q_edit": 40.0,
         "is_suspicious_copy": False, "ai_prob": 3.0,
         "bilan": "Démarche analytique remarquable. Michael a consacré plus de la moitié de son temps à analyser le problème, concevoir l'algorithme sur papier et anticiper les structures de données. Résultat : une saisie d'un seul jet, 3 exécutions seulement et un code d'une concision et d'une clarté exemplaires.",
         "points_forts": "- Très grande maturité algorithmique : analyse préalable poussée évitant les tâtonnements.\n- Code élégant et concis en très peu de lignes.\n- Zéro alerte, authenticité parfaite (S_auth = 97.5%).",
@@ -593,7 +593,7 @@ def build_student_report(st: dict, radars: dict) -> str:
 | **Axe 3 : Style & Bonnes Pratiques** | **{st['style']:.1f}** | / 4.0 | PEP8, clarté, lisibilité et conventions de nommage |
 | **Axe 4 : Validation & Assertions** | **{st['tests']:.1f}** | / 2.0 | Tests unitaires, gestion des cas limites et assertions |
 | **Note Technique Brute** | **{(st['syntax'] + st['arch'] + st['style'] + st['tests']):.1f}** | **/ 20.0** | Somme des piliers d'évaluation technique |
-| **NOTE FINALE** | **{st['total']:.1f}** | **/ 20.0** | **Profil : {radars.get('profil_dominant', 'Évalué')}** |
+| **NOTE FINALE** | **{st['total']:.1f}** | **/ 20.0** | **Profil : {radars.get('profil_display', radars.get('profil_dominant', 'Évalué'))}** |
 
 ---
 
@@ -653,19 +653,19 @@ def generate_cohort_summary(students_results: list) -> str:
     c_map = {c["id"]: c for c in clusters_def}
 
     for s in students_results:
-        dom = s["radars"]["profil_dominant"]
+        prim_id = s["radars"].get("primary_profile_id", "")
         entry = f"`{s['login']}` ({s['name']})"
-        if "Boss" in dom:
+        if prim_id == "boss":
             c_map["boss"]["members"].append(entry)
-        elif "Artisan" in dom:
+        elif prim_id == "artisan":
             c_map["artisans"]["members"].append(entry)
-        elif "Casse-cou" in dom:
+        elif prim_id == "casse_cou":
             c_map["casse_cou"]["members"].append(entry)
-        elif "Décrocheur" in dom:
+        elif prim_id == "decrocheur":
             c_map["decrocheurs"]["members"].append(entry)
-        elif "Pirate" in dom:
+        elif prim_id == "pirate":
             c_map["pirates"]["members"].append(entry)
-        elif "Cyborg" in dom:
+        elif prim_id == "cyborg":
             c_map["cyborgs"]["members"].append(entry)
         else:
             c_map["artisans"]["members"].append(entry)
@@ -683,7 +683,7 @@ def generate_cohort_summary(students_results: list) -> str:
     ]
 
     for s in students_results:
-        dom = s["radars"]["profil_dominant"]
+        dom = s["radars"].get("profil_display", s["radars"]["profil_dominant"])
         alt_str = "Aucune"
         if s["bursts"] > 0:
             alt_str = f"🚨 {s['bursts']} Burst(s)"
@@ -708,6 +708,26 @@ def generate_cohort_summary(students_results: list) -> str:
     lines.append("")
     lines.append(generate_cohort_radar(clusters_def, len(students_results)))
     lines.append("\n---\n")
+
+    # Section dédiée aux Doubles-Profils Didactiques Cohérents observés
+    double_profils = [s for s in students_results if s["radars"].get("is_double_profil")]
+    if double_profils:
+        lines.append("## 🧬 Analyse des Profils Hybrides & Doubles-Profils Remarquables\n")
+        lines.append("> 💡 **Interprétation des Doubles-Profils** : Un double-profil est automatiquement identifié lorsque deux dimensions issues d'axes orthogonaux présentent conjointement une affinité élevée ($\\ge 11.0 / 20$ et écart $\\le 3.5$ pts). Ces hybridations permettent d'affiner le diagnostic pédagogique au-delà des archétypes simples.\n")
+        lines.append("| Étudiant | Login | Double-Profil Détecté | Surnom Pédagogique | Diagnostic Didactique & Posture Conseillée |")
+        lines.append("| :--- | :---: | :--- | :--- | :--- |")
+        for dp in double_profils:
+            r = dp["radars"]
+            nom = dp["name"]
+            lid = dp["login"]
+            lbl = r.get("double_profil_label", r.get("double_profil_nom", ""))
+            surnom = f"**{r.get('double_profil_surnom', '')}**"
+            desc = r.get("double_profil_desc", "")
+            conseil = r.get("double_profil_conseil", "")
+            diag_str = f"{desc}<br>👉 *Conseil : {conseil}*"
+            lines.append(f"| **{nom}** | `{lid}` | {lbl} | {surnom} | {diag_str} |")
+        lines.append("\n---\n")
+
     lines.append("> 💡 **Exploitation didactique** : Cette cohorte d'évaluation montre comment l'analyse conjointe des indicateurs de code et de la télémétrie permet d'adapter l'accompagnement pédagogique à chaque profil d'apprenant.")
     return "\n".join(lines)
 
@@ -794,7 +814,8 @@ def main():
         # Fichier CSV des notes
         csv_lines = ["login;nom;note_finale;profil_dominant;s_auth;i_nav"]
         for s in students_results:
-            csv_lines.append(f"{s['login']};{s['name']};{s['total']};{s['radars']['profil_dominant']};{s['s_auth']};{s['i_nav']}")
+            prof_str = s['radars'].get('profil_display', s['radars']['profil_dominant'])
+            csv_lines.append(f"{s['login']};{s['name']};{s['total']};{prof_str};{s['s_auth']};{s['i_nav']}")
         (target_root / f"notes_{SESSION_NAME}.csv").write_text("\n".join(csv_lines), encoding="utf-8")
 
         # users.json

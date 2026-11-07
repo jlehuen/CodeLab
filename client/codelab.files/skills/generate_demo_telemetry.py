@@ -494,9 +494,10 @@ def main():
 | **Axe 4 : Validation & Assertions** | **{tests:.1f}** | / 2.0 | Tests unitaires, gestion des cas limites et assertions |
 | **Note Technique Brute** | **{brute:.1f}** | **/ 20.0** | **Somme des 4 piliers d'évaluation** |"""
 
+        p_disp = radars.get('profil_display', st['profil_label'])
         if malus_ia > 0:
             scores_table += f"\n| *Malus Détection IA / Télémétrie* | *-{malus_ia:.1f}* | - | Pénalité pour injection massive non authentifiée |"
-        scores_table += f"\n| **TOTAL GÉNÉRAL** | **{finale:.1f}** | **/ 20.0** | **{st['profil_label']}** |"
+        scores_table += f"\n| **TOTAL GÉNÉRAL** | **{finale:.1f}** | **/ 20.0** | **{p_disp}** |"
 
         # Génération du rapport Markdown
         rep_lines = [
@@ -506,7 +507,7 @@ def main():
             "",
             f"- **Login / ID :** `{sid}`",
             f"- **Module :** Algorithmique et Programmation Python (L1/L2)",
-            f"- **Profil Comportemental Dominant :** {st['profil_label']}",
+            f"- **Profil Comportemental Dominant :** {p_disp}",
             "",
             "---",
             "",

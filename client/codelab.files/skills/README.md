@@ -208,7 +208,34 @@ Toutes les fiches individuelles produites par les compétences CodeLab s'articul
    - `### 3. Métriques & Qualité du Code`
    - `### 4. Pistes d'Amélioration & Conseils Pratiques`
 
-### 6.4. Génération de Cohortes d'Étalonnage (`generate_session_test.py`)
+### 6.4. Détection & Interprétation des Doubles-Profils Didactiques Cohérents
+
+En situation d'apprentissage en laboratoire, les apprenants ne se réduisent que rarement à un archétype unilatéral pur. Les 6 profils didactiques de CodeLab étant bâtis sur 3 axes de tension indépendants à 180°, les croisements inter-axes traduisent des **signatures comportementales complexes et cohérentes**.
+
+#### Critères de détection algorithmique :
+Le moteur télémétrique [`activity_analyzer.py`](activity_analyzer.py) identifie automatiquement un **Double-Profil Hybride** lorsque :
+1. **Orthogonalité des dimensions** : Les deux profils appartiennent à des axes distincts (les pôles antagonistes comme *Boss vs Décrocheur* s'excluent mutuellement).
+2. **Niveau d'affinité significatif** : Les deux scores d'affinité sont élevés ($S_1 \ge 11.0 / 20$ et $S_2 \ge 11.0 / 20$).
+3. **Proximité des affinités** : L'écart entre les deux profils est resserré ($|S_1 - S_2| \le 3.5\text{ pts}$).
+
+#### Typologie des 12 Doubles-Profils Hybrides :
+
+| Double-Profil Détecté | Surnom Évocateur | Signification Didactique | Posture Pédagogique Conseillée |
+| :--- | :--- | :--- | :--- |
+| **👑 Boss + 🔨 Artisan** | **L'Architecte Méthodique** | Excellence conceptuelle alliée à une rigueur exemplaire (saisie personnelle continue, tests réguliers). | Valoriser l'autonomie, proposer des défis d'optimisation ou du tutorat par les pairs. |
+| **👑 Boss + ⚡ Casse-cou** | **Le Hacker Instinctif** | Grande vivacité d'esprit mais développement impulsif à chaud sans formalisation préalable. | Canaliser vers des tests unitaires pérennes et la conception sur papier avant codage. |
+| **🔨 Artisan + ⚡ Casse-cou** | **Le Travailleur Acharné** | Investissement honnête total (zéro triche), mais acharnement aveugle face aux erreurs bloquantes. | **Profil prioritaire** : lui apprendre à lire les tracebacks et poser des hypothèses. |
+| **🤖 Cyborg + ⚡ Casse-cou** | **L'Apprenti Sorcier** | Injection de code généré par IA non compris, suivi de modifications compulsives au hasard. | Recadrage méthodologique : suspendre l'IA, retour aux bases et verbalisation. |
+| **🚪 Décrocheur + 🤖 Cyborg** | **Le Délégataire Passif** | Inactivité ou passivité prolongée masquée par un code externe/IA parachuté en fin de séance. | Entretien individuel et soutenance orale de code pour vérifier l'assimilation réelle. |
+| **🚪 Décrocheur + ⚡ Casse-cou** | **L'Épuisé Découragé** | Acharnement compulsif infructueux en début de séance ayant débouché sur l'abandon. | Déceler la détresse plus tôt pour intervenir avant la rupture motivationnelle. |
+| **👑 Boss + 🤖 Cyborg** | **L'Ingénieur Augmenté** | Aisance conceptuelle exploitant l'IA comme un accélérateur de productivité assumé. | S'assurer lors d'épreuves sur table de la capacité à coder en autonomie complète. |
+| **🏴‍☠️ Pirate + 🤖 Cyborg** | **Le Contrebandier Numérique** | Cumul de ruptures d'intégrité : importations USB / réseau et génération par IA externe. | Convocation formelle pour manquement à la charte et réévaluation surveillée. |
+| **👑 Boss + 🏴‍☠️ Pirate** | **L'Éclaireur Partageur** | Maîtrise technique solide associée à des diffusions ou transferts de fichiers vers des tiers. | Rappeler la frontière déontologique entre entraide bienveillante et collusion. |
+| **🚪 Décrocheur + 🏴‍☠️ Pirate** | **Le Copiste de Survie** | En situation d'échec total, l'étudiant a importé la solution d'autrui pour éviter la copie blanche. | Traiter la cause d'incompréhension tout en appliquant le règlement académique. |
+| **🔨 Artisan + 🏴‍☠️ Pirate** | **L'Artisan Sous Influence** | Travail personnel soigné sur l'essentiel, complété par un fragment emprunté pour finir. | Valoriser l'effort personnel propre tout en invalidant la composante collusoire. |
+| **🔨 Artisan + 🚪 Décrocheur** | **L'Apprenti Hésitant** | Démarche appliquée lorsqu'il est actif, mais bloqué par le doute et des lenteurs excessives. | Stimuler la confiance en soi, dédramatiser l'erreur et fixer des micro-objectifs. |
+
+### 6.5. Génération de Cohortes d'Étalonnage (`generate_session_test.py`)
 
 L'outil [`generate_session_test.py`](generate_session_test.py) permet de créer instantanément une promotion de test complète (`Session_test`) comportant 10 étudiants simulés illustrant les différents profils types :
 - *Boss* autonome (`boss_expert`)

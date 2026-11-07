@@ -638,6 +638,77 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     res["summary_markdown"] = "\n".join(md_lines)
     return res
 
+# Paires d'axes opposés à 180° (antagonistes par conception didactique)
+OPPOSITE_AXES = {
+    frozenset(["boss", "decrocheur"]),
+    frozenset(["artisan", "cyborg"]),
+    frozenset(["casse_cou", "pirate"])
+}
+
+# Catalogue didactique des Doubles-Profils Hybrides remarquables (croisements inter-axes)
+HYBRID_PROFILES_CATALOG = {
+    frozenset(["boss", "artisan"]): {
+        "surnom": "L'Architecte Méthodique",
+        "desc": "Excellence conceptuelle alliée à une rigueur d'apprentissage exemplaire. L'étudiant conçoit avec aisance tout en soignant chaque étape de construction par une saisie personnelle continue et des tests réguliers.",
+        "conseil": "Profil d'exception. Valoriser sa rigueur, lui proposer des défis algorithmiques plus poussés (optimisation, généricité) ou un rôle de tuteur d'îlot pour stimuler ses pairs."
+    },
+    frozenset(["boss", "casse_cou"]): {
+        "surnom": "Le Hacker Instinctif",
+        "desc": "Grande vivacité conceptuelle et aisance algorithmique, mais méthode de développement impulsive. Enchaîne les modifications et exécutions à chaud sans formalisation préalable, comptant sur son intuition pour corriger en direct.",
+        "conseil": "Canaliser sa vivacité intellectuelle vers les pratiques d'ingénierie logicielle pérennes : poser des assertions, structurer un plan de tests et documenter ses interfaces."
+    },
+    frozenset(["artisan", "casse_cou"]): {
+        "surnom": "Le Travailleur Acharné",
+        "desc": "Investissement authentique remarquable et combativité totale (zéro triche, forte saisie manuelle), mais démarche pénalisée par le tâtonnement aveugle face aux erreurs bloquantes.",
+        "conseil": "Profil prioritaire pour le tuteur : l'aider à décortiquer les tracebacks d'erreurs, poser des points d'arrêt et verbaliser son algorithme avant de relancer le compilateur."
+    },
+    frozenset(["cyborg", "casse_cou"]): {
+        "surnom": "L'Apprenti Sorcier",
+        "desc": "Combinaison instable d'injections de code externe/IA et d'acharnement compulsif. L'étudiant injecte des blocs non maîtrisés, puis modifie des bribes au hasard pour tenter de faire passer les tests.",
+        "conseil": "Recadrage pédagogique immédiat : suspendre temporairement les outils d'assistance, exiger un retour aux fondamentaux et une réécriture manuelle pas à pas avec verbalisation."
+    },
+    frozenset(["decrocheur", "cyborg"]): {
+        "surnom": "Le Délégataire Passif",
+        "desc": "Difficultés ou passivité en séance masquées par le recours opportuniste à l'IA. L'étudiant reste inactif de longues périodes, puis parachute une solution externe complète d'un seul coup.",
+        "conseil": "Entretien individuel bienveillant mais ferme : vérifier l'assimilation réelle par une soutenance orale et proposer une remédiation pas à pas sur les concepts fondamentaux."
+    },
+    frozenset(["decrocheur", "casse_cou"]): {
+        "surnom": "L'Épuisé Découragé",
+        "desc": "Épuisement face aux échecs répétés. L'étudiant a d'abord lutté intensément en début de session (runs en boucle, frustration), avant de baisser les bras et de basculer dans l'inactivité prolongée.",
+        "conseil": "Signe de détresse didactique : intervenir plus précocement en séance dès les premiers signes d'acharnement stérile pour éviter le renoncement."
+    },
+    frozenset(["boss", "cyborg"]): {
+        "surnom": "L'Ingénieur Augmenté",
+        "desc": "Forte maîtrise conceptuelle mise au service d'un copilotage IA assumé comme accélérateur de productivité. L'étudiant pilote l'outil mais risque de s'affranchir de l'effort d'implémentation fine.",
+        "conseil": "S'assurer lors d'évaluations sur table ou d'oraux que la compétence de codage en autonomie complète sans assistance reste parfaitement acquise."
+    },
+    frozenset(["pirate", "cyborg"]): {
+        "surnom": "Le Contrebandier Numérique",
+        "desc": "Cumul de ruptures d'intégrité : importations de fichiers externes, partage de clés et code généré par IA. L'authenticité de production personnelle est quasi inexistante.",
+        "conseil": "Convocation pour manquement à la charte d'intégrité académique et nouvelle évaluation en conditions strictement surveillées."
+    },
+    frozenset(["boss", "pirate"]): {
+        "surnom": "L'Éclaireur Partageur",
+        "desc": "Aisance technique indiscutable associée à des flux de partage de fichiers ou de code vers des pairs. L'étudiant maîtrise le sujet mais diffuse ou importe des ressources non autorisées.",
+        "conseil": "Rappeler le cadre déontologique : faire la distinction entre tutorat bienveillant et diffusion/collusion directe en évaluation."
+    },
+    frozenset(["decrocheur", "pirate"]): {
+        "surnom": "Le Copiste de Survie",
+        "desc": "Démuni face au sujet et inactif, l'étudiant a importé la solution d'un voisin par clé USB ou partage réseau pour éviter la copie blanche.",
+        "conseil": "Traiter la cause didactique racine (blocage complet) tout en appliquant le règlement pédagogique sur la fraude."
+    },
+    frozenset(["artisan", "pirate"]): {
+        "surnom": "L'Artisan Sous Influence",
+        "desc": "L'étudiant a fourni un travail personnel appliqué sur une partie du sujet, mais a complété une fonction manquante par un emprunt externe direct.",
+        "conseil": "Valoriser la partie authentique produite tout en invalidant le fragment collusoire pour encourager la persévérance honnête."
+    },
+    frozenset(["artisan", "decrocheur"]): {
+        "surnom": "L'Apprenti Hésitant",
+        "desc": "Démarche artisanale soignée lorsqu'il est actif, mais progression ralentie par de longs moments d'hésitation ou de doute où il n'ose plus avancer.",
+        "conseil": "Stimuler la confiance en soi, dédramatiser les erreurs d'exécution et fixer des micro-objectifs pour rythmer la séance."
+    }
+}
+
 def generate_mermaid_radars(data: dict, student_name: str = "Étudiant") -> dict:
     """
     Génère deux diagrammes radar Mermaid (syntaxe radar-beta native de CodeLab) :
@@ -733,9 +804,18 @@ radar-beta
     boss_val = min(20.0, max(0.5, round(boss_score, 1)))
 
     # 2. L'ARTISAN (Démarche d'apprentissage appliquée, itérative, sans acharnement)
-    bonus_bs = 2.0 if backspaces >= 10 else 0.0
-    artisan_score = (auth_val * 0.45) + (debug_val * 0.35) + (style_val * 0.20) + bonus_bs - (burst_cnt * 3.5)
-    artisan_val = min(20.0, max(1.0, round(artisan_score, 1)))
+    bonus_bs = 2.0 if backspaces >= 15 else (1.0 if backspaces >= 5 else 0.0)
+    artisan_score = (auth_val * 0.40) + (debug_val * 0.25) + (style_val * 0.20) + (test_val * 0.15) + bonus_bs - (burst_cnt * 4.0)
+    if act.get("active"):
+        if total_runs >= 6 and total_runs <= 16:
+            artisan_score += 2.0
+        elif total_runs <= 4:
+            artisan_score -= 6.0
+        if idle_max >= 600.0:
+            artisan_score -= 6.0
+    if note_brute < 8.0:
+        artisan_score -= 4.0
+    artisan_val = min(20.0, max(0.5, round(artisan_score, 1)))
 
     # 3. LE CYBORG (Assistance IA / Solution injectée)
     if act.get("active"):
@@ -770,8 +850,27 @@ radar-beta
         {"id": "pirate", "name": "Le Pirate", "icon": "🏴‍☠️", "val": pirate_val, "desc": "Collusion ou importation directe : transferts de fichiers externes (clé USB / réseau) ou copie directe."}
     ]
     sorted_profiles = sorted(profiles_list, key=lambda x: x["val"], reverse=True)
-    dominant = sorted_profiles[0]
-    secondary = sorted_profiles[1] if (len(sorted_profiles) > 1 and sorted_profiles[1]["val"] >= 10.0 and sorted_profiles[1]["id"] != dominant["id"]) else None
+    p1 = sorted_profiles[0]
+    p2 = sorted_profiles[1] if (len(sorted_profiles) > 1 and sorted_profiles[1]["val"] >= 9.0 and sorted_profiles[1]["id"] != p1["id"]) else None
+
+    # Détection formelle d'un Double-Profil Didactique Cohérent :
+    # 1. P1 et P2 appartiennent à des axes orthogonaux (non opposés sur le même axe 180°)
+    # 2. P1 et P2 présentent des affinités élevées (tous deux >= 11.0 / 20)
+    # 3. L'écart d'affinité est resserré (|P1 - P2| <= 3.5 pts)
+    pair_key = frozenset([p1["id"], p2["id"]]) if p2 else None
+    is_double_profil = False
+    double_info = None
+
+    if p2 and (pair_key not in OPPOSITE_AXES) and (p1["val"] >= 11.0) and (p2["val"] >= 11.0) and (abs(p1["val"] - p2["val"]) <= 3.5):
+        is_double_profil = True
+        double_info = HYBRID_PROFILES_CATALOG.get(pair_key, {
+            "surnom": f"Hybride {p1['name']} / {p2['name']}",
+            "desc": f"Profil combinant une forte composante de {p1['name']} et de {p2['name']}.",
+            "conseil": "Accompagnement mixte tenant compte de ces deux postures complémentaires."
+        })
+
+    dominant = p1
+    secondary = p2 if (p2 and not is_double_profil) else None
 
     radar_prof_code = f"""```mermaid
 %%{{init: {{'radar': {{'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.12}}, 'themeVariables': {{'fontSize': '22px', 'radar': {{'axisLabelFontSize': 22}}}}}}}}%%
@@ -787,12 +886,18 @@ radar-beta
     # Construction du tableau explicatif et diagnostique
     table_lines = [
         "#### 📋 Caractérisation de l'Étudiant selon les Profils Types Didactiques\n",
-        f"> 🎯 **Profil Dominant Détecté** : **{dominant['icon']} {dominant['name']}** (Affinité : **{dominant['val']:.1f} / 20**)",
     ]
-    if secondary:
-        table_lines.append(f"> 💡 *Composante secondaire notable* : **{secondary['icon']} {secondary['name']}** (Affinité : **{secondary['val']:.1f} / 20**)\n")
+
+    if is_double_profil:
+        table_lines.append(f"> 🎯 **Double-Profil Hybride Détecté** : **{p1['icon']} {p1['name']} + {p2['icon']} {p2['name']}** — *« {double_info['surnom']} »*")
+        table_lines.append(f"> 💡 **Signification didactique** : {double_info['desc']} (Affinités : **{p1['val']:.1f}** et **{p2['val']:.1f} / 20**)")
+        table_lines.append(f"> 🧭 **Recommandation pour l'enseignant** : {double_info['conseil']}\n")
     else:
-        table_lines.append("")
+        table_lines.append(f"> 🎯 **Profil Dominant Détecté** : **{dominant['icon']} {dominant['name']}** (Affinité : **{dominant['val']:.1f} / 20**)")
+        if secondary:
+            table_lines.append(f"> 💡 *Composante secondaire notable* : **{secondary['icon']} {secondary['name']}** (Affinité : **{secondary['val']:.1f} / 20**)\n")
+        else:
+            table_lines.append("")
 
     table_lines.append("| Profil Didactique Type | Démarche & Caractéristiques | Affinité / 20 | Adéquation & Diagnostic |")
     table_lines.append("| :--- | :--- | :---: | :--- |")
@@ -800,7 +905,9 @@ radar-beta
     for p in profiles_list:
         val = p["val"]
         pct = (val / 20.0) * 100.0
-        if p["id"] == dominant["id"]:
+        if is_double_profil and p["id"] in (p1["id"], p2["id"]):
+            diag = f"🟢 **Double-profil actif** ({pct:.0f}%) : dimension motrice observée en séance."
+        elif p["id"] == dominant["id"]:
             diag = f"🟢 **Profil dominant** ({pct:.0f}%) : correspond au comportement observé en séance."
         elif val >= 14.0:
             diag = f"🔵 **Forte composante** ({pct:.0f}%) : traits observables très marqués."
@@ -823,6 +930,7 @@ radar-beta
 >   - 👑 **Le Boss** $\\longleftrightarrow$ 🚪 **Le Décrocheur** : aisance et réussite autonome face au décrochage silencieux.
 >   - 🔨 **L'Artisan** $\\longleftrightarrow$ 🤖 **Le Cyborg** : démarche d'apprentissage authentique face à la délégation externe / IA.
 >   - ⚡ **Le Casse-cou** $\\longleftrightarrow$ 🏴‍☠️ **Le Pirate** : combat acharné avec le code face à la facilité de la copie d'autrui.
+> - **Détection des Doubles-Profils Didactiques** : Lorsque deux profils issus d'axes orthogonaux présentent simultanément des affinités élevées (scores $\\ge 11.0 / 20$ et écart $\\le 3.5$ pts), l'algorithme identifie une posture d'apprentissage hybride cohérente (ex: *Boss + Artisan* = *« L'Architecte »*, *Artisan + Casse-cou* = *« Le Travailleur Acharné »*). La fiche explicite alors la signification didactique de l'hybridation et les conseils d'accompagnement adaptés.
 
 <table width="100%" border="0" cellspacing="0" cellpadding="0" style="border:none; border-collapse:collapse; margin: 8px 0;">
 <tr>
@@ -841,13 +949,25 @@ radar-beta
 
 {table_md}"""
 
+    profil_dom_label = f"{p1['name']} + {p2['name']}" if is_double_profil else dominant["name"]
+    profil_display = f"{p1['name']} + {p2['name']} ({double_info['surnom']})" if is_double_profil else dominant["name"]
+
     return {
         "radar_indicateurs": radar_ind_code,
         "radar_profils": radar_prof_code,
         "radars_markdown": combined,
         "tableau_explicatif": table_md,
-        "profil_dominant": dominant["name"],
+        "is_double_profil": is_double_profil,
+        "double_profil_nom": f"{p1['name']} + {p2['name']}" if is_double_profil else None,
+        "double_profil_label": f"{p1['icon']} {p1['name']} + {p2['icon']} {p2['name']}" if is_double_profil else None,
+        "double_profil_surnom": double_info["surnom"] if is_double_profil else None,
+        "double_profil_desc": double_info["desc"] if is_double_profil else None,
+        "double_profil_conseil": double_info["conseil"] if is_double_profil else None,
+        "profil_dominant": profil_dom_label,
+        "profil_display": profil_display,
         "profil_dominant_score": dominant["val"],
+        "primary_profile_id": p1["id"],
+        "secondary_profile_id": p2["id"] if p2 else None,
         "valeurs_indicateurs": {
             "auth": auth_val, "focus": focus_val, "debug": debug_val,
             "test": test_val, "arch": arch_val, "style": style_val
