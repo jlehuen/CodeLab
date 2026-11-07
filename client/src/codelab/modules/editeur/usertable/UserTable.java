@@ -4,6 +4,7 @@ import codelab.utils.IpLocationService;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -194,7 +195,19 @@ public class UserTable extends JScrollPane {
 		this.editor = editor;
 
 		// Créer la table
-		table = new JTable();
+		table = new JTable() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Point getToolTipLocation(MouseEvent event) {
+				if (event != null) {
+					// Décaler l'info-bulle vers la droite pour éviter qu'en descendant la souris
+					// celle-ci ne passe dessus et ne bloque les événements / listeners de la table
+					return new Point(event.getX() + 35, event.getY());
+				}
+				return super.getToolTipLocation(event);
+			}
+		};
 		table.setEnabled(true);
 		table.setShowGrid(false);
 		table.setFocusable(false);
