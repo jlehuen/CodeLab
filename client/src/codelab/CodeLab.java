@@ -2426,7 +2426,7 @@ public class CodeLab extends AbstractCodeLab {
 		directPrintln("[codelab] Tip: Use 'pkill -9 -fi codelab' in case of panic", Console.COLOR_LOG);
 
 		String msg = String.format("CodeLab %s build %s (%s) is ready!", VERSION, BUILD, ARCHITECTURE);
-		directPrintln("[codelab] " + msg, new Color(0, 140, 0));
+		directPrintln("[codelab] " + msg, Console.COLOR_LOG);
 		
 		Utils.wait(1000);
 		WaitingDialog.close();

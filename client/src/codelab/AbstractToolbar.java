@@ -141,7 +141,7 @@ public abstract class AbstractToolbar extends JToolBar {
 		private static final long serialVersionUID = 1L;
 		@Override
 		public Dimension getMaximumSize(){
-			return new Dimension(2000, 1);
+			return new Dimension(Short.MAX_VALUE, 1);
 		}
 	};
 
@@ -219,6 +219,9 @@ public abstract class AbstractToolbar extends JToolBar {
 	}
 
 	protected void endToolbar() {
+		if (separator_flex.getParent() == null) {
+			addSeparatorflex();
+		}
 		add(helpButton);
 		add(serverButton);
 		add(infoButton);

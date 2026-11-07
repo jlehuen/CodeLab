@@ -312,6 +312,19 @@ public class UserTable extends JScrollPane {
 		// Menu popup
 		menu = new UserTableMenu(this);
 		table.setComponentPopupMenu(menu);
+		table.getTableHeader().setComponentPopupMenu(menu.getHeaderPopupMenu());
+		table.getTableHeader().addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e) || e.isPopupTrigger()) {
+					updateMenuItems();
+				}
+			}
+			public void mouseReleased(MouseEvent e) {
+				if (e.isPopupTrigger()) {
+					updateMenuItems();
+				}
+			}
+		});
 		updateMenuItems(); // Une première fois
 
 		setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -372,8 +385,22 @@ public class UserTable extends JScrollPane {
 		return -1;
 	}
 
+	public enum FilterType { NONE, NAME, GROUP, ALERTS }
+	private FilterType currentFilterType = FilterType.NONE;
+	private String currentFilterValue = null;
+
+	public FilterType getCurrentFilterType() {
+		return currentFilterType;
+	}
+
+	public String getCurrentFilterValue() {
+		return currentFilterValue;
+	}
+
 	public void setFilteredName(String text) {
 		// Filtrer sur le nom
+		currentFilterType = FilterType.NAME;
+		currentFilterValue = text;
 		RowFilter<Object, Object> filter = new RowFilter<Object, Object>() {
 			public boolean include(Entry<? extends Object, ? extends Object> entry) {
 				// Le UserData est en colonne 0
@@ -387,6 +414,8 @@ public class UserTable extends JScrollPane {
 
 	public void setFilteredGroup(String group) {
 		// Filtrer sur le groupe
+		currentFilterType = FilterType.GROUP;
+		currentFilterValue = group;
 		RowFilter<Object, Object> filter = new RowFilter<Object, Object>() {
 			public boolean include(Entry<? extends Object, ? extends Object> entry) {
 				// Le UserData est en colonne 0
@@ -398,10 +427,32 @@ public class UserTable extends JScrollPane {
 		sorter.sort();
 	}
 
+	public void setFilteredAlerts() {
+		// Filtrer sur les alertes
+		currentFilterType = FilterType.ALERTS;
+		currentFilterValue = null;
+		RowFilter<Object, Object> filter = new RowFilter<Object, Object>() {
+			public boolean include(Entry<? extends Object, ? extends Object> entry) {
+				// Le UserData est en colonne 0
+				UserData udata = (UserData) entry.getValue(0);
+				if (udata == null) return false;
+				return udata.hasAlert() || (udata.isConnected() && udata.getSAuth() >= 0.0 && udata.getSAuth() < 40.0);
+			}
+		};
+		sorter.setRowFilter(filter);
+		sorter.sort();
+	}
+
 	public void removeFilter() {
-		// Réinitialiser le fitrage
+		// Réinitialiser le filtrage
+		currentFilterType = FilterType.NONE;
+		currentFilterValue = null;
 		sorter.setRowFilter(null);
 		sorter.sort();
+	}
+
+	public boolean isFiltered() {
+		return currentFilterType != FilterType.NONE && sorter != null && sorter.getRowFilter() != null;
 	}
 
 	public void updateBackgroundColor() {

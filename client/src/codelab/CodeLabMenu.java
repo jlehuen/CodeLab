@@ -453,6 +453,19 @@ public class CodeLabMenu extends JPopupMenu {
 		});
 
 		// ---------------------------------------
+		// Vérification de la version au lancement
+		// ---------------------------------------
+
+		JCheckBoxMenuItem itemCheckVersionOnStartup = new JCheckBoxMenuItem(CodeLab.LABEL("itemCheckVersionOnStartup"));
+		itemCheckVersionOnStartup.setSelected(PropertyBase.getBooleanProperty("CHECK_VERSION"));
+		itemCheckVersionOnStartup.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				boolean selected = itemCheckVersionOnStartup.isSelected();
+				PropertyBase.setUserProperty("CHECK_VERSION", selected ? "yes" : "no");
+			}
+		});
+
+		// ---------------------------------------
 		// Activation du proxy
 		// ---------------------------------------
 
@@ -493,6 +506,7 @@ public class CodeLabMenu extends JPopupMenu {
 		menuConfigFile.add(itemSoundButton);
 		menuConfigFile.add(itemTextButton);
 		menuConfigFile.add(new JSeparator());
+		menuConfigFile.add(itemCheckVersionOnStartup);
 		menuConfigFile.add(itemEnableProxy);
 		if (AbstractCodeLab.IS_OSX) menuConfigFile.add(itemMacPermissions);
 		menuConfigFile.add(new JSeparator());

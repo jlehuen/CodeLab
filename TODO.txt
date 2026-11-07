@@ -1,0 +1,7 @@
+
+- Installation des MAJ
+- Ajout de LUA
+- Page Usages en mode connecté
+- Traduction espagnoles des panneaux de l'éditeur
+- Menu et boutons de la vue Évaluation bof bof
+- Affichage d'un double profil (exemple : Boss-Artisan) ?
