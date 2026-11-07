@@ -146,3 +146,6 @@ desktop.ini
 .settings/
 .classpath
 .project
+
+# Office temporary lock files
+~$*
