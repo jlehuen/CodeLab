@@ -45,6 +45,7 @@ ssh-*.command
 works/
 BILAN*
 ROADMAP*
+TODO*
 
 # Documentation technique interne et scripts de déploiement universitaire
 client/CODELAB.md
