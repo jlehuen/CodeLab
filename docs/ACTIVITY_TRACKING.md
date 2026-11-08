@@ -84,7 +84,7 @@ Les observables constituent le socle factuel et inaltérable de la traçabilité
 | `FILE_DROP` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Glisser-déposer d'un fichier externe depuis le bureau de l'OS ou un support amovible. |
 | `TYPING` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Frappes réelles cumulées (`typed_chars`) et corrections (`backspaces`) dédupliquées par fenêtre d'édition. |
 | `FOCUS` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Alt-Tab ou changement d'application : perte (`LOST`) et reprise (`GAINED`) avec durée d'absence. |
-| `PASTE` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Opération Ctrl+V / Cmd+V avec volume de caractères et de lignes insérés. |
+| `PASTE` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Opération Ctrl+V / Cmd+V avec volume de caractères et lignes, qualifié en externe ou interne (`internal: true` si copié depuis CodeLab pour préserver $S_{auth}$). |
 | `EDIT` | Serveur | [`activity.rs`](file:///Users/lehuen/dev/codelab/server/server/src/activity.rs) | Diff textuel unifié à la sauvegarde : lignes ajoutées/supprimées, taille du plus grand bloc (`chunk_max`). |
 | `COMPILE` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Verdict compilateur (`OK`, `ERROR`), durée de compilation et extrait de diagnostic. |
 | `EXECUTE` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Cycle d'exécution (`STARTED`, `DONE`, `ERROR`, `HALTED`), code retour et diagnostic d'erreur/traceback. |
@@ -227,7 +227,7 @@ Ces indicateurs sont transmis aux postes superviseurs dans la structure `UserDat
 | Code Alerte | Niveau de Sévérité | Condition de Déclenchement | Règle d'Extinction (*Auto-Clear*) |
 | :---: | :---: | :--- | :--- |
 | `BURST` | `CRIT` | ≥ 20 lignes insérées en ≤ 15s (`BURST_INSERT`) ou nouveau fichier créé avec ≥ 25 lignes d'un coup (`BURST_NEW_FILE`). | Acquittement manuel par le tuteur au poste. |
-| `PASTE` | `WARN` | Collage unitaire ≥ 15 lignes ou ≥ 400 caractères. | Acquittement manuel par le tuteur au poste. |
+| `PASTE` | `WARN` | Collage externe ≥ 15 lignes ou ≥ 400 caractères (les collages internes propres avec `internal: true` ne déclenchent pas d'alerte). | Acquittement manuel par le tuteur au poste. |
 | `THRASH` | `WARN` | ≥ 3 compilations `ERROR` ou exécutions `ERROR` consécutives sans run réussi intercalé. | **Auto-extinction automatique** dès :<br>1. Compilation réussie (`status: OK`)<br>2. Exécution réussie (`status: DONE`)<br>3. Modification de code ≥ 3 lignes. |
 | `DROP` | `WARN` | Dépôt externe de fichier dans l'arborescence du projet via drag & drop. | Acquittement manuel par le tuteur au poste. |
 

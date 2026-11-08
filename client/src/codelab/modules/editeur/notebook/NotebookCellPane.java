@@ -868,6 +868,24 @@ public class NotebookCellPane extends JPanel {
 	private RSyntaxTextArea createCellTextArea(String syntaxStyle) {
 		RSyntaxTextArea area = new RSyntaxTextArea() {
 			@Override
+			public void copy() {
+				String sel = getSelectedText();
+				if (sel != null && !sel.isEmpty()) {
+					codelab.client.CodelabClient.recordInternalCopy(sel);
+				}
+				super.copy();
+			}
+
+			@Override
+			public void cut() {
+				String sel = getSelectedText();
+				if (sel != null && !sel.isEmpty()) {
+					codelab.client.CodelabClient.recordInternalCopy(sel);
+				}
+				super.cut();
+			}
+
+			@Override
 			public void paste() {
 				try {
 					Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -878,9 +896,11 @@ public class NotebookCellPane extends JPanel {
 							int lines = text.split("\r\n|\r|\n", -1).length;
 							String filename = (editor != null && editor.getFile() != null) ? editor.getFile().getName() : "notebook.ipynb";
 							if (lines >= 2 || len >= 30) {
-								CodeLab.logger(String.format("Paste detected in %s (cell): %d characters, %d lines", filename, len, lines));
+								boolean isInternal = codelab.client.CodelabClient.isInternalCopy(text);
+								CodeLab.logger(String.format("Paste detected in %s (cell, %s): %d characters, %d lines",
+										filename, isInternal ? "internal" : "external", len, lines));
 								if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getClient() != null) {
-									CodeLab.INSTANCE.getClient().logPaste(filename, len, lines);
+									CodeLab.INSTANCE.getClient().logPaste(filename, len, lines, isInternal);
 								}
 							}
 						}

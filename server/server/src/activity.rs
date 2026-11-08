@@ -88,6 +88,8 @@ pub enum ActivityEvent {
         file: String,
         chars: usize,
         lines: usize,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        internal: Option<bool>,
     },
     #[serde(rename = "TYPING")]
     Typing {
@@ -168,6 +170,8 @@ pub struct LiveMetrics {
     pub backspaces: usize,
     pub pasted_chars: usize,
     pub pasted_lines: usize,
+    pub internal_pasted_chars: usize,
+    pub internal_pasted_lines: usize,
     pub burst_chars: usize,
     pub burst_lines: usize,
     pub dropped_files: usize,
@@ -184,6 +188,8 @@ impl Default for LiveMetrics {
             backspaces: 0,
             pasted_chars: 0,
             pasted_lines: 0,
+            internal_pasted_chars: 0,
+            internal_pasted_lines: 0,
             burst_chars: 0,
             burst_lines: 0,
             dropped_files: 0,
@@ -205,6 +211,8 @@ struct StudentLiveStatus {
     backspaces: usize,
     pasted_chars: usize,
     pasted_lines: usize,
+    internal_pasted_chars: usize,
+    internal_pasted_lines: usize,
     burst_chars: usize,
     burst_lines: usize,
     dropped_files: usize,
@@ -242,6 +250,8 @@ impl StudentLiveStatus {
             backspaces: self.backspaces,
             pasted_chars: self.pasted_chars,
             pasted_lines: self.pasted_lines,
+            internal_pasted_chars: self.internal_pasted_chars,
+            internal_pasted_lines: self.internal_pasted_lines,
             burst_chars: self.burst_chars,
             burst_lines: self.burst_lines,
             dropped_files: self.dropped_files,
@@ -278,8 +288,16 @@ pub fn ensure_student_live_loaded(session: &str, login: &str) {
                             st.backspaces += val.get("backspaces").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
                         }
                         Some("PASTE") => {
-                            st.pasted_chars += val.get("chars").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
-                            st.pasted_lines += val.get("lines").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                            let is_internal = val.get("internal").and_then(|v| v.as_bool()).unwrap_or(false);
+                            let chars = val.get("chars").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                            let lines = val.get("lines").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                            if is_internal {
+                                st.internal_pasted_chars += chars;
+                                st.internal_pasted_lines += lines;
+                            } else {
+                                st.pasted_chars += chars;
+                                st.pasted_lines += lines;
+                            }
                         }
                         Some("EDIT") => {
                             if let Some(al) = val.get("alert").and_then(|a| a.as_str()) {
@@ -645,6 +663,7 @@ struct ClientLogPayload {
     typed_chars: Option<usize>,
     backspaces: Option<usize>,
     size_bytes: Option<u64>,
+    internal: Option<bool>,
 }
 
 pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
@@ -806,22 +825,35 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                 let file = payload.file.unwrap_or_else(|| "unknown".to_string());
                 let chars = payload.chars.unwrap_or(0);
                 let lines = payload.lines.unwrap_or(0);
+                let is_internal = payload.internal.unwrap_or(false);
 
                 {
                     let mut live_map = STUDENT_LIVE.lock().unwrap();
                     let st = live_map.entry(key.clone()).or_default();
-                    st.pasted_chars += chars;
-                    st.pasted_lines += lines;
+                    if is_internal {
+                        st.internal_pasted_chars += chars;
+                        st.internal_pasted_lines += lines;
+                    } else {
+                        st.pasted_chars += chars;
+                        st.pasted_lines += lines;
+                    }
                 }
 
-                log::warn!(
-                    "[ACTIVITY PASTE] session={} login={} file={} chars={} lines={}",
-                    session, login, file, chars, lines
-                );
+                if is_internal {
+                    log::info!(
+                        "[ACTIVITY PASTE INTERNAL] session={} login={} file={} chars={} lines={}",
+                        session, login, file, chars, lines
+                    );
+                } else {
+                    log::warn!(
+                        "[ACTIVITY PASTE] session={} login={} file={} chars={} lines={}",
+                        session, login, file, chars, lines
+                    );
 
-                if lines >= 15 || chars >= 400 {
-                    let msg = format!("Collage {}L ({} cars) dans {}", lines, chars, file);
-                    trigger_live_alert(session, login, "PASTE", &msg, "WARN");
+                    if lines >= 15 || chars >= 400 {
+                        let msg = format!("Collage {}L ({} cars) dans {}", lines, chars, file);
+                        trigger_live_alert(session, login, "PASTE", &msg, "WARN");
+                    }
                 }
 
                 let event = ActivityEvent::Paste {
@@ -831,6 +863,7 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                     file,
                     chars,
                     lines,
+                    internal: if is_internal { Some(true) } else { None },
                 };
                 append_activity_event(session, login, &event);
                 return;
@@ -1031,6 +1064,13 @@ mod tests {
         assert_eq!(metrics.pasted_chars, 200);
         // s_auth = 800 / (800 + 200) * 100 = 80.0%
         assert_eq!(metrics.s_auth, 80.0);
+
+        // Collage interne (ex: duplication propre d'une fonction d'un fichier à l'autre) : s_auth ne doit PAS baisser !
+        record_client_log(session, login, r#"{"type":"PASTE","file":"tp2.py","chars":500,"lines":25,"internal":true}"#);
+        let metrics2 = get_student_live_metrics(session, login);
+        assert_eq!(metrics2.pasted_chars, 200); // externes restent à 200
+        assert_eq!(metrics2.internal_pasted_chars, 500); // internes passent à 500
+        assert_eq!(metrics2.s_auth, 80.0); // inchangé !
 
         let _ = fs::remove_dir_all(Path::new(PROG_DIR).join(session));
     }

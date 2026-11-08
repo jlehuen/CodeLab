@@ -48,6 +48,8 @@ def compute_sliding_windows(parsed_events: list, window_sec: int = 900) -> list:
         backspaces = 0
         paste_chars = 0
         paste_lines = 0
+        paste_internal_chars = 0
+        paste_internal_lines = 0
         burst_lines = 0
         burst_count = 0
         code_modifs = 0
@@ -63,8 +65,15 @@ def compute_sliding_windows(parsed_events: list, window_sec: int = 900) -> list:
                 keys += ev.get("typed_chars", 0)
                 backspaces += ev.get("backspaces", 0)
             elif ev_type == "PASTE":
-                paste_chars += ev.get("chars", 0)
-                paste_lines += ev.get("lines", 0)
+                is_internal = bool(ev.get("internal", False))
+                c = ev.get("chars", 0)
+                l = ev.get("lines", 0)
+                if is_internal:
+                    paste_internal_chars += c
+                    paste_internal_lines += l
+                else:
+                    paste_chars += c
+                    paste_lines += l
             elif ev_type == "EDIT":
                 ins = ev.get("lines_added", 0)
                 rem = ev.get("lines_removed", 0)
@@ -120,6 +129,8 @@ def compute_sliding_windows(parsed_events: list, window_sec: int = 900) -> list:
             "backspaces": backspaces,
             "paste_chars": paste_chars,
             "paste_lines": paste_lines,
+            "paste_internal_chars": paste_internal_chars,
+            "paste_internal_lines": paste_internal_lines,
             "burst_lines": burst_lines,
             "burst_count": burst_count,
             "s_auth": s_auth_local,
@@ -277,6 +288,9 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     paste_chars = 0
     paste_lines = 0
     paste_count = 0
+    paste_internal_chars = 0
+    paste_internal_lines = 0
+    paste_internal_count = 0
     burst_insert_count = 0
     burst_insert_lines = 0
     burst_new_file_count = 0
@@ -423,14 +437,20 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
 
         # 5. PASTE
         elif ev_type == "PASTE":
-            paste_count += 1
+            is_internal = bool(ev.get("internal", False))
             chars = ev.get("chars", 0)
             lines = ev.get("lines", 0)
-            paste_chars += chars
-            paste_lines += lines
             fname = ev.get("file", "unknown")
-            if lines >= 15 or chars >= 400:
-                alerts.append(f"📋 **Collage volumineux** : {lines} lignes ({chars} caractères) collées dans `{fname}`")
+            if is_internal:
+                paste_internal_count += 1
+                paste_internal_chars += chars
+                paste_internal_lines += lines
+            else:
+                paste_count += 1
+                paste_chars += chars
+                paste_lines += lines
+                if lines >= 15 or chars >= 400:
+                    alerts.append(f"📋 **Collage volumineux** : {lines} lignes ({chars} caractères) collées dans `{fname}`")
             q_edit += min(dt_step, 30.0)
 
         # 6. TYPING
@@ -533,6 +553,9 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     res["paste_chars"] = paste_chars
     res["paste_lines"] = paste_lines
     res["paste_count"] = paste_count
+    res["paste_internal_chars"] = paste_internal_chars
+    res["paste_internal_lines"] = paste_internal_lines
+    res["paste_internal_count"] = paste_internal_count
     res["burst_insert_count"] = burst_insert_count
     res["burst_insert_lines"] = burst_insert_lines
     res["burst_new_file_count"] = burst_new_file_count
@@ -592,7 +615,10 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     md_lines.append("")
     md_lines.append(f"- **Score d'Authenticité ($S_{{auth}}$)** : **{s_auth}%** — {s_auth_level}")
     md_lines.append(f"  - Frappe réelle : `{typing_keys}` touches (`{typing_backspaces}` corrections backspace)")
-    md_lines.append(f"  - Collages détectés : `{paste_chars}` caractères en `{paste_count}` collage(s) ({paste_lines} lignes)")
+    if paste_internal_count > 0:
+        md_lines.append(f"  - Collages détectés : `{paste_chars}` caractères externes en `{paste_count}` collage(s) ({paste_lines} lignes) + `{paste_internal_chars}` caractères internes CodeLab en `{paste_internal_count}` collage(s) (neutralisés)")
+    else:
+        md_lines.append(f"  - Collages détectés : `{paste_chars}` caractères en `{paste_count}` collage(s) ({paste_lines} lignes)")
     if total_burst_lines > 0:
         md_lines.append(f"  - Injections massives (bursts) : **{total_burst_lines} lignes** ({burst_insert_count} bursts d'insertion, {burst_new_file_count} nouveaux fichiers complets)")
         
@@ -623,6 +649,8 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
             auth_col = f"**{sw['s_auth']}%**" if sw['s_auth'] is not None else "*--*"
             burst_str = f" +{sw['burst_lines']}L ({sw['burst_count']}b)" if sw['burst_count'] > 0 else ""
             paste_col = f"`{sw['paste_lines']}L`{burst_str}" if (sw['paste_lines'] > 0 or sw['burst_count'] > 0) else "0"
+            if sw.get('paste_internal_lines', 0) > 0:
+                paste_col += f" *(+{sw['paste_internal_lines']}L int.)*"
             runs_cnt = sw['compiles'] + sw['execs']
             runs_col = f"{runs_cnt} ({sw['errors']} err)" if runs_cnt > 0 else "0"
             md_lines.append(f"| {sw['t0_str']} - {sw['t1_str']} | `{sw['keys']}` c. | {paste_col} | {auth_col} | `{sw['inav']}%` | {runs_col} | {sw['diagnostic']} |")

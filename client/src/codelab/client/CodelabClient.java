@@ -1310,7 +1310,28 @@ public class CodelabClient {
 		}
 	}
 
+	private static final int MAX_INTERNAL_CLIPBOARD_HISTORY = 10;
+	private static final java.util.LinkedList<String> internalClipboardHistory = new java.util.LinkedList<>();
+
+	public static synchronized void recordInternalCopy(String text) {
+		if (text == null || text.trim().isEmpty()) return;
+		internalClipboardHistory.remove(text);
+		internalClipboardHistory.addFirst(text);
+		if (internalClipboardHistory.size() > MAX_INTERNAL_CLIPBOARD_HISTORY) {
+			internalClipboardHistory.removeLast();
+		}
+	}
+
+	public static synchronized boolean isInternalCopy(String text) {
+		if (text == null || text.trim().isEmpty()) return false;
+		return internalClipboardHistory.contains(text);
+	}
+
 	public void logPaste(String filename, int charsCount, int linesCount) {
+		logPaste(filename, charsCount, linesCount, false);
+	}
+
+	public void logPaste(String filename, int charsCount, int linesCount, boolean internal) {
 		if (!isConnected()) return;
 		try {
 			ObjectMapper mapper = new ObjectMapper();
@@ -1319,6 +1340,9 @@ public class CodelabClient {
 			node.put("file", filename);
 			node.put("chars", charsCount);
 			node.put("lines", linesCount);
+			if (internal) {
+				node.put("internal", true);
+			}
 			server.log(mapper.writeValueAsString(node));
 		} catch (Exception e) {
 			System.err.println("Error sending paste log: " + e.getMessage());

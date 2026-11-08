@@ -516,6 +516,24 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 	}
 
 	@Override
+	public void copy() {
+		String sel = getSelectedText();
+		if (sel != null && !sel.isEmpty()) {
+			codelab.client.CodelabClient.recordInternalCopy(sel);
+		}
+		super.copy();
+	}
+
+	@Override
+	public void cut() {
+		String sel = getSelectedText();
+		if (sel != null && !sel.isEmpty()) {
+			codelab.client.CodelabClient.recordInternalCopy(sel);
+		}
+		super.cut();
+	}
+
+	@Override
 	public void paste() {
 		try {
 			Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -526,9 +544,11 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 					int lines = text.split("\r\n|\r|\n", -1).length;
 					String filename = (editor != null && editor.getFile() != null) ? editor.getFile().getName() : "editor";
 					if (lines >= 2 || len >= 30) {
-						CodeLab.logger(String.format("Paste detected in %s: %d characters, %d lines", filename, len, lines));
+						boolean isInternal = codelab.client.CodelabClient.isInternalCopy(text);
+						CodeLab.logger(String.format("Paste detected in %s (%s): %d characters, %d lines",
+								filename, isInternal ? "internal" : "external", len, lines));
 						if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getClient() != null) {
-							CodeLab.INSTANCE.getClient().logPaste(filename, len, lines);
+							CodeLab.INSTANCE.getClient().logPaste(filename, len, lines, isInternal);
 						}
 					}
 				}
