@@ -13,50 +13,34 @@ Le système de traçabilité et d'analyse comportementale de CodeLab répond à 
 
 ### Architecture Globale du Flux de Données
 
-Le système sépare clairement l'architecture en deux canaux complémentaires :
-1. **Le Canal Temps Réel** (séance de TP) : boucle réactive ultra-légère entre l'étudiant, le serveur Rust et le tuteur.
-2. **Le Canal Différé** (après la séance) : analyse longitudinale approfondie à partir du journal inaltérable.
+Le système sépare clairement l'architecture en deux canaux complémentaires articulés autour du flux d'observables :
+1. **Le Canal Temps Réel** (pendant la séance de TP) : boucle réactive ultra-légère entre l'étudiant, le serveur Rust et le superviseur tuteur pour la détection proactive et l'accompagnement pédagogique.
+2. **Le Canal Différé** (après la séance de TP) : analyse longitudinale approfondie, classification des comportements et projection des doubles-profils didactiques à partir du journal inaltérable.
 
-#### Vue Synthétique : Le Pipeline Global
-
-```mermaid
-flowchart LR
-    A["<b>1. COLLECTE</b><br/>Client Étudiant<br/><i>Frappes, Collages, Runs</i>"] 
-    -->|"≤ 1 Ko/min"| B["<b>2. CALCULS</b><br/>Serveur Rust<br/><i>Diffs, S_auth direct, Alertes</i>"]
-    
-    B -->|"Diffusion MsgPack"| C["<b>3. SUPERVISION</b><br/>Poste Tuteur (UserTable)<br/><i>Badges &amp; Infobulle</i>"]
-    
-    B -.->|"Journal inaltérable"| D["<b>4. AUDIT DIFFÉRÉ</b><br/>Skills Python / CDK<br/><i>Radars &amp; Fenêtres 15m</i>"]
-```
-
-#### Vue Fonctionnelle : Les Deux Canaux d'Exploitation
+#### Pipeline Unifié des Deux Canaux de Traitement
 
 ```mermaid
 flowchart TD
-    subgraph C1 ["⚡ CANAL 1 : SUPERVISION TEMPS RÉEL (Pendant la séance)"]
-        direction LR
-        E["<b>1. Client Étudiant</b><br/>Java Swing / IPYNB<br/><i>Frappes, focus, runs</i>"]
-        -->|"Sondes d'activité<br/>(≤ 1 Ko/min)"| S["<b>2. Serveur Rust</b><br/>Tokio asynchrone<br/><i>Calcul S_auth &amp; alertes</i>"]
-        -->|"Diffusion temps réel<br/>(MsgPack)"| T["<b>3. Poste Tuteur</b><br/>Table UserTable<br/><i>Badges &amp; infobulles</i>"]
-    end
+    E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant (Java Swing / IPYNB)<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
+    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES EN DIRECT</b><br/>Serveur Rust Asynchrone (Tokio)<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
 
-    S ==>|"Persistance continue<br/>(Append-only)"| J[("<b>Journal Immuable</b><br/><i>.activity.jsonl</i><br/>Traçabilité inaltérable")]
+    S -->|"⚡ Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Poste Superviseur Tuteur (UserTable)<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
 
-    J ==>|"Lecture des traces<br/>post-séance"| A
+    S ==>|"📊 Canal Différé (Append-only)"| J[("<b>4. JOURNAL IMMUABLE</b><br/>.activity.jsonl (Persistance disque)<br/><i>Flux inaltérable des événements bruts</i>")]
 
-    subgraph C2 ["📊 CANAL 2 : AUDIT DIFFÉRÉ (Après la séance)"]
-        direction LR
-        A["<b>4. Moteur d'Audit</b><br/>Python 3 &amp; AST<br/><i>Fenêtres 15 min &amp; profils</i>"]
-        -->|"Génération fiches<br/>&amp; synthèses"| R["<b>5. Bilan Didactique</b><br/>Double radar Mermaid<br/><i>12 doubles-profils</i>"]
-    end
+    J ==>|"Lecture des traces post-séance"| A["<b>5. AUDIT &amp; VALORISATION</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches 15 min, double radar &amp; 12 doubles-profils</i>"]
 
-    classDef canal1 fill:#EBF3FB,stroke:#1B365D,stroke-width:1.5px,color:#1B365D;
-    classDef canal2 fill:#F4ECF8,stroke:#5D1B8C,stroke-width:1.5px,color:#5D1B8C;
+    classDef client fill:#EBF3FB,stroke:#1B365D,stroke-width:1.5px,color:#1B365D;
+    classDef server fill:#E3F2FD,stroke:#0D47A1,stroke-width:2px,color:#0D47A1;
+    classDef tuteur fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#2E7D32;
     classDef journal fill:#FFF8E7,stroke:#B8860B,stroke-width:2px,color:#8B6508;
+    classDef audit fill:#F4ECF8,stroke:#5D1B8C,stroke-width:1.5px,color:#5D1B8C;
 
-    class E,S,T canal1;
-    class A,R canal2;
+    class E client;
+    class S server;
+    class T tuteur;
     class J journal;
+    class A audit;
 ```
 
 ### Architecture Logicielle en 3 Niveaux & Références du Code
