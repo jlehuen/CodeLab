@@ -17,19 +17,19 @@ Le système sépare clairement l'architecture en deux canaux complémentaires ar
 1. **Le Canal Temps Réel** (pendant la séance de TP) : boucle réactive ultra-légère entre l'étudiant, le serveur Rust et le superviseur tuteur pour la détection proactive et l'accompagnement pédagogique.
 2. **Le Canal Différé** (après la séance de TP) : analyse longitudinale approfondie, classification des comportements et projection des doubles-profils didactiques à partir du journal inaltérable.
 
-#### Pipeline des Deux Canaux de Traitement
+#### Pipeline des Canaux de Traitement
 
 ```mermaid
 %%{init: {'themeVariables': {'edgeLabelBackground': '#ffffff'}, 'themeCSS': '.edgeLabel, .labelBkg, .edgeLabel rect { background-color: #ffffff !important; fill: #ffffff !important; opacity: 1 !important; }'}}%%
 flowchart TD
     E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant Java<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
-    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES</b><br/>Serveur Rust Asynchrone<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
+    -->|"Évènements d'activité légers (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES</b><br/>Serveur Rust Asynchrone<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
 
-    S -->|"Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Client Tuteur Java<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
+    S -->|"Canal Temps Réel</br>(messages MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Client Tuteur Java<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
 
-    S -->|"Canal Différé (Append-only)"| J[("<b>4. JOURNALISATION</b><br/>Fichier .activity.jsonl<br/><i>Événements bruts</i>")]
+    S -->|"Canal Différé</br>(append-only)"| J[("<b>4. JOURNALISATION</b><br/>Fichiers .activity.jsonl<br/><i>Événements bruts</i>")]
 
-    J -->|"Lecture des traces post-séance"| A["<b>5. AUDIT &amp; VALORISATION</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches 15 min, double radar &amp; 12 doubles-profils</i>"]
+    J -->|"Lecture des traces post-séance"| A["<b>5. AUDIT AUTOMATIQUE</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches de 15 min, diagrammes radar &amp; calcul des doubles-profils</i>"]
 
     classDef client fill:#EBF3FB,stroke:#1B365D,stroke-width:1.5px,color:#1B365D;
     classDef server fill:#E3F2FD,stroke:#0D47A1,stroke-width:2px,color:#0D47A1;
@@ -48,8 +48,8 @@ flowchart TD
 
 | Échelon | Technologie | Responsabilités & Périmètre | Fichiers Clés du Projet |
 | :--- | :--- | :--- | :--- |
-| **Niveau 1 : Client Java** | Java 17 LTS / Swing / RSyntaxTextArea / IPYNB | Captation discrète des gestes étudiants (clavier, presse-papier interne/externe, focus, exécutions, glisser-déposer), restitution visuelle en classe (table `UserTable`, infobulles, actions d'acquittement). | [`CodelabClient.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/client/CodelabClient.java)<br>[`CodeLabTextArea.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/text/CodeLabTextArea.java)<br>[`NotebookCellPane.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/notebook/NotebookCellPane.java)<br>[`UserTable.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/usertable/UserTable.java) |
-| **Niveau 2 : Serveur Rust** | Rust / Tokio Asynchrone / crate `similar` | Calcul du diff textuel à la sauvegarde, calcul incrémental en mémoire de $S_{\text{auth}}$ et $I_{\text{nav}}$, moteur d'alertes instantanées, automate d'auto-clear contextuel, journalisation append-only `.activity.jsonl`, broadcast MsgPack aux tuteurs. | [`activity.rs`](file:///Users/lehuen/dev/codelab/server/server/src/activity.rs)<br>[`client.rs`](file:///Users/lehuen/dev/codelab/server/server/src/client.rs)<br>[`connected.rs`](file:///Users/lehuen/dev/codelab/server/server/src/connected.rs)<br>[`handler.rs`](file:///Users/lehuen/dev/codelab/server/server/src/handler.rs) |
+| **Niveau 1 : Client Java** | Java / Swing (RSyntaxTextArea) | Captation discrète des gestes étudiants (clavier, presse-papier interne/externe, focus, exécutions, glisser-déposer), restitution visuelle en classe (table `UserTable`, infobulles, actions d'acquittement). | [`CodelabClient.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/client/CodelabClient.java)<br>[`CodeLabTextArea.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/text/CodeLabTextArea.java)<br>[`NotebookCellPane.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/notebook/NotebookCellPane.java)<br>[`UserTable.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/usertable/UserTable.java) |
+| **Niveau 2 : Serveur Rust** | Rust / Tokio Asynchrone (crate similar) | Calcul du diff textuel à la sauvegarde, calcul incrémental en mémoire de $S_{\text{auth}}$ et $I_{\text{nav}}$, moteur d'alertes instantanées, automate d'auto-clear contextuel, journalisation append-only `.activity.jsonl`, broadcast MsgPack aux tuteurs. | [`activity.rs`](file:///Users/lehuen/dev/codelab/server/server/src/activity.rs)<br>[`client.rs`](file:///Users/lehuen/dev/codelab/server/server/src/client.rs)<br>[`connected.rs`](file:///Users/lehuen/dev/codelab/server/server/src/connected.rs)<br>[`handler.rs`](file:///Users/lehuen/dev/codelab/server/server/src/handler.rs) |
 | **Niveau 3 : Moteur Python & Post-Traitement** | Python 3 / AST / Mermaid / Winnowing | Audit a posteriori de session, tranches glissantes de 15 min, double radar Mermaid `radar-beta`, classification selon les 6 profils types et 12 doubles-profils hybrides, radar de cohorte, génération des rapports individuels et synthèses. | [`activity_analyzer.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/activity_analyzer.py)<br>[`eval_codelab.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/eval_codelab.py)<br>[`generate_session_test.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/generate_session_test.py) |
 
 ### Principes Fondamentaux de Conception
@@ -500,12 +500,12 @@ Cette disposition confère au tableau une lisibilité immédiate :
 
 | Profils croisés | 👑 **Le Boss** | 🔨 **L'Artisan** | ⚡ **Le Casse-cou** | 🚪 **Le Décrocheur** | 🤖 **Le Cyborg** | 🏴‍☠️ **Le Pirate** |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| 👑 **Le Boss** | *(Profil pur)* | **L'Architecte Méthodique** | **Le Hacker Instinctif** | ❌ *Antagoniste (180°)* | **L'Ingénieur Augmenté** | **L'Éclaireur Partageur** |
-| 🔨 **L'Artisan** | **L'Architecte Méthodique** | *(Profil pur)* | **Le Travailleur Acharné** | **L'Apprenti Hésitant** | ❌ *Antagoniste (180°)* | **L'Artisan Sous Influence** |
-| ⚡ **Le Casse-cou** | **Le Hacker Instinctif** | **Le Travailleur Acharné** | *(Profil pur)* | **L'Épuisé Découragé** | **L'Apprenti Sorcier** | ❌ *Antagoniste (180°)* |
-| 🚪 **Le Décrocheur** | ❌ *Antagoniste (180°)* | **L'Apprenti Hésitant** | **L'Épuisé Découragé** | *(Profil pur)* | **Le Délégataire Passif** | **Le Copiste de Survie** |
-| 🤖 **Le Cyborg** | **L'Ingénieur Augmenté** | ❌ *Antagoniste (180°)* | **L'Apprenti Sorcier** | **Le Délégataire Passif** | *(Profil pur)* | **Le Contrebandier Numérique** |
-| 🏴‍☠️ **Le Pirate** | **L'Éclaireur Partageur** | **L'Artisan Sous Influence** | ❌ *Antagoniste (180°)* | **Le Copiste de Survie** | **Le Contrebandier Numérique** | *(Profil pur)* |
+| 👑 **Le Boss** | *Profil pur* | **L'Architecte Méthodique** | **Le Hacker Instinctif** | ❌ *Antagoniste (180°)* | **L'Ingénieur Augmenté** | **L'Éclaireur Partageur** |
+| 🔨 **L'Artisan** | **L'Architecte Méthodique** | *Profil pur* | **Le Travailleur Acharné** | **L'Apprenti Hésitant** | ❌ *Antagoniste (180°)* | **L'Artisan Sous Influence** |
+| ⚡ **Le Casse-cou** | **Le Hacker Instinctif** | **Le Travailleur Acharné** | *Profil pur* | **L'Épuisé Découragé** | **L'Apprenti Sorcier** | ❌ *Antagoniste (180°)* |
+| 🚪 **Le Décrocheur** | ❌ *Antagoniste (180°)* | **L'Apprenti Hésitant** | **L'Épuisé Découragé** | *Profil pur* | **Le Délégataire Passif** | **Le Copiste de Survie** |
+| 🤖 **Le Cyborg** | **L'Ingénieur Augmenté** | ❌ *Antagoniste (180°)* | **L'Apprenti Sorcier** | **Le Délégataire Passif** | *Profil pur* | **Le Contrebandier Numérique** |
+| 🏴‍☠️ **Le Pirate** | **L'Éclaireur Partageur** | **L'Artisan Sous Influence** | ❌ *Antagoniste (180°)* | **Le Copiste de Survie** | **Le Contrebandier Numérique** | *Profil pur* |
 
 #### 4. Matrice Détaillée des 12 Doubles-Profils Didactiques Hybrides
 

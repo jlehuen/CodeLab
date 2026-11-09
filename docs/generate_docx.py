@@ -497,12 +497,12 @@ def build_docx():
     for i, h in enumerate(cross_headers): table_cross.cell(0, i).paragraphs[0].text = h
 
     cross_data = [
-        ["👑 Boss", "(Profil pur)", "Architecte Méthodique", "Hacker Instinctif", "❌ Antagoniste", "Ingénieur Augmenté", "Éclaireur Partageur"],
-        ["🔨 Artisan", "Architecte Méthodique", "(Profil pur)", "Travailleur Acharné", "Apprenti Hésitant", "❌ Antagoniste", "Artisan s/ Influence"],
-        ["⚡ Casse-cou", "Hacker Instinctif", "Travailleur Acharné", "(Profil pur)", "Épuisé Découragé", "Apprenti Sorcier", "❌ Antagoniste"],
-        ["🚪 Décroch.", "❌ Antagoniste", "Apprenti Hésitant", "Épuisé Découragé", "(Profil pur)", "Délégataire Passif", "Copiste de Survie"],
-        ["🤖 Cyborg", "Ingénieur Augmenté", "❌ Antagoniste", "Apprenti Sorcier", "Délégataire Passif", "(Profil pur)", "Contrebandier Num."],
-        ["🏴‍☠️ Pirate", "Éclaireur Partageur", "Artisan s/ Influence", "❌ Antagoniste", "Copiste de Survie", "Contrebandier Num.", "(Profil pur)"]
+        ["👑 Boss", "Profil pur", "Architecte Méthodique", "Hacker Instinctif", "❌ Antagoniste", "Ingénieur Augmenté", "Éclaireur Partageur"],
+        ["🔨 Artisan", "Architecte Méthodique", "Profil pur", "Travailleur Acharné", "Apprenti Hésitant", "❌ Antagoniste", "Artisan s/ Influence"],
+        ["⚡ Casse-cou", "Hacker Instinctif", "Travailleur Acharné", "Profil pur", "Épuisé Découragé", "Apprenti Sorcier", "❌ Antagoniste"],
+        ["🚪 Décroch.", "❌ Antagoniste", "Apprenti Hésitant", "Épuisé Découragé", "Profil pur", "Délégataire Passif", "Copiste de Survie"],
+        ["🤖 Cyborg", "Ingénieur Augmenté", "❌ Antagoniste", "Apprenti Sorcier", "Délégataire Passif", "Profil pur", "Contrebandier Num."],
+        ["🏴‍☠️ Pirate", "Éclaireur Partageur", "Artisan s/ Influence", "❌ Antagoniste", "Copiste de Survie", "Contrebandier Num.", "Profil pur"]
     ]
 
     for r_idx, row in enumerate(cross_data, start=1):
