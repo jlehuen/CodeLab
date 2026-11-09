@@ -23,13 +23,13 @@ Le système sépare clairement l'architecture en deux canaux complémentaires ar
 %%{init: {'themeVariables': {'edgeLabelBackground': '#ffffff'}, 'themeCSS': '.edgeLabel, .labelBkg, .edgeLabel rect { background-color: #ffffff !important; fill: #ffffff !important; opacity: 1 !important; }'}}%%
 flowchart TD
     E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant Java<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
-    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES EN DIRECT</b><br/>Serveur Rust Asynchrone<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
+    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES</b><br/>Serveur Rust Asynchrone<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
 
-    S -->|"Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Client Tuteur<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
+    S -->|"Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Client Tuteur Java<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
 
-    S ==>|"Canal Différé (Append-only)"| J[("<b>4. JOURNALISATION</b><br/>Fichier .activity.jsonl<br/><i>Événements bruts</i>")]
+    S -->|"Canal Différé (Append-only)"| J[("<b>4. JOURNALISATION</b><br/>Fichier .activity.jsonl<br/><i>Événements bruts</i>")]
 
-    J ==>|"Lecture des traces post-séance"| A["<b>5. AUDIT &amp; VALORISATION</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches 15 min, double radar &amp; 12 doubles-profils</i>"]
+    J -->|"Lecture des traces post-séance"| A["<b>5. AUDIT &amp; VALORISATION</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches 15 min, double radar &amp; 12 doubles-profils</i>"]
 
     classDef client fill:#EBF3FB,stroke:#1B365D,stroke-width:1.5px,color:#1B365D;
     classDef server fill:#E3F2FD,stroke:#0D47A1,stroke-width:2px,color:#0D47A1;
