@@ -21,7 +21,7 @@ Le système sépare clairement l'architecture en deux canaux complémentaires ar
 
 ```mermaid
 flowchart TD
-    E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
+    E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant Java<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
     -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES EN DIRECT</b><br/>Serveur Rust Asynchrone<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
 
     S -->|"⚡ Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Poste Superviseur Tuteur<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
