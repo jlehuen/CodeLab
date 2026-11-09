@@ -21,12 +21,12 @@ Le système sépare clairement l'architecture en deux canaux complémentaires ar
 
 ```mermaid
 flowchart TD
-    E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant (Java Swing / IPYNB)<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
-    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES EN DIRECT</b><br/>Serveur Rust Asynchrone (Tokio)<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
+    E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
+    -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES EN DIRECT</b><br/>Serveur Rust Asynchrone<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
 
-    S -->|"⚡ Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Poste Superviseur Tuteur (UserTable)<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
+    S -->|"⚡ Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Poste Superviseur Tuteur<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
 
-    S ==>|"📊 Canal Différé (Append-only)"| J[("<b>4. JOURNAL IMMUABLE</b><br/>.activity.jsonl (Persistance disque)<br/><i>Flux inaltérable des événements bruts</i>")]
+    S ==>|"📊 Canal Différé (Append-only)"| J[("<b>4. JOURNAL IMMUABLE</b><br/>.activity.jsonl<br/><i>Flux inaltérable des événements bruts</i>")]
 
     J ==>|"Lecture des traces post-séance"| A["<b>5. AUDIT &amp; VALORISATION</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches 15 min, double radar &amp; 12 doubles-profils</i>"]
 
