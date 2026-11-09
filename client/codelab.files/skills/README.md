@@ -168,18 +168,37 @@ Chaque fiche d'évaluation individuelle intègre deux diagrammes radar compléme
 
 2. **Radar des Profils Types Didactiques (/20)** : projette le comportement d'apprentissage sur 3 couples d'archétypes opposés deux à deux à 180° :
 
-```
-             👑 Le Boss
-                 ▲
-  ⚡ Le Casse-cou│  🔨 L'Artisan
-          \      │    /
-           \     │   /
-    ─────────────┼─────────────
-           /     │   \
-          /      │    \
-    🤖 Le Cyborg │  🏴‍☠️ Le Pirate
-                 ▼
-          🚪 Le Décrocheur
+```mermaid
+%%{init: {'themeVariables': { 'fontSize': '13px' }}}%%
+flowchart LR
+    classDef boss fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#065f46;
+    classDef decroch fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#991b1b;
+    classDef artisan fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e40af;
+    classDef cyborg fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e;
+    classDef casse fill:#fdf4ff,stroke:#c026d3,stroke-width:2px,color:#86198f;
+    classDef pirate fill:#f8fafc,stroke:#475569,stroke-width:2px,color:#1e293b;
+
+    subgraph AXE1 ["Axe 0 ↔ Axe 3 : Maîtrise & Autonomie vs Abandon Silencieux"]
+        direction LR
+        B["👑 <b>Le Boss</b><br/><i>Résolution directe & maîtrise</i>"] <======> D["🚪 <b>Le Décrocheur</b><br/><i>Inactivité & renoncement</i>"]
+    end
+
+    subgraph AXE2 ["Axe 1 ↔ Axe 4 : Démarche Authentique vs Délégation Externe"]
+        direction LR
+        A["🔨 <b>L'Artisan</b><br/><i>Saisie manuelle & démarche itérative</i>"] <======> C["🤖 <b>Le Cyborg</b><br/><i>Injections massives & recours IA</i>"]
+    end
+
+    subgraph AXE3 ["Axe 2 ↔ Axe 5 : Combat avec le Code vs Copie / Collusion"]
+        direction LR
+        K["⚡ <b>Le Casse-cou</b><br/><i>Acharnement stérile & runs impulsifs</i>"] <======> P["🏴‍☠️ <b>Le Pirate</b><br/><i>Import direct & transferts de fichiers</i>"]
+    end
+
+    class B boss;
+    class D decroch;
+    class A artisan;
+    class C cyborg;
+    class K casse;
+    class P pirate;
 ```
 
 > [!NOTE]

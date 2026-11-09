@@ -436,20 +436,13 @@ def build_docx():
         "L'audit classe automatiquement les étudiants selon 6 profils didactiques types articulés autour de la matrice d'authenticité et de vélocité, et les projette sur un diagramme radar Mermaid (radar-beta) opposés deux à deux à 180° :"
     )
 
-    add_code_box(
+    add_callout(
         doc,
-        "             👑 Le Boss (12h)\n"
-        "                   ▲\n"
-        "  ⚡ Le Casse-cou  │  🔨 L'Artisan (2h)\n"
-        "        (10h) \\    │    /\n"
-        "               \\   │   /\n"
-        "    ────────────┼────────────\n"
-        "               /   │   \\\n"
-        "        (8h)  /    │    \\  (4h)\n"
-        "    🤖 Le Cyborg   │  🏴‍☠️ Le Pirate\n"
-        "                   ▼\n"
-        "          🚪 Le Décrocheur (6h)",
-        caption="Projection des 6 profils didactiques sur 3 axes opposés deux à deux à 180°"
+        "Opposition des 3 Couples Didactiques à 180° sur le Radar :\n"
+        "• Axe 0 ⟷ Axe 3 : 👑 Le Boss ⟷ 🚪 Le Décrocheur (Aisance & Autonomie vs Abandon Silencieux)\n"
+        "• Axe 1 ⟷ Axe 4 : 🔨 L'Artisan ⟷ 🤖 Le Cyborg (Démarche Authentique vs Délégation Externe)\n"
+        "• Axe 2 ⟷ Axe 5 : ⚡ Le Casse-cou ⟷ 🏴‍☠️ Le Pirate (Combat avec le Code vs Copie / Collusion)",
+        "INFO"
     )
 
     table_axes = doc.add_table(rows=4, cols=4)
