@@ -17,16 +17,17 @@ Le système sépare clairement l'architecture en deux canaux complémentaires ar
 1. **Le Canal Temps Réel** (pendant la séance de TP) : boucle réactive ultra-légère entre l'étudiant, le serveur Rust et le superviseur tuteur pour la détection proactive et l'accompagnement pédagogique.
 2. **Le Canal Différé** (après la séance de TP) : analyse longitudinale approfondie, classification des comportements et projection des doubles-profils didactiques à partir du journal inaltérable.
 
-#### Pipeline Unifié des Deux Canaux de Traitement
+#### Pipeline des Deux Canaux de Traitement
 
 ```mermaid
+%%{init: {'themeVariables': { 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff' }}}%%
 flowchart TD
     E["<b>1. COLLECTE EN SÉANCE</b><br/>Client Étudiant Java<br/><i>Frappes, focus, runs, collages qualifiés</i>"]
     -->|"Sondes d'activité légères (≤ 1 Ko/min)"| S["<b>2. CALCULS &amp; ALERTES EN DIRECT</b><br/>Serveur Rust Asynchrone<br/><i>Diff Myers, calcul direct S_auth &amp; I_nav, alertes</i>"]
 
-    S -->|"⚡ Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Poste Superviseur Tuteur<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
+    S -->|"Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Poste Superviseur Tuteur<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
 
-    S ==>|"📊 Canal Différé (Append-only)"| J[("<b>4. JOURNAL IMMUABLE</b><br/>Fichier .activity.jsonl<br/><i>Flux inaltérable des événements bruts</i>")]
+    S ==>|"Canal Différé (Append-only)"| J[("<b>4. JOURNALISATION</b><br/>Fichier .activity.jsonl<br/><i>Flux des événements bruts</i>")]
 
     J ==>|"Lecture des traces post-séance"| A["<b>5. AUDIT &amp; VALORISATION</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches 15 min, double radar &amp; 12 doubles-profils</i>"]
 
@@ -70,6 +71,7 @@ flowchart TD
 Les observables constituent le socle factuel et inaltérable de la traçabilité. Ils sont stockés chronologiquement dans `sessions/<session>/<login>/.activity.jsonl`.
 
 ```mermaid
+%%{init: {'themeVariables': { 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff' }}}%%
 flowchart TD
     subgraph Client["Poste Étudiant (Client Java)"]
         K["Frappe Clavier & Backspaces"] -->|À la sauvegarde| E1["TYPING"]
@@ -245,6 +247,7 @@ Ces indicateurs sont transmis aux postes superviseurs dans la structure `UserDat
 ### B. Matrice des Alertes Détectées en Flux Continu
 
 ```mermaid
+%%{init: {'themeVariables': { 'edgeLabelBackground': '#ffffff', 'tertiaryColor': '#ffffff' }}}%%
 flowchart TD
     E[Observable Entrant] --> C1{Type ?}
 
