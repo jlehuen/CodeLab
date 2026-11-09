@@ -493,16 +493,16 @@ def build_docx():
 
     table_cross = doc.add_table(rows=7, cols=7)
     cross_widths = [Inches(1.1)] + [Inches(0.95)] * 6
-    cross_headers = ["Profils", "👑 Boss", "🔨 Artisan", "⚡ Casse-cou", "🤖 Cyborg", "🚪 Décroch.", "🏴‍☠️ Pirate"]
+    cross_headers = ["Profils", "👑 Boss", "🔨 Artisan", "⚡ Casse-cou", "🚪 Décroch.", "🤖 Cyborg", "🏴‍☠️ Pirate"]
     for i, h in enumerate(cross_headers): table_cross.cell(0, i).paragraphs[0].text = h
 
     cross_data = [
-        ["👑 Boss", "(Profil pur)", "Architecte Méthodique", "Hacker Instinctif", "Ingénieur Augmenté", "❌ Antagoniste", "Éclaireur Partageur"],
-        ["🔨 Artisan", "Architecte Méthodique", "(Profil pur)", "Travailleur Acharné", "❌ Antagoniste", "Apprenti Hésitant", "Artisan s/ Influence"],
-        ["⚡ Casse-cou", "Hacker Instinctif", "Travailleur Acharné", "(Profil pur)", "Apprenti Sorcier", "Épuisé Découragé", "❌ Antagoniste"],
-        ["🤖 Cyborg", "Ingénieur Augmenté", "❌ Antagoniste", "Apprenti Sorcier", "(Profil pur)", "Délégataire Passif", "Contrebandier Num."],
-        ["🚪 Décroch.", "❌ Antagoniste", "Apprenti Hésitant", "Épuisé Découragé", "Délégataire Passif", "(Profil pur)", "Copiste de Survie"],
-        ["🏴‍☠️ Pirate", "Éclaireur Partageur", "Artisan s/ Influence", "❌ Antagoniste", "Contrebandier Num.", "Copiste de Survie", "(Profil pur)"]
+        ["👑 Boss", "(Profil pur)", "Architecte Méthodique", "Hacker Instinctif", "❌ Antagoniste", "Ingénieur Augmenté", "Éclaireur Partageur"],
+        ["🔨 Artisan", "Architecte Méthodique", "(Profil pur)", "Travailleur Acharné", "Apprenti Hésitant", "❌ Antagoniste", "Artisan s/ Influence"],
+        ["⚡ Casse-cou", "Hacker Instinctif", "Travailleur Acharné", "(Profil pur)", "Épuisé Découragé", "Apprenti Sorcier", "❌ Antagoniste"],
+        ["🚪 Décroch.", "❌ Antagoniste", "Apprenti Hésitant", "Épuisé Découragé", "(Profil pur)", "Délégataire Passif", "Copiste de Survie"],
+        ["🤖 Cyborg", "Ingénieur Augmenté", "❌ Antagoniste", "Apprenti Sorcier", "Délégataire Passif", "(Profil pur)", "Contrebandier Num."],
+        ["🏴‍☠️ Pirate", "Éclaireur Partageur", "Artisan s/ Influence", "❌ Antagoniste", "Copiste de Survie", "Contrebandier Num.", "(Profil pur)"]
     ]
 
     for r_idx, row in enumerate(cross_data, start=1):

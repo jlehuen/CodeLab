@@ -498,19 +498,24 @@ Si l'écart est supérieur à 3.5 points, l'étudiant conserve son statut de pro
 
 #### 3. Tableau de Croisement des Profils de Base (Matrice 6 × 6)
 
-Le tableau à double entrée ci-dessous synthétise l'ensemble des croisements possibles entre les 6 profils didactiques élémentaires :
-- La **diagonale** correspond aux étudiants au profil pur exclusif (monoprofil).
-- Les **cases antagonistes** (marquées ❌) correspondent aux pôles diamétralement opposés à 180° sur le radar, mutuellement exclusifs par construction métrique.
-- Les **12 cases restantes** (symétriques) définissent les doubles-profils hybrides et leur surnom didactique :
+Le tableau à double entrée ci-dessous synthétise l'ensemble des croisements possibles entre les 6 profils didactiques élémentaires, structuré selon les deux grands pôles didactiques :
+- Les **3 profils de production personnelle active** : 👑 **Le Boss**, 🔨 **L'Artisan**, ⚡ **Le Casse-cou** (l'étudiant tape et combat son code lui-même).
+- Les **3 profils d'évitement ou de rupture** : 🚪 **Le Décrocheur**, 🤖 **Le Cyborg**, 🏴‍☠️ **Le Pirate** (l'étudiant ne produit pas son code de manière autonome).
 
-| Profils croisés | 👑 **Le Boss** | 🔨 **L'Artisan** | ⚡ **Le Casse-cou** | 🤖 **Le Cyborg** | 🚪 **Le Décrocheur** | 🏴‍☠️ **Le Pirate** |
+Cette disposition confère au tableau une lisibilité immédiate :
+- **La diagonale** correspond aux étudiants au profil pur exclusif (*monoprofil*).
+- **Le quadrant supérieur gauche (3 × 3)** rassemble les hybridations vertueuses de ceux qui codent eux-mêmes (*Architecte Méthodique, Hacker Instinctif, Travailleur Acharné*).
+- **Le quadrant inférieur droit (3 × 3)** regroupe les hybridations d'échec, de passivité ou de contournement (*Délégataire Passif, Copiste de Survie, Contrebandier Numérique*).
+- **Les cases antagonistes (❌)** correspondent aux pôles diamétralement opposés à 180° sur le radar (*Boss vs Décrocheur*, *Artisan vs Cyborg*, *Casse-cou vs Pirate*), mutuellement exclusifs par construction métrique, qui s'alignent sur une diagonale parfaite.
+
+| Profils croisés | 👑 **Le Boss** | 🔨 **L'Artisan** | ⚡ **Le Casse-cou** | 🚪 **Le Décrocheur** | 🤖 **Le Cyborg** | 🏴‍☠️ **Le Pirate** |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| 👑 **Le Boss** | *(Profil pur)* | **L'Architecte Méthodique** | **Le Hacker Instinctif** | **L'Ingénieur Augmenté** | ❌ *Antagoniste (180°)* | **L'Éclaireur Partageur** |
-| 🔨 **L'Artisan** | **L'Architecte Méthodique** | *(Profil pur)* | **Le Travailleur Acharné** | ❌ *Antagoniste (180°)* | **L'Apprenti Hésitant** | **L'Artisan Sous Influence** |
-| ⚡ **Le Casse-cou** | **Le Hacker Instinctif** | **Le Travailleur Acharné** | *(Profil pur)* | **L'Apprenti Sorcier** | **L'Épuisé Découragé** | ❌ *Antagoniste (180°)* |
-| 🤖 **Le Cyborg** | **L'Ingénieur Augmenté** | ❌ *Antagoniste (180°)* | **L'Apprenti Sorcier** | *(Profil pur)* | **Le Délégataire Passif** | **Le Contrebandier Numérique** |
-| 🚪 **Le Décrocheur** | ❌ *Antagoniste (180°)* | **L'Apprenti Hésitant** | **L'Épuisé Découragé** | **Le Délégataire Passif** | *(Profil pur)* | **Le Copiste de Survie** |
-| 🏴‍☠️ **Le Pirate** | **L'Éclaireur Partageur** | **L'Artisan Sous Influence** | ❌ *Antagoniste (180°)* | **Le Contrebandier Numérique** | **Le Copiste de Survie** | *(Profil pur)* |
+| 👑 **Le Boss** | *(Profil pur)* | **L'Architecte Méthodique** | **Le Hacker Instinctif** | ❌ *Antagoniste (180°)* | **L'Ingénieur Augmenté** | **L'Éclaireur Partageur** |
+| 🔨 **L'Artisan** | **L'Architecte Méthodique** | *(Profil pur)* | **Le Travailleur Acharné** | **L'Apprenti Hésitant** | ❌ *Antagoniste (180°)* | **L'Artisan Sous Influence** |
+| ⚡ **Le Casse-cou** | **Le Hacker Instinctif** | **Le Travailleur Acharné** | *(Profil pur)* | **L'Épuisé Découragé** | **L'Apprenti Sorcier** | ❌ *Antagoniste (180°)* |
+| 🚪 **Le Décrocheur** | ❌ *Antagoniste (180°)* | **L'Apprenti Hésitant** | **L'Épuisé Découragé** | *(Profil pur)* | **Le Délégataire Passif** | **Le Copiste de Survie** |
+| 🤖 **Le Cyborg** | **L'Ingénieur Augmenté** | ❌ *Antagoniste (180°)* | **L'Apprenti Sorcier** | **Le Délégataire Passif** | *(Profil pur)* | **Le Contrebandier Numérique** |
+| 🏴‍☠️ **Le Pirate** | **L'Éclaireur Partageur** | **L'Artisan Sous Influence** | ❌ *Antagoniste (180°)* | **Le Copiste de Survie** | **Le Contrebandier Numérique** | *(Profil pur)* |
 
 #### 4. Matrice Détaillée des 12 Doubles-Profils Didactiques Hybrides
 
