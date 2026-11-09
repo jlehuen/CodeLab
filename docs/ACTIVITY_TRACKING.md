@@ -26,7 +26,7 @@ flowchart TD
 
     S -->|"⚡ Canal Temps Réel (MsgPack)"| T["<b>3. SUPERVISION EN DIRECT</b><br/>Poste Superviseur Tuteur<br/><i>Badges hiérarchisés &amp; infobulles au survol</i>"]
 
-    S ==>|"📊 Canal Différé (Append-only)"| J[("<b>4. JOURNAL IMMUABLE</b><br/>.activity.jsonl<br/><i>Flux inaltérable des événements bruts</i>")]
+    S ==>|"📊 Canal Différé (Append-only)"| J[("<b>4. JOURNAL IMMUABLE</b><br/>Fichier .activity.jsonl<br/><i>Flux inaltérable des événements bruts</i>")]
 
     J ==>|"Lecture des traces post-séance"| A["<b>5. AUDIT &amp; VALORISATION</b><br/>Moteur Analytics Python (activity_analyzer.py)<br/><i>Tranches 15 min, double radar &amp; 12 doubles-profils</i>"]
 
