@@ -56,6 +56,14 @@ flowchart TD
     C1 ==>|"<span style='font-size:13px'><b>Journalisation append-only continue sur disque</b></span>"| C2
 ```
 
+### Architecture Logicielle en 3 Niveaux & Références du Code
+
+| Échelon | Technologie | Responsabilités & Périmètre | Fichiers Clés du Projet |
+| :--- | :--- | :--- | :--- |
+| **Niveau 1 : Client Java** | Java 17 LTS / Swing / RSyntaxTextArea / IPYNB | Captation discrète des gestes étudiants (clavier, presse-papier interne/externe, focus, exécutions, glisser-déposer), restitution visuelle en classe (table `UserTable`, infobulles, actions d'acquittement). | [`CodelabClient.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/client/CodelabClient.java)<br>[`CodeLabTextArea.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/text/CodeLabTextArea.java)<br>[`NotebookCellPane.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/notebook/NotebookCellPane.java)<br>[`UserTable.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/usertable/UserTable.java) |
+| **Niveau 2 : Serveur Rust** | Rust / Tokio Asynchrone / crate `similar` | Calcul du diff textuel à la sauvegarde, calcul incrémental en mémoire de $S_{\text{auth}}$ et $I_{\text{nav}}$, moteur d'alertes instantanées, automate d'auto-clear contextuel, journalisation append-only `.activity.jsonl`, broadcast MsgPack aux tuteurs. | [`activity.rs`](file:///Users/lehuen/dev/codelab/server/server/src/activity.rs)<br>[`client.rs`](file:///Users/lehuen/dev/codelab/server/server/src/client.rs)<br>[`connected.rs`](file:///Users/lehuen/dev/codelab/server/server/src/connected.rs)<br>[`handler.rs`](file:///Users/lehuen/dev/codelab/server/server/src/handler.rs) |
+| **Niveau 3 : Moteur Python & Post-Traitement** | Python 3 / AST / Mermaid / Winnowing | Audit a posteriori de session, tranches glissantes de 15 min, double radar Mermaid `radar-beta`, classification selon les 6 profils types et 12 doubles-profils hybrides, radar de cohorte, génération des rapports individuels et synthèses. | [`activity_analyzer.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/activity_analyzer.py)<br>[`eval_codelab.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/eval_codelab.py)<br>[`generate_session_test.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/generate_session_test.py) |
+
 ### Principes Fondamentaux de Conception
 
 1. **Faible Empreinte & Performance Critique** :
@@ -74,6 +82,28 @@ flowchart TD
 
 Les observables constituent le socle factuel et inaltérable de la traçabilité. Ils sont stockés chronologiquement dans `sessions/<session>/<login>/.activity.jsonl`.
 
+```mermaid
+flowchart TD
+    subgraph Client["Poste Étudiant (Client Java)"]
+        K["Frappe Clavier & Backspaces"] -->|À la sauvegarde| E1["TYPING"]
+        C["Ctrl+C / Ctrl+X Interne"] -.->|Tampon LRU| P["Ctrl+V (Paste)"]
+        P -->|Test isInternalCopy| E2["PASTE (internal: true/false)"]
+        F["Changement de Fenêtre OS"] -->|WindowFocusListener| E3["FOCUS (LOST / GAINED)"]
+        R["Bouton Exécuter / Compiler"] -->|Process runner| E4["COMPILE / EXECUTE"]
+        D["Glisser-Déposer OS"] -->|FileTransferHandler| E5["FILE_DROP"]
+    end
+
+    subgraph Serveur["Serveur Rust (Tokio)"]
+        S["Sauvegarde de Fichier"] -->|Diff Myers similar| E6["EDIT (+L / -L / chunk_max / dt)"]
+        H["Appel / Fin d'aide tuteur"] --> E7["HELP (REQUESTED / RESOLVED)"]
+        O["Création / Renommage"] --> E8["FILE_OP (CREATE / RENAME)"]
+        V["Ouverture de fichier"] --> E9["VIEW"]
+        N["Connexion réseau"] --> E10["SESSION (CONNECTED / DISCONNECTED)"]
+    end
+
+    E1 & E2 & E3 & E4 & E5 & E6 & E7 & E8 & E9 & E10 --> J[(".activity.jsonl (Journal Append-Only)")]
+```
+
 ### Matrice des Primitives Télémétriques
 
 | Type d'Événement | Origine | Point d'ancrage Code Source | Description & Déclencheur |
@@ -81,11 +111,11 @@ Les observables constituent le socle factuel et inaltérable de la traçabilité
 | `SESSION` | Serveur | [`handler.rs`](file:///Users/lehuen/dev/codelab/server/server/src/handler.rs) | Connexion (`CONNECTED`) avec IP source ou déconnexion (`DISCONNECTED`) avec durée totale. |
 | `VIEW` | Serveur | [`handler.rs`](file:///Users/lehuen/dev/codelab/server/server/src/handler.rs) | Consultation ou ouverture d'un document (sujet Markdown, fichier source, documentation). |
 | `FILE_OP` | Serveur | [`handler.rs`](file:///Users/lehuen/dev/codelab/server/server/src/handler.rs) | Manipulation de structure : création (`CREATE`), suppression (`DELETE`), renommage (`RENAME`). |
-| `FILE_DROP` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Glisser-déposer d'un fichier externe depuis le bureau de l'OS ou un support amovible. |
-| `TYPING` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Frappes réelles cumulées (`typed_chars`) et corrections (`backspaces`) dédupliquées par fenêtre d'édition. |
-| `FOCUS` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Alt-Tab ou changement d'application : perte (`LOST`) et reprise (`GAINED`) avec durée d'absence. |
-| `PASTE` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Opération Ctrl+V / Cmd+V avec volume de caractères et lignes, qualifié en externe ou interne (`internal: true` si copié depuis CodeLab pour préserver $S_{auth}$). |
-| `EDIT` | Serveur | [`activity.rs`](file:///Users/lehuen/dev/codelab/server/server/src/activity.rs) | Diff textuel unifié à la sauvegarde : lignes ajoutées/supprimées, taille du plus grand bloc (`chunk_max`). |
+| `FILE_DROP` | Client | [`FileTransferHandler.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/manager/FileTransferHandler.java) | Glisser-déposer d'un fichier externe depuis le bureau de l'OS ou un support amovible. |
+| `TYPING` | Client | [`CodeLabTextArea.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/text/CodeLabTextArea.java#L508-L515) / [`NotebookCellPane.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/notebook/NotebookCellPane.java) | Frappes réelles cumulées (`typed_chars`) et corrections (`backspaces`) dédupliquées par fenêtre d'édition. |
+| `FOCUS` | Client | [`CodelabClient.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/client/CodelabClient.java#L1299-L1311) | Alt-Tab ou changement d'application : perte (`LOST`) et reprise (`GAINED`) avec durée d'absence. |
+| `PASTE` | Client | [`CodeLabTextArea.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/text/CodeLabTextArea.java#L533-L557) / [`NotebookCellPane.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/modules/editeur/notebook/NotebookCellPane.java) | Opération Ctrl+V / Cmd+V avec volume de caractères et lignes, qualifié en externe ou interne (`internal: true` si copié depuis CodeLab pour préserver $S_{auth}$). |
+| `EDIT` | Serveur | [`activity.rs`](file:///Users/lehuen/dev/codelab/server/server/src/activity.rs#L503-L598) | Diff textuel unifié à la sauvegarde : lignes ajoutées/supprimées, taille du plus grand bloc (`chunk_max`). |
 | `COMPILE` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Verdict compilateur (`OK`, `ERROR`), durée de compilation et extrait de diagnostic. |
 | `EXECUTE` | Client | [`AbstractCodeLab.java`](file:///Users/lehuen/dev/codelab/client/src/codelab/AbstractCodeLab.java) | Cycle d'exécution (`STARTED`, `DONE`, `ERROR`, `HALTED`), code retour et diagnostic d'erreur/traceback. |
 | `HELP` | Serveur | [`handler.rs`](file:///Users/lehuen/dev/codelab/server/server/src/handler.rs) | Cycle d'appel tuteur : demande (`REQUESTED`), annulation (`CANCELLED`), résolution (`RESOLVED`). |
@@ -215,14 +245,41 @@ Le serveur Rust évalue en temps réel chaque observable reçu au sein de son mo
 ### A. Indicateurs Calculés en Direct par le Serveur Rust
 
 Sans dépendre d'aucun interpréteur externe, le serveur calcule de manière incrémentale :
-* **Score d'Authenticité en direct (S_auth)** : rapport continu entre les caractères issus de la frappe clavier réelle et le volume total intégrant collages et bursts.
-* **Taux de Navette Hors IDE (I_nav)** : ratio de temps passé hors focus applicatif par rapport à la durée totale écoulée.
+* **Score d'Authenticité en direct ($S_{\text{auth}}$)** : rapport continu entre les caractères issus de la frappe clavier réelle et le volume total intégrant collages externes et bursts :
+  $$S_{\text{auth}} = \frac{K_{\text{typing}}}{K_{\text{typing}} + C_{\text{paste\_ext}} + (L_{\text{burst}} \times 30)} \times 100$$
+  - **Immunité des collages internes (`internal: true`)** : les caractères copiés/collés depuis CodeLab sont comptabilisés à part (`internal_pasted_chars`) et **n'entrent pas au dénominateur**, préservant le score d'authenticité de l'étudiant lors de réorganisations ou de duplications légitimes.
+  - **État sentinelle d'attente (`-1.0`)** : tant que l'étudiant n'a effectué aucune frappe ni collage, $S_{\text{auth}} = -1.0$ (restitué sous la forme `• Authenticité : -- (En attente d'activité)` en gris neutre dans l'IHM, éliminant tout faux 100 %).
+* **Taux de Navette Hors IDE ($I_{\text{nav}}$)** : ratio de temps passé hors focus applicatif par rapport à la durée totale écoulée.
 * **Compteur d'Acharnement** : suivi des échecs consécutifs sans succès intermédiaire.
 * **Replay Résilient** : en cas de reconnexion d'un étudiant ou de redémarrage du serveur, l'état `StudentLiveStatus` est automatiquement reconstruit en quelques millisecondes à partir du journal local `.activity.jsonl`.
 
 Ces indicateurs sont transmis aux postes superviseurs dans la structure `UserData` (`s_auth`, `i_nav`) et consultables en temps réel dans l'infobulle de chaque étudiant.
 
 ### B. Matrice des Alertes Détectées en Flux Continu
+
+```mermaid
+flowchart TD
+    E[Observable Entrant] --> C1{Type ?}
+
+    C1 -->|EDIT| B1{chunk_max ≥ 20L en ≤ 15s<br>OU nouveau fichier ≥ 25L ?}
+    B1 -->|Oui| A1["🚨 BURST (Sévérité CRIT)"]
+    B1 -->|Non| AC1{Modification ≥ 3 lignes ?}
+    AC1 -->|Oui| CL["Auto-Clear : Extinction THRASH"]
+
+    C1 -->|PASTE| B2{internal == false<br>ET lines ≥ 15 OU chars ≥ 400 ?}
+    B2 -->|Oui| A2["📋 PASTE (Sévérité WARN)"]
+    B2 -->|internal == true| NOP["Ignoré (Refactoring interne)"]
+
+    C1 -->|COMPILE / EXECUTE| B3{Status == ERROR ?}
+    B3 -->|Oui| B4{3 échecs consécutifs ?}
+    B4 -->|Oui| A3["⚠️ THRASH (Sévérité WARN)"]
+    B3 -->|Status == OK / DONE| CL
+
+    C1 -->|FILE_DROP| A4["📥 DROP (Sévérité WARN)"]
+
+    A1 & A2 & A3 & A4 --> H["Agrégation HashMap&lt;String, LiveAlert&gt;"]
+    H --> T["Broadcast MsgPack vers UserTable (Supervision Tuteur)"]
+```
 
 | Code Alerte | Niveau de Sévérité | Condition de Déclenchement | Règle d'Extinction (*Auto-Clear*) |
 | :---: | :---: | :--- | :--- |
