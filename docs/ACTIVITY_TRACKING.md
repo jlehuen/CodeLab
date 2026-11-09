@@ -17,43 +17,46 @@ Le système sépare clairement l'architecture en deux canaux complémentaires :
 1. **Le Canal Temps Réel** (séance de TP) : boucle réactive ultra-légère entre l'étudiant, le serveur Rust et le tuteur.
 2. **Le Canal Différé** (après la séance) : analyse longitudinale approfondie à partir du journal inaltérable.
 
-#### Vue Synthétique : Le Pipeline en 3 Temps
+#### Vue Synthétique : Le Pipeline Global
 
 ```mermaid
-%%{init: {'themeVariables': { 'fontSize': '11px' }}}%%
 flowchart LR
-    classDef default font-size:11px;
-
     A["<b>1. COLLECTE</b><br/>Client Étudiant<br/><i>Frappes, Collages, Runs</i>"] 
-    -->|"<small>≤ 1 Ko/min</small>"| B["<b>2. CALCULS</b><br/>Serveur Rust (Natif)<br/><i>Diffs, S_auth direct, Alertes</i>"]
+    -->|"≤ 1 Ko/min"| B["<b>2. CALCULS</b><br/>Serveur Rust<br/><i>Diffs, S_auth direct, Alertes</i>"]
     
-    B -->|"<small>Diffusion MsgPack</small>"| C["<b>3. SUPERVISION</b><br/>Poste Tuteur (UserTable)<br/><i>Badges &amp; Infobulle</i>"]
+    B -->|"Diffusion MsgPack"| C["<b>3. SUPERVISION</b><br/>Poste Tuteur (UserTable)<br/><i>Badges &amp; Infobulle</i>"]
     
-    B -.->|"<small>Journal immuable</small>"| D["<b>4. AUDIT DIFFÉRÉ</b><br/>Skills Python / CDK<br/><i>Radars &amp; Fenêtres 15m</i>"]
+    B -.->|"Journal inaltérable"| D["<b>4. AUDIT DIFFÉRÉ</b><br/>Skills Python / CDK<br/><i>Radars &amp; Fenêtres 15m</i>"]
 ```
 
 #### Vue Fonctionnelle : Les Deux Canaux d'Exploitation
 
 ```mermaid
-%%{init: {'themeVariables': { 'fontSize': '14px' }}}%%
 flowchart TD
-    classDef default font-size:13px;
-
     subgraph C1 ["⚡ CANAL 1 : SUPERVISION TEMPS RÉEL (Pendant la séance)"]
-        direction TB
-        E["<span style='font-size:16px'><b>1. ÉTUDIANT (Client Java Swing)</b></span><br/>────────────────────────────────────────────<br/>Édition de code en direct, frappes clavier, sorties de focus, runs &amp; tests"]
-        -->|"<span style='font-size:12px'>Sondes d'activité légères (≤ 1 Ko/min)</span>"| S["<span style='font-size:16px'><b>2. SERVEUR RUST ASYNCHRONE (Tokio)</b></span><br/>────────────────────────────────────────────<br/>• Traçabilité continue, calcul incrémental de S_auth et I_nav en direct<br/>• Détection continue des alertes : BURST, THRASH, PASTE, DROP<br/>• Automate d'auto-extinction contextuel d'alerte (Auto-Clear)"]
-        -->|"<span style='font-size:12px'>Diffusion instantanée d'état (MsgPack)</span>"| T["<span style='font-size:16px'><b>3. POSTE TUTEUR (Tableau de Bord UserTable)</b></span><br/>────────────────────────────────────────────<br/>• Badges compacts hiérarchisés : 🚨 Burst (+1), ⚠️ Blocage<br/>• Suivi temps réel du score d'authenticité et temps hors IDE<br/>• Infobulle HTML multi-lignes détaillée avec historique au survol"]
+        direction LR
+        E["<b>1. Client Étudiant</b><br/>Java Swing / IPYNB<br/><i>Frappes, focus, runs</i>"]
+        -->|"Sondes d'activité<br/>(≤ 1 Ko/min)"| S["<b>2. Serveur Rust</b><br/>Tokio asynchrone<br/><i>Calcul S_auth &amp; alertes</i>"]
+        -->|"Diffusion temps réel<br/>(MsgPack)"| T["<b>3. Poste Tuteur</b><br/>Table UserTable<br/><i>Badges &amp; infobulles</i>"]
     end
+
+    S ==>|"Persistance continue<br/>(Append-only)"| J[("<b>Journal Immuable</b><br/><i>.activity.jsonl</i><br/>Traçabilité inaltérable")]
+
+    J ==>|"Lecture des traces<br/>post-séance"| A
 
     subgraph C2 ["📊 CANAL 2 : AUDIT DIFFÉRÉ (Après la séance)"]
-        direction TB
-        J[("<span style='font-size:16px'><b>Journal d'Activité Immuable (.activity.jsonl)</b></span><br/>────────────────────────────────────────────<br/>Fichiers d'événements append-only sécurisés persistés sur disque")]
-        -->|"<span style='font-size:12px'>Chargement des traces d'activité</span>"| A["<span style='font-size:16px'><b>4. MOTEUR D'AUDIT &amp; ANALYTICS (Python / CDK)</b></span><br/>────────────────────────────────────────────<br/>• Segmentation en fenêtres glissantes d'activité (15 minutes)<br/>• Classification automatisée selon les 6 profils didactiques types"]
-        -->|"<span style='font-size:12px'>Génération de la synthèse pédagogique</span>"| R["<span style='font-size:16px'><b>5. BILAN PÉDAGOGIQUE &amp; RESTITUTION</b></span><br/>────────────────────────────────────────────<br/>• Double diagramme radar Mermaid étalonné sur 20 points<br/>• Valorisation formative de la démarche d'apprentissage et de l'effort"]
+        direction LR
+        A["<b>4. Moteur d'Audit</b><br/>Python 3 &amp; AST<br/><i>Fenêtres 15 min &amp; profils</i>"]
+        -->|"Génération fiches<br/>&amp; synthèses"| R["<b>5. Bilan Didactique</b><br/>Double radar Mermaid<br/><i>12 doubles-profils</i>"]
     end
 
-    C1 ==>|"<span style='font-size:13px'><b>Journalisation append-only continue sur disque</b></span>"| C2
+    classDef canal1 fill:#EBF3FB,stroke:#1B365D,stroke-width:1.5px,color:#1B365D;
+    classDef canal2 fill:#F4ECF8,stroke:#5D1B8C,stroke-width:1.5px,color:#5D1B8C;
+    classDef journal fill:#FFF8E7,stroke:#B8860B,stroke-width:2px,color:#8B6508;
+
+    class E,S,T canal1;
+    class A,R canal2;
+    class J journal;
 ```
 
 ### Architecture Logicielle en 3 Niveaux & Références du Code
