@@ -486,7 +486,33 @@ def build_docx():
         "3. Proximité des affinités : L'écart entre les deux scores est resserré (|S1 - S2| ≤ 3.5 points), garantissant que les deux dimensions sont au coude-à-coude et motrices dans la séance."
     )
 
-    doc.add_heading("Matrice des 12 Doubles-Profils Didactiques Hybrides", level=2)
+    doc.add_heading("Tableau de Croisement des Profils de Base (Matrice 6 × 6)", level=2)
+    doc.add_paragraph(
+        "Ce tableau à double entrée croise les 6 profils didactiques élémentaires. La diagonale correspond aux profils purs exclusifs, les cases marquées [X] aux oppositions strictes à 180° sur le radar (mutuellement exclusives par orthogonalité), et les autres cases aux 12 doubles-profils hybrides remarquables :"
+    )
+
+    table_cross = doc.add_table(rows=7, cols=7)
+    cross_widths = [Inches(1.1)] + [Inches(0.95)] * 6
+    cross_headers = ["Profils", "👑 Boss", "🔨 Artisan", "⚡ Casse-cou", "🤖 Cyborg", "🚪 Décroch.", "🏴‍☠️ Pirate"]
+    for i, h in enumerate(cross_headers): table_cross.cell(0, i).paragraphs[0].text = h
+
+    cross_data = [
+        ["👑 Boss", "(Profil pur)", "Architecte Méthodique", "Hacker Instinctif", "Ingénieur Augmenté", "❌ Antagoniste", "Éclaireur Partageur"],
+        ["🔨 Artisan", "Architecte Méthodique", "(Profil pur)", "Travailleur Acharné", "❌ Antagoniste", "Apprenti Hésitant", "Artisan s/ Influence"],
+        ["⚡ Casse-cou", "Hacker Instinctif", "Travailleur Acharné", "(Profil pur)", "Apprenti Sorcier", "Épuisé Découragé", "❌ Antagoniste"],
+        ["🤖 Cyborg", "Ingénieur Augmenté", "❌ Antagoniste", "Apprenti Sorcier", "(Profil pur)", "Délégataire Passif", "Contrebandier Num."],
+        ["🚪 Décroch.", "❌ Antagoniste", "Apprenti Hésitant", "Épuisé Découragé", "Délégataire Passif", "(Profil pur)", "Copiste de Survie"],
+        ["🏴‍☠️ Pirate", "Éclaireur Partageur", "Artisan s/ Influence", "❌ Antagoniste", "Contrebandier Num.", "Copiste de Survie", "(Profil pur)"]
+    ]
+
+    for r_idx, row in enumerate(cross_data, start=1):
+        for c_idx, val in enumerate(row):
+            table_cross.cell(r_idx, c_idx).paragraphs[0].text = val
+
+    make_table_responsive(table_cross, cross_widths)
+    doc.add_paragraph()
+
+    doc.add_heading("Matrice Détaillée des 12 Doubles-Profils Didactiques Hybrides", level=2)
 
     table_hyb = doc.add_table(rows=13, cols=4)
     hyb_widths = [Inches(1.4), Inches(1.3), Inches(2.2), Inches(1.9)]

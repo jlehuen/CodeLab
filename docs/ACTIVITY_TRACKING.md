@@ -496,7 +496,23 @@ Le moteur d'audit [`activity_analyzer.py`](file:///Users/lehuen/dev/codelab/clie
 
 Si l'écart est supérieur à 3.5 points, l'étudiant conserve son statut de profil dominant unique (avec simple composante secondaire mentionnée si $S_2 \ge 10.0$).
 
-#### 3. Matrice des 12 Doubles-Profils Didactiques Hybrides
+#### 3. Tableau de Croisement des Profils de Base (Matrice 6 × 6)
+
+Le tableau à double entrée ci-dessous synthétise l'ensemble des croisements possibles entre les 6 profils didactiques élémentaires :
+- La **diagonale** correspond aux étudiants au profil pur exclusif (monoprofil).
+- Les **cases antagonistes** (marquées ❌) correspondent aux pôles diamétralement opposés à 180° sur le radar, mutuellement exclusifs par construction métrique.
+- Les **12 cases restantes** (symétriques) définissent les doubles-profils hybrides et leur surnom didactique :
+
+| Profils croisés | 👑 **Le Boss** | 🔨 **L'Artisan** | ⚡ **Le Casse-cou** | 🤖 **Le Cyborg** | 🚪 **Le Décrocheur** | 🏴‍☠️ **Le Pirate** |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| 👑 **Le Boss** | *(Profil pur)* | **L'Architecte Méthodique** | **Le Hacker Instinctif** | **L'Ingénieur Augmenté** | ❌ *Antagoniste (180°)* | **L'Éclaireur Partageur** |
+| 🔨 **L'Artisan** | **L'Architecte Méthodique** | *(Profil pur)* | **Le Travailleur Acharné** | ❌ *Antagoniste (180°)* | **L'Apprenti Hésitant** | **L'Artisan Sous Influence** |
+| ⚡ **Le Casse-cou** | **Le Hacker Instinctif** | **Le Travailleur Acharné** | *(Profil pur)* | **L'Apprenti Sorcier** | **L'Épuisé Découragé** | ❌ *Antagoniste (180°)* |
+| 🤖 **Le Cyborg** | **L'Ingénieur Augmenté** | ❌ *Antagoniste (180°)* | **L'Apprenti Sorcier** | *(Profil pur)* | **Le Délégataire Passif** | **Le Contrebandier Numérique** |
+| 🚪 **Le Décrocheur** | ❌ *Antagoniste (180°)* | **L'Apprenti Hésitant** | **L'Épuisé Découragé** | **Le Délégataire Passif** | *(Profil pur)* | **Le Copiste de Survie** |
+| 🏴‍☠️ **Le Pirate** | **L'Éclaireur Partageur** | **L'Artisan Sous Influence** | ❌ *Antagoniste (180°)* | **Le Contrebandier Numérique** | **Le Copiste de Survie** | *(Profil pur)* |
+
+#### 4. Matrice Détaillée des 12 Doubles-Profils Didactiques Hybrides
 
 | Double-Profil Détecté | Surnom Pédagogique | Signification Didactique & Posture Observée | Posture & Conseil pour l'Enseignant |
 | :--- | :--- | :--- | :--- |
@@ -513,7 +529,7 @@ Si l'écart est supérieur à 3.5 points, l'étudiant conserve son statut de pro
 | **🔨 Artisan + 🏴‍☠️ Pirate** | **L'Artisan Sous Influence** | L'étudiant a fourni un travail personnel appliqué sur une partie du sujet, mais a complété une fonction manquante par un emprunt externe direct. | Valoriser la partie authentique produite tout en invalidant le fragment collusoire pour encourager la persévérance honnête. |
 | **🔨 Artisan + 🚪 Décrocheur** | **L'Apprenti Hésitant** | Démarche artisanale soignée lorsqu'il est actif, mais progression ralentie par de longs moments d'hésitation ou de doute où il n'ose plus avancer. | Stimuler la confiance en soi, dédramatiser les erreurs d'exécution et fixer des micro-objectifs pour rythmer la séance. |
 
-#### 4. Restitution dans les Fiches Individuelles et Bilans de Cohorte
+#### 5. Restitution dans les Fiches Individuelles et Bilans de Cohorte
 Lorsqu'un double-profil est identifié :
 - **Dans la fiche individuelle d'évaluation** (`*_rapport.md`) :
   - La note finale affiche l'intitulé combiné et le surnom didactique :  
