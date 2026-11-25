@@ -84,6 +84,9 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 
 Toutes les versions disponibles sont dans la section [Releases](https://github.com/jlehuen/CodeLab/releases) de CodeLab.
 
+> [!TIP]
+> **Mises à jour en 1 clic (à partir de la version 1.5.4)** : une fois CodeLab installé, vous n'avez plus besoin de retélécharger tout l'installateur (`.dmg`, `.exe` ou `.zip`) à chaque nouvelle version. Passez simplement par le menu **CodeLab → Vérifier les mises à jour** (ou activez *Vérifier la version au lancement* dans *Configuration*) puis cliquez sur **Installer la MAJ (JAR)** : CodeLab télécharge le nouveau `codelab.jar`, vérifie son intégrité (SHA-256) et redémarre automatiquement.
+
 <details>
 <summary>
 <b>macOS : procédure d'autorisation au premier lancement (Gatekeeper)</b>
@@ -360,8 +363,7 @@ Une fois les JDK placés, lancez le script correspondant à votre cible :
 #### Gestion des versions & Publication automatique du JAR (CI/CD)
 
 - **Source de vérité unique** : le fichier [`VERSION`](VERSION) à la racine du dépôt pilote automatiquement la version du client Java (`client/build.xml`) et celle du serveur Rust (`server/server/build.rs`), avec un numéro de build horodaté (`AAMMJJHHMM`).
-- **Publication automatique sur GitHub Releases** : le workflow [`.github/workflows/release-jar.yml`](.github/workflows/release-jar.yml) se déclenche automatiquement à chaque `git push origin vX.Y.Z`. Il compile `codelab.jar`, calcule son empreinte `codelab.jar.sha256` et crée/met à jour la Release GitHub correspondante.
-- **Mise à jour en 1 clic côté client** : CodeLab vérifie automatiquement la dernière release publiée via `HEAD /releases/latest` (sans consommer le quota API GitHub) et permet d'installer la mise à jour de `codelab.jar` directement depuis l'application (avec contrôle d'intégrité ZIP + SHA-256, sauvegarde `.bak` et redémarrage automatique).
+- **Publication automatique sur GitHub Releases** : le workflow [`.github/workflows/release-jar.yml`](.github/workflows/release-jar.yml) se déclenche automatiquement à chaque `git push origin vX.Y.Z` pour compiler `codelab.jar` + `codelab.jar.sha256` et les attacher à la Release GitHub correspondante.
 
 ### 2. Compilation du serveur Rust
 
