@@ -357,6 +357,12 @@ Une fois les JDK placés, lancez le script correspondant à votre cible :
 - **Linux** (archive autonome FreeDesktop) : `./distrib-linux.sh`
 - **Windows** (Installateur NSIS) : `./distrib-win64.sh`
 
+#### Gestion des versions & Publication automatique du JAR (CI/CD)
+
+- **Source de vérité unique** : le fichier [`VERSION`](VERSION) à la racine du dépôt pilote automatiquement la version du client Java (`client/build.xml`) et celle du serveur Rust (`server/server/build.rs`), avec un numéro de build horodaté (`AAMMJJHHMM`).
+- **Publication automatique sur GitHub Releases** : le workflow [`.github/workflows/release-jar.yml`](.github/workflows/release-jar.yml) se déclenche automatiquement à chaque `git push origin vX.Y.Z`. Il compile `codelab.jar`, calcule son empreinte `codelab.jar.sha256` et crée/met à jour la Release GitHub correspondante.
+- **Mise à jour en 1 clic côté client** : CodeLab vérifie automatiquement la dernière release publiée via `HEAD /releases/latest` (sans consommer le quota API GitHub) et permet d'installer la mise à jour de `codelab.jar` directement depuis l'application (avec contrôle d'intégrité ZIP + SHA-256, sauvegarde `.bak` et redémarrage automatique).
+
 ### 2. Compilation du serveur Rust
 
 Le serveur CodeLab orchestre les classes virtuelles, gère les flux bidirectionnels entre apprenants et enseignants et fournit un tableau de bord web de supervision.
