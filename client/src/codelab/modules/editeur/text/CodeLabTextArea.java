@@ -129,6 +129,11 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 				syntaxe = SyntaxConstants.SYNTAX_STYLE_LUA;
 				autoCompletion(provider_LUA);
 				break;
+			case ".hs":
+				comment = "--";
+				codelab.utils.HaskellTokenMaker.register();
+				syntaxe = codelab.utils.HaskellTokenMaker.SYNTAX_STYLE_HASKELL;
+				break;
 			case ".c":
 			case ".h":
 				comment = "//";
@@ -166,7 +171,7 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 		setFadeCurrentLineHighlight(true);
 		setAntiAliasingEnabled(true);
 
-		setSyntaxEditingStyle(syntaxe);
+		setSyntaxEditingStyle(CodeLab.SYNTAX_HIGHLIGHT ? syntaxe : SyntaxConstants.SYNTAX_STYLE_NONE);
 		setFont(new Font(CodeLab.FONT_NAME, Font.PLAIN, CodeLab.FONT_SIZE));
 		setCodeFoldingEnabled(CodeLab.CODE_FOLDING);
 		setWhitespaceVisible(CodeLab.SHOW_INVISIBLE);
@@ -444,6 +449,10 @@ public class CodeLabTextArea extends RSyntaxTextArea {
 
 	public String getCommentStr() {
 		return comment;
+	}
+
+	public void setSyntaxHighlightingEnabled(boolean value) {
+		setSyntaxEditingStyle(value ? syntaxe : SyntaxConstants.SYNTAX_STYLE_NONE);
 	}
 
 	public void setCodeFoldingEnabled(boolean value) {

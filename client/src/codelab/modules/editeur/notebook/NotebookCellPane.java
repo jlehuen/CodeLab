@@ -50,10 +50,12 @@ import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.InputMap;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JLayer;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -93,6 +95,7 @@ import com.vladsch.flexmark.util.data.MutableDataSet;
 
 import codelab.CodeLab;
 import codelab.utils.CodeBlockUtils;
+import codelab.utils.HaskellTokenMaker;
 import codelab.utils.LatexRenderer;
 import codelab.utils.MarkdownUtils;
 import codelab.utils.MermaidRenderer;
@@ -218,9 +221,31 @@ public class NotebookCellPane extends JPanel {
 	}
 
 	private static String syntaxStyleForLanguage(String lang) {
+		if (!CodeLab.SYNTAX_HIGHLIGHT) return SyntaxConstants.SYNTAX_STYLE_NONE;
 		if ("c".equalsIgnoreCase(lang)) return SyntaxConstants.SYNTAX_STYLE_C;
-		if ("haskell".equalsIgnoreCase(lang)) return SyntaxConstants.SYNTAX_STYLE_LUA;
+		if ("haskell".equalsIgnoreCase(lang)) {
+			HaskellTokenMaker.register();
+			return HaskellTokenMaker.SYNTAX_STYLE_HASKELL;
+		}
 		return SyntaxConstants.SYNTAX_STYLE_PYTHON;
+	}
+
+	public void setSyntaxHighlightingEnabled(boolean value) {
+		if (codeArea != null) {
+			codeArea.setSyntaxEditingStyle(syntaxStyleForLanguage(language));
+		}
+		if (mdArea != null) {
+			mdArea.setSyntaxEditingStyle(value ? SyntaxConstants.SYNTAX_STYLE_MARKDOWN : SyntaxConstants.SYNTAX_STYLE_NONE);
+		}
+	}
+
+	public void setInvisible(boolean value) {
+		if (codeArea != null) {
+			codeArea.setWhitespaceVisible(value);
+		}
+		if (mdArea != null) {
+			mdArea.setWhitespaceVisible(value);
+		}
 	}
 
 	// Éléments du bandeau supérieur
@@ -544,6 +569,38 @@ public class NotebookCellPane extends JPanel {
 		JMenuItem itemReset = new JMenuItem(CodeLab.LABEL("Menu_clear_counts"));
 		itemReset.addActionListener(ev -> editor.resetExecutionCounts());
 		popup.add(itemReset);
+
+		popup.add(new JSeparator());
+
+		JMenu menuConvert = new JMenu(CodeLab.LABEL("itemConvert"));
+		menuConvert.setEnabled(editable && !locked);
+		JMenuItem itemConvertSpaceToTab = new JMenuItem(CodeLab.LABEL("itemConvertSpaceToTab"));
+		itemConvertSpaceToTab.addActionListener(ev -> {
+			editor.setActiveCell(this);
+			if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getEditor() != null) {
+				CodeLab.INSTANCE.getEditor().convertSpaceToTab(4);
+			}
+		});
+		JMenuItem itemConvertTabToSpace = new JMenuItem(CodeLab.LABEL("itemConvertTabToSpace"));
+		itemConvertTabToSpace.addActionListener(ev -> {
+			editor.setActiveCell(this);
+			if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getEditor() != null) {
+				CodeLab.INSTANCE.getEditor().convertTabToSpace(4);
+			}
+		});
+		menuConvert.add(itemConvertSpaceToTab);
+		menuConvert.add(itemConvertTabToSpace);
+		popup.add(menuConvert);
+
+		JCheckBoxMenuItem itemInvisibles = new JCheckBoxMenuItem(CodeLab.LABEL("itemInvisibles"), CodeLab.SHOW_INVISIBLE);
+		itemInvisibles.addItemListener(ev -> {
+			boolean value = itemInvisibles.getState();
+			CodeLab.SHOW_INVISIBLE = value;
+			if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getEditor() != null) {
+				CodeLab.INSTANCE.getEditor().setInvisible(value);
+			}
+		});
+		popup.add(itemInvisibles);
 
 		if (CodeLab.INSTANCE != null && (CodeLab.INSTANCE.isTutor() || CodeLab.INSTANCE.isAdmin())) {
 			UserData udata = (editor.module != null) ? editor.module.getCurrentUdata() : null;
@@ -942,6 +999,70 @@ public class NotebookCellPane extends JPanel {
 			}
 		};
 		area.setSyntaxEditingStyle(syntaxStyle);
+		area.setWhitespaceVisible(CodeLab.SHOW_INVISIBLE);
+
+		area.addKeyListener(new java.awt.event.KeyAdapter() {
+			@Override
+			public void keyTyped(java.awt.event.KeyEvent e) {
+				if (editor == null || !area.isEditable()) return;
+				char c = e.getKeyChar();
+				if (c == java.awt.event.KeyEvent.VK_BACK_SPACE || c == 127) {
+					editor.recordBackspace();
+				} else if (!Character.isISOControl(c)) {
+					editor.recordTypedChar();
+				}
+			}
+		});
+
+		JPopupMenu areaPopup = area.getPopupMenu();
+		if (areaPopup != null) {
+			areaPopup.addSeparator();
+
+			JMenu menuConvert = new JMenu();
+			JMenuItem itemConvertSpaceToTab = new JMenuItem();
+			JMenuItem itemConvertTabToSpace = new JMenuItem();
+			JCheckBoxMenuItem itemInvisibles = new JCheckBoxMenuItem();
+
+			menuConvert.add(itemConvertSpaceToTab);
+			menuConvert.add(itemConvertTabToSpace);
+			areaPopup.add(menuConvert);
+			areaPopup.add(itemInvisibles);
+
+			areaPopup.addPopupMenuListener(new PopupMenuListener() {
+				public void popupMenuCanceled(PopupMenuEvent e) {}
+				public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {}
+				public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+					itemInvisibles.setText(CodeLab.LABEL("itemInvisibles"));
+					itemInvisibles.setState(CodeLab.SHOW_INVISIBLE);
+					itemConvertSpaceToTab.setText(CodeLab.LABEL("itemConvertSpaceToTab"));
+					itemConvertTabToSpace.setText(CodeLab.LABEL("itemConvertTabToSpace"));
+					menuConvert.setText(CodeLab.LABEL("itemConvert"));
+					menuConvert.setEnabled(editable && !locked);
+				}
+			});
+
+			itemInvisibles.addItemListener(ev -> {
+				boolean value = itemInvisibles.getState();
+				CodeLab.SHOW_INVISIBLE = value;
+				if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getEditor() != null) {
+					CodeLab.INSTANCE.getEditor().setInvisible(value);
+				}
+			});
+
+			itemConvertSpaceToTab.addActionListener(ev -> {
+				if (editor != null) editor.setActiveCell(NotebookCellPane.this);
+				if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getEditor() != null) {
+					CodeLab.INSTANCE.getEditor().convertSpaceToTab(4);
+				}
+			});
+
+			itemConvertTabToSpace.addActionListener(ev -> {
+				if (editor != null) editor.setActiveCell(NotebookCellPane.this);
+				if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getEditor() != null) {
+					CodeLab.INSTANCE.getEditor().convertTabToSpace(4);
+				}
+			});
+		}
 
 		if (CodeLab.INSTANCE != null && (CodeLab.INSTANCE.isTutor() || CodeLab.INSTANCE.isAdmin())) {
 			JPopupMenu popup = area.getPopupMenu();
@@ -1028,6 +1149,9 @@ public class NotebookCellPane extends JPanel {
 			public void removeUpdate(DocumentEvent e) { handleDocChange(); }
 			public void changedUpdate(DocumentEvent e) { handleDocChange(); }
 			private void handleDocChange() {
+				if (!errorLines.isEmpty()) {
+					removeAllLineHighlights();
+				}
 				if (editor != null) {
 					editor.setModified(true);
 					if (editor.module != null) {
@@ -1163,7 +1287,7 @@ public class NotebookCellPane extends JPanel {
 		});
 
 		// Édition Markdown
-		mdArea = createCellTextArea(SyntaxConstants.SYNTAX_STYLE_MARKDOWN);
+		mdArea = createCellTextArea(CodeLab.SYNTAX_HIGHLIGHT ? SyntaxConstants.SYNTAX_STYLE_MARKDOWN : SyntaxConstants.SYNTAX_STYLE_NONE);
 		mdArea.setLineWrap(true);
 		mdArea.setWrapStyleWord(true);
 		mdArea.setAntiAliasingEnabled(true);

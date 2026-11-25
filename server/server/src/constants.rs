@@ -16,6 +16,7 @@ pub const CONFIG_XML_EXAMPLE: &str = "config/sessions.example.xml";
 pub const CONFIG_XML: &str = "config/sessions.xml";
 pub const LOG_FILE: &str = "logs/server.log";
 pub const PROG_DIR: &str = "sessions";
+pub const TRASH_DIR: &str = "trash";
 pub const TEMP_DIR: &str = "temp";
 pub const LOG_DIR: &str = "logs";
 

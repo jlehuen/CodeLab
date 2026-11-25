@@ -232,6 +232,8 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         
         # 5. Événements secondaires
         "file_drops": [],
+        "file_drop_count": 0,
+        "idle_max_sec": 0.0,
         "file_ops": [],
         "help_requests": 0,
         "help_resolved": 0,
@@ -327,6 +329,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     q_read = 0.0
     q_test = 0.0
     q_away = 0.0
+    idle_max_sec = 0.0
 
     alerts = []
 
@@ -337,7 +340,12 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         next_dt = parsed_events[i + 1][0] if (i + 1 < len(parsed_events)) else None
         dt_step = 0.0
         if dt and next_dt:
-            dt_step = min(300.0, max(0.0, (next_dt - dt).total_seconds())) # borné à 5 min
+            raw_gap = max(0.0, (next_dt - dt).total_seconds())
+            dt_step = min(300.0, raw_gap) # borné à 5 min
+            # Plus long intervalle d'inactivité au sein d'une même séance (hors déconnexion)
+            if not (ev_type == "SESSION" and ev.get("status") == "DISCONNECTED"):
+                if raw_gap > idle_max_sec:
+                    idle_max_sec = raw_gap
 
         # 1. EDIT
         if ev_type == "EDIT":
@@ -595,6 +603,8 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     }
 
     res["file_drops"] = file_drops
+    res["file_drop_count"] = len(file_drops)
+    res["idle_max_sec"] = round(idle_max_sec, 1)
     res["file_ops"] = file_ops
     res["help_requests"] = help_requests
     res["help_resolved"] = help_resolved
@@ -812,7 +822,7 @@ radar-beta
     note_brute = float(scores.get("note_technique_brute", data.get("note_technique_brute", scores.get("total", data.get("total", 10.0)))))
     help_reqs = int(act.get("help_requests", 0))
     burst_cnt = int(act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0))
-    file_drops = int(act.get("file_drop_count", 0))
+    file_drops = int(act.get("file_drop_count", len(act.get("file_drops", []))))
     total_runs = int(act.get("compilations", {}).get("total", 0) + act.get("executions", {}).get("total", 0))
     i_thrash = float(act.get("i_thrash", 0.0))
     backspaces = int(act.get("typing_backspaces", 0))

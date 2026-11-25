@@ -50,7 +50,7 @@ public class Executeur implements Runnable {
 	private boolean errorFlag = false;
 	private boolean isBlocs = false;
 	private boolean isHTML = false;
-	private File ghciScriptFile = null;
+	private File notebookScriptFile = null;
 
 	private AfficheurFlux fluxSortie = null;
 	private AfficheurFlux fluxErreur = null;
@@ -229,6 +229,7 @@ public class Executeur implements Runnable {
 					}
 					filename = filename + ".py";
 					File pyFile = new File(base, filename);
+					this.notebookScriptFile = pyFile;
 					try {
 						JupyterUtils.extractRunnablePython(ipynbFile, pyFile);
 					}
@@ -243,6 +244,10 @@ public class Executeur implements Runnable {
 						break;
 					}
 					if (isBlocs) filename += ".py";
+					String lowerFn = filename.toLowerCase();
+					if (lowerFn.endsWith(".ipynb.cell.py") || lowerFn.endsWith(".cell.py") || lowerFn.endsWith(".ipynb.py")) {
+						this.notebookScriptFile = new File(base, filename);
+					}
 				}
 				// -u force stdout to be unbuffered
 				List<String> pyCmd = new ArrayList<>(Utils.splitCommandLine(CodeLab.PYTHON_CMD));
@@ -298,7 +303,7 @@ public class Executeur implements Runnable {
 			Utils.showMessageDialog("ATTENTION", CodeLab.LABEL("noHaskellError"));
 			return null;
 		}
-		this.ghciScriptFile = new File(base, ghciFilename);
+		this.notebookScriptFile = new File(base, ghciFilename);
 		List<String> hsCmd = new ArrayList<>(Utils.splitCommandLine(CodeLab.HASKELL_CMD));
 		hsCmd.add("--interactive");
 		hsCmd.add("-v0");
@@ -557,8 +562,8 @@ public class Executeur implements Runnable {
 			char[] buf = new char[1024];
 			int n = -1;
 			try {
-				if (isError && ghciScriptFile != null) {
-					int[] activeGhciAndCellLine = new int[] { -1, -1 };
+				if (isError && notebookScriptFile != null) {
+					int[] activeLineState = new int[] { -1, -1 };
 					String line;
 					while (!halted && !isInterrupted() && (line = reader.readLine()) != null) {
 						errorFlag = true;
@@ -567,7 +572,7 @@ public class Executeur implements Runnable {
 							errWriter.newLine();
 							errWriter.flush();
 						}
-						String rewritten = JupyterUtils.rewriteGhciErrorLine(ghciScriptFile, line, activeGhciAndCellLine);
+						String rewritten = JupyterUtils.rewriteNotebookErrorLine(notebookScriptFile, line, activeLineState);
 						executeur.printToConsole(rewritten, color, false);
 					}
 				} else {

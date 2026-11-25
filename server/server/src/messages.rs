@@ -161,6 +161,7 @@ pub enum CommandType {
     // Télémétrie et Alertes
     SET_USER_ALERT,
     RESET_USER_ALERT,
+    SET_USER_METRICS,
 
      // Contrôle
     SET_CONTROLLED,

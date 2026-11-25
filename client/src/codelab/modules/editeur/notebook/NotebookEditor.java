@@ -66,8 +66,18 @@ public class NotebookEditor extends AbstractEditor {
 	private NotebookCellPane activeCell = null;
 	private ObjectNode notebookMetadata = null;
 	private int executionCounter = 0;
-	private File lastGhciScriptFile = null;
+	private int typedCharsCount = 0;
+	private int backspaceCount = 0;
+	private File lastRunnerScriptFile = null;
 	private static final Color COLOR_ERROR_HIGHLIGHT = new Color(255, 224, 224);
+
+	public synchronized void recordTypedChar() {
+		typedCharsCount++;
+	}
+
+	public synchronized void recordBackspace() {
+		backspaceCount++;
+	}
 
 	private static class ScrollablePanel extends JPanel implements javax.swing.Scrollable {
 		private static final long serialVersionUID = 1L;
@@ -462,6 +472,7 @@ public class NotebookEditor extends AbstractEditor {
 
 	public void resetExecutionCounts() {
 		this.executionCounter = 0;
+		removeAllLineHighlights();
 		for (NotebookCellPane cp : cellPanes) {
 			cp.setExecutionCount(-1);
 			cp.setRunning(false);
@@ -479,21 +490,32 @@ public class NotebookEditor extends AbstractEditor {
 		if (targetIndex < 0) return;
 
 		StringBuilder code = new StringBuilder();
-		code.append("# %% [markdown]\n");
-		code.append("# CodeLab Jupyter Notebook - Single Cell Runner\n");
-		code.append("import sys\n\n");
+		List<JupyterUtils.GhciSourceLocation> sourceMap = new ArrayList<>();
+		code.append("# %% [markdown]\n"); sourceMap.add(null);
+		code.append("# CodeLab Jupyter Notebook - Single Cell Runner\n"); sourceMap.add(null);
+		code.append("import sys\n\n"); sourceMap.add(null); sourceMap.add(null);
 
+		int codeCellNum = 0;
 		for (int i = 0; i <= targetIndex; i++) {
 			NotebookCellPane cp = cellPanes.get(i);
 			if ("code".equals(cp.getType())) {
-				code.append(String.format("# In[%d]:\n", i + 1));
-				code.append(JupyterUtils.cleanCellCode(cp.getSource())).append("\n\n");
+				codeCellNum++;
+				code.append(String.format("# In[%d]:\n", i + 1)); sourceMap.add(null);
+				String cleaned = JupyterUtils.cleanCellCode(cp.getSource());
+				String[] lines = cleaned.split("\r?\n", -1);
+				for (int k = 0; k < lines.length; k++) {
+					code.append(lines[k]).append("\n");
+					sourceMap.add(new JupyterUtils.GhciSourceLocation(i, codeCellNum, k + 1));
+				}
+				code.append("\n"); sourceMap.add(null);
 			}
 		}
 
 		String dir = (getFile() != null) ? getDirectory() : (extern_file != null) ? extern_file.getParent() : CodeLab.PROG_LOCAL_FOLDER;
 		String baseName = (getFile() != null) ? getFilename() : (extern_file != null) ? extern_file.getName() : "temp.ipynb";
 		File cellScript = new File(dir, baseName + ".cell.py");
+		this.lastRunnerScriptFile = cellScript;
+		JupyterUtils.registerSourceMap(cellScript, sourceMap);
 		MyFileUtils.writeln(cellScript, code.toString());
 
 		module.codelab.execute(cellScript.getName());
@@ -508,14 +530,16 @@ public class NotebookEditor extends AbstractEditor {
 		String dir = (getFile() != null) ? getDirectory() : (extern_file != null) ? extern_file.getParent() : CodeLab.PROG_LOCAL_FOLDER;
 		String baseName = (getFile() != null) ? getFilename() : (extern_file != null) ? extern_file.getName() : "temp.ipynb";
 		File cellScript = new File(dir, baseName + ".cell.c");
+		this.lastRunnerScriptFile = cellScript;
 
-		String cSource = JupyterUtils.generateProgressiveC(cellPanes, targetIndex);
+		String cSource = JupyterUtils.generateProgressiveC(cellPanes, targetIndex, cellScript);
 		MyFileUtils.writeln(cellScript, cSource);
 
 		Compilateur comp = new Compilateur(module, cellScript);
 		boolean ok = comp.compile();
 		if (!ok) {
 			targetCell.setRunning(false);
+			highlightNotebookErrors(Compilateur.ERR_FILE);
 			if (module != null && module.codelab != null && module.codelab.getClient() != null) {
 				String errorSnippet = ModuleEditor.extractErrorSnippet(Compilateur.ERR_FILE);
 				module.codelab.getClient().logCompile(baseName, false, errorSnippet);
@@ -538,7 +562,7 @@ public class NotebookEditor extends AbstractEditor {
 		String dir = (getFile() != null) ? getDirectory() : (extern_file != null) ? extern_file.getParent() : CodeLab.PROG_LOCAL_FOLDER;
 		String baseName = (getFile() != null) ? getFilename() : (extern_file != null) ? extern_file.getName() : "temp.ipynb";
 		File cellScript = new File(dir, baseName + ".cell.ghci");
-		this.lastGhciScriptFile = cellScript;
+		this.lastRunnerScriptFile = cellScript;
 
 		String ghciScript = JupyterUtils.generateGhciScript(cellPanes, targetIndex, false, cellScript);
 		MyFileUtils.writeln(cellScript, ghciScript);
@@ -547,9 +571,17 @@ public class NotebookEditor extends AbstractEditor {
 	}
 
 	public void highlightGhciErrors(File errFile) {
-		if (lastGhciScriptFile == null || errFile == null || !errFile.exists()) return;
-		List<JupyterUtils.GhciSourceLocation> locs = JupyterUtils.extractGhciErrorLocations(lastGhciScriptFile, errFile);
+		highlightNotebookErrors(errFile);
+	}
+
+	public void highlightNotebookErrors(File errFile) {
+		if (lastRunnerScriptFile == null || errFile == null || !errFile.exists()) return;
+		List<JupyterUtils.GhciSourceLocation> locs = JupyterUtils.extractNotebookErrorLocations(lastRunnerScriptFile, errFile);
 		if (locs.isEmpty()) return;
+
+		String langLabel = lastRunnerScriptFile.getName().endsWith(".c") ? "C"
+			: lastRunnerScriptFile.getName().endsWith(".py") ? "Python"
+			: "Haskell";
 
 		SwingUtilities.invokeLater(() -> {
 			removeAllLineHighlights();
@@ -560,7 +592,7 @@ public class NotebookEditor extends AbstractEditor {
 					if (cp.isCollapsed()) {
 						cp.setCollapsed(false);
 					}
-					String tip = String.format("Erreur Haskell (Cellule %d, ligne %d)", loc.codeCellNumber, loc.lineInCell);
+					String tip = String.format("Erreur %s (Cellule %d, ligne %d)", langLabel, loc.codeCellNumber, loc.lineInCell);
 					cp.addErrorLineMarker(Math.max(0, loc.lineInCell - 1), COLOR_ERROR_HIGHLIGHT, tip);
 					if (firstCell == null) firstCell = cp;
 				}
@@ -904,6 +936,15 @@ public class NotebookEditor extends AbstractEditor {
 
 			mapper.writerWithDefaultPrettyPrinter().writeValue(file, root);
 			setModified(false);
+
+			// Émission des métriques de frappe clavier pour le Notebook
+			if (typedCharsCount > 0 || backspaceCount > 0) {
+				if (CodeLab.INSTANCE != null && CodeLab.INSTANCE.getClient() != null) {
+					CodeLab.INSTANCE.getClient().logTyping(file.getName(), typedCharsCount, backspaceCount);
+				}
+				typedCharsCount = 0;
+				backspaceCount = 0;
+			}
 		} catch (Exception e) {
 			ExceptionManager.process(e);
 		}
@@ -1067,11 +1108,13 @@ public class NotebookEditor extends AbstractEditor {
 		if (file != null) {
 			if (isCNotebook()) {
 				File cFile = new File(file.getAbsolutePath() + ".c");
+				this.lastRunnerScriptFile = cFile;
 				try {
 					JupyterUtils.extractRunnableC(file, cFile);
 					Compilateur comp = new Compilateur(module, cFile);
 					compilation_ok = comp.compile();
 					if (!compilation_ok) {
+						highlightNotebookErrors(Compilateur.ERR_FILE);
 						for (NotebookCellPane cp : cellPanes) {
 							if (cp.isRunning()) cp.setRunning(false);
 						}
@@ -1087,7 +1130,7 @@ public class NotebookEditor extends AbstractEditor {
 				}
 			} else if (isHaskellNotebook()) {
 				File ghciFile = new File(file.getAbsolutePath() + ".ghci");
-				this.lastGhciScriptFile = ghciFile;
+				this.lastRunnerScriptFile = ghciFile;
 				try {
 					JupyterUtils.extractRunnableGhci(file, ghciFile);
 				} catch (Exception e) {
@@ -1100,6 +1143,7 @@ public class NotebookEditor extends AbstractEditor {
 				}
 			} else {
 				File pyFile = new File(file.getAbsolutePath() + ".py");
+				this.lastRunnerScriptFile = pyFile;
 				try {
 					JupyterUtils.extractRunnablePython(file, pyFile);
 				} catch (Exception e) {
@@ -1166,10 +1210,21 @@ public class NotebookEditor extends AbstractEditor {
 	}
 
 	@Override
-	public void setInvisible(boolean value) {}
+	public void setInvisible(boolean value) {
+		for (NotebookCellPane cp : cellPanes) {
+			cp.setInvisible(value);
+		}
+	}
 
 	@Override
 	public void setCodeFoldingEnabled(boolean value) {}
+
+	@Override
+	public void setSyntaxHighlightingEnabled(boolean value) {
+		for (NotebookCellPane cp : cellPanes) {
+			cp.setSyntaxHighlightingEnabled(value);
+		}
+	}
 
 	@Override
 	public void setEditableConfiguration(boolean value) {

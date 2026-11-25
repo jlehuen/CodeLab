@@ -48,12 +48,12 @@ public class LatexRenderer {
 
 	public static float cssInlineScale(String css) {
 		float global = parseCssFloat(css, CSS_GLOBAL_SCALE, 1.0f);
-		return parseCssFloat(css, CSS_INLINE_SCALE, 1.15f) * global;
+		return parseCssFloat(css, CSS_INLINE_SCALE, 1.55f) * global;
 	}
 
 	public static float cssDisplayScale(String css) {
 		float global = parseCssFloat(css, CSS_GLOBAL_SCALE, 1.0f);
-		return parseCssFloat(css, CSS_DISPLAY_SCALE, 1.60f) * global;
+		return parseCssFloat(css, CSS_DISPLAY_SCALE, 2.00f) * global;
 	}
 
 	public static class RenderResult {
@@ -94,7 +94,7 @@ public class LatexRenderer {
 	 * @return Texte avec les balises <img> prêtes pour le rendu HTML
 	 */
 	public static String renderMarkdownMath(String markdown, int baseFontSize) {
-		return renderMarkdownMath(markdown, baseFontSize, 1.15f, 1.60f);
+		return renderMarkdownMath(markdown, baseFontSize, 1.55f, 2.00f);
 	}
 
 	public static String renderMarkdownMath(String markdown, int baseFontSize, float inlineScale, float displayScale) {
@@ -103,8 +103,8 @@ public class LatexRenderer {
 		}
 
 		int size = baseFontSize > 0 ? baseFontSize : 13;
-		float iScale = inlineScale > 0 ? inlineScale : 1.15f;
-		float dScale = displayScale > 0 ? displayScale : 1.60f;
+		float iScale = inlineScale > 0 ? inlineScale : 1.55f;
+		float dScale = displayScale > 0 ? displayScale : 2.00f;
 
 		// Utilisation directe des facteurs d'échelle sans plancher rigide bloquant
 		int inlineSize = Math.max(8, (int) Math.round(size * iScale));

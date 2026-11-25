@@ -780,8 +780,8 @@ public class CodeLab extends AbstractCodeLab {
 		if (customFilename == null && editor.isCompilable() && !editor.compilation_OK()) {
 			CodeLab.logger("Compile program " + editor.getCurrentFilename());
 			boolean ok = editor.compileFile();
+			console.flush();
 			if (!ok) {
-				console.flush();
 				checkErrorComp();
 				console.flush();
 				return false;
@@ -855,13 +855,16 @@ public class CodeLab extends AbstractCodeLab {
 
 	private void checkErrorComp() {
 		if (RESET_AGENDA) moteur.reset();
+		if (editor.getEditor() instanceof codelab.modules.editeur.notebook.NotebookEditor) {
+			((codelab.modules.editeur.notebook.NotebookEditor) editor.getEditor()).highlightNotebookErrors(Compilateur.ERR_FILE);
+		}
 		moteur.checkErrors(Compilateur.ERR_FILE, "error_comp");
 	}
 
 	private void checkErrorExe() {
 		if (RESET_AGENDA) moteur.reset();
 		if (editor.getEditor() instanceof codelab.modules.editeur.notebook.NotebookEditor) {
-			((codelab.modules.editeur.notebook.NotebookEditor) editor.getEditor()).highlightGhciErrors(Executeur.ERR_FILE);
+			((codelab.modules.editeur.notebook.NotebookEditor) editor.getEditor()).highlightNotebookErrors(Executeur.ERR_FILE);
 		}
 		boolean isBlocs = editor.getCurrentLanguage().equals(TypeLang.BLOCS);
 		if (isBlocs) editor.checkBlocsErrors();
@@ -2071,6 +2074,7 @@ public class CodeLab extends AbstractCodeLab {
 			String name = f.getName().toLowerCase();
 			if (f.getName().startsWith(".") || f.getName().startsWith("__")
 					|| name.endsWith(".exe") || name.endsWith(".orig") || name.endsWith(".bak") || name.endsWith(".class")
+					|| name.endsWith(".hi") || name.endsWith(".o")
 					|| name.endsWith(".ipynb.py") || name.endsWith(".ipynb.cell.py")
 					|| name.endsWith(".ipynb.c") || name.endsWith(".ipynb.cell.c")
 					|| name.endsWith(".ipynb.ghci") || name.endsWith(".ipynb.cell.ghci")

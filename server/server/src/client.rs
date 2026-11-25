@@ -41,7 +41,6 @@ use tokio::{
 };
 
 use chrono::{DateTime, Local}; // Pour le calcul des dates
-use fs2::FileExt; // Pour verrouiller un fichier en écriture
 
 // Pour MessagePack
 use serde_json::Value;
@@ -709,7 +708,7 @@ impl Client {
         Ok(())
     }
 
-    // Pour supprimer un fichier ou un dossier
+    // Pour supprimer un fichier ou un dossier (déplacement non destructif vers la corbeille serveur)
     // Le path est de la forme [session]/[login]/...
     pub async fn delete_file(&self, path: &str) -> EmptyResult {
         if self.is_student() && self.is_in_readonly_session().await {
@@ -717,30 +716,39 @@ impl Client {
             return Ok(());
         }
         let file_path = Path::new(PROG_DIR).join(path);
-        if file_path.is_file() {
-            // Supprimer le fichier
-            if let Err(e) = fs::remove_file(&file_path).await {
-                println!("Erreur lors de la suppression du fichier: {}", e);
+        let is_file = file_path.is_file();
+        let is_dir = file_path.is_dir();
+
+        if is_file || is_dir {
+            let ts = Local::now().format("%y%m%d_%H%M%S_%3f").to_string();
+            let mut parts = path.splitn(3, '/');
+            let trash_path = if let (Some(sess), Some(log), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
+                Path::new(TRASH_DIR).join(sess).join(log).join(&ts).join(rel)
             } else {
+                Path::new(TRASH_DIR).join(&ts).join(path)
+            };
+
+            if let Some(trash_parent) = trash_path.parent() {
+                if let Err(e) = ensure_dir_exists(trash_parent) {
+                    log::error!("Erreur lors de la création du dossier corbeille {:?}: {}", trash_parent, e);
+                }
+            }
+
+            if let Err(e) = fs::rename(&file_path, &trash_path).await {
+                log::error!("Erreur lors du déplacement vers la corbeille ({:?} -> {:?}): {}", file_path, trash_path, e);
+            } else {
+                log::info!("Moved to server trash: {} -> {}", file_path.display(), trash_path.display());
                 if self.is_student() {
                     let mut parts = path.splitn(3, '/');
                     if let (Some(s), Some(l), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
                         record_file_op(s, l, "DELETE", rel, None);
                     }
                 }
-                // Supprimer aussi les backups
-                if let Err(e) = delete_backup_files(&file_path) {
-                    log::warn!("Erreur lors de la suppression des backups pour {}: {}", path, e);
-                }
-            }
-        } else if file_path.is_dir() {
-            // Supprimer le dossier
-            if let Err(e) = fs::remove_dir_all(&file_path).await {
-                println!("Erreur lors de la suppression du dossier: {}", e);
-            } else if self.is_student() {
-                let mut parts = path.splitn(3, '/');
-                if let (Some(s), Some(l), Some(rel)) = (parts.next(), parts.next(), parts.next()) {
-                    record_file_op(s, l, "DELETE", rel, None);
+                if is_file {
+                    // Déplacer aussi les backups vers la corbeille (au lieu de les détruire)
+                    if let Err(e) = move_backup_files(&file_path, &trash_path) {
+                        log::warn!("Erreur lors du déplacement des backups vers la corbeille pour {}: {}", path, e);
+                    }
                 }
             }
         }
@@ -904,9 +912,27 @@ impl Client {
             }
         }
 
-        let mut file = std::fs::File::create(&file_path)?;
-        file.lock_exclusive()?;
-        std::io::Write::write_all(&mut file, file_content)?;
+        // Écriture atomique via fichier temporaire masqué dans le même dossier + rename
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
+        let tmp_path = file_path.with_file_name(format!(".{}.{}.tmp", file_name, nanos));
+        let write_result = (|| -> io::Result<()> {
+            let mut file = std::fs::File::create(&tmp_path)?;
+            std::io::Write::write_all(&mut file, file_content)?;
+            file.sync_all()?;
+            Ok(())
+        })();
+        if let Err(e) = write_result {
+            let _ = std::fs::remove_file(&tmp_path);
+            return Err(e.into());
+        }
+        if let Err(e) = std::fs::rename(&tmp_path, &file_path) {
+            let _ = std::fs::remove_file(&tmp_path);
+            return Err(e.into());
+        }
         Ok(())
     }
 
@@ -1202,6 +1228,12 @@ impl Client {
         self.send_command(CommandType::RESET_USER_ALERT, data).await
     }
 
+    // Pour pousser les métriques télémétriques temps réel (S_auth, I_nav) aux tuteurs
+    pub async fn tutor_set_user_metrics(&self, login: &str, s_auth: f64, i_nav: f64) -> EmptyResult {
+        let data = create_data!(login, s_auth, i_nav);
+        self.send_command(CommandType::SET_USER_METRICS, data).await
+    }
+
     // Acquittement d'une alerte par un tuteur
     pub async fn reset_user_alert(&self, user_login: &str, code: &str) -> EmptyResult {
         if let Some(ref session) = self.session {
@@ -1310,5 +1342,12 @@ pub async fn notify_tutors_clear_alert(session: &str, login: &str, code: &str) {
         for tutor in tutors {
             let _ = tutor.tutor_reset_user_alert(login, code).await;
         }
+    }
+}
+
+pub async fn notify_tutors_user_metrics(session: &str, login: &str, s_auth: f64, i_nav: f64) {
+    let tutors = connected_tutors(session).await;
+    for tutor in tutors {
+        let _ = tutor.tutor_set_user_metrics(login, s_auth, i_nav).await;
     }
 }

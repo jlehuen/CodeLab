@@ -617,6 +617,15 @@ public class UserTable extends JScrollPane {
 		}
 	}
 
+	public void setUserMetrics(String login, double sAuth, double iNav) {
+		UserData udata = findUserData(login);
+		if (udata != null) {
+			udata.setSAuth(sAuth);
+			udata.setINav(iNav);
+			table.repaint();
+		}
+	}
+
 	public void newStudent(UserData udata) {
 		// Un nouvel étudiant a été créé à la volée
 		SwingUtilities.invokeLater(() -> {

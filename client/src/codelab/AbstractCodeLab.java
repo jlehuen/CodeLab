@@ -53,7 +53,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	///////////////////////////////////////////////////
 
 	public static final String VERSION = "1.5.3"; // Attribué automatiquement par ant
-	public static final String BUILD = "2611251431"; // Attribué automatiquement par ant
+	public static final String BUILD = "2611251528"; // Attribué automatiquement par ant
 
 	public static final String TITLE = String.format("CodeLab %s", VERSION);
 	public static final String ARCHITECTURE = Utils.getArchitecture();
@@ -300,6 +300,7 @@ public abstract class AbstractCodeLab extends JFrame {
 	public static boolean SHOW_INVISIBLE = false;
 	public static boolean AUTO_COMPLETE = false;
 	public static boolean CODE_FOLDING = false;
+	public static boolean SYNTAX_HIGHLIGHT = true;
 	public static boolean DIFF_FLAG = false;
 
 	// Connexion au serveur
@@ -336,6 +337,8 @@ public abstract class AbstractCodeLab extends JFrame {
 			SHOW_INVISIBLE = getBooleanData("SHOW_INVISIBLE");
 			AUTO_COMPLETE = getBooleanData("AUTO_COMPLETE");
 			CODE_FOLDING = getBooleanData("CODE_FOLDING");
+			String sh = getStringData("SYNTAX_HIGHLIGHT");
+			SYNTAX_HIGHLIGHT = sh.equals(UNDEFINED) ? true : Boolean.parseBoolean(sh);
 			DIFF_FLAG = getBooleanData("DIFF_FLAG");
 
 			// Connexion au serveur
@@ -375,6 +378,7 @@ public abstract class AbstractCodeLab extends JFrame {
 			setBooleanData("SHOW_INVISIBLE", SHOW_INVISIBLE);
 			setBooleanData("AUTO_COMPLETE", AUTO_COMPLETE);
 			setBooleanData("CODE_FOLDING", CODE_FOLDING);
+			setBooleanData("SYNTAX_HIGHLIGHT", SYNTAX_HIGHLIGHT);
 			setBooleanData("DIFF_FLAG", DIFF_FLAG);
 
 			// Connexion au serveur

@@ -1699,6 +1699,16 @@ public class CodelabClient {
 	public synchronized void RESET_USER_ALERT(String login) {
 		RESET_USER_ALERT(login, "ALL");
 	}
+
+	public synchronized void SET_USER_METRICS(String login, Number sAuth, Number iNav) {
+		// Mise à jour temps réel des indicateurs S_auth et I_nav dans UserTable
+		if (editor.getUserTable() == null) return;
+		double sa = (sAuth != null) ? sAuth.doubleValue() : -1.0;
+		double in = (iNav != null) ? iNav.doubleValue() : 0.0;
+		javax.swing.SwingUtilities.invokeLater(() -> {
+			editor.getUserTable().setUserMetrics(login, sa, in);
+		});
+	}
 	
 	public synchronized void SET_CONTROL_MODE(boolean flag, String login) {
 		// Mettre à jour le mode de contrôle de login (pour les tuteurs)

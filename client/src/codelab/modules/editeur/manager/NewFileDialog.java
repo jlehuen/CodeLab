@@ -115,13 +115,16 @@ public class NewFileDialog extends JDialog {
 		// Invoqué par touche ENTER ou bouton OK
 		String name = MyFileUtils.noExtension(textfield.getText());
 		String ext = group_lang.getSelection().getActionCommand();
+		template = ((TemplateItem)comboBox.getSelectedItem()).getFile();
+		String templateExt = MyFileUtils.getExtension(template);
+		if (".ipynb".equalsIgnoreCase(templateExt)) {
+			ext = ".ipynb";
+		}
 		filename = name + ext;
 
 		// Capitaliser si Java ou Processing
 		if (ext == ".java") filename = Utils.capitalize(filename);
 		if (ext == ".pde") filename = Utils.capitalize(filename);
-
-		template = ((TemplateItem)comboBox.getSelectedItem()).getFile();
 	}
 
 	private void __scanTemplates__(File dir, String base, String ext, ArrayList<TemplateItem> liste, boolean isroot) {
@@ -142,7 +145,7 @@ public class NewFileDialog extends JDialog {
 				// Pour visiter les sous-dossiers
 				__scanTemplates__(file, base + sep + name, ext, liste, false);
 			}
-			else if (MyFileUtils.getExtension(file).equals(ext)) {
+			else if (matchesTemplateExt(file, ext)) {
 				// Pour créer l'item
 				TemplateItem item = new TemplateItem(base, file);
 				liste.add(item);
@@ -163,10 +166,20 @@ public class NewFileDialog extends JDialog {
 		}
 	}
 
+	private boolean matchesTemplateExt(File file, String ext) {
+		String fileExt = MyFileUtils.getExtension(file);
+		if (fileExt.equals(ext)) return true;
+		if (".hs".equals(ext) && ".ipynb".equalsIgnoreCase(fileExt)
+			&& file.getName().toLowerCase().contains("haskell")) {
+			return true;
+		}
+		return false;
+	}
+
 	private boolean notEmpty(File dir, String ext) {
 		File[] files = dir.listFiles();
 		for(File file : files) {
-			if (MyFileUtils.getExtension(file).equals(ext))
+			if (matchesTemplateExt(file, ext))
 				return true;
 			else if (file.isDirectory())
 				return notEmpty(file, ext);

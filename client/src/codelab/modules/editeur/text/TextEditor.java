@@ -419,6 +419,13 @@ public class TextEditor extends AbstractEditor {
 		textarea.removeAllLineHighlights();
 	}
 
+	@Override
+	public void setSyntaxHighlightingEnabled(boolean value) {
+		if (textarea != null) {
+			textarea.setSyntaxHighlightingEnabled(value);
+		}
+	}
+
 	public void magicFormat() {
 		// Reformate le code source C ou Java (configuration dans sysconfig.properties)
 		String MAGIC_CMD = MyFileUtils.absolute(CodeLab.PROP("MAGIC_CMD"));

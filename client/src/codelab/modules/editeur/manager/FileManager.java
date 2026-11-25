@@ -1256,6 +1256,8 @@ public class FileManager extends JTree {
 		MyFileUtils.deleteFilesRec(dir, "*.pyc");
 		MyFileUtils.deleteFilesRec(dir, "*.orig");
 		MyFileUtils.deleteFilesRec(dir, "*.class");
+		MyFileUtils.deleteFilesRec(dir, "*.hi");
+		MyFileUtils.deleteFilesRec(dir, "*.o");
 		MyFileUtils.deleteFilesRec(dir, "*.blocs.py");
 		MyFileUtils.deleteFilesRec(dir, "*.ipynb.py");
 		MyFileUtils.deleteFilesRec(dir, "*.ipynb.c");

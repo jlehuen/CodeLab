@@ -53,6 +53,7 @@ public class Compilateur {
 
 	private boolean isProcessing;
 	private File processingFile;
+	private File notebookCSourceFile = null;
 
 	public static boolean stopOnWarning = true;
 
@@ -121,6 +122,10 @@ public class Compilateur {
 					break;
 				}
 				cmode = true;
+				String lowerFn = filename.toLowerCase();
+				if (lowerFn.endsWith(".ipynb.c") || lowerFn.endsWith(".ipynb.cell.c") || lowerFn.endsWith(".cell.c")) {
+					notebookCSourceFile = file;
+				}
 				target = String.format("%s_c.exe", MyFileUtils.noExtension(filename));
 				MyFileUtils.delete(String.format("%s/%s", directory, target));
 
@@ -208,14 +213,15 @@ public class Compilateur {
 				switch (CodeLab.SYSTEM) {
 					case "Mac":
 					case "Linux":
+					case "Windows":
 						List<String> hsCmd = new ArrayList<>(Utils.splitCommandLine(CodeLab.HASKELL_CMD));
+						hsCmd.add("-v0");
+						hsCmd.add("-no-keep-hi-files");
+						hsCmd.add("-no-keep-o-files");
 						hsCmd.add("-o");
 						hsCmd.add(target);
 						hsCmd.add(filename);
 						pb = new ProcessBuilder(hsCmd);
-						break;
-					case "Windows":
-						// Compilation Haskell sous Windows à activer si l'environnement est configuré
 						break;
 				}
 				break;
@@ -274,7 +280,7 @@ public class Compilateur {
 			process = pb.start();
 			stdout = process.getInputStream();
 			stderr = process.getErrorStream();
-			fluxSortie = new AfficheurFlux(this, stdout, Console.COLOR_ERROR);
+			fluxSortie = new AfficheurFlux(this, stdout, Console.COLOR_LOG);
 			fluxErreur = new AfficheurFlux(this, stderr, Console.COLOR_ERROR);
 			fluxSortie.start();
 			fluxErreur.start();
@@ -559,6 +565,7 @@ public class Compilateur {
 		public void run() {
 			BufferedReader reader = getBufferedReader(inputStream);
 			String line = null;
+			int[] activeCState = new int[] { -1, -1 };
 			try {
 				while ((line = reader.readLine()) != null) {
 					if (cmode && line.contains(WARNING)) {
@@ -572,7 +579,10 @@ public class Compilateur {
 							line = line.replaceAll(REGEX, String.format("pde:%d: error:", nbline));
 						}
 					}
-					compilateur.printToConsole(String.format(" %s\n", line), color);
+					String displayLine = (notebookCSourceFile != null)
+						? codelab.utils.JupyterUtils.rewriteCErrorLine(notebookCSourceFile, line, activeCState)
+						: line;
+					compilateur.printToConsole(String.format(" %s\n", displayLine), color);
 					writeline(line); // Ajout dans le fichier temporaire de log
 				}
 			}

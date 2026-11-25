@@ -112,6 +112,19 @@ public class CodeLabMenu extends JPopupMenu {
 		});
 
 		// ---------------------------------------
+		// Coloration syntaxique de l'éditeur
+
+		JCheckBoxMenuItem itemSyntaxHighlight = new JCheckBoxMenuItem(CodeLab.LABEL("itemSyntaxHighlight"), true);
+		itemSyntaxHighlight.setSelected(CodeLab.SYNTAX_HIGHLIGHT); // Etat courant
+		itemSyntaxHighlight.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				boolean value = itemSyntaxHighlight.getState();
+				CodeLab.SYNTAX_HIGHLIGHT = value;
+				codelab.getEditor().setSyntaxHighlightingEnabled(value);
+			}
+		});
+
+		// ---------------------------------------
 		// Code Folding de l'éditeur
 
 		JCheckBoxMenuItem itemCodeFolding = new JCheckBoxMenuItem(CodeLab.LABEL("itemCodeFolding"), true);
@@ -141,12 +154,10 @@ public class CodeLabMenu extends JPopupMenu {
 
 		JCheckBoxMenuItem itemInvisibles = new JCheckBoxMenuItem(CodeLab.LABEL("itemInvisibles"), false);
 		itemInvisibles.setSelected(CodeLab.SHOW_INVISIBLE); // Etat courant
-		itemInvisibles.addItemListener(new ItemListener() {
-			public void itemStateChanged(ItemEvent e) {
-				boolean value = itemInvisibles.getState();
-				CodeLab.SHOW_INVISIBLE = value;
-				codelab.getEditor().setInvisible(value);
-			}
+		itemInvisibles.addActionListener(ev -> {
+			boolean value = itemInvisibles.isSelected();
+			CodeLab.SHOW_INVISIBLE = value;
+			codelab.getEditor().setInvisible(value);
 		});
 
 		// ---------------------------------------
@@ -518,9 +529,20 @@ public class CodeLabMenu extends JPopupMenu {
 		JMenu menuEditor = new JMenu(CodeLab.LABEL("menuEditor"));
 		menuEditor.add(itemAutoCompletion);
 		menuEditor.add(itemCodeFolding);
+		menuEditor.add(itemSyntaxHighlight);
 		menuEditor.add(itemInvisibles);
 		menuEditor.add(itemFontButton);
 		// menuEditor.add(menuMarkdownStyles);
+		menuEditor.addMenuListener(new javax.swing.event.MenuListener() {
+			public void menuSelected(javax.swing.event.MenuEvent e) {
+				itemInvisibles.setSelected(CodeLab.SHOW_INVISIBLE);
+				itemSyntaxHighlight.setSelected(CodeLab.SYNTAX_HIGHLIGHT);
+				itemCodeFolding.setSelected(CodeLab.CODE_FOLDING);
+				itemAutoCompletion.setSelected(CodeLab.AUTO_COMPLETE);
+			}
+			public void menuDeselected(javax.swing.event.MenuEvent e) {}
+			public void menuCanceled(javax.swing.event.MenuEvent e) {}
+		});
 
 		JMenu menuConsole = new JMenu(CodeLab.LABEL("Btn_term"));
 		menuConsole.add(itemAutoconsole);

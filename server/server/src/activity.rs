@@ -376,6 +376,17 @@ pub fn clear_live_alert(session: &str, login: &str, code: &str) {
     }
 }
 
+pub fn push_live_metrics(session: &str, login: &str) {
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+        let metrics = get_student_live_metrics(session, login);
+        let sess = session.to_string();
+        let log = login.to_string();
+        handle.spawn(async move {
+            crate::client::notify_tutors_user_metrics(&sess, &log, metrics.s_auth, metrics.i_nav).await;
+        });
+    }
+}
+
 // ----------------------------------------------------------------------------
 // Filtrage des fichiers éligibles au suivi d'activité
 // ----------------------------------------------------------------------------
@@ -619,10 +630,13 @@ pub fn record_file_activity(
 
     if let Some(ref al) = alert {
         if al.starts_with("BURST") {
-            let mut live_map = STUDENT_LIVE.lock().unwrap();
-            let st = live_map.entry(key.clone()).or_default();
-            st.burst_lines += lines_added;
-            st.burst_chars += lines_added * 30;
+            {
+                let mut live_map = STUDENT_LIVE.lock().unwrap();
+                let st = live_map.entry(key.clone()).or_default();
+                st.burst_lines += lines_added;
+                st.burst_chars += lines_added * 30;
+            }
+            push_live_metrics(session, login);
         }
 
         log::warn!(
@@ -804,6 +818,7 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                         "[ACTIVITY FOCUS GAINED] session={} login={} duration={:?}s",
                         session, login, duration_sec
                     );
+                    push_live_metrics(session, login);
                 } else {
                     log::info!(
                         "[ACTIVITY FOCUS LOST] session={} login={}",
@@ -854,6 +869,7 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                         let msg = format!("Collage {}L ({} cars) dans {}", lines, chars, file);
                         trigger_live_alert(session, login, "PASTE", &msg, "WARN");
                     }
+                    push_live_metrics(session, login);
                 }
 
                 let event = ActivityEvent::Paste {
@@ -879,6 +895,7 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                     st.typed_chars += typed_chars;
                     st.backspaces += backspaces;
                 }
+                push_live_metrics(session, login);
 
                 let event = ActivityEvent::Typing {
                     timestamp: now,

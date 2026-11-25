@@ -215,6 +215,7 @@ public abstract class AbstractEditor extends JPanel {
 	public abstract void changeFont(String name, int size);
 	public abstract void setInvisible(boolean value);
 	public abstract void setCodeFoldingEnabled(boolean value);
+	public void setSyntaxHighlightingEnabled(boolean value) {}
 	public abstract void setEditableConfiguration(boolean value);
 	public abstract void addLineHighlight(int line, Color color);
 	public abstract void removeAllLineHighlights();

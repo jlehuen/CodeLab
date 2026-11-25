@@ -530,6 +530,12 @@ public class ModuleEditor extends AbstractModule {
 		}
 	}
 
+	public void setSyntaxHighlightingEnabled(boolean value) {
+		for (AbstractEditor editor : hashMapEditor.values()) {
+			editor.setSyntaxHighlightingEnabled(value);
+		}
+	}
+
 	public static String extractErrorSnippet(File errFile) {
 		if (errFile == null || !errFile.exists()) return null;
 		try {
@@ -759,8 +765,11 @@ public class ModuleEditor extends AbstractModule {
 	}
 
 	public void change_file(DefaultMutableTreeNode node) {
-		if ((!codelab.isTutor() && !codelab.isAdmin()) || editor.getFileDescriptor() == null || isClone(editor.getFileDescriptor())) // Si pas mode tuteur/admin ou si fichier hors-filemanager ou si clone...
+		if (codelab.isStudent() && editor.isModified()) {
+			saveCurrentFile(); // Sauvegarder en local et synchroniser sur le serveur avant de changer de fichier
+		} else if ((!codelab.isTutor() && !codelab.isAdmin()) || editor.getFileDescriptor() == null || isClone(editor.getFileDescriptor())) { // Si pas mode tuteur/admin ou si fichier hors-filemanager ou si clone...
 			editor.save_content(); // Sauvegarder le fichier courant
+		}
 
 		if (editor instanceof TextEditor) {
 			TextEditor te = (TextEditor) editor;
