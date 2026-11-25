@@ -860,6 +860,9 @@ public class CodeLab extends AbstractCodeLab {
 
 	private void checkErrorExe() {
 		if (RESET_AGENDA) moteur.reset();
+		if (editor.getEditor() instanceof codelab.modules.editeur.notebook.NotebookEditor) {
+			((codelab.modules.editeur.notebook.NotebookEditor) editor.getEditor()).highlightGhciErrors(Executeur.ERR_FILE);
+		}
 		boolean isBlocs = editor.getCurrentLanguage().equals(TypeLang.BLOCS);
 		if (isBlocs) editor.checkBlocsErrors();
 		else moteur.checkErrors(Executeur.ERR_FILE, "error_exe");
@@ -2070,7 +2073,8 @@ public class CodeLab extends AbstractCodeLab {
 					|| name.endsWith(".exe") || name.endsWith(".orig") || name.endsWith(".bak") || name.endsWith(".class")
 					|| name.endsWith(".ipynb.py") || name.endsWith(".ipynb.cell.py")
 					|| name.endsWith(".ipynb.c") || name.endsWith(".ipynb.cell.c")
-					|| name.endsWith(".cell.c") || name.endsWith(".cell.py")) {
+					|| name.endsWith(".ipynb.ghci") || name.endsWith(".ipynb.cell.ghci")
+					|| name.endsWith(".cell.c") || name.endsWith(".cell.py") || name.endsWith(".cell.ghci")) {
 				if (f.isDirectory()) {
 					try { FileUtils.deleteDirectory(f); } catch (Exception ignored) {}
 				} else {

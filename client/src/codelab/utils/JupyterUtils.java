@@ -12,7 +12,10 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -439,17 +442,21 @@ public class JupyterUtils {
 	// Support du Carnet Progressif en Langage C
 	///////////////////////////////////////////////////
 
-	public static boolean isCNotebook(File ipynbFile) {
-		if (ipynbFile == null || !ipynbFile.exists()) return false;
+	public static String detectNotebookLanguage(File ipynbFile) {
+		if (ipynbFile == null || !ipynbFile.exists()) return "python";
 		try {
 			JsonNode root = MAPPER.readTree(ipynbFile);
-			if (root == null || !root.isObject()) return false;
+			if (root == null || !root.isObject()) return "python";
 			String klang = root.path("metadata").path("kernelspec").path("language").asText("");
 			String llang = root.path("metadata").path("language_info").path("name").asText("");
 			if ("c".equalsIgnoreCase(klang) || "c".equalsIgnoreCase(llang)) {
-				return true;
+				return "c";
+			}
+			if ("haskell".equalsIgnoreCase(klang) || "haskell".equalsIgnoreCase(llang)) {
+				return "haskell";
 			}
 			int cCount = 0;
+			int hsCount = 0;
 			int pyCount = 0;
 			JsonNode cells = root.get("cells");
 			if (cells != null && cells.isArray()) {
@@ -457,14 +464,25 @@ public class JupyterUtils {
 					if ("code".equals(c.path("cell_type").asText(""))) {
 						String lang = c.path("metadata").path("language").asText("");
 						if ("c".equalsIgnoreCase(lang)) cCount++;
+						else if ("haskell".equalsIgnoreCase(lang)) hsCount++;
 						else pyCount++;
 					}
 				}
 			}
-			return cCount > 0 && cCount >= pyCount;
+			if (hsCount > 0 && hsCount >= cCount && hsCount >= pyCount) return "haskell";
+			if (cCount > 0 && cCount >= pyCount) return "c";
+			return "python";
 		} catch (Exception ignored) {
-			return false;
+			return "python";
 		}
+	}
+
+	public static boolean isCNotebook(File ipynbFile) {
+		return "c".equals(detectNotebookLanguage(ipynbFile));
+	}
+
+	public static boolean isHaskellNotebook(File ipynbFile) {
+		return "haskell".equals(detectNotebookLanguage(ipynbFile));
 	}
 
 	public static void extractRunnableC(File ipynbFile, File targetCFile) throws IOException {
@@ -643,5 +661,494 @@ public class JupyterUtils {
 			if (str.charAt(i) == c) count++;
 		}
 		return count;
+	}
+
+	///////////////////////////////////////////////////
+	// Support du Carnet Interactif en Langage Haskell (GHCi)
+	///////////////////////////////////////////////////
+
+	public static class GhciSourceLocation {
+		public final int cellIndex;      // Index 0-based dans la liste des cellules du carnet
+		public final int codeCellNumber; // Numéro 1-based de cellule de code (affichage utilisateur)
+		public final int lineInCell;     // Numéro de ligne 1-based dans la cellule
+
+		public GhciSourceLocation(int cellIndex, int codeCellNumber, int lineInCell) {
+			this.cellIndex = cellIndex;
+			this.codeCellNumber = codeCellNumber;
+			this.lineInCell = lineInCell;
+		}
+	}
+
+	private static class NumberedLine {
+		final int lineNumber; // 1-based
+		final String text;
+
+		NumberedLine(int lineNumber, String text) {
+			this.lineNumber = lineNumber;
+			this.text = text;
+		}
+	}
+
+	private static class GhciCellInput {
+		final int cellIndex;
+		final int codeCellNumber;
+		final String source;
+
+		GhciCellInput(int cellIndex, int codeCellNumber, String source) {
+			this.cellIndex = cellIndex;
+			this.codeCellNumber = codeCellNumber;
+			this.source = source;
+		}
+	}
+
+	private static final Map<String, List<GhciSourceLocation>> GHCI_SOURCE_MAPS = new ConcurrentHashMap<>();
+	private static final Pattern GHCI_ERROR_LINE_PATTERN =
+		Pattern.compile("([^:\\r\\n]+\\.ghci):(\\d+):(\\d+)(?:-(\\d+))?:");
+
+	private static String ghciMapKey(File ghciFile) {
+		if (ghciFile == null) return "";
+		try {
+			return ghciFile.getCanonicalPath();
+		} catch (IOException e) {
+			return ghciFile.getAbsolutePath();
+		}
+	}
+
+	public static GhciSourceLocation lookupGhciLocation(File ghciFile, int ghciLine1Based) {
+		if (ghciFile == null || ghciLine1Based <= 0) return null;
+		List<GhciSourceLocation> map = GHCI_SOURCE_MAPS.get(ghciMapKey(ghciFile));
+		if (map == null || ghciLine1Based > map.size()) return null;
+		return map.get(ghciLine1Based - 1);
+	}
+
+	public static String rewriteGhciErrorLine(File ghciFile, String line, int[] activeGhciAndCellLine) {
+		if (line == null || ghciFile == null) return line;
+		Matcher m = GHCI_ERROR_LINE_PATTERN.matcher(line);
+		if (m.find()) {
+			int ghciLine = Integer.parseInt(m.group(2));
+			String col = m.group(3);
+			GhciSourceLocation loc = lookupGhciLocation(ghciFile, ghciLine);
+			if (loc != null) {
+				if (activeGhciAndCellLine != null && activeGhciAndCellLine.length >= 2) {
+					activeGhciAndCellLine[0] = ghciLine;
+					activeGhciAndCellLine[1] = loc.lineInCell;
+				}
+				String replacement = String.format("[Cellule %d, ligne %d, col %s]:", loc.codeCellNumber, loc.lineInCell, col);
+				return m.replaceFirst(Matcher.quoteReplacement(replacement));
+			}
+		}
+		if (activeGhciAndCellLine != null && activeGhciAndCellLine.length >= 2 && activeGhciAndCellLine[0] > 0) {
+			String expectedPrefix = String.valueOf(activeGhciAndCellLine[0]);
+			Matcher gm = Pattern.compile("^(\\s*)" + Pattern.quote(expectedPrefix) + "(\\s*\\|.*)$").matcher(line);
+			if (gm.matches()) {
+				String paddedCellLine = String.format("%" + expectedPrefix.length() + "d", activeGhciAndCellLine[1]);
+				return gm.group(1) + paddedCellLine + gm.group(2);
+			}
+		}
+		return line;
+	}
+
+	public static List<GhciSourceLocation> extractGhciErrorLocations(File ghciFile, File errFile) {
+		List<GhciSourceLocation> result = new ArrayList<>();
+		if (ghciFile == null || errFile == null || !errFile.exists()) return result;
+		try (BufferedReader br = new BufferedReader(new FileReader(errFile, StandardCharsets.UTF_8))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				Matcher m = GHCI_ERROR_LINE_PATTERN.matcher(line);
+				while (m.find()) {
+					int ghciLine = Integer.parseInt(m.group(2));
+					GhciSourceLocation loc = lookupGhciLocation(ghciFile, ghciLine);
+					if (loc != null) {
+						boolean duplicate = false;
+						for (GhciSourceLocation existing : result) {
+							if (existing.cellIndex == loc.cellIndex && existing.lineInCell == loc.lineInCell) {
+								duplicate = true;
+								break;
+							}
+						}
+						if (!duplicate) result.add(loc);
+					}
+				}
+			}
+		} catch (Exception ignored) {}
+		return result;
+	}
+
+	private static final Pattern HS_HEAD_NAME_PATTERN =
+		Pattern.compile("^([a-z_][a-zA-Z0-9_']*|\\([^)]+\\))\\b.*");
+	private static final Pattern HS_TYPE_SIG_PATTERN =
+		Pattern.compile("^([a-z_][a-zA-Z0-9_']*|\\([^)]+\\))\\s*::.*");
+
+	private static boolean isHaskellFuncOrBindLine(String trimmed) {
+		if (trimmed.startsWith("if ") || trimmed.startsWith("case ")
+			|| trimmed.startsWith("do ") || trimmed.equals("do")
+			|| trimmed.startsWith("let ") || trimmed.startsWith("\\")) {
+			return false;
+		}
+		if (!HS_HEAD_NAME_PATTERN.matcher(trimmed).matches()) {
+			return false;
+		}
+		return hasTopLevelEqualsOrGuard(trimmed);
+	}
+
+	private static boolean hasTopLevelEqualsOrGuard(String line) {
+		int paren = 0;
+		int bracket = 0;
+		int brace = 0;
+		boolean inString = false;
+		boolean inChar = false;
+		for (int i = 0; i < line.length(); i++) {
+			char c = line.charAt(i);
+			char next = (i + 1 < line.length()) ? line.charAt(i + 1) : '\0';
+			char prev = (i > 0) ? line.charAt(i - 1) : '\0';
+
+			if (inString) {
+				if (c == '\\') { i++; continue; }
+				if (c == '"') inString = false;
+				continue;
+			}
+			if (inChar) {
+				if (c == '\\') { i++; continue; }
+				if (c == '\'') inChar = false;
+				continue;
+			}
+			if (c == '-' && next == '-') break; // Commentaire fin de ligne
+			if (c == '"') { inString = true; continue; }
+			if (c == '\'' && (prev == ' ' || prev == '(' || prev == '[' || prev == ',' || prev == '=' || i == 0)) {
+				inChar = true;
+				continue;
+			}
+			if (c == '(') { paren++; continue; }
+			if (c == ')') { if (paren > 0) paren--; continue; }
+			if (c == '[') { bracket++; continue; }
+			if (c == ']') { if (bracket > 0) bracket--; continue; }
+			if (c == '{') { brace++; continue; }
+			if (c == '}') { if (brace > 0) brace--; continue; }
+
+			if (paren == 0 && bracket == 0 && brace == 0) {
+				if (c == '=' && prev != '=' && prev != '/' && prev != '<' && prev != '>' && next != '=' && next != '>') {
+					return true;
+				}
+				if (c == '|' && prev != '|' && next != '|') {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static void extractRunnableGhci(File ipynbFile, File targetGhciFile) throws IOException {
+		if (ipynbFile == null || !ipynbFile.exists()) return;
+		JsonNode root = MAPPER.readTree(ipynbFile);
+		if (root == null || !root.has("cells")) return;
+
+		List<GhciCellInput> hsCells = new ArrayList<>();
+		JsonNode cells = root.get("cells");
+		if (cells != null && cells.isArray()) {
+			int cellIdx = 0;
+			int codeCellNum = 0;
+			for (JsonNode c : cells) {
+				String type = c.path("cell_type").asText("code").toLowerCase();
+				String lang = c.path("metadata").path("language").asText("haskell");
+				if ("code".equals(type)) {
+					codeCellNum++;
+					if ("haskell".equalsIgnoreCase(lang)) {
+						hsCells.add(new GhciCellInput(cellIdx, codeCellNum, extractSourceText(c.get("source"))));
+					}
+				}
+				cellIdx++;
+			}
+		}
+
+		List<GhciSourceLocation> sourceMap = new ArrayList<>();
+		String ghciScript = generateGhciScriptInternal(hsCells, hsCells.size() - 1, true, sourceMap);
+		GHCI_SOURCE_MAPS.put(ghciMapKey(targetGhciFile), Collections.unmodifiableList(sourceMap));
+		MyFileUtils.writeln(targetGhciFile, ghciScript);
+	}
+
+	public static String generateGhciScript(List<codelab.modules.editeur.notebook.NotebookCellPane> cellPanes, int targetIndex, boolean runAll) {
+		return generateGhciScript(cellPanes, targetIndex, runAll, null);
+	}
+
+	public static String generateGhciScript(List<codelab.modules.editeur.notebook.NotebookCellPane> cellPanes, int targetIndex, boolean runAll, File targetGhciFile) {
+		List<GhciCellInput> hsCells = new ArrayList<>();
+		int targetHsIndex = -1;
+		int codeCellNum = 0;
+
+		int limit = runAll ? cellPanes.size() - 1 : targetIndex;
+		for (int i = 0; i <= limit && i < cellPanes.size(); i++) {
+			codelab.modules.editeur.notebook.NotebookCellPane cp = cellPanes.get(i);
+			if ("code".equals(cp.getType())) {
+				codeCellNum++;
+				if ("haskell".equalsIgnoreCase(cp.getLanguage())) {
+					hsCells.add(new GhciCellInput(i, codeCellNum, cp.getSource()));
+					if (i == targetIndex) {
+						targetHsIndex = hsCells.size() - 1;
+					}
+				}
+			}
+		}
+
+		if (targetHsIndex < 0) {
+			targetHsIndex = hsCells.size() - 1;
+		}
+
+		List<GhciSourceLocation> sourceMap = new ArrayList<>();
+		String script = generateGhciScriptInternal(hsCells, targetHsIndex, runAll, sourceMap);
+		if (targetGhciFile != null) {
+			GHCI_SOURCE_MAPS.put(ghciMapKey(targetGhciFile), Collections.unmodifiableList(sourceMap));
+		}
+		return script;
+	}
+
+	public static String generateGhciScriptFromSources(List<String> hsCellSources, int targetIndex, boolean runAll) {
+		List<GhciCellInput> hsCells = new ArrayList<>();
+		for (int i = 0; i < hsCellSources.size(); i++) {
+			hsCells.add(new GhciCellInput(i, i + 1, hsCellSources.get(i)));
+		}
+		return generateGhciScriptInternal(hsCells, targetIndex, runAll, new ArrayList<>());
+	}
+
+	private static String generateGhciScriptInternal(List<GhciCellInput> hsCells, int targetIndex, boolean runAll, List<GhciSourceLocation> sourceMap) {
+		StringBuilder script = new StringBuilder();
+		script.append(":set prompt \"\"\n");
+		sourceMap.add(null);
+		script.append(":set prompt-cont \"\"\n");
+		sourceMap.add(null);
+
+		for (int i = 0; i <= targetIndex && i < hsCells.size(); i++) {
+			GhciCellInput cell = hsCells.get(i);
+			String raw = cell.source;
+			if (raw == null || raw.trim().isEmpty()) continue;
+
+			boolean evaluateExpressions = runAll || (i == targetIndex);
+			List<List<NumberedLine>> blocks = splitHaskellBlocksNumbered(raw);
+
+			for (List<NumberedLine> block : blocks) {
+				if (block.isEmpty()) continue;
+				String firstTrimmed = block.get(0).text.trim();
+				if (firstTrimmed.isEmpty()) continue;
+
+				boolean isSetCmd = firstTrimmed.startsWith(":set ") || firstTrimmed.equals(":set");
+				boolean isOtherGhciCmd = firstTrimmed.startsWith(":") && !isSetCmd;
+				boolean isDecl = isHaskellDeclarationBlockNumbered(block);
+
+				if (!evaluateExpressions && !isSetCmd && !isDecl) {
+					// Ignorer les expressions et requêtes (:t, :i) des cellules antérieures
+					continue;
+				}
+
+				if (isOtherGhciCmd || isSetCmd || firstTrimmed.startsWith("import ")) {
+					for (NumberedLine nl : block) {
+						script.append(nl.text).append("\n");
+						sourceMap.add(new GhciSourceLocation(cell.cellIndex, cell.codeCellNumber, nl.lineNumber));
+					}
+				} else if (block.size() > 1) {
+					script.append(":{\n");
+					sourceMap.add(new GhciSourceLocation(cell.cellIndex, cell.codeCellNumber, block.get(0).lineNumber));
+					for (NumberedLine nl : block) {
+						script.append(nl.text).append("\n");
+						sourceMap.add(new GhciSourceLocation(cell.cellIndex, cell.codeCellNumber, nl.lineNumber));
+					}
+					script.append(":}\n");
+					sourceMap.add(new GhciSourceLocation(cell.cellIndex, cell.codeCellNumber, block.get(block.size() - 1).lineNumber));
+				} else {
+					NumberedLine nl = block.get(0);
+					script.append(nl.text).append("\n");
+					sourceMap.add(new GhciSourceLocation(cell.cellIndex, cell.codeCellNumber, nl.lineNumber));
+				}
+			}
+		}
+
+		return script.toString();
+	}
+
+	public static void extractRunnableHaskell(File ipynbFile, File targetHsFile) throws IOException {
+		if (ipynbFile == null || !ipynbFile.exists()) return;
+		JsonNode root = MAPPER.readTree(ipynbFile);
+		if (root == null || !root.has("cells")) return;
+
+		List<String> imports = new ArrayList<>();
+		List<String> declarations = new ArrayList<>();
+		List<String> expressions = new ArrayList<>();
+		boolean hasMain = false;
+
+		JsonNode cells = root.get("cells");
+		if (cells != null && cells.isArray()) {
+			for (JsonNode c : cells) {
+				String type = c.path("cell_type").asText("code").toLowerCase();
+				String lang = c.path("metadata").path("language").asText("haskell");
+				if (!"code".equals(type) || !"haskell".equalsIgnoreCase(lang)) continue;
+
+				String raw = extractSourceText(c.get("source"));
+				if (raw == null || raw.trim().isEmpty()) continue;
+
+				List<List<String>> blocks = splitHaskellBlocks(raw);
+				for (List<String> block : blocks) {
+					if (block.isEmpty()) continue;
+					String firstTrimmed = block.get(0).trim();
+					if (firstTrimmed.startsWith("import ")) {
+						String imp = String.join("\n", block);
+						if (!imports.contains(imp)) imports.add(imp);
+					} else if (firstTrimmed.startsWith(":")) {
+						declarations.add("-- [GHCi] " + String.join("\n-- ", block));
+					} else if (isHaskellDeclarationBlock(block)) {
+						String blockText = String.join("\n", block);
+						if (firstTrimmed.startsWith("main ") || firstTrimmed.startsWith("main=")) {
+							hasMain = true;
+						}
+						declarations.add(blockText);
+					} else {
+						expressions.add(String.join("\n", block));
+					}
+				}
+			}
+		}
+
+		StringBuilder out = new StringBuilder();
+		out.append("-- Generated by CodeLab from ").append(ipynbFile.getName()).append("\n\n");
+		for (String imp : imports) {
+			out.append(imp).append("\n");
+		}
+		if (!imports.isEmpty()) out.append("\n");
+
+		for (String decl : declarations) {
+			out.append(decl).append("\n\n");
+		}
+
+		if (!hasMain && !expressions.isEmpty()) {
+			out.append("main :: IO ()\n");
+			out.append("main = do\n");
+			for (String expr : expressions) {
+				String trimmed = expr.trim();
+				if (trimmed.startsWith("putStr") || trimmed.startsWith("print ") || trimmed.startsWith("do")) {
+					for (String line : expr.split("\r?\n")) {
+						out.append("  ").append(line).append("\n");
+					}
+				} else {
+					out.append("  print (").append(trimmed.replace("\n", " ")).append(")\n");
+				}
+			}
+		} else if (hasMain && !expressions.isEmpty()) {
+			out.append("-- Expressions interactives du carnet :\n");
+			for (String expr : expressions) {
+				for (String line : expr.split("\r?\n")) {
+					out.append("-- ").append(line).append("\n");
+				}
+			}
+		}
+
+		MyFileUtils.writeln(targetHsFile, out.toString());
+	}
+
+	private static List<List<String>> splitHaskellBlocks(String raw) {
+		List<List<NumberedLine>> numbered = splitHaskellBlocksNumbered(raw);
+		List<List<String>> res = new ArrayList<>(numbered.size());
+		for (List<NumberedLine> block : numbered) {
+			List<String> lines = new ArrayList<>(block.size());
+			for (NumberedLine nl : block) lines.add(nl.text);
+			res.add(lines);
+		}
+		return res;
+	}
+
+	private static List<List<NumberedLine>> splitHaskellBlocksNumbered(String raw) {
+		List<List<NumberedLine>> blocks = new ArrayList<>();
+		String[] lines = raw.split("\r?\n", -1);
+		List<NumberedLine> current = null;
+		String currentFuncName = null;
+		boolean inBlockComment = false;
+
+		for (int idx = 0; idx < lines.length; idx++) {
+			String line = lines[idx];
+			int lineNum = idx + 1;
+			String trimmed = line.trim();
+
+			if (inBlockComment) {
+				if (trimmed.contains("-}")) {
+					inBlockComment = false;
+				}
+				continue;
+			}
+			if (trimmed.startsWith("{-")) {
+				if (!trimmed.contains("-}")) {
+					inBlockComment = true;
+				}
+				continue;
+			}
+			if (trimmed.isEmpty()) {
+				if (current != null) {
+					blocks.add(current);
+					current = null;
+					currentFuncName = null;
+				}
+				continue;
+			}
+			if (trimmed.startsWith("--")) {
+				continue;
+			}
+
+			boolean isIndented = Character.isWhitespace(line.charAt(0));
+			boolean isContinuationKeyword = trimmed.startsWith("where") || trimmed.startsWith("deriving") || trimmed.startsWith("|");
+
+			if (current != null && (isIndented || isContinuationKeyword)) {
+				current.add(new NumberedLine(lineNum, line));
+				continue;
+			}
+
+			String lineFuncName = extractHaskellHeadName(trimmed);
+			if (current != null && currentFuncName != null && currentFuncName.equals(lineFuncName)
+				&& isHaskellFuncOrBindLine(trimmed)) {
+				current.add(new NumberedLine(lineNum, line));
+				continue;
+			}
+
+			if (current != null) {
+				blocks.add(current);
+			}
+			current = new ArrayList<>();
+			current.add(new NumberedLine(lineNum, line));
+			currentFuncName = lineFuncName;
+		}
+
+		if (current != null) {
+			blocks.add(current);
+		}
+		return blocks;
+	}
+
+	private static boolean isHaskellDeclarationBlockNumbered(List<NumberedLine> block) {
+		if (block == null || block.isEmpty()) return false;
+		List<String> texts = new ArrayList<>(block.size());
+		for (NumberedLine nl : block) texts.add(nl.text);
+		return isHaskellDeclarationBlock(texts);
+	}
+
+	private static String extractHaskellHeadName(String trimmed) {
+		Matcher mSig = HS_TYPE_SIG_PATTERN.matcher(trimmed);
+		if (mSig.matches()) return mSig.group(1);
+		if (isHaskellFuncOrBindLine(trimmed)) {
+			Matcher mHead = HS_HEAD_NAME_PATTERN.matcher(trimmed);
+			if (mHead.matches()) return mHead.group(1);
+		}
+		return null;
+	}
+
+	private static boolean isHaskellDeclarationBlock(List<String> block) {
+		if (block == null || block.isEmpty()) return false;
+		String first = block.get(0).trim();
+		if (first.startsWith("import ")) return true;
+		if (first.startsWith("data ") || first.startsWith("newtype ") || first.startsWith("type ")
+			|| first.startsWith("class ") || first.startsWith("instance ")
+			|| first.startsWith("infix ") || first.startsWith("infixl ") || first.startsWith("infixr ")
+			|| first.startsWith("default ")) {
+			return true;
+		}
+		if (first.startsWith("let ")) {
+			String joined = String.join(" ", block);
+			return !Pattern.compile("\\bin\\b").matcher(joined).find();
+		}
+		if (HS_TYPE_SIG_PATTERN.matcher(first).matches()) return true;
+		return isHaskellFuncOrBindLine(first);
 	}
 }

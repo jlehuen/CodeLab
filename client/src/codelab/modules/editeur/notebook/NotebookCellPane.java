@@ -35,7 +35,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import codelab.utils.CleanListView;
@@ -51,6 +53,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
+import javax.swing.JLayer;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -58,6 +61,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 import javax.swing.KeyStroke;
+import javax.swing.plaf.LayerUI;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
@@ -199,12 +203,25 @@ public class NotebookCellPane extends JPanel {
 
 	private final NotebookEditor editor;
 	private String type; // "code" ou "markdown"
-	private String language = "python"; // "python" ou "c"
+	private String language = "python"; // "python", "c" ou "haskell"
 	private boolean editable = true;
 
 	public static final String OPT_PYTHON = "Langage Python";
 	public static final String OPT_C = "Langage C";
+	public static final String OPT_HASKELL = "Langage Haskell";
 	public static final String OPT_TEXT = "Markdown";
+
+	private static String normalizeLanguage(String lang) {
+		if ("c".equalsIgnoreCase(lang)) return "c";
+		if ("haskell".equalsIgnoreCase(lang)) return "haskell";
+		return "python";
+	}
+
+	private static String syntaxStyleForLanguage(String lang) {
+		if ("c".equalsIgnoreCase(lang)) return SyntaxConstants.SYNTAX_STYLE_C;
+		if ("haskell".equalsIgnoreCase(lang)) return SyntaxConstants.SYNTAX_STYLE_LUA;
+		return SyntaxConstants.SYNTAX_STYLE_PYTHON;
+	}
 
 	// Éléments du bandeau supérieur
 	private JPanel headerPanel;
@@ -232,6 +249,7 @@ public class NotebookCellPane extends JPanel {
 	// Composants cellule de code
 	private RSyntaxTextArea codeArea;
 	private RTextScrollPane codeScroll;
+	private final Set<Integer> errorLines = new HashSet<>();
 
 	// Composants cellule Markdown
 	private CardLayout mdCardLayout;
@@ -243,13 +261,13 @@ public class NotebookCellPane extends JPanel {
 	private boolean isEditingMd = false;
 
 	public NotebookCellPane(NotebookEditor editor, String type, String initialSource) {
-		this(editor, type, "c".equalsIgnoreCase(type) ? "c" : "python", initialSource);
+		this(editor, type, normalizeLanguage(type), initialSource);
 	}
 
 	public NotebookCellPane(NotebookEditor editor, String type, String language, String initialSource) {
 		this.editor = editor;
 		this.type = "markdown".equalsIgnoreCase(type) ? "markdown" : "code";
-		this.language = "c".equalsIgnoreCase(language) ? "c" : "python";
+		this.language = normalizeLanguage(language);
 
 		setLayout(new BorderLayout());
 		setOpaque(false);
@@ -305,18 +323,20 @@ public class NotebookCellPane extends JPanel {
 	}
 
 	public void setLanguage(String lang) {
-		this.language = "c".equalsIgnoreCase(lang) ? "c" : "python";
+		this.language = normalizeLanguage(lang);
 		if (typeSelector != null) {
 			if ("markdown".equals(type)) {
 				typeSelector.setSelectedItem(OPT_TEXT);
 			} else if ("c".equals(language)) {
 				typeSelector.setSelectedItem(OPT_C);
+			} else if ("haskell".equals(language)) {
+				typeSelector.setSelectedItem(OPT_HASKELL);
 			} else {
 				typeSelector.setSelectedItem(OPT_PYTHON);
 			}
 		}
 		if (codeArea != null && "code".equals(type)) {
-			codeArea.setSyntaxEditingStyle("c".equals(language) ? SyntaxConstants.SYNTAX_STYLE_C : SyntaxConstants.SYNTAX_STYLE_PYTHON);
+			codeArea.setSyntaxEditingStyle(syntaxStyleForLanguage(language));
 		}
 	}
 
@@ -730,11 +750,13 @@ public class NotebookCellPane extends JPanel {
 		btnFold.addActionListener(e -> setCollapsed(!isCollapsed()));
 		leftBox.add(btnFold, gbcL);
 
-		typeSelector = new JComboBox<>(new String[] { OPT_PYTHON, OPT_C, OPT_TEXT });
+		typeSelector = new JComboBox<>(new String[] { OPT_PYTHON, OPT_C, OPT_HASKELL, OPT_TEXT });
 		if ("markdown".equals(type)) {
 			typeSelector.setSelectedItem(OPT_TEXT);
 		} else if ("c".equalsIgnoreCase(language)) {
 			typeSelector.setSelectedItem(OPT_C);
+		} else if ("haskell".equalsIgnoreCase(language)) {
+			typeSelector.setSelectedItem(OPT_HASKELL);
 		} else {
 			typeSelector.setSelectedItem(OPT_PYTHON);
 		}
@@ -750,6 +772,8 @@ public class NotebookCellPane extends JPanel {
 				changeType("markdown", language);
 			} else if (OPT_C.equals(selected)) {
 				changeType("code", "c");
+			} else if (OPT_HASKELL.equals(selected)) {
+				changeType("code", "haskell");
 			} else {
 				changeType("code", "python");
 			}
@@ -1016,7 +1040,7 @@ public class NotebookCellPane extends JPanel {
 		};
 
 		// 1. Code cell setup
-		codeArea = createCellTextArea("c".equalsIgnoreCase(language) ? SyntaxConstants.SYNTAX_STYLE_C : SyntaxConstants.SYNTAX_STYLE_PYTHON);
+		codeArea = createCellTextArea(syntaxStyleForLanguage(language));
 		codeArea.setAntiAliasingEnabled(true);
 		codeArea.setCodeFoldingEnabled(true);
 		codeArea.setAutoIndentEnabled(true);
@@ -1059,6 +1083,15 @@ public class NotebookCellPane extends JPanel {
 		codeScroll.setBorder(BorderFactory.createEmptyBorder(2, 6, 8, 6));
 		codeScroll.setIconRowHeaderEnabled(false);
 		codeScroll.getGutter().setBookmarkingEnabled(false);
+		JLayer<Component> gutterLayer = new JLayer<>(codeScroll.getGutter(), new LayerUI<Component>() {
+			private static final long serialVersionUID = 1L;
+			@Override
+			public void paint(Graphics g, javax.swing.JComponent c) {
+				super.paint(g, c);
+				paintGutterErrorMarkers(g, c);
+			}
+		});
+		codeScroll.setRowHeaderView(gutterLayer);
 
 		// 2. Markdown cell setup
 		mdCardLayout = new CardLayout();
@@ -1197,13 +1230,15 @@ public class NotebookCellPane extends JPanel {
 		String source = getSource();
 		this.type = newType;
 		if (newLang != null) {
-			this.language = "c".equalsIgnoreCase(newLang) ? "c" : "python";
+			this.language = normalizeLanguage(newLang);
 		}
 		if (typeSelector != null) {
 			if ("markdown".equals(type)) {
 				typeSelector.setSelectedItem(OPT_TEXT);
 			} else if ("c".equalsIgnoreCase(language)) {
 				typeSelector.setSelectedItem(OPT_C);
+			} else if ("haskell".equalsIgnoreCase(language)) {
+				typeSelector.setSelectedItem(OPT_HASKELL);
 			} else {
 				typeSelector.setSelectedItem(OPT_PYTHON);
 			}
@@ -1223,7 +1258,7 @@ public class NotebookCellPane extends JPanel {
 			if (btnValidateMd != null) {
 				btnValidateMd.setVisible(false);
 			}
-			codeArea.setSyntaxEditingStyle("c".equalsIgnoreCase(language) ? SyntaxConstants.SYNTAX_STYLE_C : SyntaxConstants.SYNTAX_STYLE_PYTHON);
+			codeArea.setSyntaxEditingStyle(syntaxStyleForLanguage(language));
 			codeArea.setText(source);
 			centerPanel.add(codeScroll, BorderLayout.CENTER);
 		}
@@ -1473,10 +1508,80 @@ public class NotebookCellPane extends JPanel {
 		}
 	}
 
+	private void paintGutterErrorMarkers(Graphics g, javax.swing.JComponent layer) {
+		if (errorLines.isEmpty() || codeArea == null || codeScroll == null || layer == null) return;
+		int rectW = Math.max(1, layer.getWidth() - 1);
+
+		Graphics2D g2 = (Graphics2D) g.create();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+		Font baseFont = codeScroll.getGutter().getLineNumberFont();
+		if (baseFont == null) baseFont = codeArea.getFont();
+		Font boldFont = baseFont.deriveFont(Font.BOLD);
+		g2.setFont(boldFont);
+		FontMetrics fm = g2.getFontMetrics();
+
+		// Repérer la position exacte de LineNumberList dans la gouttière (avant FoldIndicator)
+		java.awt.Rectangle lnlBounds = null;
+		for (Component child : codeScroll.getGutter().getComponents()) {
+			if (child instanceof org.fife.ui.rtextarea.LineNumberList) {
+				lnlBounds = SwingUtilities.convertRectangle(child.getParent(), child.getBounds(), layer);
+				break;
+			}
+		}
+		int rhs = codeArea.isCodeFoldingEnabled() ? 0 : 4;
+		int rightEdge = (lnlBounds != null) ? (lnlBounds.x + lnlBounds.width - rhs) : (rectW - 4);
+
+		for (int line : errorLines) {
+			try {
+				if (line < 0 || line >= codeArea.getLineCount()) continue;
+				int offset = codeArea.getLineStartOffset(line);
+				java.awt.geom.Rectangle2D r2d = codeArea.modelToView2D(offset);
+				if (r2d == null) continue;
+				java.awt.Rectangle r = SwingUtilities.convertRectangle(codeArea, r2d.getBounds(), layer);
+				g2.setColor(new Color(205, 35, 35));
+				g2.fillRect(0, r.y, rectW, r.height);
+
+				String numStr = String.valueOf(line + 1);
+				int textX = rightEdge - fm.stringWidth(numStr);
+				int textY = r.y + ((r.height - fm.getHeight()) / 2) + fm.getAscent();
+				g2.setColor(Color.WHITE);
+				g2.drawString(numStr, textX, textY);
+			} catch (BadLocationException ignored) {}
+		}
+		g2.dispose();
+	}
+
+	public void addErrorLineMarker(int line, Color color, String tooltip) {
+		Runnable task = () -> {
+			try {
+				if ("code".equals(type) && codeArea != null && codeScroll != null) {
+					if (line >= 0 && line < codeArea.getLineCount()) {
+						codeArea.addLineHighlight(line, color);
+						errorLines.add(line);
+						codeScroll.getGutter().repaint();
+					}
+				}
+			} catch (BadLocationException ignored) {}
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			task.run();
+		} else {
+			SwingUtilities.invokeLater(task);
+		}
+	}
+
 	public void removeAllLineHighlights() {
 		Runnable task = () -> {
 			if (codeArea != null) {
 				codeArea.removeAllLineHighlights();
+			}
+			if (!errorLines.isEmpty()) {
+				errorLines.clear();
+				if (codeScroll != null) {
+					codeScroll.getGutter().repaint();
+				}
 			}
 			if (mdArea != null) {
 				mdArea.removeAllLineHighlights();

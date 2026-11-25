@@ -167,7 +167,7 @@ def format_report_markdown(results: dict) -> str:
     # Calcul des radars et profil dominant
     radars = generate_mermaid_radars(results, student_name or student_id)
     radars_visualisation = radars.get("radars_markdown", "")
-    profil = radars.get("profil_dominant", "Standard")
+    profil = radars.get("profil_display", radars.get("profil_dominant", "Standard"))
 
     # Intégrité & stylométrie
     ai_det = results.get("ai_analysis") or results.get("ai_detection") or {}

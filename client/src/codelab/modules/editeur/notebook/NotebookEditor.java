@@ -66,6 +66,8 @@ public class NotebookEditor extends AbstractEditor {
 	private NotebookCellPane activeCell = null;
 	private ObjectNode notebookMetadata = null;
 	private int executionCounter = 0;
+	private File lastGhciScriptFile = null;
+	private static final Color COLOR_ERROR_HIGHLIGHT = new Color(255, 224, 224);
 
 	private static class ScrollablePanel extends JPanel implements javax.swing.Scrollable {
 		private static final long serialVersionUID = 1L;
@@ -267,8 +269,11 @@ public class NotebookEditor extends AbstractEditor {
 	}
 
 	public synchronized void addCell(int index, String type, String source) {
-		String defaultLang = isCNotebook() ? "c" : "python";
-		addCell(index, type, "c".equalsIgnoreCase(type) ? "c" : defaultLang, source);
+		String defaultLang = getDefaultLanguage();
+		String lang = defaultLang;
+		if ("c".equalsIgnoreCase(type)) lang = "c";
+		else if ("haskell".equalsIgnoreCase(type)) lang = "haskell";
+		addCell(index, type, lang, source);
 	}
 
 	public void addCellAfter(NotebookCellPane current, String type, String language) {
@@ -279,7 +284,7 @@ public class NotebookEditor extends AbstractEditor {
 	}
 
 	public void addCellAfter(NotebookCellPane current, String type) {
-		String lang = (current != null) ? current.getLanguage() : (isCNotebook() ? "c" : "python");
+		String lang = (current != null) ? current.getLanguage() : getDefaultLanguage();
 		addCellAfter(current, type, lang);
 	}
 
@@ -305,7 +310,7 @@ public class NotebookEditor extends AbstractEditor {
 
 	public void addCellAtEnd(String type) {
 		NotebookCellPane last = cellPanes.isEmpty() ? null : cellPanes.get(cellPanes.size() - 1);
-		String lang = (last != null) ? last.getLanguage() : (isCNotebook() ? "c" : "python");
+		String lang = (last != null) ? last.getLanguage() : getDefaultLanguage();
 		addCell(cellPanes.size(), type, lang, "");
 		setModified(true);
 	}
@@ -389,19 +394,32 @@ public class NotebookEditor extends AbstractEditor {
 	// Exécution des cellules
 	///////////////////////////////////////////////////
 
-	public boolean isCNotebook() {
+	public String getDefaultLanguage() {
 		int cCount = 0;
+		int hsCount = 0;
 		int pyCount = 0;
 		for (NotebookCellPane cp : cellPanes) {
 			if ("code".equals(cp.getType())) {
 				if ("c".equalsIgnoreCase(cp.getLanguage())) {
 					cCount++;
+				} else if ("haskell".equalsIgnoreCase(cp.getLanguage())) {
+					hsCount++;
 				} else {
 					pyCount++;
 				}
 			}
 		}
-		return cCount > 0 && cCount >= pyCount;
+		if (hsCount > 0 && hsCount >= cCount && hsCount >= pyCount) return "haskell";
+		if (cCount > 0 && cCount >= pyCount) return "c";
+		return "python";
+	}
+
+	public boolean isCNotebook() {
+		return "c".equals(getDefaultLanguage());
+	}
+
+	public boolean isHaskellNotebook() {
+		return "haskell".equals(getDefaultLanguage());
 	}
 
 	public void runAllCells() {
@@ -418,11 +436,14 @@ public class NotebookEditor extends AbstractEditor {
 		}
 
 		executionCounter++;
+		removeAllLineHighlights();
 		targetCell.setExecutionCount(executionCounter);
 		targetCell.setRunning(true);
 
 		if ("c".equalsIgnoreCase(targetCell.getLanguage())) {
 			runSingleCellC(targetCell);
+		} else if ("haskell".equalsIgnoreCase(targetCell.getLanguage())) {
+			runSingleCellHaskell(targetCell);
 		} else {
 			runSingleCellPython(targetCell);
 		}
@@ -506,6 +527,54 @@ public class NotebookEditor extends AbstractEditor {
 		}
 
 		module.codelab.execute(cellScript.getName());
+	}
+
+	private void runSingleCellHaskell(NotebookCellPane targetCell) {
+		save_content();
+
+		int targetIndex = cellPanes.indexOf(targetCell);
+		if (targetIndex < 0) return;
+
+		String dir = (getFile() != null) ? getDirectory() : (extern_file != null) ? extern_file.getParent() : CodeLab.PROG_LOCAL_FOLDER;
+		String baseName = (getFile() != null) ? getFilename() : (extern_file != null) ? extern_file.getName() : "temp.ipynb";
+		File cellScript = new File(dir, baseName + ".cell.ghci");
+		this.lastGhciScriptFile = cellScript;
+
+		String ghciScript = JupyterUtils.generateGhciScript(cellPanes, targetIndex, false, cellScript);
+		MyFileUtils.writeln(cellScript, ghciScript);
+
+		module.codelab.execute(cellScript.getName());
+	}
+
+	public void highlightGhciErrors(File errFile) {
+		if (lastGhciScriptFile == null || errFile == null || !errFile.exists()) return;
+		List<JupyterUtils.GhciSourceLocation> locs = JupyterUtils.extractGhciErrorLocations(lastGhciScriptFile, errFile);
+		if (locs.isEmpty()) return;
+
+		SwingUtilities.invokeLater(() -> {
+			removeAllLineHighlights();
+			NotebookCellPane firstCell = null;
+			for (JupyterUtils.GhciSourceLocation loc : locs) {
+				if (loc.cellIndex >= 0 && loc.cellIndex < cellPanes.size()) {
+					NotebookCellPane cp = cellPanes.get(loc.cellIndex);
+					if (cp.isCollapsed()) {
+						cp.setCollapsed(false);
+					}
+					String tip = String.format("Erreur Haskell (Cellule %d, ligne %d)", loc.codeCellNumber, loc.lineInCell);
+					cp.addErrorLineMarker(Math.max(0, loc.lineInCell - 1), COLOR_ERROR_HIGHLIGHT, tip);
+					if (firstCell == null) firstCell = cp;
+				}
+			}
+			if (firstCell != null) {
+				final NotebookCellPane target = firstCell;
+				setActiveCell(target);
+				SwingUtilities.invokeLater(() -> {
+					if (cellsPanel != null && target.getBounds() != null) {
+						cellsPanel.scrollRectToVisible(target.getBounds());
+					}
+				});
+			}
+		});
 	}
 
 	///////////////////////////////////////////////////
@@ -638,7 +707,14 @@ public class NotebookEditor extends AbstractEditor {
 		RSyntaxTextArea ta = cell.getActiveTextArea();
 		if (ta == null) return;
 
-		String commentStr = "c".equalsIgnoreCase(cell.getLanguage()) ? "// " : "# ";
+		String commentStr;
+		if ("c".equalsIgnoreCase(cell.getLanguage())) {
+			commentStr = "// ";
+		} else if ("haskell".equalsIgnoreCase(cell.getLanguage())) {
+			commentStr = "-- ";
+		} else {
+			commentStr = "# ";
+		}
 		int deb = ta.getSelectionStart();
 		int fin = ta.getSelectionEnd();
 		try {
@@ -676,6 +752,10 @@ public class NotebookEditor extends AbstractEditor {
 					if (lineText.startsWith("// ")) {
 						ta.replaceRange("", start, start + 3);
 					} else if (lineText.startsWith("//")) {
+						ta.replaceRange("", start, start + 2);
+					} else if (lineText.startsWith("-- ")) {
+						ta.replaceRange("", start, start + 3);
+					} else if (lineText.startsWith("--")) {
 						ta.replaceRange("", start, start + 2);
 					} else if (lineText.startsWith("# ")) {
 						ta.replaceRange("", start, start + 2);
@@ -769,9 +849,37 @@ public class NotebookEditor extends AbstractEditor {
 				cellsArray.add(c);
 			}
 
+			String detectedLang = getDefaultLanguage();
 			if (notebookMetadata != null) {
-				root.set("metadata", notebookMetadata);
-			} else if (isCNotebook()) {
+				ObjectNode metaCopy = notebookMetadata.deepCopy();
+				if ("haskell".equals(detectedLang) && !"haskell".equalsIgnoreCase(metaCopy.path("kernelspec").path("language").asText(""))) {
+					ObjectNode kernelspec = metaCopy.putObject("kernelspec");
+					kernelspec.put("display_name", "Haskell");
+					kernelspec.put("language", "haskell");
+					kernelspec.put("name", "haskell");
+					ObjectNode langInfo = metaCopy.putObject("language_info");
+					langInfo.put("name", "haskell");
+					langInfo.put("file_extension", ".hs");
+				} else if ("c".equals(detectedLang) && !"c".equalsIgnoreCase(metaCopy.path("kernelspec").path("language").asText(""))) {
+					ObjectNode kernelspec = metaCopy.putObject("kernelspec");
+					kernelspec.put("display_name", "C");
+					kernelspec.put("language", "c");
+					kernelspec.put("name", "c");
+					ObjectNode langInfo = metaCopy.putObject("language_info");
+					langInfo.put("name", "c");
+					langInfo.put("version", "11");
+				}
+				root.set("metadata", metaCopy);
+			} else if ("haskell".equals(detectedLang)) {
+				ObjectNode meta = root.putObject("metadata");
+				ObjectNode kernelspec = meta.putObject("kernelspec");
+				kernelspec.put("display_name", "Haskell");
+				kernelspec.put("language", "haskell");
+				kernelspec.put("name", "haskell");
+				ObjectNode langInfo = meta.putObject("language_info");
+				langInfo.put("name", "haskell");
+				langInfo.put("file_extension", ".hs");
+			} else if ("c".equals(detectedLang)) {
 				ObjectNode meta = root.putObject("metadata");
 				ObjectNode kernelspec = meta.putObject("kernelspec");
 				kernelspec.put("display_name", "C");
@@ -817,13 +925,15 @@ public class NotebookEditor extends AbstractEditor {
 			JsonNode root = mapper.readTree(file);
 			if (root == null || !root.isObject()) return;
 
-			boolean isNotebookC = false;
+			String defaultNotebookLang = "python";
 			if (root.has("metadata") && root.get("metadata").isObject()) {
 				notebookMetadata = (ObjectNode) root.get("metadata").deepCopy();
 				String klang = notebookMetadata.path("kernelspec").path("language").asText("");
 				String llang = notebookMetadata.path("language_info").path("name").asText("");
 				if ("c".equalsIgnoreCase(klang) || "c".equalsIgnoreCase(llang)) {
-					isNotebookC = true;
+					defaultNotebookLang = "c";
+				} else if ("haskell".equalsIgnoreCase(klang) || "haskell".equalsIgnoreCase(llang)) {
+					defaultNotebookLang = "haskell";
 				}
 			} else {
 				notebookMetadata = null;
@@ -840,11 +950,8 @@ public class NotebookEditor extends AbstractEditor {
 				for (JsonNode cNode : cellsNode) {
 					String cellType = cNode.path("cell_type").asText("code");
 					String cellLang = cNode.path("metadata").path("language").asText("");
-					if (cellLang.isEmpty() && isNotebookC) {
-						cellLang = "c";
-					}
 					if (cellLang.isEmpty()) {
-						cellLang = "python";
+						cellLang = defaultNotebookLang;
 					}
 					boolean isCellLocked = false;
 					JsonNode metaNode = cNode.path("metadata");
@@ -883,7 +990,7 @@ public class NotebookEditor extends AbstractEditor {
 			}
 
 			if (cellPanes.isEmpty()) {
-				NotebookCellPane cp = new NotebookCellPane(this, "code", isNotebookC ? "c" : "python", "");
+				NotebookCellPane cp = new NotebookCellPane(this, "code", defaultNotebookLang, "");
 				cp.setEditable(editable);
 				cellPanes.add(cp);
 			}
@@ -947,6 +1054,7 @@ public class NotebookEditor extends AbstractEditor {
 
 	@Override
 	public boolean compile_file() {
+		removeAllLineHighlights();
 		for (NotebookCellPane cp : cellPanes) {
 			if ("code".equals(cp.getType())) {
 				cp.setExecutionCount(++executionCounter);
@@ -969,6 +1077,19 @@ public class NotebookEditor extends AbstractEditor {
 						}
 					}
 					return compilation_ok;
+				} catch (Exception e) {
+					for (NotebookCellPane cp : cellPanes) {
+						if (cp.isRunning()) cp.setRunning(false);
+					}
+					ExceptionManager.process(e);
+					compilation_ok = false;
+					return false;
+				}
+			} else if (isHaskellNotebook()) {
+				File ghciFile = new File(file.getAbsolutePath() + ".ghci");
+				this.lastGhciScriptFile = ghciFile;
+				try {
+					JupyterUtils.extractRunnableGhci(file, ghciFile);
 				} catch (Exception e) {
 					for (NotebookCellPane cp : cellPanes) {
 						if (cp.isRunning()) cp.setRunning(false);

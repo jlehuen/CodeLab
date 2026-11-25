@@ -50,6 +50,7 @@ public class Executeur implements Runnable {
 	private boolean errorFlag = false;
 	private boolean isBlocs = false;
 	private boolean isHTML = false;
+	private File ghciScriptFile = null;
 
 	private AfficheurFlux fluxSortie = null;
 	private AfficheurFlux fluxErreur = null;
@@ -207,6 +208,19 @@ public class Executeur implements Runnable {
 						pb = new ProcessBuilder(String.format("%s/%s", base, target));
 						break;
 					}
+					if (JupyterUtils.isHaskellNotebook(ipynbFile)) {
+						filename = filename + ".ghci";
+						File ghciFile = new File(base, filename);
+						try {
+							JupyterUtils.extractRunnableGhci(ipynbFile, ghciFile);
+						} catch (Exception e) {
+							ExceptionManager.process(e);
+							isReady = false;
+							return;
+						}
+						pb = buildGhciProcess(filename);
+						break;
+					}
 					if (	CodeLab.PYTHON_CMD == null ||
 							CodeLab.PYTHON_CMD.equals("undefined") ||
 							CodeLab.PYTHON_CMD.equals("DISABLED")) {
@@ -245,7 +259,10 @@ public class Executeur implements Runnable {
 				isReady = true;
 				return;
 
-			default: // Non exécutable
+			default: // Non exécutable (sauf script GHCi temporaire de carnet Haskell)
+				if (filename.toLowerCase().endsWith(".ghci")) {
+					pb = buildGhciProcess(filename);
+				}
 		}
 
 		///////////////////////////////////////////////////
@@ -268,6 +285,28 @@ public class Executeur implements Runnable {
 			env.put("INTERNAL_PORT", CodeLab.LOCAL_PORT); // Port du serveur UDP local
 			isReady = true;
 		}
+	}
+
+	///////////////////////////////////////////////////
+	// Exécution interactive Haskell (GHCi)
+	///////////////////////////////////////////////////
+
+	private ProcessBuilder buildGhciProcess(String ghciFilename) {
+		if (	CodeLab.HASKELL_CMD == null ||
+				CodeLab.HASKELL_CMD.equals("undefined") ||
+				CodeLab.HASKELL_CMD.equals("DISABLED")) {
+			Utils.showMessageDialog("ATTENTION", CodeLab.LABEL("noHaskellError"));
+			return null;
+		}
+		this.ghciScriptFile = new File(base, ghciFilename);
+		List<String> hsCmd = new ArrayList<>(Utils.splitCommandLine(CodeLab.HASKELL_CMD));
+		hsCmd.add("--interactive");
+		hsCmd.add("-v0");
+		hsCmd.add("-ignore-dot-ghci");
+		hsCmd.add("-e");
+		String escaped = ghciFilename.replace("\\", "\\\\").replace("\"", "\\\"");
+		hsCmd.add(":script \"" + escaped + "\"");
+		return new ProcessBuilder(hsCmd);
 	}
 
 	///////////////////////////////////////////////////
@@ -518,18 +557,33 @@ public class Executeur implements Runnable {
 			char[] buf = new char[1024];
 			int n = -1;
 			try {
-				// Lecture par bloc sur le flux (non-bloquant au-delà du 1er caractère disponible)
-				// Le !halted et !isInterrupted permettent de quitter la boucle en cas d'arrêt de l'exécution
-				while (!halted && !isInterrupted() && (n = reader.read(buf, 0, buf.length)) != -1) {
-					String str = new String(buf, 0, n);
-					if (!isError || !isBlocs) {
-						executeur.printChunkToConsole(str, color, false); // Vers la console
-					}
-					if (isError) {
-						errorFlag = true; // Flag erreur pour le message de clôture
+				if (isError && ghciScriptFile != null) {
+					int[] activeGhciAndCellLine = new int[] { -1, -1 };
+					String line;
+					while (!halted && !isInterrupted() && (line = reader.readLine()) != null) {
+						errorFlag = true;
 						if (errWriter != null) {
-							errWriter.write(buf, 0, n);
+							errWriter.write(line);
+							errWriter.newLine();
 							errWriter.flush();
+						}
+						String rewritten = JupyterUtils.rewriteGhciErrorLine(ghciScriptFile, line, activeGhciAndCellLine);
+						executeur.printToConsole(rewritten, color, false);
+					}
+				} else {
+					// Lecture par bloc sur le flux (non-bloquant au-delà du 1er caractère disponible)
+					// Le !halted et !isInterrupted permettent de quitter la boucle en cas d'arrêt de l'exécution
+					while (!halted && !isInterrupted() && (n = reader.read(buf, 0, buf.length)) != -1) {
+						String str = new String(buf, 0, n);
+						if (!isError || !isBlocs) {
+							executeur.printChunkToConsole(str, color, false); // Vers la console
+						}
+						if (isError) {
+							errorFlag = true; // Flag erreur pour le message de clôture
+							if (errWriter != null) {
+								errWriter.write(buf, 0, n);
+								errWriter.flush();
+							}
 						}
 					}
 				}

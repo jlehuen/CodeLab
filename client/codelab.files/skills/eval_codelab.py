@@ -1013,9 +1013,8 @@ def build_generic_scores_table(scores, data, profil):
         "axe1_progression": ("Axe 1 : Progression & Couverture", "/ 10.0", "Jalons et progression des TP"),
         "axe2_architecture": ("Axe 2 : Architecture Algorithmique", "/ 8.0", "Modularité et qualité"),
         "axe3_style": ("Axe 3 : Style & Rigueur", "/ 2.0", "Documentation et conventions"),
-        "score_p1": ("Partie 1 : Flux & Regex", "/ 8.0", "Traitement de fichiers et regex"),
-        "score_p2": ("Partie 2 : Numpy & Matplotlib", "/ 10.0", "Calcul matriciel et visualisations"),
-        "score_transversal": ("Transversal : Style Pythonique", "/ 2.0", "Idiomes et vectorisation"),
+        "score_p1": ("Partie 1 : Flux & Regex", "/ 10.0", "Traitement de fichiers, regex et dictionnaires"),
+        "score_p2": ("Partie 2 : Numpy & Matplotlib", "/ 10.0", "Calcul matriciel vectorisé et visualisations"),
     }
     rows = [
         "| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |",
@@ -1024,7 +1023,7 @@ def build_generic_scores_table(scores, data, profil):
     has_custom_axes = False
     raw_sum = 0.0
     for k, v in scores.items():
-        if k in ("total", "total_note", "note_technique_brute", "note_apres_ia", "malus_similarite", "malus_saut", "axe2_details"):
+        if k in ("total", "total_note", "note_technique_brute", "note_apres_ia", "malus_similarite", "malus_saut", "axe2_details", "score_transversal"):
             continue
         try:
             val_f = float(v)
@@ -1068,7 +1067,7 @@ def build_deterministic_pedagogical_sections(skill_name, data, identity):
         sujet = data.get("sujet", 1)
         p1 = data.get("score_p1", 0.0)
         p2 = data.get("score_p2", 0.0)
-        bilan = f"L'évaluation porte sur le **TP n°4 (Sujet {sujet})**. Vous obtenez **{p1:.2f} / 8.0** sur la Partie 1 (Flux & Regex) et **{p2:.2f} / 10.0** sur la Partie 2 (Numpy & Matplotlib), complétés par **{data.get('score_transversal', 0.0):.2f} / 2.0** sur l'axe transversal."
+        bilan = f"L'évaluation porte uniquement sur le **TP n°4 (Sujet {sujet})** (barème 4 couleurs + tests `assert`). Vous obtenez **{p1:.2f} / 10.0** sur la Partie 1 (Flux & Regex) et **{p2:.2f} / 10.0** sur la Partie 2 (Numpy & Matplotlib), soit **{total:.1f} / 20.0** (arrondi au 0,5)."
     else:
         bilan = f"L'analyse statique et le contrôle de compilation de vos sources aboutissent à une note globale estimée de **{total} / 20.0**. Les critères couvrent la syntaxe, l'architecture modulaire, le style et les tests."
 
@@ -1300,6 +1299,8 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         radars_dict = generate_mermaid_radars(res, s_name)
     except Exception:
         pass
+    res["radars"] = radars_dict
+    res["profil"] = radars_dict.get("profil_display", profil)
     radars_visualisation = radars_dict.get("radars_markdown", "")
 
     template_vars = {
@@ -1310,7 +1311,7 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         "groupe": s_group,
         "student_group": s_group,
         "group_line": group_line,
-        "profil": radars_dict.get("profil_display", profil),
+        "profil": res["profil"],
         "eval_date": eval_date_str,
         "skill_name": skill_meta.get("name", "eval-introprog"),
         "skill_last_modified": skill_meta.get("last_modified", ""),
@@ -1767,32 +1768,15 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
     if plagiarism_info is None:
         plagiarism_info = find_single_student_plagiarism(student_dir, identity['student_id'])
     if plagiarism_info:
+        # Alerte informative uniquement dans le rapport (aucun malus automatique sur la note)
         data["plagiarism_alert"] = plagiarism_info
-        if "note_technique_brute" not in data:
-            data["note_technique_brute"] = round(float(data.get("score_p1", 0.0)) + float(data.get("score_p2", 0.0)) + float(data.get("score_transversal", 0.0)), 2)
-        if "note_apres_ia" not in data:
-            data["note_apres_ia"] = float(data.get("total", data["note_technique_brute"]))
-        nb_sim = len(plagiarism_info.get("files", []))
-        max_sim = float(plagiarism_info.get("max_sim", 0.0))
-        sim_malus = 0.0
-        if nb_sim >= 2 or max_sim >= 95.0:
-            sim_malus = 2.0
-        elif max_sim >= 85.0:
-            sim_malus = 1.0
-        elif max_sim >= 75.0:
-            sim_malus = 0.5
-        if sim_malus > 0.0:
-            data["malus_similarite"] = sim_malus
-            tot = float(data["note_apres_ia"]) - sim_malus
-            if "note_technique_brute" in data:
-                tot = max(tot, float(data["note_technique_brute"]) - 3.5)
-            data["total"] = max(0.0, round(tot, 2))
+        data["malus_similarite"] = 0.0
 
     note = data.get('total', 'N/A')
     note_sans_malus = data.get('note_technique_brute', note)
     p1 = data.get('score_p1', 0)
     p2 = data.get('score_p2', 0)
-    print(f"[DONE] Audit statique achevé : P1={p1}/8 | P2={p2}/10 | Sans malus={note_sans_malus}/20 | Avec malus={note}/20", flush=True)
+    print(f"[DONE] Audit statique achevé : P1={p1}/10 | P2={p2}/10 | Note brute={note_sans_malus}/20 | Note finale={note}/20", flush=True)
 
     # Analyse télémétrique d'activité si .activity.jsonl est présent
     try:
@@ -1889,6 +1873,8 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
         radars_dict = generate_mermaid_radars(data, s_name)
     except Exception:
         pass
+    data["radars"] = radars_dict
+    data["profil"] = radars_dict.get("profil_display", profil)
     radars_visualisation = radars_dict.get("radars_markdown", "")
 
     template_vars = {
@@ -1900,7 +1886,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
         "groupe": s_group,
         "student_group": s_group,
         "group_line": group_line,
-        "profil": radars_dict.get("profil_display", profil),
+        "profil": data["profil"],
         "eval_date": eval_date_str,
         "skill_name": skill_meta.get("name", "eval-intropython"),
         "skill_last_modified": skill_meta.get("last_modified", ""),
@@ -2167,6 +2153,8 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
         radars_dict = generate_mermaid_radars(data, s_name)
     except Exception:
         pass
+    data["radars"] = radars_dict
+    data["profil"] = radars_dict.get("profil_display", profil)
     radars_visualisation = radars_dict.get("radars_markdown", "")
 
     template_vars = {
@@ -2177,7 +2165,7 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
         "groupe": s_group,
         "student_group": s_group,
         "group_line": group_line,
-        "profil": radars_dict.get("profil_display", profil),
+        "profil": data["profil"],
         "eval_date": eval_date_str,
         "skill_name": skill_meta.get("name", skill_name),
         "skill_last_modified": skill_meta.get("last_modified", ""),

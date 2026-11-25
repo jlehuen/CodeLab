@@ -201,10 +201,15 @@ public class FileManagerMenu {
 					menu.add(new JSeparator());
 
 					if (fd.getFilename().toLowerCase().endsWith(".ipynb")) {
-						boolean isC = JupyterUtils.isCNotebook(fd.getFile());
-						JMenuItem itemExport = new JMenuItem(isC ? LABEL("Export_notebook_c") : LABEL("Export_notebook_py"));
-						itemExport.setIcon(isC ? FileDescr.icon_c : FileDescr.icon_python);
-						itemExport.addActionListener(ev -> exportNotebookToScript(fd.getFile(), isC));
+						String nbLang = JupyterUtils.detectNotebookLanguage(fd.getFile());
+						String exportLabel = "c".equals(nbLang) ? LABEL("Export_notebook_c")
+							: "haskell".equals(nbLang) ? LABEL("Export_notebook_hs")
+							: LABEL("Export_notebook_py");
+						JMenuItem itemExport = new JMenuItem(exportLabel);
+						itemExport.setIcon("c".equals(nbLang) ? FileDescr.icon_c
+							: "haskell".equals(nbLang) ? FileDescr.icon_haskell
+							: FileDescr.icon_python);
+						itemExport.addActionListener(ev -> exportNotebookToScript(fd.getFile(), nbLang));
 						menu.add(itemExport);
 						menu.add(new JSeparator());
 					}
@@ -334,10 +339,15 @@ public class FileManagerMenu {
 					}
 
 					if (filename.toLowerCase().endsWith(".ipynb")) {
-						boolean isC = JupyterUtils.isCNotebook(fd.getFile());
-						JMenuItem itemExport = new JMenuItem(isC ? LABEL("Export_notebook_c") : LABEL("Export_notebook_py"));
-						itemExport.setIcon(isC ? FileDescr.icon_c : FileDescr.icon_python);
-						itemExport.addActionListener(ev -> exportNotebookToScript(fd.getFile(), isC));
+						String nbLang = JupyterUtils.detectNotebookLanguage(fd.getFile());
+						String exportLabel = "c".equals(nbLang) ? LABEL("Export_notebook_c")
+							: "haskell".equals(nbLang) ? LABEL("Export_notebook_hs")
+							: LABEL("Export_notebook_py");
+						JMenuItem itemExport = new JMenuItem(exportLabel);
+						itemExport.setIcon("c".equals(nbLang) ? FileDescr.icon_c
+							: "haskell".equals(nbLang) ? FileDescr.icon_haskell
+							: FileDescr.icon_python);
+						itemExport.addActionListener(ev -> exportNotebookToScript(fd.getFile(), nbLang));
 						menu.add(itemExport);
 						menu.add(new JSeparator());
 					}
@@ -501,7 +511,7 @@ public class FileManagerMenu {
 		}
 	}
 
-	private void exportNotebookToScript(File ipynbFile, boolean isC) {
+	private void exportNotebookToScript(File ipynbFile, String nbLang) {
 		if (ipynbFile == null || !ipynbFile.exists()) return;
 
 		// Sauvegarder le carnet si c'est le fichier en cours d'édition
@@ -509,7 +519,7 @@ public class FileManagerMenu {
 			editor.saveCurrentFile();
 		}
 
-		String targetExt = isC ? ".c" : ".py";
+		String targetExt = "c".equals(nbLang) ? ".c" : "haskell".equals(nbLang) ? ".hs" : ".py";
 		String baseName = ipynbFile.getName();
 		if (baseName.toLowerCase().endsWith(".ipynb")) {
 			baseName = baseName.substring(0, baseName.length() - 6);
@@ -528,8 +538,10 @@ public class FileManagerMenu {
 		}
 
 		try {
-			if (isC) {
+			if ("c".equals(nbLang)) {
 				JupyterUtils.extractRunnableC(ipynbFile, targetFile);
+			} else if ("haskell".equals(nbLang)) {
+				JupyterUtils.extractRunnableHaskell(ipynbFile, targetFile);
 			} else {
 				JupyterUtils.extractRunnablePython(ipynbFile, targetFile);
 			}

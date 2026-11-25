@@ -175,8 +175,23 @@ def analyze_cohort(session_dir):
     apply_similarity_penalties(cohort_results, suspicions)
     return cohort_results
 
+def ensure_results_radars(results):
+    """S'assure que chaque résultat dispose de ses analyses radar et détection de double-profil."""
+    try:
+        skills_root = Path(__file__).resolve().parent.parent.parent
+        if str(skills_root) not in sys.path:
+            sys.path.insert(0, str(skills_root))
+        from activity_analyzer import generate_mermaid_radars
+        for r in results:
+            if "radars" not in r or not r["radars"]:
+                s_name = r.get("student_name") or r.get("name") or r.get("student_id") or "Étudiant"
+                r["radars"] = generate_mermaid_radars(r, s_name)
+    except Exception:
+        pass
+
 def export_csv(results, csv_path, cohort_dir=None):
     os.makedirs(os.path.dirname(os.path.abspath(csv_path)), exist_ok=True)
+    ensure_results_radars(results)
     suspicions = detect_cohort_plagiarism(cohort_dir) if cohort_dir else []
     if suspicions:
         apply_similarity_penalties(results, suspicions)
@@ -189,7 +204,7 @@ def export_csv(results, csv_path, cohort_dir=None):
 
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f, delimiter=';')
-        writer.writerow(["login", "fichiers_java", "compilation", "architecture", "style", "tests", "note_sans_malus", "note_finale", "indice_ia", "alerte_similarite", "s_auth", "i_nav", "compilations", "executions", "alertes_burst"])
+        writer.writerow(["login", "fichiers_java", "compilation", "architecture", "style", "tests", "note_sans_malus", "note_finale", "profil_didactique", "indice_ia", "alerte_similarite", "s_auth", "i_nav", "compilations", "executions", "alertes_burst"])
         for r in results:
             sc = r.get("scores", {})
             note_sans_malus = sc.get("note_technique_brute", round(sc.get("compilation", 0) + sc.get("architecture", 0) + sc.get("style", 0) + sc.get("tests", 0), 1))
@@ -203,6 +218,8 @@ def export_csv(results, csv_path, cohort_dir=None):
             comp_col = act.get("compilations", {}).get("total", "") if act.get("active") else ""
             exec_col = act.get("executions", {}).get("total", "") if act.get("active") else ""
             burst_col = (act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0)) if act.get("active") else ""
+            rad = r.get("radars") or {}
+            prof_col = rad.get("profil_display", rad.get("profil_dominant", ""))
             writer.writerow([
                 login,
                 len(r.get("java_files", [])),
@@ -212,6 +229,7 @@ def export_csv(results, csv_path, cohort_dir=None):
                 sc.get("tests", 0),
                 note_sans_malus,
                 sc.get("total", 0),
+                prof_col,
                 ai_str,
                 sim_str,
                 s_auth_col,
@@ -223,6 +241,7 @@ def export_csv(results, csv_path, cohort_dir=None):
 
 def build_cohort_clusters(results, suspicious_logins):
     """Classe les étudiants en typologies/clusters pédagogiques exclusifs (mode sans IA + IA optionnelle)."""
+    ensure_results_radars(results)
     total_st = len(results)
     
     # Détection si des alertes IA existent au sein de la cohorte
@@ -299,7 +318,22 @@ def build_cohort_clusters(results, suspicious_logins):
 
         member_entry = f"`{lid}` ({name})" if (name and name != lid) else f"`{lid}`"
 
+        rad = r.get("radars") or {}
+        prim_id = rad.get("primary_profile_id")
+
         if is_susp:
+            c_map['pirates']['members'].append(member_entry)
+        elif prim_id == "boss":
+            c_map['boss']['members'].append(member_entry)
+        elif prim_id == "artisan":
+            c_map['artisans']['members'].append(member_entry)
+        elif prim_id == "cyborg":
+            c_map['cyborgs']['members'].append(member_entry)
+        elif prim_id == "casse_cou":
+            c_map['casse_cou']['members'].append(member_entry)
+        elif prim_id == "decrocheur":
+            c_map['decrocheurs']['members'].append(member_entry)
+        elif prim_id == "pirate":
             c_map['pirates']['members'].append(member_entry)
         elif is_ai and 'cyborgs' in c_map:
             c_map['cyborgs']['members'].append(member_entry)
@@ -333,6 +367,25 @@ def build_cohort_clusters(results, suspicious_logins):
         lines.append("")
     except Exception:
         pass
+
+    # Section dédiée aux Doubles-Profils Didactiques Cohérents observés
+    double_profils = [r for r in results if (r.get("radars") or {}).get("is_double_profil")]
+    if double_profils:
+        lines.append("## 🧬 Analyse des Profils Hybrides & Doubles-Profils Remarquables\n")
+        lines.append("> 💡 **Interprétation des Doubles-Profils** : Un double-profil est automatiquement identifié lorsque deux dimensions issues d'axes orthogonaux présentent conjointement une affinité élevée (scores $\\ge 11.0 / 20$ et écart $\\le 3.5$ pts). Ces hybridations permettent d'affiner le diagnostic pédagogique au-delà des archétypes simples.\n")
+        lines.append("| Étudiant | Login | Double-Profil Détecté | Surnom Pédagogique | Diagnostic Didactique & Posture Conseillée |")
+        lines.append("| :--- | :---: | :--- | :--- | :--- |")
+        for dp in double_profils:
+            r_rad = dp["radars"]
+            nom = dp.get("student_name") or dp.get("name") or dp.get("student_id") or "Étudiant"
+            lid = dp.get("student_id") or dp.get("login") or ""
+            lbl = r_rad.get("double_profil_label", r_rad.get("double_profil_nom", ""))
+            surnom = f"**{r_rad.get('double_profil_surnom', '')}**"
+            desc = r_rad.get("double_profil_desc", "")
+            conseil = r_rad.get("double_profil_conseil", "")
+            diag_str = f"{desc}<br>👉 *Conseil : {conseil}*"
+            lines.append(f"| **{nom}** | `{lid}` | {lbl} | {surnom} | {diag_str} |")
+        lines.append("")
 
     return "\n".join(lines)
 
@@ -381,6 +434,7 @@ def resolve_cohort_name(cohort_dir=None, output_md=None, session_id=None):
 
 def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, session_id=None, **kwargs):
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    ensure_results_radars(results)
     suspicions = detect_cohort_plagiarism(cohort_dir) if cohort_dir else []
     if suspicions:
         apply_similarity_penalties(results, suspicions)
@@ -446,12 +500,14 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
         md.append("---")
         md.append("")
 
-    md.append("| Étudiant / Dossier | Compilation (/6) | Conception (/8) | Javadoc (/4) | Tests (/2) | Note sans malus (/20) | Note avec malus (/20) | Indice IA | Alertes |")
-    md.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :--- |")
+    md.append("| Étudiant / Dossier | Compilation (/6) | Conception (/8) | Javadoc (/4) | Tests (/2) | Note sans malus (/20) | Note avec malus (/20) | Profil Didactique | Indice IA | Alertes |")
+    md.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :---: | :--- |")
     for r in results:
         sc = r.get("scores", {})
         note_sans_malus = sc.get("note_technique_brute", round(sc.get("compilation", 0) + sc.get("architecture", 0) + sc.get("style", 0) + sc.get("tests", 0), 1))
         login = r.get('student_id', '')
+        rad = r.get("radars") or {}
+        prof_col = rad.get("profil_display", rad.get("profil_dominant", "—"))
         alerts = []
         if login in suspicious_logins:
             alerts.append("Similarite forte")
@@ -462,8 +518,32 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
         elif ai_level.startswith('Modéré'):
             alerts.append("Idiomes IA")
         alert_str = " | ".join(alerts) if alerts else "Aucune"
-        md.append(f"| `{login}` | {sc.get('compilation', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | {note_sans_malus:.1f} | **{sc.get('total', 0):.1f}** | {ai_level} | {alert_str} |")
+        md.append(f"| `{login}` | {sc.get('compilation', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | {note_sans_malus:.1f} | **{sc.get('total', 0):.1f}** | {prof_col} | {ai_level} | {alert_str} |")
     md.append("")
     md.append(build_cohort_clusters(results, suspicious_logins))
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md))
+
+def audit_cohort(cohort_dir, output_csv=None, output_md=None, **kwargs):
+    if output_csv is None:
+        output_csv = kwargs.get('csv_output')
+    if output_md is None:
+        output_md = kwargs.get('md_output')
+    results = analyze_cohort(cohort_dir)
+    if output_csv:
+        export_csv(results, output_csv, cohort_dir)
+    if output_md:
+        export_summary_markdown(results, output_md, cohort_dir)
+    return results
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: audit_cohort.py <cohort_dir> [output.csv] [summary.md]")
+        sys.exit(1)
+    cohort_dir = sys.argv[1]
+    out_csv = sys.argv[2] if len(sys.argv) > 2 else "evaluations/notes_cohort.csv"
+    out_md = sys.argv[3] if len(sys.argv) > 3 else "evaluations/synthese_cohort.md"
+    audit_cohort(cohort_dir, out_csv, out_md)
+
+if __name__ == "__main__":
+    main()

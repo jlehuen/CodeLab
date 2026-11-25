@@ -399,8 +399,11 @@ public class FileManager extends JTree {
 				if (filename.endsWith(".ipynb.cell.py")) continue;
 				if (filename.endsWith(".ipynb.c")) continue;
 				if (filename.endsWith(".ipynb.cell.c")) continue;
+				if (filename.endsWith(".ipynb.ghci")) continue;
+				if (filename.endsWith(".ipynb.cell.ghci")) continue;
 				if (filename.endsWith(".cell.c")) continue;
 				if (filename.endsWith(".cell.py")) continue;
+				if (filename.endsWith(".cell.ghci")) continue;
 				if (filename.startsWith(".")) continue;
 				node.add(new DefaultMutableTreeNode(new FileDescr(file), false));
 			}
@@ -508,8 +511,11 @@ public class FileManager extends JTree {
 				if (filename.endsWith(".ipynb.cell.py")) continue;
 				if (filename.endsWith(".ipynb.c")) continue;
 				if (filename.endsWith(".ipynb.cell.c")) continue;
+				if (filename.endsWith(".ipynb.ghci")) continue;
+				if (filename.endsWith(".ipynb.cell.ghci")) continue;
 				if (filename.endsWith(".cell.c")) continue;
 				if (filename.endsWith(".cell.py")) continue;
+				if (filename.endsWith(".cell.ghci")) continue;
 				if (filename.startsWith(".")) continue;
 				if (searchNode_file(file) == null) {
 					// Affichage dans la console
@@ -1253,8 +1259,10 @@ public class FileManager extends JTree {
 		MyFileUtils.deleteFilesRec(dir, "*.blocs.py");
 		MyFileUtils.deleteFilesRec(dir, "*.ipynb.py");
 		MyFileUtils.deleteFilesRec(dir, "*.ipynb.c");
+		MyFileUtils.deleteFilesRec(dir, "*.ipynb.ghci");
 		MyFileUtils.deleteFilesRec(dir, "*.cell.py");
 		MyFileUtils.deleteFilesRec(dir, "*.cell.c");
+		MyFileUtils.deleteFilesRec(dir, "*.cell.ghci");
 		MyFileUtils.deleteFilesRec(dir, ".DS_Store");
 		MyFileUtils.deleteFilesRec(dir, "__*");
 

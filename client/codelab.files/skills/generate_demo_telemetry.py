@@ -484,6 +484,11 @@ def main():
         }
         
         radars = generate_mermaid_radars(data_for_radar, st["name"])
+        st["radars"] = radars
+        st["act_res"] = act_res
+        st["brute"] = brute
+        st["malus_ia"] = malus_ia
+        st["finale"] = finale
         
         # Tableau récapitulatif
         scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
@@ -595,13 +600,54 @@ def main():
         (target_root / "notes_Demo_Telemetry.csv").write_text("\n".join(csv_rows), encoding="utf-8")
 
     # Synthèse globale de session
+    now_str = datetime.now().strftime('%d/%m/%Y à %H:%M')
+    avg_note = round(sum(st['finale'] for st in STUDENTS) / len(STUDENTS), 2)
+
+    table_rows = []
+    for st in STUDENTS:
+        act = st["act_res"]
+        p_disp = st["radars"].get("profil_display", st["profil_label"])
+        burst_lbl = f"{act['burst_insert_count']} ({st.get('code_lines', 0)}L)" if act['burst_insert_count'] > 0 else "0"
+        runs_lbl = f"{act['executions']['total']} ({act['executions']['error']})"
+        lid = st.get('login', st.get('id', ''))
+        table_rows.append(
+            f"| **{st['name']}** | `{lid}` | **{st['finale']:.1f}** / 20 | {p_disp} | {act['s_auth']:.1f}% | {act['i_nav']:.1f}% | {runs_lbl} | {burst_lbl} |"
+        )
+    table_rows_md = "\n".join(table_rows)
+
+    # Section doubles-profils si présents
+    double_profils = [st for st in STUDENTS if (st.get("radars") or {}).get("is_double_profil")]
+    dp_section = ""
+    if double_profils:
+        dp_lines = [
+            "---",
+            "",
+            "## 🧬 Analyse des Profils Hybrides & Doubles-Profils Remarquables",
+            "",
+            "> 💡 **Interprétation des Doubles-Profils** : Un double-profil est automatiquement identifié lorsque deux dimensions issues d'axes orthogonaux présentent conjointement une affinité élevée (scores $\\ge 11.0 / 20$ et écart $\\le 3.5$ pts). Ces hybridations permettent d'affiner le diagnostic pédagogique au-delà des archétypes simples.",
+            "",
+            "| Étudiant | Login | Double-Profil Détecté | Surnom Pédagogique | Diagnostic Didactique & Posture Conseillée |",
+            "| :--- | :---: | :--- | :--- | :--- |"
+        ]
+        for dp in double_profils:
+            r_rad = dp["radars"]
+            lbl = r_rad.get("double_profil_label", r_rad.get("double_profil_nom", ""))
+            surnom = f"**{r_rad.get('double_profil_surnom', '')}**"
+            desc = r_rad.get("double_profil_desc", "")
+            conseil = r_rad.get("double_profil_conseil", "")
+            diag_str = f"{desc}<br>👉 *Conseil : {conseil}*"
+            d_lid = dp.get('login', dp.get('id', ''))
+            dp_lines.append(f"| **{dp['name']}** | `{d_lid}` | {lbl} | {surnom} | {diag_str} |")
+        dp_lines.append("")
+        dp_section = "\n".join(dp_lines)
+
     synthese_md = fr"""# Synthèse Globale de Session — Démonstration Télémétrie & Typologie
 
 - **Session :** `Demo_Telemetry`
-- **Date de l'évaluation :** {datetime.now().strftime('%d/%m/%Y à %H:%M')}
+- **Date de l'évaluation :** {now_str}
 - **Effectif évalué :** {len(STUDENTS)} étudiants
 - **Module :** Algorithmique et Programmation Python
-- **Moyenne de la cohorte :** {round(sum(st['syntax_note'] + st['arch_note'] + st['style_note'] + st['test_note'] - (10.0 if st['ai_prob'] > 80 else 0) for st in STUDENTS)/len(STUDENTS), 2)} / 20.0
+- **Moyenne de la cohorte :** {avg_note} / 20.0
 
 ---
 
@@ -609,10 +655,7 @@ def main():
 
 | Étudiant | Login | Note Finale | Profil Typologique Dominant | $S_{{auth}}$ | $I_{{nav}}$ | Runs (Err) | Bursts IA |
 | :--- | :---: | :---: | :--- | :---: | :---: | :---: | :---: |
-| **Léa Martin** | `lmartin` | **19.5** / 20 | 👑 **Le Boss** | 96.8% | 1.0% | 12 (1) | 0 |
-| **Thomas Dubois** | `tdubois` | **14.5** / 20 | 🔨 **L'Artisan** | 95.0% | 13.5% | 26 (11) | 0 |
-| **Lucas Bernard** | `lbernard` | **6.5** / 20 | 🤖 **Le Cyborg** | 2.2% | 72.5% | 2 (0) | 1 (142L) |
-| **Camille Petit** | `cpetit` | **8.5** / 20 | ⚡ **Le Casse-cou** | 100.0% | 17.5% | 18 (14) | 0 |
+{table_rows_md}
 
 ---
 
@@ -631,6 +674,7 @@ def main():
     'boss': 1, 'artisans': 1, 'casse_cou': 1, 'decrocheurs': 0, 'pirates': 0, 'cyborgs': 1
 }, 4)}
 
+{dp_section}
 ---
 
 > [!NOTE]

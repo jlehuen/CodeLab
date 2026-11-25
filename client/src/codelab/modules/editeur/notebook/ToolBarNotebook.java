@@ -73,21 +73,23 @@ public class ToolBarNotebook extends AbstractToolbar {
 		if (langButton != null) {
 			langButton.setEnabled(true);
 			NotebookCellPane active = (editor != null) ? editor.getActiveCell() : null;
-			boolean isC;
-			if (active != null && "code".equals(active.getType())) {
-				isC = "c".equalsIgnoreCase(active.getLanguage());
-			} else if (active != null) {
-				isC = "c".equalsIgnoreCase(active.getLanguage());
+			String activeLang;
+			if (active != null) {
+				activeLang = active.getLanguage();
 			} else if (editor != null) {
-				isC = editor.isCNotebook();
+				activeLang = editor.getDefaultLanguage();
 			} else {
-				isC = false;
+				activeLang = "python";
 			}
 
-			if (isC) {
+			if ("c".equalsIgnoreCase(activeLang)) {
 				langButton.setIcon(logo_c);
 				langButton.setTextProp("Lang C");
 				langButton.setToolTipText(CodeLab.PROP("URL_C"));
+			} else if ("haskell".equalsIgnoreCase(activeLang)) {
+				langButton.setIcon(logo_haskell);
+				langButton.setTextProp("Haskell");
+				langButton.setToolTipText(CodeLab.PROP("URL_HASKELL"));
 			} else {
 				langButton.setIcon(logo_python);
 				langButton.setTextProp("Python");
