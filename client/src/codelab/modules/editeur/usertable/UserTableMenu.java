@@ -202,6 +202,7 @@ public class UserTableMenu extends JPopupMenu {
 	private final JCheckBoxMenuItem itemGroup;
 	private final JCheckBoxMenuItem itemAddr;
 	private final JCheckBoxMenuItem itemAlert;
+	private final JCheckBoxMenuItem itemProfile;
 	private final JMenuItem itemNameFilter = new JMenuItem(CodeLab.LABEL("UserTable_8a"));
 	private final JMenuItem itemGroupFilter = new JMenuItem(CodeLab.LABEL("UserTable_8b"));
 	private final JMenuItem itemAlertFilter = new JMenuItem(CodeLab.LABEL("UserTable_8c"));
@@ -214,6 +215,7 @@ public class UserTableMenu extends JPopupMenu {
 	private final JCheckBoxMenuItem headerItemGroup;
 	private final JCheckBoxMenuItem headerItemAddr;
 	private final JCheckBoxMenuItem headerItemAlert;
+	private final JCheckBoxMenuItem headerItemProfile;
 	private final JMenuItem headerItemNameFilter = new JMenuItem(CodeLab.LABEL("UserTable_8a"));
 	private final JMenuItem headerItemGroupFilter = new JMenuItem(CodeLab.LABEL("UserTable_8b"));
 	private final JMenuItem headerItemAlertFilter = new JMenuItem(CodeLab.LABEL("UserTable_8c"));
@@ -227,12 +229,14 @@ public class UserTableMenu extends JPopupMenu {
 		itemGroup = new JCheckBoxMenuItem(CodeLab.LABEL("itemGroup"), userTable.isColumnVisible(2));
 		itemAddr = new JCheckBoxMenuItem(CodeLab.LABEL("itemAddr"), userTable.isColumnVisible(3));
 		itemAlert = new JCheckBoxMenuItem(CodeLab.LABEL("itemAlert"), userTable.isColumnVisible(4));
+		itemProfile = new JCheckBoxMenuItem(CodeLab.LABEL("itemProfile"), userTable.isColumnVisible(5));
 
 		// Initialisation des cases à cocher de colonnes (en-têtes)
 		headerItemLogin = new JCheckBoxMenuItem(CodeLab.LABEL("itemLogin"), userTable.isColumnVisible(1));
 		headerItemGroup = new JCheckBoxMenuItem(CodeLab.LABEL("itemGroup"), userTable.isColumnVisible(2));
 		headerItemAddr = new JCheckBoxMenuItem(CodeLab.LABEL("itemAddr"), userTable.isColumnVisible(3));
 		headerItemAlert = new JCheckBoxMenuItem(CodeLab.LABEL("itemAlert"), userTable.isColumnVisible(4));
+		headerItemProfile = new JCheckBoxMenuItem(CodeLab.LABEL("itemProfile"), userTable.isColumnVisible(5));
 
 		initListeners();
 		buildMenu();
@@ -407,6 +411,9 @@ public class UserTableMenu extends JPopupMenu {
 		itemAlert.addActionListener(e -> toggleColumn(4, itemAlert.getState()));
 		headerItemAlert.addActionListener(e -> toggleColumn(4, headerItemAlert.getState()));
 
+		itemProfile.addActionListener(e -> toggleColumn(5, itemProfile.getState()));
+		headerItemProfile.addActionListener(e -> toggleColumn(5, headerItemProfile.getState()));
+
 		// Filtrer sur les noms
 		itemNameFilter.addActionListener(e -> actionFilterByName());
 		headerItemNameFilter.addActionListener(e -> actionFilterByName());
@@ -484,6 +491,7 @@ public class UserTableMenu extends JPopupMenu {
 		menuColumns.add(itemGroup);
 		menuColumns.add(itemAddr);
 		menuColumns.add(itemAlert);
+		menuColumns.add(itemProfile);
 		menuConfig.add(menuColumns);
 		menuConfig.add(itemNameFilter);
 		menuConfig.add(itemGroupFilter);
@@ -497,6 +505,7 @@ public class UserTableMenu extends JPopupMenu {
 		headerMenuColumns.add(headerItemGroup);
 		headerMenuColumns.add(headerItemAddr);
 		headerMenuColumns.add(headerItemAlert);
+		headerMenuColumns.add(headerItemProfile);
 		headerPopupMenu.add(headerMenuColumns);
 
 		headerPopupMenu.add(new JSeparator());
@@ -522,6 +531,7 @@ public class UserTableMenu extends JPopupMenu {
 		boolean v2 = userTable.isColumnVisible(2);
 		boolean v3 = userTable.isColumnVisible(3);
 		boolean v4 = userTable.isColumnVisible(4);
+		boolean v5 = userTable.isColumnVisible(5);
 
 		itemLogin.setState(v1);
 		headerItemLogin.setState(v1);
@@ -531,6 +541,8 @@ public class UserTableMenu extends JPopupMenu {
 		headerItemAddr.setState(v3);
 		itemAlert.setState(v4);
 		headerItemAlert.setState(v4);
+		itemProfile.setState(v5);
+		headerItemProfile.setState(v5);
 	}
 
 	private void actionFilterByName() {
@@ -757,6 +769,8 @@ public class UserTableMenu extends JPopupMenu {
 		headerItemAddr.setText(CodeLab.LABEL("itemAddr"));
 		itemAlert.setText(CodeLab.LABEL("itemAlert"));
 		headerItemAlert.setText(CodeLab.LABEL("itemAlert"));
+		itemProfile.setText(CodeLab.LABEL("itemProfile"));
+		headerItemProfile.setText(CodeLab.LABEL("itemProfile"));
 
 		syncColumnCheckboxes();
 		updateFilterState();

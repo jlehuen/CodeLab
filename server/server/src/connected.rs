@@ -342,6 +342,7 @@ pub async fn get_userdata(session: &str, login: &str) -> Vec<UserData> {
         let metrics = crate::activity::get_student_live_metrics(session, &udata.login);
         udata.s_auth = metrics.s_auth;
         udata.i_nav = metrics.i_nav;
+        udata.profile_trend = metrics.profile_trend;
     }
     udata_list
 }

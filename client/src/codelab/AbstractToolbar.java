@@ -318,6 +318,7 @@ public abstract class AbstractToolbar extends JToolBar {
 
 		if (is_connected) {
 			serverButton.setIcon(icon_server_on);
+			updateServerTooltip();
 			if (codelab.isStudent()) {
 				helpButton.setTextProp(LABEL("Btn_help"));
 				if (help) helpButton.setIcon(icon_help_on);
@@ -326,6 +327,7 @@ public abstract class AbstractToolbar extends JToolBar {
 		}
 		else {
 			serverButton.setIcon(icon_server_off);
+			serverButton.setToolTipText(null);
 			helpButton.setTextProp(null);
 			helpButton.setIcon(null);
 		}
@@ -346,6 +348,17 @@ public abstract class AbstractToolbar extends JToolBar {
 
 	public void serverActivity() {
 		server_flag = true;
+	}
+
+	public void updateServerTooltip() {
+		if (codelab != null && codelab.getClient() != null && codelab.getClient().isConnected()) {
+			String vInfo = codelab.getClient().getServerVersionInfo();
+			if (vInfo != null) {
+				serverButton.setToolTipText("CodeLab Server " + vInfo);
+				return;
+			}
+		}
+		serverButton.setToolTipText(null);
 	}
 
 	public void serverActivityLED() {

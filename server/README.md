@@ -349,7 +349,9 @@ Dès qu'un fichier est modifié en local, il est automatiquement pris en charge 
    - Définition de structure XML (`config/sessions.dtd`)
    - Scripts d'administration et de validation (`config/xml-validator.sh`, `config/data/**`)
 2. **Scripts de contrôle (`scripts-server/`)** vers `~/codelab-server/` :
-   - Scripts de gestion du service (`compile-server.sh`, `run-server.sh`, `kill-server.sh`, `install-server.sh`, `get-log.sh`).
+   - Scripts `.sh` exécutés **sur le serveur Linux (`codelab-serv`)** : `compile-server.sh`, `run-server.sh`, `kill-server.sh`, `install-server.sh`, `get-log.sh`, `restore-trash.sh`, `purge-trash.sh`.
+3. **Raccourcis locaux (`scripts-mac/`, non versionnés)** :
+   - Scripts `.command` exécutés **depuis le Mac** en SSH/SCP (`ssh-univ.command`, `get-log.command`, `get-sessions.command`, `put-sessions.command`, `clone-session.command`, `move-user.command`).
 
 ### Utilisation et Options
 
@@ -389,3 +391,21 @@ cd /Users/lehuen/dev/codelab/server
    ./kill-server.sh
    ./run-server.sh
    ```
+
+### Gestion de la corbeille serveur (`server/trash/`)
+
+Toute suppression de fichier ou de dossier étudiant déplace les fichiers (et leurs backups `.bak`) de façon non destructive vers `~/codelab-server/server/trash/<session>/<login>/<AAMMJJ_HHMMSS_mmm>/`.
+
+```bash
+# Lister le contenu de la corbeille
+./restore-trash.sh --list
+
+# Restaurer interactivement un fichier vers sessions/ (avec protection contre l'écrasement)
+./restore-trash.sh
+./restore-trash.sh <session> <login>
+
+# Purger les fichiers supprimés depuis plus de 90 jours
+./purge-trash.sh --dry-run
+./purge-trash.sh 90
+./purge-trash.sh 90 --force   # sans confirmation (adapté à cron)
+```

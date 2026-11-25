@@ -28,4 +28,12 @@ echo "🔨 Compilation du serveur CodeLab (${CARGO})..."
 cd "$SERVER_DIR"
 "$CARGO" build "$@"
 
-echo "✅ Compilation terminée avec succès."
+BIN_PATH="$SERVER_DIR/target/debug/codelab-server"
+if [[ " $* " == *" --release "* ]]; then
+    BIN_PATH="$SERVER_DIR/target/release/codelab-server"
+fi
+if [ -x "$BIN_PATH" ]; then
+    echo "✅ Compilation terminée : $("$BIN_PATH" --version)"
+else
+    echo "✅ Compilation terminée avec succès."
+fi

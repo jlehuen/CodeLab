@@ -15,6 +15,9 @@ pub const CONFIG_XML_EXAMPLE: &str = "config/sessions.example.xml";
 // Emplacements des fichiers et dossiers
 pub const CONFIG_XML: &str = "config/sessions.xml";
 pub const LOG_FILE: &str = "logs/server.log";
+pub const SERVER_VERSION: &str = env!("CODELAB_VERSION");
+pub const SERVER_BUILD: &str = env!("CODELAB_BUILD");
+
 pub const PROG_DIR: &str = "sessions";
 pub const TRASH_DIR: &str = "trash";
 pub const TEMP_DIR: &str = "temp";

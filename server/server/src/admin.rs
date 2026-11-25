@@ -807,6 +807,8 @@ async fn generate_dashboard() -> String {
     match load_template() {
         Ok(mut template) => {
             // Remplacer les placeholders par les vraies valeurs
+            template = template.replace("{{SERVER_VERSION}}", SERVER_VERSION);
+            template = template.replace("{{SERVER_BUILD}}", SERVER_BUILD);
             template = template.replace("{{TOTAL_CONNECTIONS}}", &stats.total_connections.to_string());
             template = template.replace("{{STUDENTS_COUNT}}", &stats.students_count.to_string());
             template = template.replace("{{TUTORS_COUNT}}", &stats.tutors_count.to_string());

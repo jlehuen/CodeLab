@@ -1,6 +1,7 @@
 package codelab.modules.editeur.usertable;
 
 import codelab.utils.IpLocationService;
+import codelab.utils.ResourceUtils;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -118,7 +120,20 @@ public class UserTable extends JScrollPane {
 	private boolean AFF_GROUP = false;
 	private boolean AFF_ADRESS = true;
 	private boolean AFF_ALERT = true;
-	private Boolean visible[] = { AFF_NAME, AFF_LOGIN, AFF_GROUP, AFF_ADRESS, AFF_ALERT };
+	private boolean AFF_PROFILE = true;
+	private Boolean visible[] = { AFF_NAME, AFF_LOGIN, AFF_GROUP, AFF_ADRESS, AFF_ALERT, AFF_PROFILE };
+
+	private static final HashMap<String, ImageIcon> PROFILE_ICON_CACHE = new HashMap<>();
+
+	private static ImageIcon getProfileIcon(String code) {
+		String key = (code != null && !code.isBlank()) ? code.toUpperCase() : "OBSERVING";
+		return PROFILE_ICON_CACHE.computeIfAbsent(key, k -> {
+			ImageIcon raw = ResourceUtils.loadImageIcon(UserData.getProfileTrendIconPath(k));
+			if (raw == null || raw.getIconWidth() <= 0) return null;
+			java.awt.Image scaled = raw.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
+			return new ImageIcon(scaled);
+		});
+	}
 
 	public boolean isColumnVisible(int col) {
 		if (col >= 0 && col < visible.length) return visible[col];
@@ -224,6 +239,7 @@ public class UserTable extends JScrollPane {
 		model.addColumn(CodeLab.LABEL("UserTable_t3")); // Groupes
 		model.addColumn(CodeLab.LABEL("UserTable_t4")); // Adresses IP
 		model.addColumn(CodeLab.LABEL("UserTable_t5")); // Alertes
+		model.addColumn(CodeLab.LABEL("UserTable_t6")); // Profil
 		table.setModel(model);
 		String loginToExclude = codelab.getLogin();
 		for (UserData udata : ulist) {
@@ -232,7 +248,8 @@ public class UserTable extends JScrollPane {
 			String group = udata.getGroup();
 			String IP = isPresent(udata) ? udata.getAddress() : "--";
 			String alertStr = formatAlertDisplay(udata);
-			Object[] vector = new Object[]{ udata, login, group, IP, alertStr };
+			String profileStr = UserData.getProfileTrendLabel(udata.getProfileTrend());
+			Object[] vector = new Object[]{ udata, login, group, IP, alertStr, profileStr };
 			model.addRow(vector);
 			if(!groups.contains(group)) groups.add(group);
 		}
@@ -244,6 +261,7 @@ public class UserTable extends JScrollPane {
 		table.getColumnModel().getColumn(2).setCellRenderer(renderer);
 		table.getColumnModel().getColumn(3).setCellRenderer(renderer);
 		table.getColumnModel().getColumn(4).setCellRenderer(renderer);
+		table.getColumnModel().getColumn(5).setCellRenderer(renderer);
 
 		// Modèle de tri
 		sorter = new TableRowSorter<TableModel>(model);
@@ -617,11 +635,22 @@ public class UserTable extends JScrollPane {
 		}
 	}
 
-	public void setUserMetrics(String login, double sAuth, double iNav) {
+	public void setUserMetrics(String login, double sAuth, double iNav, String profileTrend) {
 		UserData udata = findUserData(login);
 		if (udata != null) {
 			udata.setSAuth(sAuth);
 			udata.setINav(iNav);
+			if (profileTrend != null && !profileTrend.isBlank()) {
+				udata.setProfileTrend(profileTrend);
+				String profileLabel = UserData.getProfileTrendLabel(udata.getProfileTrend());
+				for (int i = 0; i < model.getRowCount(); i++) {
+					Object obj = model.getValueAt(i, 0);
+					if (obj instanceof UserData && ((UserData) obj).getLogin().equals(login)) {
+						model.setValueAt(profileLabel, i, 5);
+						break;
+					}
+				}
+			}
 			table.repaint();
 		}
 	}
@@ -632,7 +661,8 @@ public class UserTable extends JScrollPane {
 			// Ajouter le student dans la table
 			String login = udata.getLogin();
 			String alertStr = formatAlertDisplay(udata);
-			Object[] vector = new Object[]{ udata, login, "", "--", alertStr};
+			String profileStr = UserData.getProfileTrendLabel(udata.getProfileTrend());
+			Object[] vector = new Object[]{ udata, login, "", "--", alertStr, profileStr};
 			model.addRow(vector);
 			table.repaint();
 		});
@@ -701,6 +731,7 @@ public class UserTable extends JScrollPane {
 
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 			Component comp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			setIcon(null);
 			UserData udata = (UserData) table.getValueAt(row, 0);
 			boolean iscontrolled = udata.isControlled();
 			boolean helpFlag = udata.getHelpFlag();
@@ -740,6 +771,17 @@ public class UserTable extends JScrollPane {
 				} else if (udata.getSAuth() >= 75.0) {
 					setForeground(new Color(40, 140, 40));
 				} else {
+					setForeground(Color.GRAY);
+				}
+				((JLabel)comp).setToolTipText(udata.buildTooltipHtml());
+			} else if (column == 5) {
+				setHorizontalAlignment(JLabel.LEFT);
+				String trend = udata.getProfileTrend();
+				setIcon(getProfileIcon(trend));
+				setIconTextGap(5);
+				try {
+					setForeground(Color.decode(UserData.getProfileTrendColorHex(trend)));
+				} catch (Exception ignored) {
 					setForeground(Color.GRAY);
 				}
 				((JLabel)comp).setToolTipText(udata.buildTooltipHtml());

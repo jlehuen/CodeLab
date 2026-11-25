@@ -11,6 +11,8 @@ Ce dossier regroupe les scripts d'administration et d'exploitation du serveur Co
 | `run-server.sh` | Démarre le serveur en arrière-plan avec `nohup` (persistant à la déconnexion SSH). Vérifie les conflits de port (9988). |
 | `kill-server.sh` | Arrête proprement le processus du serveur CodeLab à l'écoute sur le port configuré. |
 | `get-log.sh` | Affiche ou suit en temps réel (`-f`) les journaux d'exécution du serveur (`logs/server.log`). Supporte également un mode distant via SSH/SCP si configuré. |
+| `restore-trash.sh` | Consulte (`--list`), restaure interactivement un fichier supprimé vers `sessions/`, ou purge les anciens fichiers (`--purge <jours>`) dans `server/trash/`. |
+| `purge-trash.sh` | Purge les fichiers de la corbeille de plus de 90 jours par défaut (`<jours>`, `--dry-run`, `--force` pour cron) et nettoie les dossiers vides. |
 
 ## Utilisation
 
@@ -26,4 +28,14 @@ Ce dossier regroupe les scripts d'administration et d'exploitation du serveur Co
 
 # Arrêt du service
 ./kill-server.sh
+
+# Consulter ou restaurer la corbeille serveur (server/trash/)
+./restore-trash.sh --list
+./restore-trash.sh
+./restore-trash.sh <session> <login>
+
+# Purger les anciens fichiers supprimés (90 jours par défaut)
+./purge-trash.sh --dry-run
+./purge-trash.sh 90
+./purge-trash.sh 90 --force   # mode cron (sans confirmation)
 ```

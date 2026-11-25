@@ -29,6 +29,7 @@ public class UserData {
 	private boolean controlled = false;
 	private double sAuth = -1.0;
 	private double iNav = 0.0;
+	private String profileTrend = "OBSERVING";
 	private Map<String, LiveAlert> activeAlerts = new java.util.LinkedHashMap<>();
 
 	///////////////////////////////////////////////////
@@ -69,6 +70,9 @@ public class UserData {
 		}
 		if (map.containsKey("i_nav") && map.get("i_nav") != null) {
 			this.iNav = ((Number) map.get("i_nav")).doubleValue();
+		}
+		if (map.containsKey("profile_trend") && map.get("profile_trend") != null) {
+			this.profileTrend = String.valueOf(map.get("profile_trend"));
 		}
 		Object ajson = map.get("alerts_json");
 		if (ajson instanceof String && !((String) ajson).isBlank()) {
@@ -233,6 +237,55 @@ public class UserData {
 		this.iNav = iNav;
 	}
 
+	public String getProfileTrend() {
+		return (profileTrend != null && !profileTrend.isBlank()) ? profileTrend : "OBSERVING";
+	}
+
+	public void setProfileTrend(String profileTrend) {
+		if (profileTrend != null && !profileTrend.isBlank()) {
+			this.profileTrend = profileTrend;
+		}
+	}
+
+	public static String getProfileTrendLabel(String code) {
+		if (code == null) return "--";
+		switch (code.toUpperCase()) {
+			case "BOSS":       return "Boss";
+			case "ARTISAN":    return "Artisan";
+			case "CASSE_COU":  return "Casse-cou";
+			case "DECROCHEUR": return "Décrocheur";
+			case "CYBORG":     return "Cyborg";
+			case "PIRATE":     return "Pirate";
+			default:           return "--";
+		}
+	}
+
+	public static String getProfileTrendIconPath(String code) {
+		if (code == null) return "icons/icon_profile_observing.png";
+		switch (code.toUpperCase()) {
+			case "BOSS":       return "icons/icon_profile_boss.png";
+			case "ARTISAN":    return "icons/icon_profile_artisan.png";
+			case "CASSE_COU":  return "icons/icon_profile_casse_cou.png";
+			case "DECROCHEUR": return "icons/icon_profile_decrocheur.png";
+			case "CYBORG":     return "icons/icon_profile_cyborg.png";
+			case "PIRATE":     return "icons/icon_profile_pirate.png";
+			default:           return "icons/icon_profile_observing.png";
+		}
+	}
+
+	public static String getProfileTrendColorHex(String code) {
+		if (code == null) return "#7f8c8d";
+		switch (code.toUpperCase()) {
+			case "BOSS":       return "#1B365D";
+			case "ARTISAN":    return "#1E8449";
+			case "CASSE_COU":  return "#D35400";
+			case "DECROCHEUR": return "#607D8B";
+			case "CYBORG":     return "#6C3483";
+			case "PIRATE":     return "#B71C1C";
+			default:           return "#7f8c8d";
+		}
+	}
+
 	public String buildUserInfoTooltipHtml(boolean isPresent) {
 		StringBuilder sb = new StringBuilder("<html><div style='padding:5px; font-family:sans-serif;'>");
 		sb.append("<b>").append(fullname != null ? fullname : "").append("</b>");
@@ -301,6 +354,19 @@ public class UserData {
 		sb.append("<br/>");
 		if (iNav > 0.0) {
 			sb.append("• Temps hors de l'IDE : <b>").append(String.format(java.util.Locale.US, "%.1f%%", iNav)).append("</b><br/>");
+		}
+		String trendCode = getProfileTrend();
+		String trendLabel = getProfileTrendLabel(trendCode);
+		String trendColor = getProfileTrendColorHex(trendCode);
+		java.net.URL iconUrl = codelab.utils.ResourceUtils.class.getResource("/data/" + getProfileTrendIconPath(trendCode));
+		sb.append("• Tendance en séance : ");
+		if (iconUrl != null) {
+			sb.append("<img src='").append(iconUrl.toString()).append("' width='13' height='13' style='vertical-align:middle;'/> ");
+		}
+		if ("OBSERVING".equalsIgnoreCase(trendCode)) {
+			sb.append("<font color='#7f8c8d'><i>Observation en cours</i></font><br/>");
+		} else {
+			sb.append("<font color='").append(trendColor).append("'><b>").append(trendLabel).append("</b></font> <font color='#7f8c8d'><i>(provisoire)</i></font><br/>");
 		}
 		if (!activeAlerts.isEmpty()) {
 			sb.append("<hr style='margin:4px 0;'/>");

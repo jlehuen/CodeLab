@@ -146,6 +146,7 @@ pub enum CommandType {
     CLIENT_EXITED,
     NEW_STUDENT,
     SET_EDITED_FILE,
+    SERVER_INFO,
     SERVER_SHUTDOWN,
 
     // Communication

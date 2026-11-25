@@ -177,6 +177,7 @@ pub struct LiveMetrics {
     pub dropped_files: usize,
     pub total_away_sec: u64,
     pub consecutive_errors: usize,
+    pub profile_trend: String,
 }
 
 impl Default for LiveMetrics {
@@ -195,6 +196,7 @@ impl Default for LiveMetrics {
             dropped_files: 0,
             total_away_sec: 0,
             consecutive_errors: 0,
+            profile_trend: "OBSERVING".to_string(),
         }
     }
 }
@@ -219,6 +221,12 @@ struct StudentLiveStatus {
     focus_lost_count: usize,
     total_away_sec: u64,
     session_start: Option<Instant>,
+    last_activity: Option<Instant>,
+    total_runs: usize,
+    total_ok_runs: usize,
+    total_errors: usize,
+    thrash_episodes: usize,
+    help_requests: usize,
 }
 
 impl StudentLiveStatus {
@@ -242,6 +250,65 @@ impl StudentLiveStatus {
         }
     }
 
+    fn compute_profile_trend(&self) -> String {
+        // 1. Signal fort d'importation directe -> Pirate
+        if self.dropped_files > 0 {
+            return "PIRATE".to_string();
+        }
+
+        let s_auth = self.compute_s_auth();
+        let i_nav = self.compute_i_nav();
+        let total_activity_chars = self.typed_chars + self.pasted_chars + self.burst_chars;
+
+        // 2. Signal fort d'injection / faible authenticité -> Cyborg
+        if self.burst_lines >= 20 || (s_auth >= 0.0 && s_auth < 50.0 && total_activity_chars >= 150) {
+            return "CYBORG".to_string();
+        }
+
+        // 3. Acharnement sur erreurs -> Casse-cou
+        let err_rate = if self.total_runs > 0 {
+            (self.total_errors as f64) / (self.total_runs as f64)
+        } else {
+            0.0
+        };
+        if self.thrash_episodes >= 1 || (self.total_runs >= 6 && err_rate >= 0.65) {
+            return "CASSE_COU".to_string();
+        }
+
+        // 4. Inactivité prolongée en séance -> Décrocheur
+        let idle_sec = self
+            .last_activity
+            .or(self.session_start)
+            .map(|t| t.elapsed().as_secs())
+            .unwrap_or(0);
+        let elapsed_sec = self.session_start.map(|t| t.elapsed().as_secs()).unwrap_or(0);
+        if idle_sec >= 720 || (elapsed_sec >= 900 && total_activity_chars < 40 && self.total_runs == 0) {
+            return "DECROCHEUR".to_string();
+        }
+
+        // 5. Phase d'observation initiale (évite les faux positifs en tout début de séance)
+        if total_activity_chars < 60 && self.total_runs < 2 {
+            return "OBSERVING".to_string();
+        }
+
+        // 6. Excellence fluide (haute authenticité, runs réussis, quasiment zéro erreur ni appel) -> Boss
+        if s_auth >= 85.0
+            && self.total_ok_runs >= 2
+            && self.total_errors <= 1
+            && self.help_requests == 0
+            && i_nav <= 30.0
+        {
+            return "BOSS".to_string();
+        }
+
+        // 7. Travail autonome et itératif sain -> Artisan
+        if s_auth >= 70.0 && (self.typed_chars >= 60 || self.backspaces >= 5) {
+            return "ARTISAN".to_string();
+        }
+
+        "OBSERVING".to_string()
+    }
+
     fn to_live_metrics(&self) -> LiveMetrics {
         LiveMetrics {
             s_auth: self.compute_s_auth(),
@@ -257,6 +324,7 @@ impl StudentLiveStatus {
             dropped_files: self.dropped_files,
             total_away_sec: self.total_away_sec,
             consecutive_errors: self.consecutive_errors,
+            profile_trend: self.compute_profile_trend(),
         }
     }
 }
@@ -319,12 +387,23 @@ pub fn ensure_student_live_loaded(session: &str, login: &str) {
                             st.dropped_files += 1;
                         }
                         Some("COMPILE") | Some("EXECUTE") => {
-                            if val.get("status").and_then(|s| s.as_str()) == Some("ERROR") {
+                            let st_str = val.get("status").and_then(|s| s.as_str()).unwrap_or("");
+                            if st_str == "ERROR" {
+                                st.total_runs += 1;
+                                st.total_errors += 1;
                                 st.consecutive_errors += 1;
-                            } else if val.get("status").and_then(|s| s.as_str()) == Some("OK")
-                                || val.get("status").and_then(|s| s.as_str()) == Some("DONE")
-                            {
+                                if st.consecutive_errors >= 3 {
+                                    st.thrash_episodes += 1;
+                                }
+                            } else if st_str == "OK" || st_str == "DONE" {
+                                st.total_runs += 1;
+                                st.total_ok_runs += 1;
                                 st.consecutive_errors = 0;
+                            }
+                        }
+                        Some("HELP") => {
+                            if val.get("status").and_then(|s| s.as_str()) == Some("REQUESTED") {
+                                st.help_requests += 1;
                             }
                         }
                         Some("SESSION") => {
@@ -382,7 +461,14 @@ pub fn push_live_metrics(session: &str, login: &str) {
         let sess = session.to_string();
         let log = login.to_string();
         handle.spawn(async move {
-            crate::client::notify_tutors_user_metrics(&sess, &log, metrics.s_auth, metrics.i_nav).await;
+            crate::client::notify_tutors_user_metrics(
+                &sess,
+                &log,
+                metrics.s_auth,
+                metrics.i_nav,
+                &metrics.profile_trend,
+            )
+            .await;
         });
     }
 }
@@ -462,6 +548,17 @@ pub fn record_file_op(session: &str, login: &str, op: &str, file: &str, dest: Op
 }
 
 pub fn record_help_event(session: &str, login: &str, status: &str, tutor: Option<&str>) {
+    if status == "REQUESTED" {
+        ensure_student_live_loaded(session, login);
+        let key = format!("{}/{}", session, login);
+        {
+            let mut live_map = STUDENT_LIVE.lock().unwrap();
+            let st = live_map.entry(key).or_default();
+            st.help_requests += 1;
+            st.last_activity = Some(Instant::now());
+        }
+        push_live_metrics(session, login);
+    }
     let event = ActivityEvent::Help {
         timestamp: Utc::now().to_rfc3339(),
         session: session.to_string(),
@@ -701,14 +798,21 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                     {
                         let mut live_map = STUDENT_LIVE.lock().unwrap();
                         let st = live_map.entry(key.clone()).or_default();
+                        st.total_runs += 1;
+                        st.total_errors += 1;
                         st.consecutive_errors += 1;
+                        if st.consecutive_errors >= 3 {
+                            st.thrash_episodes += 1;
+                        }
                         st.last_error_time = Some(Instant::now());
+                        st.last_activity = Some(Instant::now());
                         err_cnt = st.consecutive_errors;
                     }
                     if err_cnt >= 3 {
                         let msg = format!("{} échecs de compilation consécutifs ({})", err_cnt, file);
                         trigger_live_alert(session, login, "THRASH", &msg, "WARN");
                     }
+                    push_live_metrics(session, login);
                 } else {
                     log::info!(
                         "[ACTIVITY COMPILE OK] session={} login={} file={}",
@@ -717,16 +821,19 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                     let mut had_thrash = false;
                     {
                         let mut live_map = STUDENT_LIVE.lock().unwrap();
-                        if let Some(st) = live_map.get_mut(&key) {
-                            if st.consecutive_errors >= 3 {
-                                had_thrash = true;
-                            }
-                            st.consecutive_errors = 0;
+                        let st = live_map.entry(key.clone()).or_default();
+                        st.total_runs += 1;
+                        st.total_ok_runs += 1;
+                        st.last_activity = Some(Instant::now());
+                        if st.consecutive_errors >= 3 {
+                            had_thrash = true;
                         }
+                        st.consecutive_errors = 0;
                     }
                     if had_thrash {
                         clear_live_alert(session, login, "THRASH");
                     }
+                    push_live_metrics(session, login);
                 }
 
                 let event = ActivityEvent::Compile {
@@ -755,14 +862,21 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                     {
                         let mut live_map = STUDENT_LIVE.lock().unwrap();
                         let st = live_map.entry(key.clone()).or_default();
+                        st.total_runs += 1;
+                        st.total_errors += 1;
                         st.consecutive_errors += 1;
+                        if st.consecutive_errors >= 3 {
+                            st.thrash_episodes += 1;
+                        }
                         st.last_error_time = Some(Instant::now());
+                        st.last_activity = Some(Instant::now());
                         err_cnt = st.consecutive_errors;
                     }
                     if err_cnt >= 3 {
                         let msg = format!("{} plantages consécutifs ({})", err_cnt, file);
                         trigger_live_alert(session, login, "THRASH", &msg, "WARN");
                     }
+                    push_live_metrics(session, login);
                 } else {
                     log::info!(
                         "[ACTIVITY EXECUTE {}] session={} login={} file={} code={:?}",
@@ -772,16 +886,19 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                         let mut had_thrash = false;
                         {
                             let mut live_map = STUDENT_LIVE.lock().unwrap();
-                            if let Some(st) = live_map.get_mut(&key) {
-                                if st.consecutive_errors >= 3 {
-                                    had_thrash = true;
-                                }
-                                st.consecutive_errors = 0;
+                            let st = live_map.entry(key.clone()).or_default();
+                            st.total_runs += 1;
+                            st.total_ok_runs += 1;
+                            st.last_activity = Some(Instant::now());
+                            if st.consecutive_errors >= 3 {
+                                had_thrash = true;
                             }
+                            st.consecutive_errors = 0;
                         }
                         if had_thrash {
                             clear_live_alert(session, login, "THRASH");
                         }
+                        push_live_metrics(session, login);
                     }
                 }
 
@@ -894,6 +1011,7 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                     let st = live_map.entry(key.clone()).or_default();
                     st.typed_chars += typed_chars;
                     st.backspaces += backspaces;
+                    st.last_activity = Some(Instant::now());
                 }
                 push_live_metrics(session, login);
 
@@ -916,6 +1034,7 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
                     let mut live_map = STUDENT_LIVE.lock().unwrap();
                     let st = live_map.entry(key.clone()).or_default();
                     st.dropped_files += 1;
+                    st.last_activity = Some(Instant::now());
                 }
 
                 log::warn!(
@@ -925,6 +1044,7 @@ pub fn record_client_log(session: &str, login: &str, raw_log: &str) {
 
                 let msg = format!("Fichier {} déposé ({} octets)", file, size_bytes);
                 trigger_live_alert(session, login, "DROP", &msg, "WARN");
+                push_live_metrics(session, login);
 
                 let event = ActivityEvent::FileDrop {
                     timestamp: now,
@@ -1088,6 +1208,35 @@ mod tests {
         assert_eq!(metrics2.pasted_chars, 200); // externes restent à 200
         assert_eq!(metrics2.internal_pasted_chars, 500); // internes passent à 500
         assert_eq!(metrics2.s_auth, 80.0); // inchangé !
+        assert_eq!(metrics2.profile_trend, "ARTISAN");
+
+        // Déclenchement d'un FILE_DROP -> bascule en tendance PIRATE
+        record_client_log(session, login, r#"{"type":"FILE_DROP","file":"copie.py","size_bytes":2048}"#);
+        let metrics3 = get_student_live_metrics(session, login);
+        assert_eq!(metrics3.profile_trend, "PIRATE");
+
+        let _ = fs::remove_dir_all(Path::new(PROG_DIR).join(session));
+    }
+
+    #[test]
+    fn test_live_profile_trends_boss_and_casse_cou() {
+        let session = "test_sess_trends";
+        let boss_login = "student_boss";
+        let cc_login = "student_cc";
+
+        record_session_event(session, boss_login, "CONNECTED", Some("127.0.0.1"), None);
+        assert_eq!(get_student_live_metrics(session, boss_login).profile_trend, "OBSERVING");
+        record_client_log(session, boss_login, r#"{"type":"TYPING","file":"a.py","typed_chars":300,"backspaces":10}"#);
+        record_client_log(session, boss_login, r#"{"type":"EXECUTE","file":"a.py","status":"DONE","exit_code":0}"#);
+        record_client_log(session, boss_login, r#"{"type":"EXECUTE","file":"a.py","status":"DONE","exit_code":0}"#);
+        assert_eq!(get_student_live_metrics(session, boss_login).profile_trend, "BOSS");
+
+        record_session_event(session, cc_login, "CONNECTED", Some("127.0.0.1"), None);
+        record_client_log(session, cc_login, r#"{"type":"TYPING","file":"b.py","typed_chars":200,"backspaces":20}"#);
+        record_client_log(session, cc_login, r#"{"type":"COMPILE","file":"b.py","status":"ERROR","error_msg":"err1"}"#);
+        record_client_log(session, cc_login, r#"{"type":"COMPILE","file":"b.py","status":"ERROR","error_msg":"err2"}"#);
+        record_client_log(session, cc_login, r#"{"type":"COMPILE","file":"b.py","status":"ERROR","error_msg":"err3"}"#);
+        assert_eq!(get_student_live_metrics(session, cc_login).profile_trend, "CASSE_COU");
 
         let _ = fs::remove_dir_all(Path::new(PROG_DIR).join(session));
     }

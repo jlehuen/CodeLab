@@ -1432,6 +1432,35 @@ public class CodelabClient {
 		// Dans is_socket_alive (serveur: connected.rs)
 	}
 
+	private String serverVersion = null;
+	private String serverBuild = null;
+
+	public String getServerVersion() { return serverVersion; }
+	public String getServerBuild() { return serverBuild; }
+
+	public String getServerVersionInfo() {
+		if (serverVersion == null || serverVersion.isBlank()) return null;
+		String info = "v" + serverVersion + ((serverBuild != null && !serverBuild.isBlank()) ? " (build " + serverBuild + ")" : "");
+		if (!CodeLab.VERSION.equals(serverVersion)) {
+			info += " — ⚠️ client v" + CodeLab.VERSION;
+		}
+		return info;
+	}
+
+	public synchronized void SERVER_INFO(String version, String build) {
+		this.serverVersion = version;
+		this.serverBuild = build;
+		CodeLab.logger(String.format("Connected to CodeLab Server v%s (build %s)", version, build));
+		if (version != null && !version.isBlank() && !CodeLab.VERSION.equals(version)) {
+			CodeLab.logger(String.format("WARNING: Version mismatch — client v%s vs server v%s", CodeLab.VERSION, version));
+		}
+		javax.swing.SwingUtilities.invokeLater(() -> {
+			if (codelab != null && codelab.getToolbar() != null) {
+				codelab.getToolbar().updateServerTooltip();
+			}
+		});
+	}
+
 	public synchronized void INIT_SESSION(
 		String sessionId, String statut, String username,
 		String serverName, String filename, Object[] file_content,
@@ -1700,13 +1729,13 @@ public class CodelabClient {
 		RESET_USER_ALERT(login, "ALL");
 	}
 
-	public synchronized void SET_USER_METRICS(String login, Number sAuth, Number iNav) {
-		// Mise à jour temps réel des indicateurs S_auth et I_nav dans UserTable
+	public synchronized void SET_USER_METRICS(String login, Number sAuth, Number iNav, String profileTrend) {
+		// Mise à jour temps réel des indicateurs S_auth, I_nav et tendance de profil dans UserTable
 		if (editor.getUserTable() == null) return;
 		double sa = (sAuth != null) ? sAuth.doubleValue() : -1.0;
 		double in = (iNav != null) ? iNav.doubleValue() : 0.0;
 		javax.swing.SwingUtilities.invokeLater(() -> {
-			editor.getUserTable().setUserMetrics(login, sa, in);
+			editor.getUserTable().setUserMetrics(login, sa, in, profileTrend);
 		});
 	}
 	

@@ -48,6 +48,11 @@ type EmptyResult = Result<(), Box<dyn Error>>;
 
 #[tokio::main]
 async fn main() -> EmptyResult {
+    // Support CLI --version / -V
+    if std::env::args().any(|a| a == "--version" || a == "-V") {
+        println!("codelab-server {} (build {})", SERVER_VERSION, SERVER_BUILD);
+        return Ok(());
+    }
 
     // Intercepter les signaux POSIX
     configure_hook();
@@ -62,7 +67,7 @@ async fn main() -> EmptyResult {
         log::error!("FATAL ERROR: Logger configuration error: {:?}", e);
         exit(2); // Quitte le programme avec un code d'erreur
     }
-    log::info!("Initializing server...");
+    log::info!("Initializing CodeLab Server v{} (build {})...", SERVER_VERSION, SERVER_BUILD);
 
     // Charger les propriétés (avec repli sur .example si absent)
     let config_path = if std::path::Path::new(CONFIG_FILE).exists() {

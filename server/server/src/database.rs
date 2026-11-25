@@ -495,6 +495,7 @@ pub struct UserData {
     pub alerts_json: String,
     pub s_auth: f64,
     pub i_nav: f64,
+    pub profile_trend: String,
 }
 
 impl UserData {
@@ -535,6 +536,7 @@ pub fn build_userdata(login: &str) -> Option<UserData> {
             alerts_json: "[]".to_string(),
             s_auth: -1.0,
             i_nav: 0.0,
+            profile_trend: "OBSERVING".to_string(),
         })
     } else {
         None // Utilisateur pas trouvé

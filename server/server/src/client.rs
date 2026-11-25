@@ -1058,6 +1058,10 @@ impl Client {
         // Envoyer la session compressée au client
         self.send_command(CommandType::INIT_SESSION, data).await?;
 
+        // Envoyer la version et le numéro de build du serveur au client
+        let info_data = create_data!(SERVER_VERSION, SERVER_BUILD);
+        let _ = self.send_command(CommandType::SERVER_INFO, info_data).await;
+
         // Notifier le client de l'état de lecture seule de la session
         let readonly = get_session_readonly(session).await;
         if readonly {
@@ -1228,9 +1232,9 @@ impl Client {
         self.send_command(CommandType::RESET_USER_ALERT, data).await
     }
 
-    // Pour pousser les métriques télémétriques temps réel (S_auth, I_nav) aux tuteurs
-    pub async fn tutor_set_user_metrics(&self, login: &str, s_auth: f64, i_nav: f64) -> EmptyResult {
-        let data = create_data!(login, s_auth, i_nav);
+    // Pour pousser les métriques télémétriques temps réel (S_auth, I_nav, tendance profil) aux tuteurs
+    pub async fn tutor_set_user_metrics(&self, login: &str, s_auth: f64, i_nav: f64, profile_trend: &str) -> EmptyResult {
+        let data = create_data!(login, s_auth, i_nav, profile_trend);
         self.send_command(CommandType::SET_USER_METRICS, data).await
     }
 
@@ -1345,9 +1349,9 @@ pub async fn notify_tutors_clear_alert(session: &str, login: &str, code: &str) {
     }
 }
 
-pub async fn notify_tutors_user_metrics(session: &str, login: &str, s_auth: f64, i_nav: f64) {
+pub async fn notify_tutors_user_metrics(session: &str, login: &str, s_auth: f64, i_nav: f64, profile_trend: &str) {
     let tutors = connected_tutors(session).await;
     for tutor in tutors {
-        let _ = tutor.tutor_set_user_metrics(login, s_auth, i_nav).await;
+        let _ = tutor.tutor_set_user_metrics(login, s_auth, i_nav, profile_trend).await;
     }
 }

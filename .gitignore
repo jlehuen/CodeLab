@@ -22,7 +22,7 @@ server/server/config/data_*/
 server/server/config/sessions.xml
 server/server/config/sessions_new.xml
 server/server/sessions/
-server/scripts-admin/
+server/scripts-mac/
 client/codelab.files/evaluations/*
 !client/codelab.files/evaluations/README.TXT
 !client/codelab.files/evaluations/.gitkeep
@@ -60,7 +60,7 @@ server/compile-server.sh
 server/get-log.command
 server/install-univ.sh
 server/update-server.sh
-server/README.TXT
+server/MEMO.txt
 server/server/archive/
 
 # ------------------------------------------------------------------------------

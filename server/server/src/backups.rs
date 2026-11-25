@@ -22,6 +22,7 @@ type EmptyResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 // Format des backups : filename_YYMMDD_HHMMSS_bak.extension.bak
 // Génération du code par IA Anthropic Claude
 
+#[allow(dead_code)]
 pub fn delete_backup_files(file_path: &Path) -> EmptyResult {
 
     // Extraire le nom du fichier sans extension et l'extension
