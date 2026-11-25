@@ -127,12 +127,32 @@ public class UserTable extends JScrollPane {
 
 	private static ImageIcon getProfileIcon(String code) {
 		String key = (code != null && !code.isBlank()) ? code.toUpperCase() : "OBSERVING";
-		return PROFILE_ICON_CACHE.computeIfAbsent(key, k -> {
-			ImageIcon raw = ResourceUtils.loadImageIcon(UserData.getProfileTrendIconPath(k));
-			if (raw == null || raw.getIconWidth() <= 0) return null;
-			java.awt.Image scaled = raw.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
-			return new ImageIcon(scaled);
-		});
+		ImageIcon cached = PROFILE_ICON_CACHE.get(key);
+		if (cached != null) return cached;
+
+		ImageIcon result = null;
+		String[] parts = UserData.splitProfileTrend(key);
+		if (parts.length == 2) {
+			ImageIcon i1 = getProfileIcon(parts[0]);
+			ImageIcon i2 = getProfileIcon(parts[1]);
+			if (i1 != null && i2 != null) {
+				java.awt.image.BufferedImage combined = new java.awt.image.BufferedImage(34, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+				java.awt.Graphics2D g2 = combined.createGraphics();
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+				g2.drawImage(i1.getImage(), 0, 0, 16, 16, null);
+				g2.drawImage(i2.getImage(), 18, 0, 16, 16, null);
+				g2.dispose();
+				result = new ImageIcon(combined);
+			}
+		} else {
+			ImageIcon raw = ResourceUtils.loadImageIcon(UserData.getProfileTrendIconPath(parts[0]));
+			if (raw != null && raw.getIconWidth() > 0) {
+				java.awt.Image scaled = raw.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
+				result = new ImageIcon(scaled);
+			}
+		}
+		if (result != null) PROFILE_ICON_CACHE.put(key, result);
+		return result;
 	}
 
 	public boolean isColumnVisible(int col) {

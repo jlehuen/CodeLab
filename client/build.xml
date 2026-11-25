@@ -200,6 +200,7 @@
 				<attribute name="Class-Path" value="${jar-classpath}"/>
 			</manifest>
 		</jar>
+		<checksum file="${jarfile}" algorithm="SHA-256" fileext=".sha256" forceOverwrite="yes"/>
 	</target>
 
 	<!-- ############################ -->

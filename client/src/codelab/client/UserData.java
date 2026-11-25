@@ -247,9 +247,22 @@ public class UserData {
 		}
 	}
 
-	public static String getProfileTrendLabel(String code) {
-		if (code == null) return "--";
-		switch (code.toUpperCase()) {
+	public static String[] splitProfileTrend(String code) {
+		if (code == null || code.isBlank()) return new String[]{ "OBSERVING" };
+		String[] parts = code.trim().toUpperCase().split("\\+");
+		if (parts.length >= 2 && !parts[0].isBlank() && !parts[1].isBlank()) {
+			return new String[]{ parts[0].trim(), parts[1].trim() };
+		}
+		return new String[]{ parts[0].trim() };
+	}
+
+	public static boolean isDoubleProfile(String code) {
+		return splitProfileTrend(code).length == 2;
+	}
+
+	private static String getSingleProfileLabel(String single) {
+		if (single == null) return "--";
+		switch (single.toUpperCase()) {
 			case "BOSS":       return "Boss";
 			case "ARTISAN":    return "Artisan";
 			case "CASSE_COU":  return "Casse-cou";
@@ -260,9 +273,39 @@ public class UserData {
 		}
 	}
 
+	public static String getProfileTrendLabel(String code) {
+		String[] parts = splitProfileTrend(code);
+		if (parts.length == 2) {
+			return getSingleProfileLabel(parts[0]) + " + " + getSingleProfileLabel(parts[1]);
+		}
+		return getSingleProfileLabel(parts[0]);
+	}
+
+	public static String getDoubleProfileNickname(String code) {
+		String[] parts = splitProfileTrend(code);
+		if (parts.length != 2) return null;
+		String a = parts[0], b = parts[1];
+		String key = (a.compareTo(b) <= 0) ? (a + "+" + b) : (b + "+" + a);
+		switch (key) {
+			case "ARTISAN+BOSS":       return "L'Architecte Méthodique";
+			case "BOSS+CASSE_COU":     return "Le Hacker Instinctif";
+			case "ARTISAN+CASSE_COU":  return "Le Travailleur Acharné";
+			case "CASSE_COU+CYBORG":   return "L'Apprenti Sorcier";
+			case "CYBORG+DECROCHEUR":  return "Le Délégataire Passif";
+			case "CASSE_COU+DECROCHEUR": return "L'Épuisé Découragé";
+			case "BOSS+CYBORG":        return "L'Ingénieur Augmenté";
+			case "CYBORG+PIRATE":      return "Le Contrebandier Numérique";
+			case "BOSS+PIRATE":        return "L'Éclaireur Partageur";
+			case "DECROCHEUR+PIRATE":  return "Le Copiste de Survie";
+			case "ARTISAN+PIRATE":     return "L'Artisan Sous Influence";
+			case "ARTISAN+DECROCHEUR": return "L'Apprenti Hésitant";
+			default:                   return null;
+		}
+	}
+
 	public static String getProfileTrendIconPath(String code) {
-		if (code == null) return "icons/icon_profile_observing.png";
-		switch (code.toUpperCase()) {
+		String[] parts = splitProfileTrend(code);
+		switch (parts[0].toUpperCase()) {
 			case "BOSS":       return "icons/icon_profile_boss.png";
 			case "ARTISAN":    return "icons/icon_profile_artisan.png";
 			case "CASSE_COU":  return "icons/icon_profile_casse_cou.png";
@@ -274,8 +317,8 @@ public class UserData {
 	}
 
 	public static String getProfileTrendColorHex(String code) {
-		if (code == null) return "#7f8c8d";
-		switch (code.toUpperCase()) {
+		String[] parts = splitProfileTrend(code);
+		switch (parts[0].toUpperCase()) {
 			case "BOSS":       return "#1B365D";
 			case "ARTISAN":    return "#1E8449";
 			case "CASSE_COU":  return "#D35400";
@@ -356,17 +399,27 @@ public class UserData {
 			sb.append("• Temps hors de l'IDE : <b>").append(String.format(java.util.Locale.US, "%.1f%%", iNav)).append("</b><br/>");
 		}
 		String trendCode = getProfileTrend();
+		String[] trendParts = splitProfileTrend(trendCode);
 		String trendLabel = getProfileTrendLabel(trendCode);
 		String trendColor = getProfileTrendColorHex(trendCode);
-		java.net.URL iconUrl = codelab.utils.ResourceUtils.class.getResource("/data/" + getProfileTrendIconPath(trendCode));
 		sb.append("• Tendance en séance : ");
-		if (iconUrl != null) {
-			sb.append("<img src='").append(iconUrl.toString()).append("' width='13' height='13' style='vertical-align:middle;'/> ");
+		for (String part : trendParts) {
+			java.net.URL iconUrl = codelab.utils.ResourceUtils.class.getResource("/data/" + getProfileTrendIconPath(part));
+			if (iconUrl != null) {
+				sb.append("<img src='").append(iconUrl.toString()).append("' width='13' height='13' style='vertical-align:middle;'/> ");
+			}
 		}
 		if ("OBSERVING".equalsIgnoreCase(trendCode)) {
 			sb.append("<font color='#7f8c8d'><i>Observation en cours</i></font><br/>");
 		} else {
-			sb.append("<font color='").append(trendColor).append("'><b>").append(trendLabel).append("</b></font> <font color='#7f8c8d'><i>(provisoire)</i></font><br/>");
+			sb.append("<font color='").append(trendColor).append("'><b>").append(trendLabel).append("</b></font>");
+			String nickname = getDoubleProfileNickname(trendCode);
+			if (nickname != null) {
+				sb.append(" <font color='#444444'>— <i>« ").append(nickname).append(" »</i></font>");
+			} else {
+				sb.append(" <font color='#7f8c8d'><i>(provisoire)</i></font>");
+			}
+			sb.append("<br/>");
 		}
 		if (!activeAlerts.isEmpty()) {
 			sb.append("<hr style='margin:4px 0;'/>");

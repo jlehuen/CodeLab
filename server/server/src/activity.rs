@@ -251,62 +251,153 @@ impl StudentLiveStatus {
     }
 
     fn compute_profile_trend(&self) -> String {
-        // 1. Signal fort d'importation directe -> Pirate
-        if self.dropped_files > 0 {
-            return "PIRATE".to_string();
-        }
-
         let s_auth = self.compute_s_auth();
         let i_nav = self.compute_i_nav();
         let total_activity_chars = self.typed_chars + self.pasted_chars + self.burst_chars;
 
-        // 2. Signal fort d'injection / faible authenticité -> Cyborg
-        if self.burst_lines >= 20 || (s_auth >= 0.0 && s_auth < 50.0 && total_activity_chars >= 150) {
-            return "CYBORG".to_string();
-        }
-
-        // 3. Acharnement sur erreurs -> Casse-cou
-        let err_rate = if self.total_runs > 0 {
-            (self.total_errors as f64) / (self.total_runs as f64)
-        } else {
-            0.0
-        };
-        if self.thrash_episodes >= 1 || (self.total_runs >= 6 && err_rate >= 0.65) {
-            return "CASSE_COU".to_string();
-        }
-
-        // 4. Inactivité prolongée en séance -> Décrocheur
         let idle_sec = self
             .last_activity
             .or(self.session_start)
             .map(|t| t.elapsed().as_secs())
             .unwrap_or(0);
         let elapsed_sec = self.session_start.map(|t| t.elapsed().as_secs()).unwrap_or(0);
-        if idle_sec >= 720 || (elapsed_sec >= 900 && total_activity_chars < 40 && self.total_runs == 0) {
-            return "DECROCHEUR".to_string();
-        }
 
-        // 5. Phase d'observation initiale (évite les faux positifs en tout début de séance)
-        if total_activity_chars < 60 && self.total_runs < 2 {
+        // Phase d'observation initiale si aucun signal fort et trop peu d'activité
+        if self.dropped_files == 0
+            && self.burst_lines < 20
+            && self.thrash_episodes == 0
+            && idle_sec < 720
+            && total_activity_chars < 60
+            && self.total_runs < 2
+        {
             return "OBSERVING".to_string();
         }
 
-        // 6. Excellence fluide (haute authenticité, runs réussis, quasiment zéro erreur ni appel) -> Boss
-        if s_auth >= 85.0
-            && self.total_ok_runs >= 2
-            && self.total_errors <= 1
-            && self.help_requests == 0
-            && i_nav <= 30.0
-        {
-            return "BOSS".to_string();
+        let auth_val = if s_auth >= 0.0 {
+            (s_auth / 5.0).clamp(0.0, 20.0)
+        } else {
+            10.0
+        };
+        let focus_val = ((100.0 - i_nav) / 5.0).clamp(0.0, 20.0);
+        let err_rate = if self.total_runs > 0 {
+            (self.total_errors as f64) / (self.total_runs as f64)
+        } else {
+            0.0
+        };
+
+        // Scores d'affinité temps réel (/20) pour les 6 profils archétypaux
+        // 1. BOSS : haute authenticité, exécutions réussies fluides, quasi zéro erreur ni appel
+        let mut boss_score = if self.total_ok_runs >= 2 {
+            (auth_val * 0.60) + (focus_val * 0.25) + 3.0
+                - (self.total_errors as f64 * 2.5)
+                - (self.help_requests as f64 * 4.0)
+                - (self.thrash_episodes as f64 * 8.0)
+                - if self.burst_lines >= 20 { 8.0 } else { 0.0 }
+        } else if self.total_ok_runs == 1 && self.total_errors == 0 && s_auth >= 85.0 && total_activity_chars >= 150 {
+            (auth_val * 0.50) + (focus_val * 0.20) + 1.0 - (self.help_requests as f64 * 4.0)
+        } else {
+            0.5
+        };
+        boss_score = boss_score.clamp(0.5, 20.0);
+
+        // 2. ARTISAN : saisie clavier réelle, corrections (backspaces), itérations saines
+        let bs_bonus = if self.backspaces >= 15 {
+            3.0
+        } else if self.backspaces >= 5 {
+            1.5
+        } else {
+            0.0
+        };
+        let runs_bonus = if self.total_runs >= 3 { 2.5 } else if self.total_runs >= 1 { 1.0 } else { 0.0 };
+        let mut artisan_score = if self.typed_chars >= 60 {
+            (auth_val * 0.65) + bs_bonus + runs_bonus
+                - if self.burst_lines >= 20 { 8.0 } else { 0.0 }
+                - if idle_sec >= 720 { 6.0 } else { 0.0 }
+        } else {
+            0.5
+        };
+        artisan_score = artisan_score.clamp(0.5, 20.0);
+
+        // 3. CYBORG : faible authenticité, bursts d'insertion, forte navette hors IDE
+        let mut cyborg_score = if s_auth >= 0.0 {
+            ((20.0 - auth_val) * 0.65) + ((20.0 - focus_val) * 0.25)
+                + if self.burst_lines >= 20 { 9.0 } else { 0.0 }
+        } else if self.burst_lines >= 20 {
+            16.0
+        } else {
+            0.5
+        };
+        if s_auth >= 75.0 && self.burst_lines < 20 {
+            cyborg_score = cyborg_score.min(5.0);
+        }
+        cyborg_score = cyborg_score.clamp(0.5, 20.0);
+
+        // 4. CASSE_COU : épisodes d'acharnement (THRASH) ou fort taux d'erreur sur de nombreux runs
+        let mut casse_score = (self.thrash_episodes as f64 * 12.0)
+            + if self.total_runs >= 5 && err_rate >= 0.60 {
+                err_rate * 16.0
+            } else if self.total_errors >= 3 {
+                (self.total_errors as f64) * 2.5
+            } else {
+                0.5
+            };
+        casse_score = casse_score.clamp(0.5, 20.0);
+
+        // 5. DECROCHEUR : inactivité prolongée en séance ou absence quasi totale de production
+        let mut decroch_score: f64 = if idle_sec >= 900 {
+            17.0
+        } else if idle_sec >= 720 {
+            14.0
+        } else if elapsed_sec >= 900 && total_activity_chars < 40 && self.total_runs == 0 {
+            15.0
+        } else {
+            0.5
+        };
+        decroch_score = decroch_score.clamp(0.5, 20.0);
+
+        // 6. PIRATE : glisser-déposer de fichier externe (FILE_DROP)
+        let pirate_score = if self.dropped_files > 0 {
+            (13.0 + (self.dropped_files as f64 * 3.0)).clamp(0.5, 20.0)
+        } else {
+            0.5
+        };
+
+        let mut scores = [
+            ("BOSS", boss_score),
+            ("ARTISAN", artisan_score),
+            ("CYBORG", cyborg_score),
+            ("CASSE_COU", casse_score),
+            ("DECROCHEUR", decroch_score),
+            ("PIRATE", pirate_score),
+        ];
+        scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        let (p1_id, p1_val) = scores[0];
+        let (p2_id, p2_val) = scores[1];
+
+        if p1_val < 9.0 {
+            return "OBSERVING".to_string();
         }
 
-        // 7. Travail autonome et itératif sain -> Artisan
-        if s_auth >= 70.0 && (self.typed_chars >= 60 || self.backspaces >= 5) {
-            return "ARTISAN".to_string();
-        }
+        // Détection formelle d'un Double-Profil temps réel (mêmes règles que Python) :
+        // 1. Axes non opposés à 180° (BOSS<->DECROCHEUR, ARTISAN<->CYBORG, CASSE_COU<->PIRATE)
+        // 2. Les deux affinités >= 11.0 / 20
+        // 3. Écart resserré <= 3.5 pts
+        let are_opposite = matches!(
+            (p1_id, p2_id),
+            ("BOSS", "DECROCHEUR")
+                | ("DECROCHEUR", "BOSS")
+                | ("ARTISAN", "CYBORG")
+                | ("CYBORG", "ARTISAN")
+                | ("CASSE_COU", "PIRATE")
+                | ("PIRATE", "CASSE_COU")
+        );
 
-        "OBSERVING".to_string()
+        if !are_opposite && p1_val >= 11.0 && p2_val >= 11.0 && (p1_val - p2_val).abs() <= 3.5 {
+            format!("{}+{}", p1_id, p2_id)
+        } else {
+            p1_id.to_string()
+        }
     }
 
     fn to_live_metrics(&self) -> LiveMetrics {
@@ -1210,10 +1301,14 @@ mod tests {
         assert_eq!(metrics2.s_auth, 80.0); // inchangé !
         assert_eq!(metrics2.profile_trend, "ARTISAN");
 
-        // Déclenchement d'un FILE_DROP -> bascule en tendance PIRATE
+        // Déclenchement d'un FILE_DROP sur un étudiant Artisan -> bascule en double-profil PIRATE+ARTISAN (ou ARTISAN+PIRATE)
         record_client_log(session, login, r#"{"type":"FILE_DROP","file":"copie.py","size_bytes":2048}"#);
         let metrics3 = get_student_live_metrics(session, login);
-        assert_eq!(metrics3.profile_trend, "PIRATE");
+        assert!(
+            metrics3.profile_trend == "PIRATE+ARTISAN" || metrics3.profile_trend == "ARTISAN+PIRATE",
+            "Expected PIRATE+ARTISAN double profile, got {}",
+            metrics3.profile_trend
+        );
 
         let _ = fs::remove_dir_all(Path::new(PROG_DIR).join(session));
     }
@@ -1229,14 +1324,24 @@ mod tests {
         record_client_log(session, boss_login, r#"{"type":"TYPING","file":"a.py","typed_chars":300,"backspaces":10}"#);
         record_client_log(session, boss_login, r#"{"type":"EXECUTE","file":"a.py","status":"DONE","exit_code":0}"#);
         record_client_log(session, boss_login, r#"{"type":"EXECUTE","file":"a.py","status":"DONE","exit_code":0}"#);
-        assert_eq!(get_student_live_metrics(session, boss_login).profile_trend, "BOSS");
+        let boss_trend = get_student_live_metrics(session, boss_login).profile_trend;
+        assert!(
+            boss_trend == "BOSS+ARTISAN" || boss_trend == "ARTISAN+BOSS" || boss_trend == "BOSS",
+            "Expected BOSS or BOSS+ARTISAN, got {}",
+            boss_trend
+        );
 
         record_session_event(session, cc_login, "CONNECTED", Some("127.0.0.1"), None);
         record_client_log(session, cc_login, r#"{"type":"TYPING","file":"b.py","typed_chars":200,"backspaces":20}"#);
         record_client_log(session, cc_login, r#"{"type":"COMPILE","file":"b.py","status":"ERROR","error_msg":"err1"}"#);
         record_client_log(session, cc_login, r#"{"type":"COMPILE","file":"b.py","status":"ERROR","error_msg":"err2"}"#);
         record_client_log(session, cc_login, r#"{"type":"COMPILE","file":"b.py","status":"ERROR","error_msg":"err3"}"#);
-        assert_eq!(get_student_live_metrics(session, cc_login).profile_trend, "CASSE_COU");
+        let cc_trend = get_student_live_metrics(session, cc_login).profile_trend;
+        assert!(
+            cc_trend == "CASSE_COU+ARTISAN" || cc_trend == "ARTISAN+CASSE_COU" || cc_trend == "CASSE_COU",
+            "Expected CASSE_COU or ARTISAN+CASSE_COU, got {}",
+            cc_trend
+        );
 
         let _ = fs::remove_dir_all(Path::new(PROG_DIR).join(session));
     }
