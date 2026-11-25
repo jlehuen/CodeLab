@@ -360,10 +360,10 @@ Une fois les JDK placés, lancez le script correspondant à votre cible :
 - **Linux** (archive autonome FreeDesktop) : `./distrib-linux.sh`
 - **Windows** (Installateur NSIS) : `./distrib-win64.sh`
 
-#### Gestion des versions & Publication automatique du JAR (CI/CD)
+#### Gestion des versions & Publication du JAR (CI/CD)
 
 - **Source de vérité unique** : le fichier [`VERSION`](VERSION) à la racine du dépôt pilote automatiquement la version du client Java (`client/build.xml`) et celle du serveur Rust (`server/server/build.rs`), avec un numéro de build horodaté (`AAMMJJHHMM`).
-- **Publication automatique sur GitHub Releases** : le workflow [`.github/workflows/release-jar.yml`](.github/workflows/release-jar.yml) se déclenche automatiquement à chaque `git push origin vX.Y.Z` pour compiler `codelab.jar` + `codelab.jar.sha256` et les attacher à la Release GitHub correspondante.
+- **Publication sur GitHub Releases** : le script [`github-release.sh`](github-release.sh) est l'unique publieur automatique lors d'une release (installateurs OS + `codelab.jar` + `codelab.jar.sha256`). Le workflow [`.github/workflows/release-jar.yml`](.github/workflows/release-jar.yml) reste disponible à la demande (`workflow_dispatch`) pour recompiler et republier uniquement `codelab.jar` + `codelab.jar.sha256` sur un tag cible.
 
 ### 2. Compilation du serveur Rust
 
