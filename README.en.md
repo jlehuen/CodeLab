@@ -69,16 +69,16 @@ A key feature of CodeLab is enabling **virtual classrooms** (in-person or remote
 
 <a id="downloads" name="downloads"></a>
 
-## Downloads (version 1.5.3)
+## Downloads (version 1.5.5)
 
 <br>
 
 <p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.3.dmg"><img src="client/images/download-macos.png" alt="Download for macOS" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.5.dmg"><img src="client/images/download-macos.png" alt="Download for macOS" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.3-Setup.exe"><img src="client/images/download-windows.png" alt="Download for Windows" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.5-Setup.exe"><img src="client/images/download-windows.png" alt="Download for Windows" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.3.zip"><img src="client/images/download-linux.png" alt="Download for Linux" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.5.zip"><img src="client/images/download-linux.png" alt="Download for Linux" width="150"></a>
 </p>
 
 All available releases can be found in the CodeLab [Releases](https://github.com/jlehuen/CodeLab/releases) section.
