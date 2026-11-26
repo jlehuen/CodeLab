@@ -131,23 +131,23 @@ flowchart TD
 
 ---
 
-## 3. Moteur de Dérivation & Indicateurs Pédagogiques
+## 3. Moteur de Dérivation & Indicateurs Pédagogiques (Canal Différé)
 
 Le moteur d'analytics ([`activity_analyzer.py`](file:///Users/lehuen/dev/codelab/client/codelab.files/skills/activity_analyzer.py)) agrège les observables pour produire des métriques formelles de haut niveau.
 
 ### A. Indicateurs d'Intégrité & de Genèse du Code
 
-#### 1. Score d'Authenticité (S_auth)
+#### 1. Score d'Authenticité ($S_{auth}$)
 Mesure la proportion de matière textuelle rédigée via frappe humaine directe face aux injections massives externes :
 
 $$S_{\mathrm{auth}} = \frac{N_{\mathrm{typed}}}{N_{\mathrm{typed}} + N_{\mathrm{pasted}} + N_{\mathrm{dropped}}} \times 100$$
 
 * **Interprétation** :
-  * **S_auth ≥ 70%** : **Élevée** (saisie artisanale, appropriation du problème).
-  * **40% ≤ S_auth < 70%** : **Modérée** (quelques collages ou réutilisations d'exemples).
-  * **S_auth < 40%** : **Suspecte / Faible** (forte prédominance d'injections externes ou génération IA).
+  * **$S_{auth} \ge 70\%$** : **Élevée** (saisie artisanale, appropriation du problème).
+  * **$40\% \le S_{auth} < 70\%$** : **Modérée** (quelques collages ou réutilisations d'exemples).
+  * **$S_{auth} < 40\%$** : **Suspecte / Faible** (forte prédominance d'injections externes ou génération IA).
 
-#### 2. Indice de Navette Externe (I_nav)
+#### 2. Indice de Navette Externe ($I_{nav}$)
 Quantifie la tendance de l'étudiant à travailler hors de l'environnement de développement :
 
 $$I_{\mathrm{nav}} = \frac{\sum t_{\mathrm{away}}}{T_{\mathrm{session}}} \times 100$$
@@ -157,34 +157,34 @@ $$I_{\mathrm{nav}} = \frac{\sum t_{\mathrm{away}}}{T_{\mathrm{session}}} \times 
   
   La détection de ce motif **≥ 3 fois** caractérise un cycle de requête de solution externe systématique.
 
-#### 3. Taux de Friction Cognitive (T_fric)
+#### 3. Taux de Friction Cognitive ($T_{fric}$)
 Mesure l'hésitation rédactionnelle et les reprises de code :
 
 $$T_{\mathrm{fric}} = \frac{N_{\mathrm{backspaces}}}{N_{\mathrm{typed}}} \times 100$$
 
-* **T_fric < 3%** : Dictée passive, recopie mécanique sans aucune hésitation.
-* **10% ≤ T_fric ≤ 25%** : Rythme normal de réflexion et de réajustement syntaxique.
-* **T_fric > 40%** : Tâtonnement aveugle, grande confusion algorithmique.
+* **$T_{fric} < 3\%$** : Dictée passive, recopie mécanique sans aucune hésitation.
+* **$10\% \le T_{fric} \le 25\%$** : Rythme normal de réflexion et de réajustement syntaxique.
+* **$T_{fric} > 40\%$** : Tâtonnement aveugle, grande confusion algorithmique.
 
 ---
 
 ### B. Indicateurs de Méthodologie & Démarche Expérimentale
 
-#### 1. Indice d'Acharnement Stérile (I_thrash)
+#### 1. Indice d'Acharnement Stérile ($I_{thrash}$)
 Représente la part des exécutions ou compilations menées sans réflexion préalable :
 
 $$I_{\mathrm{thrash}} = \frac{\sum \text{Runs en acharnement}}{\text{Total des Runs}} \times 100$$
 
 * **Définition d'un épisode d'acharnement** : séquence d'au moins 3 exécutions consécutives soldées par `ERROR` avec Δt ≤ 30 secondes ou modification textuelle ≤ 5 caractères entre chaque tentative.
 
-#### 2. Temps Moyen de Résolution d'Erreur (TTF — *Time To Fix*)
+#### 2. Temps Moyen de Résolution d'Erreur ($TTF$ — *Time To Fix*)
 Durée moyenne écoulée entre l'apparition de la première erreur d'exécution sur un fichier et le retour au premier run `DONE` / `OK` :
 
 $$\overline{\mathrm{TTF}} = \frac{1}{K} \sum_{k=1}^K (t_{\mathrm{resolved}, k} - t_{\mathrm{error}, k})$$
 
-* **TTF moyen < 30 s** : Erreur d'inattention ou typo rapidement corrigée.
-* **TTF moyen ∈ [1 min, 5 min]** : Démarche analytique saine de débogage.
-* **TTF moyen > 15 min** : Blocage conceptuel sévère nécessitant une intervention.
+* **$TTF$ moyen $< 30\,\text{s}$** : Erreur d'inattention ou typo rapidement corrigée.
+* **$TTF$ moyen $\in [1\,\text{min}, 5\,\text{min}]$** : Démarche analytique saine de débogage.
+* **$TTF$ moyen $> 15\,\text{min}$** : Blocage conceptuel sévère nécessitant une intervention.
 
 ---
 
@@ -210,24 +210,24 @@ Une moyenne globale sur 2 heures peut masquer un basculement tardif vers une IA 
 $$\mathcal{E}_k = \{ e \in \mathcal{E} \mid t_k \le t(e) < t_k + \Delta t \}$$
 
 Pour chaque tranche temporelle k, le moteur calcule localement :
-* **S_auth(k)** : score d'authenticité de la tranche.
-* **I_nav(k)** : ratio de temps hors IDE sur la tranche.
+* **$S_{auth}(k)$** : score d'authenticité de la tranche.
+* **$I_{nav}(k)$** : ratio de temps hors IDE sur la tranche.
 * **Typologie de Phase** : qualification algorithmique de l'activité.
 
 #### Matrice de Qualification de Phase
 
 | Phase Qualifiée | Critères de Décision |
 | :--- | :--- |
-| `✅ Saisie autonome active` | S_auth ≥ 70% et volume de frappe > 80 car/min |
-| `⚙️ Validation & Tests` | Runs fréquents (> 2), taux de succès ≥ 60%, S_auth ≥ 60% |
-| `📖 Réflexion / Lecture` | Faible frappe (< 30 car), temps de lecture/consultation prédominant |
-| `⚠️ Acharnement sur erreurs` | ≥ 3 exécutions consécutives soldées par un échec |
-| `🚨 Décrochage IA / Injection` | S_auth < 40% avec présence de `BURST` ou I_nav > 50% |
+| `✅ Saisie autonome active` | $S_{auth} \ge 70\%$ et volume de frappe $> 80\text{ car/min}$ |
+| `⚙️ Validation & Tests` | Runs fréquents ($> 2$), taux de succès $\ge 60\%$, $S_{auth} \ge 60\%$ |
+| `📖 Réflexion / Lecture` | Faible frappe ($< 30\text{ car}$), temps de lecture/consultation prédominant |
+| `⚠️ Acharnement sur erreurs` | $\ge 3$ exécutions consécutives soldées par un échec |
+| `🚨 Décrochage IA / Injection` | $S_{auth} < 40\%$ avec présence de `BURST` ou $I_{nav} > 50\%$ |
 | `📥 Dépôt externe` | Au moins un événement `FILE_DROP` sur la tranche |
 
 ---
 
-## 4. Système d'Indicateurs en Direct, Alertes & Supervision Tuteur
+## 4. Système d'Indicateurs en Direct, Alertes & Supervision Tuteur (Canal Temps Réel)
 
 Le serveur Rust évalue en temps réel chaque observable reçu au sein de son module [`activity.rs`](file:///Users/lehuen/dev/codelab/server/server/src/activity.rs). Il maintient pour chaque étudiant un état d'indicateurs dynamiques (`StudentLiveStatus` / `LiveMetrics`) et une collection d'alertes en mémoire (`HashMap<String, LiveAlert>`).
 
@@ -354,7 +354,7 @@ Au survol de la cellule Alerte d'un étudiant, une infobulle HTML dynamique affi
 
 ---
 
-## 6. Typologie des Profils Étudiants & Visualisation Radar
+## 6. Typologie des Profils Étudiants & Visualisation Radar (Canal Différé)
 
 L'audit de post-traitement classe automatiquement les étudiants selon 6 profils didactiques types articulés autour de la matrice d'authenticité et de vélocité de résolution, et les projette sur un **diagramme radar Mermaid (`radar-beta`)** où les comportements sont opposés deux à deux à 180° :
 
@@ -391,7 +391,7 @@ flowchart LR
     class P pirate;
 ```
 
-### A. Les 3 Couples de Profils Didactiques Opposés à 180°
+### A. Les 6 Profils Archétypaux (3 Couples Opposés & Fiches Détaillées)
 
 | Couple d'Opposés | Profil Type | Caractéristiques & Comportement Observé | Indicateurs Clés |
 | :--- | :--- | :--- | :--- |
@@ -402,9 +402,55 @@ flowchart LR
 | **Axe 2 $\longleftrightarrow$ Axe 5**<br>*(Copie vs Acharnement)* | 🏴‍☠️ **Le Pirate** | Collusion directe en salle, import par support externe (USB/réseau) ou copie d'autrui. | Présence d'événements `FILE_DROP`, similarité Jaccard/Winnowing $\ge 75\%$. |
 | | ⚡ **Le Casse-cou** | Combat acharné avec le compilateur, tâtonnement compulsif sans recul ni diagnostic. | $I_{thrash} > 35\%$, erreurs $> 70\%$, $\Delta t$ entre runs $< 15\,\text{s}$. |
 
+#### 1. L'Artisan (Comportement d'Apprentissage Exemplaire)
+* **Indicateurs** : $S_{auth} > 80\%$, $T_{fric} \in [10\%, 25\%]$, $I_{thrash} < 10\%$.
+* **Démarche** : Cycles de développement courts et incrémentaux, lecture approfondie du sujet avant de coder, résolution méthodique des erreurs étape par étape.
+
+#### 2. Le Boss (Expertise et Maîtrise Directe)
+* **Indicateurs** : $S_{auth} > 80\%$, $TTF < 30\,\text{s}$, zéro demande d'aide tuteur, cadence de frappe élevée.
+* **Démarche** : L'étudiant maîtrise parfaitement les concepts et déroule la solution sans friction notable.
+
+#### 3. Le Cyborg (Assistance IA / Solution Importée)
+* **Indicateurs** : $S_{auth} < 30\%$, alertes `BURST` multiples, $I_{nav} > 40\%$, $T_{fric} < 5\%$.
+* **Démarche** : Absence de genèse itérative du code. L'étudiant formule des requêtes sur un modèle externe et injecte des blocs complets de 30 à 60 lignes sans les retoucher.
+
+#### 4. Le Casse-Cou (Acharnement Stérile / Tâtonnement Aveugle)
+* **Indicateurs** : $I_{thrash} > 35\%$, ratio d'erreurs d'exécution $> 70\%$, $\Delta t$ entre runs $< 15\,\text{s}$.
+* **Démarche** : L'étudiant ne consulte pas la sortie console ni le traceback. Il modifie un caractère au hasard et relance en boucle en espérant un résultat positif.
+
+#### 5. Le Décrocheur (Perte de Pied et Abandon Silencieux)
+* **Indicateurs** : Temps hors IDE > 50%, périodes d'inactivité > 15 min, moins de 3 runs sur l'ensemble de la séance.
+* **Démarche** : Face à une difficulté initiale non résolue, l'étudiant renonce à chercher et attend la fin de séance sans solliciter l'encadrement.
+
+#### 6. Le Pirate (Collusion en Salle / Import Direct)
+* **Indicateurs** : Présence d'événements `FILE_DROP`, corrélation de synchronicité (≤ 90 s) avec la réussite d'un poste voisin.
+* **Démarche** : Récupération directe d'un fichier source par clé USB, partage local ou messagerie instantanée.
+
 ---
 
-### B. Le Double Radar Individuel (Fiche Étudiant)
+### B. Calcul des Profils avec ou sans Skill d'Évaluation (Sujet / Corrigé)
+
+La collecte télémétrique (`.activity.jsonl`) et l'ensemble des indicateurs bruts dérivés par `activity_analyzer.py` ($S_{auth}$, $I_{nav}$, $I_{thrash}$, $TTF$, quadrants *Edit / Read / Test / Away*, `BURST_INSERT`, `FILE_DROP`, demandes d'aide tuteur, compilations et exécutions) sont **entièrement indépendants de tout skill d'évaluation, sujet ou corrigé**.
+
+Dans le calcul des **6 profils archétypaux**, deux catégories se distinguent :
+- **3 profils sont 100 % comportementaux (aucun skill ni corrigé requis)** :
+  - **Le Cyborg** : déterminé uniquement par l'authenticité de frappe ($S_{auth}$), la concentration locale ($I_{nav}$) et les injections massives (`BURST_INSERT`).
+  - **Le Casse-cou** : déterminé uniquement par l'acharnement ($I_{thrash}$), la fréquence d'exécution (nombre de runs), le temps de correction ($TTF$) et le temps de lecture (quadrant **Q1**).
+  - **Le Pirate** : déterminé par les dépôts de fichiers externes (`FILE_DROP`) et, le cas échéant, la similarité croisée au sein de la cohorte (qui ne nécessite aucun corrigé).
+- **3 profils combinent télémétrie et indicateurs de note issus d'un skill** :
+  - **Le Boss** : intègre la note technique brute (pondération `0.60`, bonus $TTF$ si note brute $\ge 16$).
+  - **L'Artisan** : intègre les scores de style et de tests (et un malus si note brute $< 8$).
+  - **Le Décrocheur** : intègre un terme lié à une note faible en complément de l'inactivité prolongée (périodes *Idle*), de la stagnation et du faible nombre d'exécutions ($\le 2$ runs).
+
+**Calcul sans skill (mode comportemental pur)** : il est tout à fait envisageable de calculer les 6 profils sans sujet ni corrigé en remplaçant les composantes de note par des indicateurs comportementaux déjà présents dans `.activity.jsonl` (taux de succès des compilations/exécutions, $TTF$, régularité des cycles *Edit → Test*, volume de saisie personnelle, durée d'inactivité et taux d'échec).
+
+> **Portée pédagogique** : sans sujet ni corrigé, le profil mesure fidèlement la **posture de travail** (alerte précoce *Décrocheur* / *Casse-cou*, intégrité *Cyborg* / *Pirate*, démarche *Artisan* / *Boss*), mais ne permet pas de juger la **conformité fonctionnelle à l'énoncé** — un étudiant qui code proprement et sans erreur un programme hors-sujet ou incomplet pourra ainsi ressortir *Artisan* ou *Boss*. Le mode télémétrique seul convient donc idéalement au suivi de séance en TP, tandis que le couplage avec un skill d'évaluation reste recommandé pour l'évaluation certificative.
+
+---
+
+### C. Visualisation Radar
+
+#### 1. Le Double Radar Individuel (Fiche Étudiant)
 
 Chaque rapport individuel présente côte à côte deux diagrammes radar complémentaires au format Mermaid (`radar-beta`), intégrés dans un tableau HTML5 responsive sans bordure :
 
@@ -419,7 +465,7 @@ Chaque rapport individuel présente côte à côte deux diagrammes radar complé
    - `axis boss["Le Boss"], artisan["L'Artisan"], pirate["Le Pirate"], decroch["Le Décrocheur"], cyborg["Le Cyborg"], casse["Le Casse-cou"]`
 
 ```mermaid
-%%{init: {'radar': {'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.12}, 'themeVariables': {'fontSize': '22px', 'radar': {'axisLabelFontSize': 22}}}}%%
+%%{init: {'radar': {'width': 260, 'height': 220, 'marginLeft': 45, 'marginRight': 45, 'marginTop': 18, 'marginBottom': 18, 'axisLabelFactor': 1.12}, 'themeVariables': {'fontSize': '12px', 'radar': {'axisLabelFontSize': 12}}}}%%
 radar-beta
     showLegend false
     axis boss["Le Boss"], artisan["L'Artisan"], pirate["Le Pirate"], decroch["Le Décrocheur"], cyborg["Le Cyborg"], casse["Le Casse-cou"]
@@ -429,43 +475,13 @@ radar-beta
     graticule polygon
 ```
 
----
-
-### C. Le Radar de Cohorte (Rapport de Synthèse de Promotion)
+#### 2. Le Radar de Cohorte (Rapport de Synthèse de Promotion)
 
 Dans le rapport de synthèse de promotion (`synthese_*.md`), le tableau des clusters d'étudiants types est immédiatement suivi du **Radar de Cohorte**. Il synthétise en un seul coup d'œil la santé globale de la promotion en reportant le **nombre d'étudiants rattachés à chaque profil type** sur les mêmes 3 axes opposés deux à deux, avec une échelle maximale dynamique ajustée aux effectifs.
 
 ---
 
-### D. Détail des 6 Profils Didactiques
-
-#### 1. L'Artisan (Comportement d'Apprentissage Exemplaire)
-* **Indicateurs** : S_auth > 80%, T_fric ∈ [10%, 25%], I_thrash < 10%.
-* **Démarche** : Cycles de développement courts et incrémentaux, lecture approfondie du sujet avant de coder, résolution méthodique des erreurs étape par étape.
-
-#### 2. Le Boss (Expertise et Maîtrise Directe)
-* **Indicateurs** : S_auth > 80%, TTF < 30 s, zéro demande d'aide tuteur, cadence de frappe élevée.
-* **Démarche** : L'étudiant maîtrise parfaitement les concepts et déroule la solution sans friction notable.
-
-#### 3. Le Cyborg (Assistance IA / Solution Importée)
-* **Indicateurs** : S_auth < 30%, alertes `BURST` multiples, I_nav > 40%, T_fric < 5%.
-* **Démarche** : Absence de genèse itérative du code. L'étudiant formule des requêtes sur un modèle externe et injecte des blocs complets de 30 à 60 lignes sans les retoucher.
-
-#### 4. Le Casse-Cou (Acharnement Stérile / Tâtonnement Aveugle)
-* **Indicateurs** : I_thrash > 35%, ratio d'erreurs d'exécution > 70%, Δt entre runs < 15 s.
-* **Démarche** : L'étudiant ne consulte pas la sortie console ni le traceback. Il modifie un caractère au hasard et relance en boucle en espérant un résultat positif.
-
-#### 5. Le Décrocheur (Perte de Pied et Abandon Silencieux)
-* **Indicateurs** : Temps hors IDE > 50%, périodes d'inactivité > 15 min, moins de 3 runs sur l'ensemble de la séance.
-* **Démarche** : Face à une difficulté initiale non résolue, l'étudiant renonce à chercher et attend la fin de séance sans solliciter l'encadrement.
-
-#### 6. Le Pirate (Collusion en Salle / Import Direct)
-* **Indicateurs** : Présence d'événements `FILE_DROP`, corrélation de synchronicité (≤ 90 s) avec la réussite d'un poste voisin.
-* **Démarche** : Récupération directe d'un fichier source par clé USB, partage local ou messagerie instantanée.
-
----
-
-### E. Détection & Interprétation des Doubles-Profils Didactiques Cohérents
+### D. Détection & Interprétation des Doubles-Profils Didactiques Cohérents
 
 En situation réelle d'apprentissage en laboratoire, les comportements observés ne se réduisent que rarement à un archétype unilatéral pur. Les 6 profils didactiques de CodeLab étant bâtis sur 3 axes orthogonaux indépendants, les croisements inter-axes traduisent des **signatures comportementales complexes et cohérentes**.
 
@@ -552,7 +568,7 @@ Lorsqu'un double-profil est identifié :
    python3 client/codelab.files/skills/activity_analyzer.py sessions/2026-TP1/
    ```
 2. **Consulter les Fenêtres Glissantes** :
-   - Le tableau chronologique des tranches de 15 minutes permet d'identifier à la minute près l'instant de bascule vers une IA générative (chute brutale de S_auth).
+   - Le tableau chronologique des tranches de 15 minutes permet d'identifier à la minute près l'instant de bascule vers une IA générative (chute brutale de $S_{auth}$).
 3. **Exploitation Pédagogique des Doubles-Profils** :
    - Cibler immédiatement les *Travailleurs Acharnés* (Artisan + Casse-cou) pour une séance de consolidation sur les méthodes de débogage et l'inspection de variables.
    - Convoquer en entretien d'explication les profils *Apprenti Sorcier* (Cyborg + Casse-cou) et *Délégataire Passif* (Décrocheur + Cyborg) afin de rétablir une posture active de codage.
