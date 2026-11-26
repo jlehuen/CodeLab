@@ -99,19 +99,21 @@ fi
 
 APP="$TARGET/CodeLab.app"
 MACOS="$APP/Contents/MacOS"
+RES_APP="$APP/Contents/Resources/app"
 
 rm -rf "$APP"
-cp -r "$MAC_APP_DIR" "$APP"
-cp -r hidden/codelab "$MACOS"
+cp -a "$MAC_APP_DIR" "$APP"
+mkdir -p "$RES_APP"
+cp -r hidden/codelab "$RES_APP/"
 
 echo "Copie des fichiers de configuration..."
-cp sys-properties/sysconfig-mac.properties "$MACOS/codelab/sysconfig.properties"
-cp user-properties/user-mac.properties "$MACOS/codelab/user.properties.bak"
+cp sys-properties/sysconfig-mac.properties "$RES_APP/codelab/sysconfig.properties"
+cp user-properties/user-mac.properties "$RES_APP/codelab/user.properties.bak"
 
 echo "Copie des librairies natives ($NATIVES_DIR)..."
 for lib in natives/"$NATIVES_DIR"/*.jnilib natives/"$NATIVES_DIR"/*.dylib; do
     if [ -f "$lib" ]; then
-        cp "$lib" "$MACOS/codelab/natives/"
+        cp "$lib" "$RES_APP/codelab/natives/"
     fi
 done
 
@@ -120,26 +122,26 @@ if [ ! -d "codelab.files" ]; then
     echo "Erreur critique : le dossier source 'codelab.files' est introuvable." >&2
     exit 1
 fi
-cp -r codelab.files "$MACOS/codelab/"
+cp -r codelab.files "$RES_APP/codelab/"
 (
-    cd "$MACOS/codelab/"
+    cd "$RES_APP/codelab/"
     cp user.properties.bak codelab.files/userdata/user.properties
     mv codelab.files/hidden codelab.files/.hidden
     zip -qr files.zip codelab.files -x ".DS_Store" -x "._*"
     rm -rf codelab.files
 )
 
-echo "Nettoyage des attributs étendus..."
-chmod -R u+w "$APP"
+echo "Nettoyage des attributs étendus et permissions..."
+find "$APP" -name ".DS_Store" -delete
+chmod -R u+w,go-w "$APP"
 xattr -cr "$APP"
 
 echo "Signature ad-hoc de l'application (exigence désignée stable)..."
 codesign --force --deep -s - -r='designated => identifier "fr.univlemans.codelab"' "$APP"
+codesign -vvv --deep --strict "$APP"
 
 echo "Actualisation du cache LaunchServices et Finder..."
 touch "$APP"
-touch "$APP/Contents/Info.plist"
-touch "$APP/Contents/Resources/AppIcon.icns"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -u "$APP" 2>/dev/null || true
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" 2>/dev/null || true
 qlmanage -r cache 2>/dev/null || true
@@ -164,7 +166,7 @@ TITLE="CodeLab IDE and Simulators"
 rm -rf "$DIR" "$TEMP"
 mkdir -p "$DIR/.background"
 
-cp -R "$APP" "$DIR/"
+cp -a "$APP" "$DIR/"
 cp "$IMAGE" "$DIR/.background/"
 
 # Icône de volume personnalisée persistante (.VolumeIcon.icns dans le filesystem HFS+)
@@ -216,7 +218,6 @@ if [ -n "$VOLUME" ] && [ -d "$VOLUME" ]; then
     SetFile -c icnC "$VOLUME/.VolumeIcon.icns" 2>/dev/null || true
     SetFile -a V "$VOLUME/.VolumeIcon.icns" 2>/dev/null || true
     SetFile -a C "$VOLUME" 2>/dev/null || true
-    chmod -Rf go-w "$VOLUME" 2>/dev/null || true
 fi
 sync
 sync

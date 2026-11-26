@@ -47,7 +47,7 @@
     }
     char *dir = dirname(execPath);
     char scriptPath[PATH_MAX];
-    snprintf(scriptPath, sizeof(scriptPath), "%s/run.sh", dir);
+    snprintf(scriptPath, sizeof(scriptPath), "%s/../Resources/app/run.sh", dir);
 
     int numOrig = (self.origArgc > 1) ? (self.origArgc - 1) : 0;
     int numFiles = (int)[self.files count];

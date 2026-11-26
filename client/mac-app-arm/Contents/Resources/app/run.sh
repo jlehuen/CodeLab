@@ -9,7 +9,7 @@ defaults write org.python.python ApplePersistenceIgnoreState NO > /dev/null 2>&1
 
 export BASE=$(pwd)
 export LAUNCHER=$0
-export JAVA_HOME="$(dirname "$BASE")/Java/jdk-17.0.20.1+1/Contents/Home"
+export JAVA_HOME="$(cd "$BASE/../../Java/jdk-17.0.20.1+1/Contents/Home" && pwd)"
 
 # Vérification : empêcher l'exécution directe depuis le volume DMG ou en AppTranslocation
 case "$BASE" in
@@ -37,7 +37,7 @@ RUN_LOG="$LOG_DIR/run.log"
 # -----------------------------------------------------------------------------
 # Gestion moderne et silencieuse du Gatekeeper (sans mot de passe ni sudo)
 # -----------------------------------------------------------------------------
-APP_BUNDLE="$(cd "$BASE/../.." 2>/dev/null && pwd)"
+APP_BUNDLE="$(cd "$BASE/../../.." 2>/dev/null && pwd)"
 
 # Si le bundle ou ses composants portent l'attribut de quarantaine, on le retire récursivement
 if xattr -p com.apple.quarantine "$APP_BUNDLE" >/dev/null 2>&1; then
