@@ -1117,29 +1117,14 @@ public class CodeLab extends AbstractCodeLab {
 	public static int checkVersion(boolean forceRefresh) {
 		System.out.print("   Checking new version... ");
 
-		// 1. Source prioritaire : GitHub Releases (HEAD /releases/latest — zéro quota API)
+		// 1. Source unique : GitHub Releases (HEAD /releases/latest — zéro quota API)
 		String last_version = codelab.utils.JarUpdater.fetchLatestGithubVersion(TIME_OUT);
-		String last_build = null;
-		String jarDownloadUrl = null;
-
-		if (last_version != null) {
-			jarDownloadUrl = codelab.utils.JarUpdater.GITHUB_JAR_DOWNLOAD_URL;
-		} else {
-			// 2. Repli silencieux sur web.properties si GitHub est inaccessible
-			if (forceRefresh || PropertyBase.WEBPROPERTIES_ERR || PropertyBase.WEBPROPERTIES == null) {
-				PropertyBase.download(CodeLab.PROP("URL_PROP"), TIME_OUT);
-			}
-			if (PropertyBase.WEBPROPERTIES_ERR || PropertyBase.WEBPROPERTIES == null) {
-				System.out.println("NETWORK ERROR");
-				return 2;
-			}
-			last_version = CodeLab.PROP("VERSION");
-			last_build = CodeLab.PROP("BUILD");
-			String propJar = CodeLab.PROP("JAR_URL");
-			if (propJar != null && !propJar.equals(UNDEFINED) && !propJar.trim().isEmpty()) {
-				jarDownloadUrl = propJar.trim();
-			}
+		if (last_version == null) {
+			System.out.println("NETWORK ERROR");
+			return 2;
 		}
+		String last_build = null;
+		String jarDownloadUrl = codelab.utils.JarUpdater.GITHUB_JAR_DOWNLOAD_URL;
 
 		boolean has_version = (last_version != null && !last_version.equals(UNDEFINED) && !last_version.trim().isEmpty());
 		boolean has_build = (last_build != null && !last_build.equals(UNDEFINED) && !last_build.trim().isEmpty());
@@ -1213,53 +1198,68 @@ public class CodeLab extends AbstractCodeLab {
 			// Fenêtre de dialogue proposant de se rendre sur la page de téléchargement
 			String msg = String.format(
 				CodeLab.LABEL("NEW_VERSION"),
-				VERSION, BUILD,
+				VERSION,
 				last_version != null ? last_version : "-",
-				last_build != null ? last_build : "-",
 				DOWNLOADS_URL);
 
 			ImageIcon icon = ResourceUtils.loadImageIcon("icons/icon_codelab.png");
 			boolean canInstallJar = (jarDownloadUrl != null && codelab.utils.JarUpdater.canSelfUpdate());
 
-			if (canInstallJar) {
-				Object[] options = {
-					CodeLab.LABEL("BTN_LATER"),
-					CodeLab.LABEL("BTN_DOWNLOAD"),
-					CodeLab.LABEL("BTN_INSTALL_JAR")
-				};
-				int choice = JOptionPane.showOptionDialog(
-					CodeLab.FRAME,
-					new JEditorPaneWithLink(msg),
-					CodeLab.LABEL("VERSION_TITLE"),
-					JOptionPane.YES_NO_CANCEL_OPTION,
-					JOptionPane.QUESTION_MESSAGE,
-					icon,
-					options,
-					options[2]);
+			final String fJarDownloadUrl = jarDownloadUrl;
+			final String fLastVersion = last_version != null ? last_version : "-";
+			final String fLastBuild = last_build != null ? last_build : "-";
 
-				if (choice == 2) {
-					codelab.utils.JarUpdater.downloadAndInstallJar(
-						jarDownloadUrl,
-						null,
-						last_version != null ? last_version : "-",
-						last_build != null ? last_build : "-");
-				} else if (choice == 1) {
-					Utils.openBrowser(DOWNLOADS_PAGE_URL);
+			Runnable showPrompt = () -> {
+				if (canInstallJar) {
+					Object[] options = {
+						CodeLab.LABEL("BTN_LATER"),
+						CodeLab.LABEL("BTN_DOWNLOAD"),
+						CodeLab.LABEL("BTN_INSTALL_JAR")
+					};
+					int choice = JOptionPane.showOptionDialog(
+						CodeLab.FRAME,
+						new JEditorPaneWithLink(msg),
+						CodeLab.LABEL("VERSION_TITLE"),
+						JOptionPane.YES_NO_CANCEL_OPTION,
+						JOptionPane.QUESTION_MESSAGE,
+						icon,
+						options,
+						options[2]);
+
+					if (choice == 2) {
+						codelab.utils.JarUpdater.downloadAndInstallJar(
+							fJarDownloadUrl,
+							null,
+							fLastVersion,
+							fLastBuild);
+					} else if (choice == 1) {
+						Utils.openBrowser(DOWNLOADS_PAGE_URL);
+					}
+				} else {
+					Object[] options = { CodeLab.LABEL("BTN_LATER"), CodeLab.LABEL("BTN_DOWNLOAD") };
+					int choice = JOptionPane.showOptionDialog(
+						CodeLab.FRAME,
+						new JEditorPaneWithLink(msg),
+						CodeLab.LABEL("VERSION_TITLE"),
+						JOptionPane.YES_NO_OPTION,
+						JOptionPane.QUESTION_MESSAGE,
+						icon,
+						options,
+						options[1]);
+
+					if (choice == 1) {
+						Utils.openBrowser(DOWNLOADS_PAGE_URL);
+					}
 				}
-			} else {
-				Object[] options = { CodeLab.LABEL("BTN_LATER"), CodeLab.LABEL("BTN_DOWNLOAD") };
-				int choice = JOptionPane.showOptionDialog(
-					CodeLab.FRAME,
-					new JEditorPaneWithLink(msg),
-					CodeLab.LABEL("VERSION_TITLE"),
-					JOptionPane.YES_NO_OPTION,
-					JOptionPane.QUESTION_MESSAGE,
-					icon,
-					options,
-					options[1]);
+			};
 
-				if (choice == 1) {
-					Utils.openBrowser(DOWNLOADS_PAGE_URL);
+			if (SwingUtilities.isEventDispatchThread()) {
+				showPrompt.run();
+			} else {
+				try {
+					SwingUtilities.invokeAndWait(showPrompt);
+				} catch (Exception e) {
+					ExceptionManager.process(e);
 				}
 			}
 			return 0;
@@ -2314,10 +2314,9 @@ public class CodeLab extends AbstractCodeLab {
 		// Configuration du proxy
 		initProxySettings();
 
-		// Chargement des propriétés distantes
+		// Configuration du timeout réseau
 		String timeout = CodeLab.PROP("TIME_OUT");
 		TIME_OUT = timeout.equals(UNDEFINED) ? 5000 : Integer.valueOf(timeout);
-		PropertyBase.download(CodeLab.PROP("URL_PROP"), TIME_OUT);
 		//PropertyBase.print();
 
 		// ------------------------------------------------

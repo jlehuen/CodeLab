@@ -20,6 +20,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import codelab.CodeLab;
@@ -125,6 +126,19 @@ public class JarUpdater {
 	}
 
 	public static void downloadAndInstallJar(String jarUrl, String expectedSha256, String targetVersion, String targetBuild) {
+		if (SwingUtilities.isEventDispatchThread()) {
+			downloadAndInstallJarOnEdt(jarUrl, expectedSha256, targetVersion, targetBuild);
+		} else {
+			try {
+				SwingUtilities.invokeAndWait(() ->
+					downloadAndInstallJarOnEdt(jarUrl, expectedSha256, targetVersion, targetBuild));
+			} catch (Exception e) {
+				CodeLab.logger("JarUpdater invokeAndWait error: " + e.getMessage());
+			}
+		}
+	}
+
+	private static void downloadAndInstallJarOnEdt(String jarUrl, String expectedSha256, String targetVersion, String targetBuild) {
 		File currentJar = getCurrentJarFile();
 		if (currentJar == null || !canSelfUpdate()) {
 			JOptionPane.showMessageDialog(
@@ -140,10 +154,9 @@ public class JarUpdater {
 		progressDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 		JPanel panel = new JPanel(new BorderLayout(10, 10));
 		panel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
-		JLabel statusLabel = new JLabel(String.format(CodeLab.LABEL("UPDATE_JAR_DOWNLOADING"), targetVersion, targetBuild));
+		JLabel statusLabel = new JLabel(String.format(CodeLab.LABEL("UPDATE_JAR_DOWNLOADING"), targetVersion));
 		JProgressBar progressBar = new JProgressBar(0, 100);
 		progressBar.setPreferredSize(new Dimension(340, 22));
-		progressBar.setStringPainted(true);
 		progressBar.setIndeterminate(true);
 		panel.add(statusLabel, BorderLayout.NORTH);
 		panel.add(progressBar, BorderLayout.CENTER);
@@ -157,13 +170,10 @@ public class JarUpdater {
 
 			@Override
 			protected Void doInBackground() {
+				HttpURLConnection conn = null;
 				try {
 					tmpFile = new File(currentJar.getParentFile(), currentJar.getName() + ".new");
-					URL url = URI.create(jarUrl.trim()).toURL();
-					HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-					conn.setConnectTimeout(10_000);
-					conn.setReadTimeout(30_000);
-					conn.setInstanceFollowRedirects(true);
+					conn = openConnectionWithRedirects(jarUrl.trim(), 10_000, 30_000);
 					int status = conn.getResponseCode();
 					if (status != HttpURLConnection.HTTP_OK) {
 						errorMsg = "HTTP " + status + " (" + jarUrl + ")";
@@ -232,6 +242,8 @@ public class JarUpdater {
 					}
 				} catch (Exception e) {
 					errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+				} finally {
+					if (conn != null) conn.disconnect();
 				}
 				return null;
 			}
@@ -273,6 +285,22 @@ public class JarUpdater {
 					return;
 				}
 
+				// Au démarrage (avant ouverture de l'IDE), relancer directement la nouvelle version
+				if (CodeLab.FRAME == null) {
+					if (CodeLab.LAUNCHER != null && !CodeLab.LAUNCHER.isBlank()) {
+						CodeLab.relaunch();
+					} else {
+						JOptionPane.showMessageDialog(
+							null,
+							CodeLab.LABEL("UPDATE_JAR_SUCCESS_RESTART"),
+							CodeLab.LABEL("VERSION_TITLE"),
+							JOptionPane.INFORMATION_MESSAGE,
+							CodeLab.ICON);
+						CodeLab.exit();
+					}
+					return;
+				}
+
 				Object[] opts = { CodeLab.LABEL("BTN_LATER"), CodeLab.LABEL("UPDATE_JAR_RESTART_NOW") };
 				int ans = JOptionPane.showOptionDialog(
 					CodeLab.FRAME,
@@ -292,6 +320,37 @@ public class JarUpdater {
 
 		worker.execute();
 		progressDialog.setVisible(true);
+	}
+
+	/**
+	 * Ouvre une connexion HTTP(S) en suivant explicitement les redirections multi-hôtes
+	 * (ex: github.com -> objects.githubusercontent.com).
+	 */
+	private static HttpURLConnection openConnectionWithRedirects(String urlStr, int connectTimeoutMs, int readTimeoutMs) throws Exception {
+		String current = urlStr;
+		for (int hop = 0; hop < 6; hop++) {
+			URL url = URI.create(current).toURL();
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			conn.setConnectTimeout(connectTimeoutMs);
+			conn.setReadTimeout(readTimeoutMs);
+			conn.setInstanceFollowRedirects(false);
+			conn.setRequestProperty("User-Agent", "CodeLab/" + CodeLab.VERSION);
+			int code = conn.getResponseCode();
+			if (code == HttpURLConnection.HTTP_MOVED_PERM
+					|| code == HttpURLConnection.HTTP_MOVED_TEMP
+					|| code == HttpURLConnection.HTTP_SEE_OTHER
+					|| code == 307 || code == 308) {
+				String loc = conn.getHeaderField("Location");
+				conn.disconnect();
+				if (loc == null || loc.isBlank()) {
+					throw new java.io.IOException("Redirection HTTP sans en-tête Location (" + code + ")");
+				}
+				current = URI.create(current).resolve(loc.trim()).toString();
+				continue;
+			}
+			return conn;
+		}
+		throw new java.io.IOException("Trop de redirections HTTP pour " + urlStr);
 	}
 
 	private static void launchWindowsSwapAndRestart(File tmpJar, File targetJar) {

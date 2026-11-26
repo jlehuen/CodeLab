@@ -23,7 +23,6 @@ import codelab.utils.Utils;
 
 public class PropertyBase {
 
-	public static PropertyResourceBundle WEBPROPERTIES = null;
 	public static PropertyResourceBundle PROPERTIES = null;
 	public static PropertyResourceBundle USERCONF = null;
 
@@ -60,12 +59,6 @@ public class PropertyBase {
 				System.out.format("%s=%s\n", key, PROPERTIES.getString(key));
 			}
 		}
-		if (WEBPROPERTIES != null) {
-			for (Enumeration<String> e = WEBPROPERTIES.getKeys(); e.hasMoreElements();) {
-				String key = e.nextElement();
-				System.out.format("%s=%s\n", key, WEBPROPERTIES.getString(key));
-			}
-		}
 	}
 
 	///////////////////////////////////////////////////
@@ -75,7 +68,6 @@ public class PropertyBase {
 	public static String getProperty(String key) {
 		if (USERCONF != null && USERCONF.containsKey(key)) return USERCONF.getString(key);
 		if (PROPERTIES != null && PROPERTIES.containsKey(key)) return PROPERTIES.getString(key);
-		if (WEBPROPERTIES != null && WEBPROPERTIES.containsKey(key)) return WEBPROPERTIES.getString(key);
 		return CodeLab.UNDEFINED;
 	}
 
@@ -106,18 +98,6 @@ public class PropertyBase {
 			case "TRUE": return true;
 			default: return false;
 		}
-	}
-
-	///////////////////////////////////////////////////
-	// Pour charger des propriétés à distance
-	///////////////////////////////////////////////////
-
-	public static boolean WEBPROPERTIES_ERR = false;
-
-	public static boolean download(String url, int timeout) {
-		WEBPROPERTIES = Utils.readPropertyResourceBundleOverInternet(url, timeout);
-		WEBPROPERTIES_ERR = WEBPROPERTIES == null;
-		return true;
 	}
 
 	///////////////////////////////////////////////////

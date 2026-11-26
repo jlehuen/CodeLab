@@ -123,18 +123,7 @@
 			</fileset>
 		</replaceregexp>
 
-		<available file="../www/www/data/web.properties" property="webprops.present"/>
 		<available file="../README.md" property="readme.present"/>
-	</target>
-
-	<target name="update-web-properties" if="webprops.present">
-		<echo message="Mise à jour automatique de web.properties: VERSION=${version}, BUILD=${build}"/>
-		<replaceregexp file="../www/www/data/web.properties"
-			match="BUILD=[0-9]+"
-			replace="BUILD=${build}"/>
-		<replaceregexp file="../www/www/data/web.properties"
-			match="VERSION=[^ \r\n]+"
-			replace="VERSION=${version}"/>
 	</target>
 
 	<target name="update-readme" if="readme.present">
@@ -164,7 +153,7 @@
 		<javac debug="true" deprecation="on" includeantruntime="false"/>
 	</presetdef>
 
-	<target name="compile" depends="clean,java-version,replace,update-web-properties,update-readme">
+	<target name="compile" depends="clean,java-version,replace,update-readme">
 		<myjavac srcdir="${sources-dir}" destdir="${classes-dir}">
 			<classpath refid="classpath"/>
 		</myjavac>
