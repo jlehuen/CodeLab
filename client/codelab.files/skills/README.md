@@ -141,8 +141,9 @@ Le moteur d'évaluation CodeLab adopte une architecture **hybride et éthique** 
 - **Calibration réaliste** : Le barème évite les notes de complaisance : la progression est évaluée selon l'autonomie démontrée et les étapes franchies, garantissant une note juste et représentative du niveau réel de l'étudiant.
 
 ### 5.2. Détection d'Authenticité & Contrôle du Plagiat
-- **Détection d'assistance IA** : Analyse multi-critères croisant la conformité de l'écosystème (détection de bibliothèques ou syntaxes hors programme), la chronométrie de développement et les ruptures stylométriques d'indentation.
-- **Similarités inter-étudiants** : Détection automatique des copier-coller entre étudiants (algorithme Winnowing et n-grams syntaxiques), avec génération d'une matrice de similarité et d'un rapport de cohorte (`scripts/audit_cohort.py`).
+- **Détection d'assistance IA** : Analyse multi-critères croisant la conformité de l'écosystème (détection de bibliothèques ou syntaxes hors programme), la chronométrie de développement (neutralisée dès que la télémétrie prouve $S_{\mathrm{auth}} \ge 85\%$) et les ruptures stylométriques d'indentation (les scripts Python PEP 8 homogènes et les carnets `.ipynb` ne sont jamais pénalisés).
+- **Similarités inter-étudiants** : Détection automatique des copier-coller entre étudiants (n-grams syntaxiques après filtrage anti-boilerplate des exercices courts/guidés), avec qualification *Forte suspicion* réservée à `>= 2` fichiers distincts ou `1` fichier substantiel (`>= 120` tokens) à `>= 92%`.
+- **Politique zéro faux positif (bandeau rouge & malus indicatif)** : Aucun malus ni plafond n'est appliqué automatiquement sur la note. Les rapports affichent la **Note brute (/20)** accompagnée d'une colonne **Malus** purement indicative et d'un **bandeau d'alerte rouge** bien visible (fiche individuelle et synthèse de session), laissant la décision finale à l'enseignant après vérification humaine.
 
 ### 5.3. Rôle de l'IA : Guidance Socratique Bienveillante
 Pour l'instant, seul le LLM **Google Gemini** est implémenté. Lorsqu'une clé d'API est configurée :
