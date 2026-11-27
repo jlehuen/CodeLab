@@ -32,13 +32,13 @@ DESKTOP_SKILLS_DIR = Path.home() / "Desktop" / "skills"
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 if str(USER_SKILLS_DIR) not in sys.path:
-    sys.path.insert(0, str(USER_SKILLS_DIR))
+    sys.path.append(str(USER_SKILLS_DIR))
 
 def get_skill_dir(name):
-    """Localise le dossier d'un skill dans le projet ou chez l'utilisateur."""
+    """Localise le dossier d'un skill dans le répertoire du script courant puis chez l'utilisateur."""
     if not name:
         return None
-    for base in [USER_SKILLS_DIR, HAL_SKILLS_DIR, DESKTOP_SKILLS_DIR, SCRIPT_DIR]:
+    for base in [SCRIPT_DIR, USER_SKILLS_DIR, HAL_SKILLS_DIR, DESKTOP_SKILLS_DIR]:
         candidate = base / name
         if candidate.is_dir():
             return candidate.resolve()
@@ -110,10 +110,12 @@ def resolve_skill(skill_name=None, target_dir=None):
         candidates = ["eval-introprog", "eval-c-sample"]
     elif lang == "python":
         candidates = ["eval-intropython", "eval-python-sample"]
+    elif lang == "haskell":
+        candidates = ["eval-haskell-sample"]
     elif lang == "java":
         candidates = ["eval-java-sample"]
     else:
-        candidates = ["eval-c-sample", "eval-python-sample", "eval-java-sample", "eval-introprog", "eval-intropython"]
+        candidates = ["eval-c-sample", "eval-python-sample", "eval-haskell-sample", "eval-java-sample", "eval-introprog", "eval-intropython"]
 
     for name in candidates:
         sdir = get_skill_dir(name)
@@ -218,12 +220,10 @@ def is_tutor_user(login, user_info=None):
         role = (user_info.get("role") or "").lower()
         if role in ("tutor", "admin", "tuteur", "teacher", "prof", "enseignant"):
             return True
+        if role in ("student", "etudiant", "étudiant") or user_info.get("isStudent") is True:
+            return False
         groups = (user_info.get("groups") or "").lower()
         if groups in ("tutor", "admin", "tuteurs", "enseignants"):
-            return True
-        mail = (user_info.get("mail") or "").lower()
-        # Si groupe vide et courriel non-étudiant ou absent, et login non-numérique
-        if not groups and (mail in ("--", "") or "etu" not in mail) and not l.isdigit():
             return True
 
     # Logins connus d'enseignants, tuteurs ou comptes techniques
@@ -242,7 +242,7 @@ def extract_author_from_files(folder_path):
         r"(?:Auteur|Author)\s*[:=]\s*([^\r\n0-9]+)",
     ]
     files = []
-    for ext in ("*.c", "*.h", "*.cpp", "*.py", "*.java", "*.ipynb"):
+    for ext in ("*.c", "*.h", "*.cpp", "*.py", "*.hs", "*.java", "*.ipynb"):
         files.extend(p.glob(f"**/{ext}"))
 
     for f in files:
@@ -509,20 +509,43 @@ def get_cache_key(model, prompt):
     return h.hexdigest()
 
 def detect_language(folder_path):
-    """Détecte si le dossier concerne le cours C (L1) ou Python (L2)."""
+    """Détecte le langage dominant d'un dossier (c, python, haskell, java) incluant les carnets .ipynb."""
     p = Path(folder_path)
     if not p.is_dir():
         return "c"
-    
-    c_count = len(list(p.rglob("*.c")))
-    py_count = len(list(p.rglob("*.py")))
-    
-    # Présence de sous-dossiers typiques
-    has_c_tps = any((p / f"TP{i}").is_dir() for i in range(1, 7))
-    has_py_data = any(p.rglob("*.npy")) or any(p.rglob("openSSH*.log"))
-    
-    if py_count > c_count or has_py_data:
-        return "python"
+
+    counts = {
+        "c": len(list(p.rglob("*.c"))),
+        "python": len(list(p.rglob("*.py"))),
+        "haskell": len(list(p.rglob("*.hs"))),
+        "java": len(list(p.rglob("*.java"))),
+    }
+
+    # Prise en compte des carnets Jupyter (.ipynb) selon leurs métadonnées de noyau
+    for nb_path in p.rglob("*.ipynb"):
+        try:
+            nb = json.loads(nb_path.read_text(encoding="utf-8", errors="ignore"))
+            meta = nb.get("metadata", {})
+            ks = meta.get("kernelspec", {})
+            li = meta.get("language_info", {})
+            klang = str(ks.get("language", "") or ks.get("name", "")).lower()
+            llang = str(li.get("name", "")).lower()
+            if "haskell" in klang or "haskell" in llang or "ihaskell" in klang:
+                counts["haskell"] += 1
+            elif klang in ("c", "xcpp", "c_kernel") or llang == "c":
+                counts["c"] += 1
+            else:
+                counts["python"] += 1
+        except Exception:
+            counts["python"] += 1
+
+    # Indices forts spécifiques
+    if any(p.rglob("*.npy")) or any(p.rglob("openSSH*.log")):
+        counts["python"] += 3
+
+    best_lang = max(counts, key=lambda k: counts[k])
+    if counts[best_lang] > 0:
+        return best_lang
     return "c"
 
 def call_gemini_api(api_key, model, prompt, ai_props=None):
@@ -764,20 +787,25 @@ def extract_integrity_indicators(res, plagiarism_info=None):
     
     # 1. Analyse Chronométrique & Télémétrie
     chrono_markers = [m for m in markers if m.get("category") in ("chronometrie_instantanee", "chronometrie_anormale")]
-    
-    if act.get("active"):
-        s_auth = float(act.get("s_auth", 100.0))
+    has_rich = bool(act.get("has_rich_telemetry"))
+
+    if has_rich:
+        raw_s_auth = act.get("s_auth")
+        s_auth = float(raw_s_auth) if raw_s_auth is not None else None
         i_nav = float(act.get("i_nav", 0.0))
         bursts = int(act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0))
         runs = int(act.get("compilations", {}).get("total", 0) + act.get("executions", {}).get("total", 0))
-        
-        if s_auth < 50.0 or bursts > 0:
-            chrono_courte = f"⚠️ Injection / Bursts ({bursts} burst(s), S_auth: {s_auth:.0f}%, Inav: {i_nav:.0f}%)"
+
+        if (s_auth is not None and s_auth < 50.0) or bursts > 0:
+            sa_str = f"{s_auth:.0f}%" if s_auth is not None else "N/A"
+            chrono_courte = f"⚠️ Injection / Bursts ({bursts} burst(s), S_auth: {sa_str}, Inav: {i_nav:.0f}%)"
+        elif s_auth is None:
+            chrono_courte = f"ℹ️ S_auth non mesuré (Inav: {i_nav:.0f}%, {runs} runs)"
         elif s_auth < 85.0 or i_nav > 50.0:
             chrono_courte = f"🟡 Mixte (S_auth: {s_auth:.0f}%, Inav: {i_nav:.0f}%, {runs} runs)"
         else:
             chrono_courte = f"✅ Authentique (S_auth: {s_auth:.0f}%, Inav: {i_nav:.0f}%, {runs} runs)"
-            
+
         chrono_md = act.get("summary_markdown", "")
         if chrono_markers:
             extra_lines = [
@@ -860,8 +888,8 @@ def extract_integrity_indicators(res, plagiarism_info=None):
         similarite_md = "**Travail original authentique** : Analyse croisée de cohorte par n-grams syntaxiques (Jaccard) réalisée sans aucune similarité suspecte détectée sur les exercices à code libre."
 
     # Bloc combiné complet
-    titre_chrono = "#### ⏱️ Télémétrie d'Activité & Dynamique de Session" if act.get("active") else "#### ⏱️ Analyse Chronométrique & Dynamique de Travail"
-    titre_integrite = "### 🔬 Analyses d'Intégrité Pédagogique & Télémétrie" if act.get("active") else "### 🔬 Analyses d'Intégrité Pédagogique"
+    titre_chrono = "#### ⏱️ Télémétrie d'Activité & Dynamique de Session" if has_rich else "#### ⏱️ Analyse Chronométrique & Dynamique de Travail"
+    titre_integrite = "### 🔬 Analyses d'Intégrité Pédagogique & Télémétrie" if has_rich else "### 🔬 Analyses d'Intégrité Pédagogique"
 
     analyse_integrite_block = f"""{titre_integrite}
 
@@ -1002,6 +1030,7 @@ def find_single_student_plagiarism(student_dir, student_id, audit_cohort_mod=Non
 def build_generic_scores_table(scores, data, profil):
     """Génère un tableau Markdown dynamique et soigné pour n'importe quel skill."""
     total = scores.get("total", data.get("total", "N/A"))
+    axes_max = data.get("axes_max") or scores.get("axes_max") or {}
     axis_labels = {
         "syntax": ("Axe 1 : Compilation & Syntaxe", "/ 6.0", "Conformité syntaxique et compilation"),
         "compilation": ("Axe 1 : Compilation du Code", "/ 6.0", "Conformité syntaxique et compilation"),
@@ -1023,7 +1052,7 @@ def build_generic_scores_table(scores, data, profil):
     has_custom_axes = False
     raw_sum = 0.0
     for k, v in scores.items():
-        if k in ("total", "total_note", "note_technique_brute", "note_apres_ia", "malus_similarite", "malus_saut", "axe2_details", "score_transversal"):
+        if k in ("total", "total_note", "note_technique_brute", "note_apres_ia", "malus_similarite", "malus_saut", "axe2_details", "score_transversal", "axes_max"):
             continue
         try:
             val_f = float(v)
@@ -1032,6 +1061,11 @@ def build_generic_scores_table(scores, data, profil):
         except (ValueError, TypeError):
             val_str = str(v)
         lbl, bareme, desc = axis_labels.get(k, (f"Axe : {k.replace('_', ' ').capitalize()}", "", "Évaluation spécifique"))
+        if k in axes_max:
+            try:
+                bareme = f"/ {float(axes_max[k]):.1f}"
+            except (ValueError, TypeError):
+                pass
         rows.append(f"| **{lbl}** | **{val_str}** | {bareme} | {desc} |")
         has_custom_axes = True
     
@@ -1047,12 +1081,18 @@ def build_generic_scores_table(scores, data, profil):
     except (ValueError, TypeError):
         nsm_str = str(note_sans_malus)
 
-    if not has_custom_axes:
-        rows.append(f"| **Note sans malus (IA / Similarité)** | **{nsm_str}** | / 20.0 | Note technique brute |")
-        rows.append(f"| **Note Globale (Avec malus)** | **{tot_str}** | / 20.0 | Bilan global de l'évaluation |")
-    else:
-        rows.append(f"| **Note sans malus (IA / Similarité)** | **{nsm_str}** | **/ 20.0** | **Somme technique brute des axes** |")
-        rows.append(f"| **TOTAL GÉNÉRAL (Avec malus)** | **{tot_str}** | **/ 20.0** | **{profil}** |")
+    malus_ind = 0.0
+    try:
+        from skills_common import compute_indicative_malus, format_indicative_malus_badge
+        ai_p = float((data.get("ai_analysis") or data.get("ai_detection") or {}).get("probability_pct", 0.0) or 0.0)
+        malus_ind = compute_indicative_malus(ai_p, data.get("plagiarism_alert"))
+        malus_badge = format_indicative_malus_badge(malus_ind)
+    except Exception:
+        malus_badge = "—"
+
+    malus_note = "Indicatif (non appliqué — à la discrétion de l'enseignant)" if malus_ind > 0.0 else "Aucun malus indicatif"
+    rows.append(f"| **Note brute (sans malus)** | **{nsm_str}** | **/ 20.0** | **{profil}** |")
+    rows.append(f"| **Malus indicatif** | {malus_badge} | *(informatif)* | {malus_note} |")
     return "\n".join(rows)
 
 def build_deterministic_pedagogical_sections(skill_name, data, identity):
@@ -1063,13 +1103,16 @@ def build_deterministic_pedagogical_sections(skill_name, data, identity):
     antipatterns = data.get("antipatterns", [])
 
     # 1. Bilan
-    if "python" in skill_name.lower():
+    if "intropython" in skill_name.lower():
         sujet = data.get("sujet", 1)
         p1 = data.get("score_p1", 0.0)
         p2 = data.get("score_p2", 0.0)
         bilan = f"L'évaluation porte uniquement sur le **TP n°4 (Sujet {sujet})** (barème 4 couleurs + tests `assert`). Vous obtenez **{p1:.2f} / 10.0** sur la Partie 1 (Flux & Regex) et **{p2:.2f} / 10.0** sur la Partie 2 (Numpy & Matplotlib), soit **{total:.1f} / 20.0** (arrondi au 0,5)."
     else:
         bilan = f"L'analyse statique et le contrôle de compilation de vos sources aboutissent à une note globale estimée de **{total} / 20.0**. Les critères couvrent la syntaxe, l'architecture modulaire, le style et les tests."
+        dt = data.get("declarative_tests") or {}
+        if dt.get("active") and dt.get("total", 0) > 0:
+            bilan += f" Sur le banc de tests fonctionnels (`tests.json`), **{dt.get('passed', 0)} / {dt.get('total', 0)}** tests ont réussi."
 
     # 2. Points Forts
     forts_parts = []
@@ -1285,13 +1328,23 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         if tot < note_sans_malus:
             sec_commentaire += f" Attention : la note finale avec malus est ajustée à **{tot:.1f}/20** en raison des alertes d'intégrité (similarité inter-étudiants et/ou suspicion d'aide IA)."
 
+    malus_ind_ip = 0.0
+    try:
+        from skills_common import compute_indicative_malus, format_indicative_malus_badge
+        ai_p_ip = float((res.get("ai_analysis") or {}).get("probability_pct", 0.0) or 0.0)
+        malus_ind_ip = compute_indicative_malus(ai_p_ip, plagiarism_info or res.get("plagiarism_alert"))
+        malus_badge_ip = format_indicative_malus_badge(malus_ind_ip)
+    except Exception:
+        malus_badge_ip = "—"
+    malus_desc_ip = "Indicatif (non appliqué — à la discrétion de l'enseignant)" if malus_ind_ip > 0.0 else "Aucun malus indicatif"
+
     scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
 | :--- | :---: | :---: | :--- |
 | **Axe 1 : Progression & Couverture des TP** | **{a1:.1f}** | / 10.0 | {app_a1} |
 | **Axe 2 : Architecture & Qualité Algorithmique** | **{a2:.1f}** | / 8.0 | {app_a2} |
 | **Axe 3 : Style, Rigueur & Bonnes Pratiques** | **{a3:.1f}** | / 2.0 | {app_a3} |
-| **Note sans malus (IA / Similarité)** | **{note_sans_malus:.1f}** | **/ 20.0** | **Somme technique brute des 3 axes** |
-| **TOTAL GÉNÉRAL (Avec malus)** | **{tot:.1f}** | **/ 20.0** | **{profil}** |"""
+| **Note brute (sans malus)** | **{note_sans_malus:.1f}** | **/ 20.0** | **{profil}** |
+| **Malus indicatif** | {malus_badge_ip} | *(informatif)* | {malus_desc_ip} |"""
 
     radars_dict = {}
     try:
@@ -1361,10 +1414,8 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
         INTROPROG_DIR / "report_template.md" if INTROPROG_DIR else None
     ]
     rendered = render_template_if_exists(template_candidates, template_vars)
-    if rendered:
-        return rendered
-
-    return f"""# Fiche d'Évaluation Individuelle — Travaux Pratiques
+    if not rendered:
+        rendered = f"""# Fiche d'Évaluation Individuelle — Travaux Pratiques
 
 ### Étudiant : **{s_name}**
 
@@ -1422,6 +1473,18 @@ def build_canonical_introprog_report(res, identity, eval_date_str, skill_meta, s
 
 {sec_commentaire}
 """
+    try:
+        from skills_common import build_integrity_red_banner
+        banner = build_integrity_red_banner(res, plagiarism_info=plagiarism_info)
+        if banner and banner not in rendered:
+            lines = rendered.splitlines()
+            if lines and lines[0].startswith("#"):
+                rendered = lines[0] + "\n\n" + banner + "\n\n" + "\n".join(lines[1:]).lstrip("\n")
+            else:
+                rendered = banner + "\n\n" + rendered
+    except Exception:
+        pass
+    return rendered
 
 def evaluate_single_c_folder(student_dir, output_file, sessions_xml=None, ai_props=None, student_login=None, student_name=None, evaluated_results=None, plagiarism_info=None):
     """Évalue un dossier unique en C (eval-introprog) via l'approche hybride comptable + compilateur + Gemini IA (3 axes : 10 + 8 + 2 = 20)."""
@@ -1456,31 +1519,16 @@ def evaluate_single_c_folder(student_dir, output_file, sessions_xml=None, ai_pro
     if plagiarism_info:
         res["plagiarism_alert"] = plagiarism_info
         sc_p = res.get("scores", {})
-        if "note_apres_ia" not in sc_p:
-            sc_p["note_apres_ia"] = float(sc_p.get("total_note", 0.0))
         if "note_technique_brute" not in sc_p:
             sc_p["note_technique_brute"] = round(
                 float(sc_p.get("axe1_progression", 0.0))
                 + float(sc_p.get("axe2_architecture", 0.0))
                 + float(sc_p.get("axe3_style", 0.0)), 1
             )
-        nb_sim = len(plagiarism_info.get("files", []))
-        max_sim = float(plagiarism_info.get("max_sim", 0.0))
-        sim_malus = 0.0
-        if nb_sim >= 3 or max_sim >= 95.0:
-            sim_malus = 2.0
-        elif nb_sim >= 2 or max_sim >= 85.0:
-            sim_malus = 1.0
-        elif nb_sim >= 1 and max_sim >= 75.0:
-            sim_malus = 0.5
-        if sim_malus > 0.0:
-            sc_p["malus_similarite"] = sim_malus
-            tot = float(sc_p["note_apres_ia"]) - sim_malus
-            if "note_technique_brute" in sc_p:
-                tot = max(tot, float(sc_p["note_technique_brute"]) - 3.5)
-            sc_p["total_note"] = max(0.0, round(tot, 1))
-            if "Suspicion de partage" not in res.get("profil", ""):
-                res["profil"] = f"{res.get('profil', 'Standard')} (Malus Similarité -{sim_malus:.1f}pt)"
+        # Politique zéro faux positif : aucun malus automatique sur la note (bandeau rouge informatif uniquement)
+        sc_p["malus_similarite"] = 0.0
+        sc_p["note_apres_ia"] = float(sc_p["note_technique_brute"])
+        sc_p["total_note"] = float(sc_p["note_technique_brute"])
 
     sc = res.get('scores', {})
     note_sans_malus = sc.get('note_technique_brute', sc.get('total_note', 'N/A'))
@@ -1684,23 +1732,11 @@ FORMAT DE SORTIE IMPÉRATIF :
                     a3 = max(0.0, min(2.0, max(det_a3 - 0.4, min(det_a3 + 0.2, llm_a3))))
 
                     note_sans_malus = round(a1 + a2 + a3, 1)
-                    t_note = note_sans_malus
-
-                    # Application des malus d'intégrité (IA + Similarité) uniquement sur la note avec malus (total_note)
-                    ai_prob = res.get("ai_analysis", {}).get("probability_pct", 0)
-                    if ai_prob >= 60:
-                        t_note = min(12.0, max(0.0, round(t_note - 2.0, 1)))
-                    elif ai_prob >= 30:
-                        t_note = min(14.0, max(0.0, round(t_note - 1.0, 1)))
-
-                    res["scores"]["note_apres_ia"] = round(t_note, 1)
-                    sim_malus = float(res["scores"].get("malus_similarite", 0.0))
-                    if sim_malus > 0.0:
-                        t_note = max(0.0, round(t_note - sim_malus, 1))
-                    t_note = max(t_note, round(note_sans_malus - 3.5, 1))
-
+                    # Politique zéro faux positif : aucun malus/plafond automatique IA ni similarité
+                    res["scores"]["note_apres_ia"] = note_sans_malus
+                    res["scores"]["malus_similarite"] = 0.0
                     res["scores"]["note_technique_brute"] = note_sans_malus
-                    res["scores"]["total_note"] = round(t_note, 1)
+                    res["scores"]["total_note"] = note_sans_malus
                     res["scores"]["axe1_progression"] = round(a1, 1)
                     res["scores"]["axe2_architecture"] = round(a2, 1)
                     res["scores"]["axe3_style"] = round(a3, 1)
@@ -1820,10 +1856,9 @@ def evaluate_single_python_folder(student_dir, output_file, ai_props=None, stude
 
     scores_table = f"""| Axe d'Évaluation | Note Attribuée | Barème Officiel | Appréciation Synthétique |
 | :--- | :---: | :---: | :--- |
-| **Partie 1 : Flux & Regex** | **{p1:.2f}** | / 8.0 | Traitement des flux de données et expressions régulières |
+| **Partie 1 : Flux & Regex** | **{p1:.2f}** | / 10.0 | Traitement des flux de données et expressions régulières |
 | **Partie 2 : Numpy & Matplotlib** | **{p2:.2f}** | / 10.0 | Calculs matriciels vectorisés et visualisations |
-| **Transversal : Style Pythonique** | **{data.get('score_transversal', 0.0):.2f}** | / 2.0 | Idiomes Python, propreté et bonnes pratiques |
-| **Note sans malus (IA / Similarité)** | **{nsm_f:.2f}** | **/ 20.0** | **Somme technique brute des 3 axes** |
+| **Note sans malus (IA / Similarité)** | **{nsm_f:.2f}** | **/ 20.0** | **Somme technique brute des 2 parties** |
 | **TOTAL GÉNÉRAL (Avec malus)** | **{note_f:.2f}** | **/ 20.0** | **{profil}** |"""
 
     api_key = ai_props.get("GEMINI_API_KEY") if ai_props else None
@@ -1981,6 +2016,18 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
 {sec_commentaire}
 """
 
+    try:
+        from skills_common import build_integrity_red_banner
+        banner = build_integrity_red_banner(data, plagiarism_info=plagiarism_info)
+        if banner and banner not in report_text:
+            lines = report_text.splitlines()
+            if lines and lines[0].startswith("#"):
+                report_text = lines[0] + "\n\n" + banner + "\n\n" + "\n".join(lines[1:]).lstrip("\n")
+            else:
+                report_text = banner + "\n\n" + report_text
+    except Exception:
+        pass
+
     report_text = normalize_markdown_newlines(report_text)
     os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
@@ -1990,10 +2037,50 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et rigo
         evaluated_results.append(data)
     return output_file
 
+def _load_skill_module(script_path: Path, skill_name: str):
+    """Charge un module Python d'un skill via importlib sans collision dans sys.modules."""
+    import importlib.util
+    script_path = Path(script_path).resolve()
+    if not script_path.is_file():
+        return None
+    scripts_dir = str(script_path.parent)
+    safe_skill = re.sub(r"[^a-zA-Z0-9_]", "_", skill_name)
+    mod_name = f"codelab_skill_{safe_skill}_{script_path.stem}"
+
+    prev_audit_student = sys.modules.get("audit_student")
+    sibling_student = script_path.parent / "audit_student.py"
+    swapped_student = False
+    if script_path.stem == "audit_cohort" and sibling_student.is_file():
+        student_mod = _load_skill_module(sibling_student, skill_name)
+        if student_mod is not None:
+            sys.modules["audit_student"] = student_mod
+            swapped_student = True
+
+    if scripts_dir in sys.path:
+        sys.path.remove(scripts_dir)
+    sys.path.insert(0, scripts_dir)
+
+    try:
+        spec = importlib.util.spec_from_file_location(mod_name, str(script_path))
+        if not spec or not spec.loader:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[mod_name] = mod
+        spec.loader.exec_module(mod)
+        return mod
+    finally:
+        if swapped_student:
+            if prev_audit_student is not None:
+                sys.modules["audit_student"] = prev_audit_student
+            else:
+                sys.modules.pop("audit_student", None)
+
+
 def evaluate_generic_folder(student_dir, output_file, sessions_xml=None, ai_props=None, skill_dir=None, student_login=None, student_name=None, evaluated_results=None, plagiarism_info=None):
-    """Évalue un dossier unique en utilisant un skill dynamique (ex: eval-c-sample, eval-python-sample, eval-java-sample)."""
+    """Évalue un dossier unique en utilisant un skill dynamique (ex: eval-c-sample, eval-python-sample, eval-haskell-sample, eval-java-sample)."""
     if not skill_dir:
         return None
+    skill_dir = Path(skill_dir)
     skill_name = skill_dir.name
     identity = resolve_student_identity(student_dir, student_login=student_login, student_name=student_name, sessions_xml_path=sessions_xml)
     print(f"[INFO] Analyse avec le skill '{skill_name}' : {identity['student_name']} ({identity['student_id']})", flush=True)
@@ -2002,10 +2089,11 @@ def evaluate_generic_folder(student_dir, output_file, sessions_xml=None, ai_prop
         print(f"[FAIL] Dossier scripts/ introuvable pour le skill {skill_name}", file=sys.stderr)
         return None
 
-    sys.path.insert(0, str(scripts_dir))
     try:
-        import audit_student
-    except ImportError as e:
+        audit_student = _load_skill_module(scripts_dir / "audit_student.py", skill_name)
+        if audit_student is None:
+            raise ImportError(f"audit_student.py introuvable dans {scripts_dir}")
+    except Exception as e:
         print(f"[FAIL] Erreur d'importation dans {scripts_dir}: {e}", file=sys.stderr)
         return None
 
@@ -2030,27 +2118,25 @@ def evaluate_generic_folder(student_dir, output_file, sessions_xml=None, ai_prop
 
     # Détection automatique de similarité/plagiat avec les voisins de promo si non fournie
     if plagiarism_info is None:
-        plagiarism_info = find_single_student_plagiarism(student_dir, identity['student_id'])
+        cohort_mod = None
+        try:
+            cohort_mod = _load_skill_module(scripts_dir / "audit_cohort.py", skill_name)
+        except Exception:
+            cohort_mod = None
+        plagiarism_info = find_single_student_plagiarism(student_dir, identity['student_id'], audit_cohort_mod=cohort_mod)
     if plagiarism_info:
         data["plagiarism_alert"] = plagiarism_info
         sc_g = data.get("scores", {})
         if "note_apres_ia" not in sc_g:
             sc_g["note_apres_ia"] = float(sc_g.get("total", data.get("total", 0.0)))
-        nb_sim = len(plagiarism_info.get("files", []))
-        max_sim = float(plagiarism_info.get("max_sim", 0.0))
-        sim_malus = 0.0
-        if nb_sim >= 3 or max_sim >= 95.0:
-            sim_malus = 2.0
-        elif nb_sim >= 2 or max_sim >= 85.0:
-            sim_malus = 1.0
-        elif nb_sim >= 1 and max_sim >= 75.0:
-            sim_malus = 0.5
+        from skills_common import load_weights, apply_combined_penalties
+        skill_weights = load_weights(skill_dir)
+        note_brute_g = float(sc_g.get("note_technique_brute", sc_g.get("note_apres_ia", 0.0)))
+        ai_prob_g = float((data.get("ai_analysis") or data.get("ai_detection") or {}).get("probability_pct", 0.0))
+        tot_combined, sim_malus = apply_combined_penalties(note_brute_g, ai_prob_g, plagiarism_info, skill_weights)
         if sim_malus > 0.0:
             sc_g["malus_similarite"] = sim_malus
-            tot = float(sc_g["note_apres_ia"]) - sim_malus
-            if "note_technique_brute" in sc_g:
-                tot = max(tot, float(sc_g["note_technique_brute"]) - 3.5)
-            sc_g["total"] = max(0.0, round(tot, 1))
+            sc_g["total"] = tot_combined
 
     scores = data.get("scores", {})
     total = scores.get("total", data.get("total", "N/A"))
@@ -2259,6 +2345,18 @@ Rédige une fiche d'évaluation individuelle bienveillante, pédagogique et stru
 {sec_commentaire}
 """
 
+    try:
+        from skills_common import build_integrity_red_banner
+        banner = build_integrity_red_banner(data, plagiarism_info=plagiarism_info)
+        if banner and banner not in report_text:
+            lines = report_text.splitlines()
+            if lines and lines[0].startswith("#"):
+                report_text = lines[0] + "\n\n" + banner + "\n\n" + "\n".join(lines[1:]).lstrip("\n")
+            else:
+                report_text = banner + "\n\n" + report_text
+    except Exception:
+        pass
+
     report_text = normalize_markdown_newlines(report_text)
     os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
@@ -2325,11 +2423,12 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
                                     "severity": sp.get("severity", "")
                                 }
                             else:
-                                existing_files = set(plag_map[sid].get("files", []))
+                                existing_names = {sf[0] if isinstance(sf, (tuple, list)) and sf else str(sf) for sf in plag_map[sid].get("files", [])}
                                 for sf in sp.get("similar_files", []):
-                                    if sf not in existing_files:
+                                    sf_name = sf[0] if isinstance(sf, (tuple, list)) and sf else str(sf)
+                                    if sf_name not in existing_names:
                                         plag_map[sid]["files"].append(sf)
-                                        existing_files.add(sf)
+                                        existing_names.add(sf_name)
                                 if sp.get("max_sim", 0) > plag_map[sid].get("max_sim", 0):
                                     plag_map[sid]["max_sim"] = sp.get("max_sim", 0)
                                     plag_map[sid]["partner"] = partner
@@ -2403,11 +2502,12 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
                                     "severity": sp.get("severity", "")
                                 }
                             else:
-                                existing_files = set(plag_map[sid].get("files", []))
+                                existing_names = {sf[0] if isinstance(sf, (tuple, list)) and sf else str(sf) for sf in plag_map[sid].get("files", [])}
                                 for sf in sp.get("similar_files", []):
-                                    if sf not in existing_files:
+                                    sf_name = sf[0] if isinstance(sf, (tuple, list)) and sf else str(sf)
+                                    if sf_name not in existing_names:
                                         plag_map[sid]["files"].append(sf)
-                                        existing_files.add(sf)
+                                        existing_names.add(sf_name)
                                 if sp.get("max_sim", 0) > plag_map[sid].get("max_sim", 0):
                                     plag_map[sid]["max_sim"] = sp.get("max_sim", 0)
                                     plag_map[sid]["partner"] = partner
@@ -2438,20 +2538,33 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
             print(f"[PROGRESS] {idx}/{total_students} {display_name}", flush=True)
             evaluate_single_python_folder(item, fiche_path, ai_props, student_login=item.name, student_name=s_name, sessions_xml=sessions_xml, plagiarism_info=plag_map.get(item.name))
     else:
-        sys.path.insert(0, str(skill_dir / "scripts"))
+        audit_cohort = _load_skill_module(skill_dir / "scripts" / "audit_cohort.py", skill_dir.name)
+        ignored_dirs = {"evaluations", ".hidden", "recovery", "codelab", "__pycache__"}
+        all_dirs = [item for item in sorted(session_p.iterdir()) if item.is_dir() and item.name not in ignored_dirs and not item.name.startswith(".")]
+        tutor_ids = {item.name for item in all_dirs if is_tutor_user(item.name, users_db.get(item.name))}
+        eligible_items = [item for item in all_dirs if item.name not in tutor_ids]
+
         plag_map = {}
         try:
-            import audit_cohort
-            if hasattr(audit_cohort, "detect_cohort_plagiarism"):
-                plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p), users_db=users_db)
+            if audit_cohort and hasattr(audit_cohort, "detect_cohort_plagiarism"):
+                try:
+                    plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p), users_db=users_db, exclude_students=tutor_ids)
+                except TypeError:
+                    try:
+                        plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p), users_db=users_db)
+                    except TypeError:
+                        plag_res = audit_cohort.detect_cohort_plagiarism(str(session_p))
                 if isinstance(plag_res, tuple):
                     if len(plag_res) == 2 and isinstance(plag_res[1], dict):
-                        plag_map = plag_res[1]
+                        plag_map = {k: v for k, v in plag_res[1].items() if k not in tutor_ids}
                     else:
                         plag_res = plag_res[0]
                 if not plag_map and isinstance(plag_res, list):
                     for sp in plag_res:
-                        for sid, partner in ((sp.get("s1"), sp.get("s2")), (sp.get("s2"), sp.get("s1"))):
+                        s1_id, s2_id = sp.get("s1"), sp.get("s2")
+                        if s1_id in tutor_ids or s2_id in tutor_ids:
+                            continue
+                        for sid, partner in ((s1_id, s2_id), (s2_id, s1_id)):
                             if not sid:
                                 continue
                             if sid not in plag_map:
@@ -2462,39 +2575,21 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
                                     "severity": sp.get("severity", "")
                                 }
                             else:
-                                existing_files = set(plag_map[sid].get("files", []))
+                                existing_names = {sf[0] if isinstance(sf, (tuple, list)) and sf else str(sf) for sf in plag_map[sid].get("files", [])}
                                 for sf in sp.get("similar_files", []):
-                                    if sf not in existing_files:
+                                    sf_name = sf[0] if isinstance(sf, (tuple, list)) and sf else str(sf)
+                                    if sf_name not in existing_names:
                                         plag_map[sid]["files"].append(sf)
-                                        existing_files.add(sf)
+                                        existing_names.add(sf_name)
                                 if sp.get("max_sim", 0) > plag_map[sid].get("max_sim", 0):
                                     plag_map[sid]["max_sim"] = sp.get("max_sim", 0)
                                     plag_map[sid]["partner"] = partner
                                     plag_map[sid]["severity"] = sp.get("severity", "")
         except Exception:
             pass
-        import audit_cohort
-        if hasattr(audit_cohort, "analyze_cohort"):
-            results = audit_cohort.analyze_cohort(str(session_dir))
-            if hasattr(audit_cohort, "export_csv"):
-                try:
-                    audit_cohort.export_csv(results, str(csv_file), cohort_dir=str(session_p))
-                except TypeError:
-                    audit_cohort.export_csv(results, str(csv_file))
-            if hasattr(audit_cohort, "export_summary_markdown"):
-                use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
-                try:
-                    audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag, session_id=session_id)
-                except TypeError:
-                    try:
-                        audit_cohort.export_summary_markdown(results, str(synthese_file), cohort_dir=str(session_p))
-                    except TypeError:
-                        audit_cohort.export_summary_markdown(results, str(synthese_file))
-        eligible_items = [
-            item for item in sorted(session_p.iterdir())
-            if item.is_dir() and item.name not in ("evaluations", ".hidden", "recovery", "codelab")
-            and not is_tutor_user(item.name, users_db.get(item.name))
-        ]
+
+        # Passe unique : évaluation de chaque étudiant éligible (tuteurs exclus), puis export CSV & Synthèse consolidés
+        evaluated_results = []
         total_students = len(eligible_items)
         for idx, item in enumerate(eligible_items, start=1):
             u_info = users_db.get(item.name)
@@ -2504,7 +2599,35 @@ def evaluate_session(session_id, session_dir, eval_output_dir=None, sessions_xml
             s_name = u_info.get("name") if u_info else None
             display_name = f"{s_name} ({item.name})" if s_name and s_name != item.name else item.name
             print(f"[PROGRESS] {idx}/{total_students} {display_name}", flush=True)
-            evaluate_generic_folder(item, fiche_path, sessions_xml, ai_props, skill_dir, student_login=item.name, student_name=s_name, plagiarism_info=plag_map.get(item.name))
+            evaluate_generic_folder(
+                item, fiche_path, sessions_xml, ai_props, skill_dir,
+                student_login=item.name, student_name=s_name,
+                evaluated_results=evaluated_results,
+                plagiarism_info=plag_map.get(item.name)
+            )
+
+        if evaluated_results and audit_cohort:
+            if hasattr(audit_cohort, "export_csv"):
+                try:
+                    audit_cohort.export_csv(evaluated_results, str(csv_file), cohort_dir=str(session_p), exclude_students=tutor_ids)
+                except TypeError:
+                    try:
+                        audit_cohort.export_csv(evaluated_results, str(csv_file), cohort_dir=str(session_p))
+                    except TypeError:
+                        audit_cohort.export_csv(evaluated_results, str(csv_file))
+            if hasattr(audit_cohort, "export_summary_markdown"):
+                use_ai_flag = bool(ai_props and ai_props.get("GEMINI_API_KEY"))
+                try:
+                    audit_cohort.export_summary_markdown(evaluated_results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag, session_id=session_id, exclude_students=tutor_ids)
+                except TypeError:
+                    try:
+                        audit_cohort.export_summary_markdown(evaluated_results, str(synthese_file), cohort_dir=str(session_p), use_ai=use_ai_flag, session_id=session_id)
+                    except TypeError:
+                        try:
+                            audit_cohort.export_summary_markdown(evaluated_results, str(synthese_file), cohort_dir=str(session_p))
+                        except TypeError:
+                            audit_cohort.export_summary_markdown(evaluated_results, str(synthese_file))
+            print("[DONE] Synthèse de session et export CSV générés en passe unique (tuteurs exclus) !", flush=True)
 
     return synthese_file
 
@@ -2520,7 +2643,7 @@ def main():
     parser.add_argument("--sessions", help="Alias de compatibilité pour le chemin des utilisateurs")
     parser.add_argument("--out", help="Fichier de sortie spécifique (.md)")
     parser.add_argument("--props", help="Chemin vers user.properties (optionnel)")
-    parser.add_argument("--skill", help="ID du skill à appliquer (ex: eval-introprog, eval-c-sample, eval-python-sample, eval-java-sample ou auto)")
+    parser.add_argument("--skill", help="ID du skill à appliquer (ex: eval-introprog, eval-c-sample, eval-python-sample, eval-haskell-sample, eval-java-sample ou auto)")
     parser.add_argument("--no-ai", "--deterministic", action="store_true", dest="no_ai", help="Exécuter l'évaluation en mode 100%% déterministe (0 crédit IA)")
     
     args = parser.parse_args()
@@ -2556,7 +2679,8 @@ def main():
             else:
                 out_file = target_dir / f"{target_dir.name}_rapport.md"
                 
-        res_path = evaluate_folder(target_dir, out_file, args.sessions, ai_props, skill_name=args.skill,
+        users_input = args.users or args.sessions
+        res_path = evaluate_folder(target_dir, out_file, users_input, ai_props, skill_name=args.skill,
                                    student_login=student_login, student_name=args.student_name)
             
         if res_path:
@@ -2573,18 +2697,17 @@ def main():
         if not student_dir.is_dir():
             print(f"[FAIL] Dossier étudiant {student_dir} introuvable.", file=sys.stderr, flush=True)
             sys.exit(1)
-            
-        users_db = load_sessions_users(args.sessions, [session_dir, session_dir.parent])
+
+        users_input = args.users or args.sessions
+        users_db = load_sessions_users(users_input, [session_dir, session_dir.parent])
         u_info = users_db.get(args.student)
         if is_tutor_user(args.student, u_info):
             print(f"[INFO] Le compte {args.student} correspond à un tuteur/enseignant. Aucune évaluation étudiante requise.", flush=True)
             sys.exit(0)
-            eval_student_dir = Path(args.eval_dir) / args.student
-        else:
-            eval_student_dir = session_dir / "evaluations" / args.student
+
+        eval_student_dir = (Path(args.eval_dir) / args.student) if args.eval_dir else (session_dir / "evaluations" / args.student)
         eval_student_dir.mkdir(parents=True, exist_ok=True)
         out_file = args.out or (eval_student_dir / f"{args.student}_rapport.md")
-        users_input = args.users or args.sessions
         res_path = evaluate_folder(student_dir, out_file, users_input, ai_props, skill_name=args.skill,
                                    student_login=args.student, student_name=args.student_name)
             

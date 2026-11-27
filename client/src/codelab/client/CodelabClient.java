@@ -1502,9 +1502,6 @@ public class CodelabClient {
 			codelab.printlnToConsole("INTERNAL ERROR: Unable to restaure distant folder. Try to delete your \"codelab.files\" folder.", Color.RED);
 			server.closeConnection();
 		}
-		// Phase 2 : Récupération de la session (1 seconde garantie)
-		WaitingDialog.open(CodeLab.LABEL("Session_downloading"));
-		Utils.wait(1000);
 		WaitingDialog.close();
 
 		if (isReadOnly(sessionId) && !isReconnecting.get()) {
@@ -1548,9 +1545,6 @@ public class CodelabClient {
 	        codelab.printlnToConsole("INTERNAL ERROR: Unable to restaure distant folder. Try to delete your \"codelab.files\" folder.", Color.RED);
 	        server.closeConnection();
 	    }
-		// Phase 2 : Récupération de la session (1 seconde garantie)
-		WaitingDialog.open(CodeLab.LABEL("Session_downloading"));
-		Utils.wait(1000);
 		WaitingDialog.close();
 	}
 	

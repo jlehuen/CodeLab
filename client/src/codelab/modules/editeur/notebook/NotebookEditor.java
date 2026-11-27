@@ -550,6 +550,9 @@ public class NotebookEditor extends AbstractEditor {
 			return;
 		}
 
+		if (module != null && module.codelab != null && module.codelab.getClient() != null) {
+			module.codelab.getClient().logCompile(baseName, true, null);
+		}
 		module.codelab.execute(cellScript.getName());
 	}
 

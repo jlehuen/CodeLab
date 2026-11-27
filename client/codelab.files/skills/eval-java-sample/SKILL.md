@@ -3,13 +3,13 @@ name: eval-java-sample
 description: >-
   Skill d'exemple pour l'évaluation de programmes orientés objet en langage Java.
   Vérifie la compilation javac, l'encapsulation, la modélisation objet et la documentation Javadoc.
-version: 1.1.0
-last_modified: 2026-10-10
+version: 1.2.0
+last_modified: 2026-11-27
 ---
 
 # Skill d'Évaluation : Java / POO (Exemple)
 
-**Version :** 1.1.0 | **Dernière modification :** 10 octobre 2026
+**Version :** 1.2.0 | **Dernière modification :** 27 novembre 2026
 
 Ce skill est un modèle d'exemple fourni avec CodeLab pour illustrer l'évaluation automatique de code orienté objet en langage Java.
 Il analyse la structure des classes, l'encapsulation (attributs privés, accesseurs/mutateurs) et la présence de documentation Javadoc.

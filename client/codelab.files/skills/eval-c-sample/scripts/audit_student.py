@@ -15,17 +15,32 @@ from pathlib import Path
 from datetime import datetime
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
+SKILLS_ROOT = SKILL_DIR.parent
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+
+from skills_common import (
+    load_weights as _load_weights_common,
+    resolve_c_compiler,
+    detect_notebook_language,
+    extract_notebook_code,
+    run_declarative_tests,
+)
 
 
 def load_weights():
     """Charge dynamiquement les pondérations depuis weights.json."""
-    for p in (SKILL_DIR / "weights.json", Path(__file__).resolve().parent / "weights.json"):
-        if p.is_file():
-            try:
-                return json.loads(p.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-    return {}
+    return _load_weights_common(SKILL_DIR)
+
+
+def is_c_notebook(ipynb_path):
+    """Vérifie si un fichier .ipynb est un carnet C."""
+    return detect_notebook_language(ipynb_path) == "c"
+
+
+def extract_c_from_notebook(ipynb_path):
+    """Extrait le code C des cellules d'un carnet .ipynb C."""
+    return extract_notebook_code(ipynb_path, "c")
 
 
 def strip_c_comments(content):
@@ -48,25 +63,20 @@ def strip_c_comments(content):
 
 
 def run_clang_check(c_files):
-    """Vérifie la syntaxe C des fichiers via Clang ou GCC (tolérance void main())."""
+    """Vérifie la syntaxe C des fichiers (.c et carnets .ipynb C) via Clang ou GCC (tolérance void main())."""
     errors = {}
     if not c_files:
         return errors
 
-    compiler = None
-    for cand in ["clang", "gcc"]:
-        try:
-            res = subprocess.run([cand, "--version"], capture_output=True, text=True)
-            if res.returncode == 0:
-                compiler = cand
-                break
-        except Exception:
-            continue
+    compiler = resolve_c_compiler()
 
     if not compiler:
         for f in c_files:
+            if f.suffix.lower() == '.h':
+                continue
             try:
-                code = strip_c_comments(f.read_text(encoding='utf-8', errors='ignore'))
+                raw = extract_c_from_notebook(f) if f.suffix.lower() == '.ipynb' else f.read_text(encoding='utf-8', errors='ignore')
+                code = strip_c_comments(raw)
                 if code.count('{') != code.count('}'):
                     errors[f.name] = "Accolades ouvrantes et fermantes déséquilibrées"
             except Exception as e:
@@ -77,6 +87,7 @@ def run_clang_check(c_files):
     for f in c_files:
         if f.suffix.lower() == '.h':
             continue
+        is_nb = f.suffix.lower() == '.ipynb'
         cmd = [
             compiler, "-fsyntax-only",
             "-Wno-main-return-type", "-Wno-main",
@@ -88,9 +99,12 @@ def run_clang_check(c_files):
         ]
         if inc_dir.is_dir():
             cmd.extend(["-I", str(inc_dir)])
-        cmd.append(str(f))
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=8)
+            if is_nb:
+                nb_code = extract_c_from_notebook(f)
+                res = subprocess.run(cmd + ["-x", "c", "-"], input=nb_code, capture_output=True, text=True, timeout=8)
+            else:
+                res = subprocess.run(cmd + [str(f)], capture_output=True, text=True, timeout=8)
             if res.returncode != 0:
                 clean_err = []
                 all_nested = True
@@ -106,7 +120,7 @@ def run_clang_check(c_files):
                 # Si l'erreur est uniquement un header externe introuvable, vérifier la syntaxe C pure sans les #include locaux manquants
                 if "file not found" in first_err:
                     try:
-                        raw_code = f.read_text(encoding='utf-8', errors='ignore')
+                        raw_code = extract_c_from_notebook(f) if is_nb else f.read_text(encoding='utf-8', errors='ignore')
                         stripped_includes = re.sub(r'^\s*#\s*include\s+["<][^">]+[">]', '// include neutralisé', raw_code, flags=re.MULTILINE)
                         fallback_cmd = [
                             compiler, "-fsyntax-only",
@@ -198,21 +212,23 @@ def detect_ai_markers(c_files, student_dir=None):
                 sys.path.insert(0, str(skills_root))
             from activity_analyzer import analyze_student_activity
             act_data = analyze_student_activity(student_dir)
-            if act_data.get("active"):
+            if act_data.get("has_rich_telemetry"):
                 for a in act_data.get("alerts", []):
                     if "BURST_INSERT" in a:
                         add_marker("Télémétrie", "chronometrie_anormale", "burst_insert", a, 0.45)
                     elif "BURST_NEW_FILE" in a:
                         add_marker("Télémétrie", "chronometrie_anormale", "burst_new_file", a, 0.40)
-                if act_data.get("s_auth", 100.0) < 50.0:
-                    add_marker("Télémétrie", "variance_stylometrique", "low_s_auth", f"Score d'authenticité faible ({act_data['s_auth']}%) - Code majoritairement injecté ou collé ({act_data['paste_chars']} caractères collés)", 0.35)
+                s_auth_val = act_data.get("s_auth")
+                if s_auth_val is not None and float(s_auth_val) < 50.0:
+                    add_marker("Télémétrie", "variance_stylometrique", "low_s_auth", f"Score d'authenticité faible ({s_auth_val}%) - Code majoritairement injecté ou collé ({act_data['paste_chars']} caractères collés)", 0.35)
         except Exception:
             pass
 
     for fpath in c_files:
         rel_path = fpath.name
+        is_nb = fpath.suffix.lower() == '.ipynb'
         try:
-            content = fpath.read_text(encoding='utf-8', errors='ignore')
+            content = extract_c_from_notebook(fpath) if is_nb else fpath.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             continue
 
@@ -220,12 +236,13 @@ def detect_ai_markers(c_files, student_dir=None):
         lines = content.splitlines()
         loc = len([l for l in lines if l.strip() and not l.strip().startswith('//')])
 
-        # Analyse d'indentation (Tabulations natives CodeLab vs 4 Espaces LLM Web)
-        t_count = sum(1 for l in lines if l.startswith('\t'))
-        s_count = sum(1 for l in lines if l.startswith('    '))
-        total_tabs += t_count
-        total_spaces += s_count
-        file_indent[rel_path] = {'tabs': t_count, 'spaces': s_count, 'loc': loc}
+        # Analyse d'indentation (Tabulations natives CodeLab vs 4 Espaces LLM Web — neutralisée sur .ipynb)
+        if not is_nb:
+            t_count = sum(1 for l in lines if l.startswith('\t'))
+            s_count = sum(1 for l in lines if l.startswith('    '))
+            total_tabs += t_count
+            total_spaces += s_count
+            file_indent[rel_path] = {'tabs': t_count, 'spaces': s_count, 'loc': loc}
 
         # Horodatage CodeLab
         m_dt = re.search(r'Created by .* on (\d{2}/\d{2}/\d{2}) \((\d{2}:\d{2}:\d{2})\)', content)
@@ -293,6 +310,14 @@ def detect_ai_markers(c_files, student_dir=None):
         add_marker("Ensemble des fichiers", 'variance_stylometrique', 'indentation_spaces_rupture',
                    f"Indentation dominante en 4 espaces ({total_spaces} lignes en 4 espaces vs {total_tabs} tabulations natives CodeLab) caractéristique d'un copier-coller externe / LLM", 0.35)
 
+    # Neutraliser les heuristiques de chronométrie si la télémétrie prouve une frappe authentique (>= 85%)
+    _tel_authentic = bool(
+        act_data
+        and act_data.get("has_rich_telemetry")
+        and act_data.get("s_auth") is not None
+        and float(act_data.get("s_auth")) >= 85.0
+    )
+
     # 4. Chronométrie anormale (< 300s pour projets complexes, < 60s pour fichiers standards, ou rafale sans .bak)
     dates_info = {}
     if created_timestamps:
@@ -305,11 +330,11 @@ def detect_ai_markers(c_files, student_dir=None):
             "first_date": created_timestamps[0][0].strftime("%d/%m/%Y"),
             "last_date": created_timestamps[-1][0].strftime("%d/%m/%Y")
         }
-        if distinct_days == 1 and len(created_timestamps) >= 6 and bak_count == 0:
+        if not _tel_authentic and distinct_days == 1 and len(created_timestamps) >= 6 and bak_count == 0:
             add_marker(created_timestamps[-1][1], 'chronometrie_anormale', 'single_session_dump',
                        f"Dépôt massif de {len(created_timestamps)} fichiers sur une seule séance sans aucun historique .bak", 0.40)
 
-    if len(created_timestamps) >= 2:
+    if not _tel_authentic and len(created_timestamps) >= 2:
         for i in range(len(created_timestamps) - 1):
             t1, f1, loc1 = created_timestamps[i]
             t2, f2, loc2 = created_timestamps[i+1]
@@ -379,6 +404,8 @@ def audit_student(folder_path, sessions_xml_path=None):
         return low.startswith('.') or '__' in low or low.endswith('.bak') or low.endswith('_bak.c') or 'copy' in low
 
     c_files = sorted([f for f in list(p.glob('**/*.c')) + list(p.glob('**/*.h')) if not _is_ign(f)])
+    c_notebooks = sorted([f for f in p.glob('**/*.ipynb') if not _is_ign(f) and is_c_notebook(f)])
+    all_c_sources = list(c_files) + list(c_notebooks)
 
     weights = load_weights()
     axes_w = weights.get("axes", {})
@@ -400,10 +427,16 @@ def audit_student(folder_path, sessions_xml_path=None):
             "note_apres_ia": 0.0,
             "total": 0.0
         },
+        "axes_max": {
+            "syntax": syntax_max,
+            "architecture": arch_max,
+            "style": style_max,
+            "tests": tests_max,
+        },
         "indentation_stats": {"total_tabs": 0, "total_spaces": 0, "files": {}},
         "dates_info": {"distinct_days": 0, "span_days": 0, "first_date": "N/A", "last_date": "N/A"},
-        "c_files": [f.name for f in c_files],
-        "total_files": len(c_files),
+        "c_files": [f.name for f in all_c_sources],
+        "total_files": len(all_c_sources),
         "valid_c_count": 0,
         "functions": [],
         "comments_count": 0,
@@ -414,7 +447,7 @@ def audit_student(folder_path, sessions_xml_path=None):
         "ai_analysis": {}
     }
 
-    if not c_files:
+    if not all_c_sources:
         empty_ai = {
             "level": "Faible (0% - Aucun fichier C)",
             "score": 0.0,
@@ -430,10 +463,10 @@ def audit_student(folder_path, sessions_xml_path=None):
         results["ai_analysis"] = empty_ai
         return results
 
-    # 1. Vérification compilation & syntaxe
-    syntax_errs = run_clang_check(c_files)
+    # 1. Vérification compilation & syntaxe (fichiers .c et carnets .ipynb C)
+    syntax_errs = run_clang_check(all_c_sources)
     results["syntax_errors"] = syntax_errs
-    results["valid_c_count"] = len(c_files) - len(syntax_errs)
+    results["valid_c_count"] = len(all_c_sources) - len(syntax_errs)
 
     # 2. Analyse des fonctions et de la modularité (hors commentaires)
     all_functions = []
@@ -449,9 +482,9 @@ def audit_student(folder_path, sessions_xml_path=None):
         re.MULTILINE | re.DOTALL
     )
 
-    for f in c_files:
+    for f in all_c_sources:
         try:
-            content = f.read_text(encoding='utf-8', errors='ignore')
+            content = extract_c_from_notebook(f) if f.suffix.lower() == '.ipynb' else f.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             continue
 
@@ -500,8 +533,8 @@ def audit_student(folder_path, sessions_xml_path=None):
     results["asserts_count"] = total_asserts
 
     # Calcul des notes exigeantes selon weights.json (par défaut 6 + 8 + 4 + 2 = 20 pts)
-    num_errors = len(c_files) - results["valid_c_count"]
-    ratio_valid = results["valid_c_count"] / float(len(c_files)) if c_files else 0.0
+    num_errors = len(all_c_sources) - results["valid_c_count"]
+    ratio_valid = results["valid_c_count"] / float(len(all_c_sources)) if all_c_sources else 0.0
     results["scores"]["syntax"] = max(0.0, round(ratio_valid * syntax_max - 0.6 * num_errors, 1))
 
     unique_funcs = set(fn["name"] for fn in all_functions)
@@ -517,12 +550,12 @@ def audit_student(folder_path, sessions_xml_path=None):
         arch_ratio = 0.3
     else:
         arch_ratio = 0.15 if total_code_lines >= 10 else 0.0
-    if num_errors > 0 and c_files:
+    if num_errors > 0 and all_c_sources:
         arch_ratio *= max(0.5, ratio_valid)
     results["scores"]["architecture"] = round(arch_ratio * arch_max, 1)
 
     style_pts = 0.0
-    min_expected_comments = max(3, len(c_files))
+    min_expected_comments = max(3, len(all_c_sources))
     if total_comments >= min_expected_comments:
         style_pts += 1.5
     elif total_comments >= max(1, min_expected_comments // 2):
@@ -540,20 +573,25 @@ def audit_student(folder_path, sessions_xml_path=None):
         style_pts += max(0.0, 1.0 - 0.4 * num_errors)
     results["scores"]["style"] = min(style_max, round((style_pts / 4.0) * style_max, 1))
 
-    test_pts = 0.0
-    has_test_fn = any(fn.lower().startswith('test') for fn in unique_funcs)
-    has_test_file = any('test' in f.name.lower() and f.name not in ('test_primitives.c', 'test_primitive.c') for f in c_files)
-    if total_asserts >= 3 or (has_test_file and total_asserts >= 1):
-        test_pts = 2.0
-    elif total_asserts == 2 or has_test_file or has_test_fn:
-        test_pts = 1.2
-    elif total_asserts == 1:
-        test_pts = 0.6
-    elif any('test_primitive' in f.name.lower() for f in c_files):
-        test_pts = 0.4
-    results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
+    decl_tests = run_declarative_tests(SKILL_DIR, p, "c")
+    results["declarative_tests"] = decl_tests
+    if decl_tests.get("active") and decl_tests.get("total", 0) > 0:
+        results["scores"]["tests"] = min(tests_max, round(decl_tests["ratio"] * tests_max, 1))
+    else:
+        test_pts = 0.0
+        has_test_fn = any(fn.lower().startswith('test') for fn in unique_funcs)
+        has_test_file = any('test' in f.name.lower() and f.name not in ('test_primitives.c', 'test_primitive.c') for f in all_c_sources)
+        if total_asserts >= 3 or (has_test_file and total_asserts >= 1):
+            test_pts = 2.0
+        elif total_asserts == 2 or has_test_file or has_test_fn:
+            test_pts = 1.2
+        elif total_asserts == 1:
+            test_pts = 0.6
+        elif any('test_primitive' in f.name.lower() for f in all_c_sources):
+            test_pts = 0.4
+        results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
 
-    ai_info = detect_ai_markers(c_files, student_dir=p)
+    ai_info = detect_ai_markers(all_c_sources, student_dir=p)
     results["ai_detection"] = ai_info
     results["ai_analysis"] = ai_info
     results["dates_info"] = ai_info.get("dates_info", {})
@@ -567,19 +605,8 @@ def audit_student(folder_path, sessions_xml_path=None):
     )
     results["scores"]["note_technique_brute"] = note_sans_malus
 
-    # Application du malus IA uniquement sur la note avec malus (total)
-    anti_ia = weights.get("anti_triche", {}).get("assistance_ia", {})
-    malus_eleve = float(anti_ia.get("malus_eleve", 2.0))
-    plafond_eleve = float(anti_ia.get("plafond_note_eleve", 12.0))
-    malus_modere = float(anti_ia.get("malus_modere", 1.0))
-    plafond_modere = float(anti_ia.get("plafond_note_modere", 14.0))
-
+    # Politique zéro faux positif : aucun malus/plafond IA automatique (alerte rouge informative uniquement)
     total_note = note_sans_malus
-    if ai_prob >= 60:
-        total_note = min(plafond_eleve, max(0.0, round(total_note - malus_eleve, 1)))
-    elif ai_prob >= 30:
-        total_note = min(plafond_modere, max(0.0, round(total_note - malus_modere, 1)))
-
     results["scores"]["note_apres_ia"] = total_note
     results["scores"]["total"] = total_note
 

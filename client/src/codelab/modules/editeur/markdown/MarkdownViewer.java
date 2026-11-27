@@ -81,6 +81,39 @@ public class MarkdownViewer extends AbstractEditor {
 	private static final String VIEW_PREVIEW = "PREVIEW";
 	private static final String VIEW_CODE = "CODE";
 
+	// Historique de navigation entre documents Markdown (Précédent / Suivant)
+	private static final int MAX_NAV_HISTORY = 50;
+	private static final java.util.Deque<File> NAV_BACK = new java.util.ArrayDeque<>();
+	private static final java.util.Deque<File> NAV_FORWARD = new java.util.ArrayDeque<>();
+
+	public static boolean canNavigateBack() {
+		return !NAV_BACK.isEmpty();
+	}
+
+	public static boolean canNavigateForward() {
+		return !NAV_FORWARD.isEmpty();
+	}
+
+	public void navigateBack() {
+		if (NAV_BACK.isEmpty() || module == null) return;
+		File prev = NAV_BACK.pop();
+		File cur = (extern_file != null) ? extern_file : getFile();
+		if (cur != null && cur.isFile()) {
+			NAV_FORWARD.push(cur);
+		}
+		module.open_file(prev, false);
+	}
+
+	public void navigateForward() {
+		if (NAV_FORWARD.isEmpty() || module == null) return;
+		File next = NAV_FORWARD.pop();
+		File cur = (extern_file != null) ? extern_file : getFile();
+		if (cur != null && cur.isFile()) {
+			NAV_BACK.push(cur);
+		}
+		module.open_file(next, false);
+	}
+
 	private static final Parser MD_PARSER;
 	private static final HtmlRenderer HTML_RENDERER;
 	static {
@@ -103,6 +136,35 @@ public class MarkdownViewer extends AbstractEditor {
 					HTML.Tag kind = (HTML.Tag) o;
 					if (kind == HTML.Tag.UL) {
 						return new CleanListView(elem);
+					}
+					if (kind == HTML.Tag.P || kind == HTML.Tag.IMPLIED) {
+						// Swing HTMLEditorKit ignore la propriété CSS line-height dans ParagraphView :
+						// on applique un interligne réel (+0.30 sur le texte, +0.20 dans les blocs <pre>),
+						// mais 0 sur les lignes contenant une image (sinon Swing ajoute 30% de la hauteur de l'image en dessous).
+						boolean hasImage = false;
+						for (int i = 0; i < elem.getElementCount(); i++) {
+							if (HTML.Tag.IMG.equals(elem.getElement(i).getAttributes().getAttribute(StyleConstants.NameAttribute))) {
+								hasImage = true;
+								break;
+							}
+						}
+						if (!hasImage) {
+							boolean inPre = false;
+							for (Element p = elem.getParentElement(); p != null; p = p.getParentElement()) {
+								if (HTML.Tag.PRE.equals(p.getAttributes().getAttribute(StyleConstants.NameAttribute))) {
+									inPre = true;
+									break;
+								}
+							}
+							final float spacing = inPre ? 0.20f : 0.42f;
+							return new javax.swing.text.html.ParagraphView(elem) {
+								@Override
+								protected void setPropertiesFromAttributes() {
+									super.setPropertiesFromAttributes();
+									setLineSpacing(spacing);
+								}
+							};
+						}
 					}
 					if (kind == HTML.Tag.HTML || kind == HTML.Tag.BODY || kind == HTML.Tag.PRE) {
 						// Permet au document et blocs préformatés de s'adapter fluidement à toute largeur sans buter sur un minimumSpan
@@ -208,15 +270,50 @@ public class MarkdownViewer extends AbstractEditor {
 		htmlView.setBackground(Color.WHITE);
 		htmlView.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 
-		// Prise en charge des liens hypertextes
+		// Prise en charge des liens hypertextes (liens .md locaux ouverts dans CodeLab, URLs externes dans le navigateur)
 		htmlView.addHyperlinkListener(new HyperlinkListener() {
 			@Override
 			public void hyperlinkUpdate(HyperlinkEvent e) {
 				if (e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED)) {
+					String desc = e.getDescription();
+					String href = (desc != null && !desc.isBlank()) ? desc.trim() : (e.getURL() != null ? e.getURL().toString() : null);
+					if (href == null || href.isBlank()) return;
+
+					// Si lien local/relatif vers un fichier Markdown, ouvrir directement dans CodeLab
+					String lower = href.toLowerCase();
+					if (!lower.startsWith("http://") && !lower.startsWith("https://") && !lower.startsWith("mailto:") && !lower.startsWith("#")) {
+						String cleanHref = href.contains("#") ? href.substring(0, href.indexOf('#')) : href;
+						File target = null;
+						if (cleanHref.toLowerCase().startsWith("file://")) {
+							try {
+								target = new File(new java.net.URI(cleanHref));
+							} catch (Exception ignored) {}
+						} else {
+							File baseFile = (extern_file != null) ? extern_file : getFile();
+							File baseDir = (baseFile != null) ? baseFile.getParentFile() : null;
+							target = (baseDir != null) ? new File(baseDir, cleanHref) : new File(cleanHref);
+						}
+						if (target != null && target.isFile() && target.getName().toLowerCase().endsWith(".md") && module != null) {
+							File cur = (extern_file != null) ? extern_file : getFile();
+							if (cur != null && cur.isFile()) {
+								NAV_BACK.push(cur);
+								while (NAV_BACK.size() > MAX_NAV_HISTORY) NAV_BACK.removeLast();
+								NAV_FORWARD.clear();
+							}
+							try {
+								module.open_file(target.getCanonicalFile(), false);
+								return;
+							} catch (Exception ignored) {
+								module.open_file(target, false);
+								return;
+							}
+						}
+					}
+
 					if (e.getURL() != null) {
 						Utils.openBrowser(e.getURL().toString());
-					} else if (e.getDescription() != null) {
-						Utils.openBrowser(e.getDescription());
+					} else {
+						Utils.openBrowser(href);
 					}
 				}
 			}
@@ -227,6 +324,56 @@ public class MarkdownViewer extends AbstractEditor {
 		htmlScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		htmlScrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
+		// Défilement fluide par clic-glissé au bouton droit (le bouton gauche reste dédié à la sélection de texte et aux liens)
+		java.awt.event.MouseAdapter panAdapter = new java.awt.event.MouseAdapter() {
+			private java.awt.Point dragStartScreen = null;
+			private java.awt.Point viewStartPos = null;
+			private boolean dragging = false;
+
+			@Override
+			public void mousePressed(java.awt.event.MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e)) {
+					dragStartScreen = e.getLocationOnScreen();
+					viewStartPos = htmlScrollPane.getViewport().getViewPosition();
+					dragging = false;
+				}
+			}
+
+			@Override
+			public void mouseDragged(java.awt.event.MouseEvent e) {
+				if (dragStartScreen == null || viewStartPos == null || !SwingUtilities.isRightMouseButton(e)) return;
+				java.awt.Point cur = e.getLocationOnScreen();
+				int dx = cur.x - dragStartScreen.x;
+				int dy = cur.y - dragStartScreen.y;
+				if (!dragging && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+					dragging = true;
+					htmlView.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR));
+				}
+				if (dragging) {
+					javax.swing.JViewport vp = htmlScrollPane.getViewport();
+					java.awt.Dimension viewSize = vp.getViewSize();
+					java.awt.Dimension extent = vp.getExtentSize();
+					int maxX = Math.max(0, viewSize.width - extent.width);
+					int maxY = Math.max(0, viewSize.height - extent.height);
+					int nx = Math.max(0, Math.min(maxX, viewStartPos.x - dx));
+					int ny = Math.max(0, Math.min(maxY, viewStartPos.y - dy));
+					vp.setViewPosition(new java.awt.Point(nx, ny));
+				}
+			}
+
+			@Override
+			public void mouseReleased(java.awt.event.MouseEvent e) {
+				if (dragging) {
+					htmlView.setCursor(java.awt.Cursor.getDefaultCursor());
+				}
+				dragStartScreen = null;
+				viewStartPos = null;
+				dragging = false;
+			}
+		};
+		htmlView.addMouseListener(panAdapter);
+		htmlView.addMouseMotionListener(panAdapter);
+
 		// Les diagrammes Mermaid sont plafonnés à la largeur de la vue au moment du rendu :
 		// on refait le rendu (instantané, images en cache) si cette largeur change notablement.
 		htmlScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
@@ -236,13 +383,9 @@ public class MarkdownViewer extends AbstractEditor {
 			}
 		});
 
-		// 2. Vue Code Source Markdown
+		// 2. Tampon texte interne en lecture seule (non affiché : MarkdownViewer est un visualiseur pur)
 		codeArea = new CodeLabTextArea(".md");
-		codeArea.getDocument().addDocumentListener(new DocumentListener() {
-			public void removeUpdate(DocumentEvent e) { setModified(true); }
-			public void insertUpdate(DocumentEvent e) { setModified(true); }
-			public void changedUpdate(DocumentEvent e) { setModified(true); }
-		});
+		codeArea.setEditable(false);
 		codeScrollPane = new RTextScrollPane(codeArea);
 		codeScrollPane.setBorder(BorderFactory.createEmptyBorder());
 		codeScrollPane.setIconRowHeaderEnabled(false);
@@ -263,27 +406,13 @@ public class MarkdownViewer extends AbstractEditor {
 	///////////////////////////////////////////////////
 
 	public boolean isShowingPreview() {
-		return showingPreview;
+		return true;
 	}
 
 	public void showPreview() {
 		renderMarkdown();
 		cardLayout.show(cardPanel, VIEW_PREVIEW);
 		showingPreview = true;
-	}
-
-	public void showSource() {
-		cardLayout.show(cardPanel, VIEW_CODE);
-		showingPreview = false;
-		SwingUtilities.invokeLater(() -> codeArea.requestFocusInWindow());
-	}
-
-	public void toggleView() {
-		if (showingPreview) {
-			showSource();
-		} else {
-			showPreview();
-		}
 	}
 
 	///////////////////////////////////////////////////
@@ -326,14 +455,16 @@ public class MarkdownViewer extends AbstractEditor {
 		// Patch de compatibilité Swing
 		StringBuilder patch = new StringBuilder();
 		patch.append("\n/* Codelab Swing Compatibility Patch */\n");
-		patch.append("body { font-size: ").append(fontSize).append("px; }\n");
+		patch.append("body { font-size: ").append(fontSize).append("px; line-height: 145%; }\n");
+		patch.append("p, li, blockquote { line-height: 145%; }\n");
 		patch.append(".markdown-body { padding: 18px 24px; }\n");
-		patch.append("li p { margin-top: 0; margin-bottom: 8px; }\n");
-		patch.append("ol { padding-left: 28px; margin-top: 14px; margin-bottom: 14px; }\n");
-		patch.append("ol li { margin-top: 14px; margin-bottom: 14px; }\n");
-		patch.append("ol li p { margin-top: 0; margin-bottom: 10px; }\n");
-		patch.append("ul { padding-left: 28px; }\n");
-		patch.append("ul li { margin-top: 2px; margin-bottom: 4px; }\n");
+		patch.append("li { margin-top: 0; margin-bottom: 0; }\n");
+		patch.append("li p { margin-top: 0; margin-bottom: 0; }\n");
+		patch.append("ol { padding-left: 28px; margin-top: 8px; margin-bottom: 10px; }\n");
+		patch.append("ol li { margin-top: 1px; margin-bottom: 2px; }\n");
+		patch.append("ol li p { margin-top: 0; margin-bottom: 2px; }\n");
+		patch.append("ul { padding-left: 28px; margin-top: 4px; margin-bottom: 6px; }\n");
+		patch.append("ul li { margin-top: 0; margin-bottom: 0; }\n");
 		patch.append("pre { font-family: monospace; max-width: 100%; }\n");
 		patch.append("code, tt { font-family: monospace; }\n");
 		patch.append("table { width: 100%; }\n");
@@ -363,14 +494,14 @@ public class MarkdownViewer extends AbstractEditor {
 				+ "blockquote { border-left: 4px solid #dddddd; padding: 0 15px; color: #777777; margin: 15px 0; }\n"
 				+ "blockquote p { margin: 6px 0; }\n"
 				+ "hr { border: 0; border-top: 1px solid #cccccc; height: 1px; margin: 20px 0; }\n"
-				+ "ul { margin: 12px 0; padding-left: 28px; }\n"
-				+ "ul li { margin-top: 1px; margin-bottom: 3px; line-height: 1.35; }\n"
+				+ "ul { margin: 8px 0; padding-left: 28px; }\n"
+				+ "ul li { margin-top: 2px; margin-bottom: 3px; line-height: 1.4; }\n"
 				+ "ul li p { margin-top: 0; margin-bottom: 4px; }\n"
-				+ "ol { margin-top: 18px; margin-bottom: 16px; padding-left: 28px; }\n"
-				+ "ol li { margin-top: 18px; margin-bottom: 18px; line-height: 1.5; }\n"
-				+ "ol li p { margin-top: 0; margin-bottom: 12px; }\n"
+				+ "ol { margin-top: 8px; margin-bottom: 10px; padding-left: 28px; }\n"
+				+ "ol li { margin-top: 3px; margin-bottom: 4px; line-height: 1.4; }\n"
+				+ "ol li p { margin-top: 0; margin-bottom: 4px; }\n"
 				+ "li { margin: 0; }\n"
-				+ "li p { margin-top: 0; margin-bottom: 8px; }\n"
+				+ "li p { margin-top: 0; margin-bottom: 4px; }\n"
 				+ "table { border-collapse: collapse; margin: 15px 0; width: 100%; }\n"
 				+ "table tr { border-top: 1px solid #cccccc; background-color: #ffffff; }\n"
 				+ "table tr th { font-weight: bold; border: 1px solid #cccccc; padding: 6px 13px; background-color: #f8f8f8; text-align: left; }\n"
@@ -393,6 +524,10 @@ public class MarkdownViewer extends AbstractEditor {
 	 */
 	public static String preprocessMarkdown(String text) {
 		if (text == null || text.isEmpty()) return text;
+
+		// 0. Masquer le frontmatter YAML éventuel en tête de fichier (ex: SKILL.md)
+		text = java.util.regex.Pattern.compile("\\A---[ \\t]*\\r?\\n[\\s\\S]*?\\r?\\n---[ \\t]*(?:\\r?\\n|$)")
+					  .matcher(text).replaceFirst("");
 
 		// 1. Isoler et protéger les blocs de code clôturés
 		java.util.List<String> codeBlocks = new java.util.ArrayList<>();
@@ -427,19 +562,12 @@ public class MarkdownViewer extends AbstractEditor {
 		text = java.util.regex.Pattern.compile("(?mi)^[ \t]*>[ \t]*\\[!CAUTION\\][ \t]*(\r?\n[ \t]*>[ \t]*)?")
 					  .matcher(text).replaceAll("> 🚨 **Attention :** ");
 
-		// 2. Insérer une ligne vide avant les items de liste numérotée (1., 2.) s'ils sont collés au texte précédent
-		text = java.util.regex.Pattern.compile("([^\n])\r?\n([ \t]*[0-9]+\\.\\s+)").matcher(text).replaceAll("$1\n\n$2");
+		// 2. Insérer une ligne vide avant le début d'une liste numérotée si elle est collée à un paragraphe
+		//    (sans séparer les items consécutifs d'une même liste compacte)
+		text = java.util.regex.Pattern.compile("(?m)^(?![ \t]*(?:[0-9]+\\.|[-*+])\\s)([^\n]+)\r?\n([ \t]*1\\.\\s+)")
+					  .matcher(text).replaceAll("$1\n\n$2");
 
-		// 3. Traiter les titres numérotés en gras collés au paragraphe suivant
-		// Cas A : sur la même ligne (ex: "1. **Titre :** Texte...")
-		text = java.util.regex.Pattern.compile("(?m)^([ \t]*[0-9]+\\.\\s+\\*\\*[^*\n]+?\\*\\*:?)[ \t]+([A-Za-zÀ-ÿ0-9\"«'(\\[].+)$")
-					  .matcher(text).replaceAll("$1\n\n   $2");
-
-		// Cas B : sur la ligne suivante sans ligne vide (ex: "1. **Titre :**\nTexte...")
-		text = java.util.regex.Pattern.compile("(?m)^([ \t]*[0-9]+\\.\\s+\\*\\*[^*\n]+?\\*\\*:?)[ \t]*\r?\n[ \t]*([^\n\r#\\s`].*)$")
-					  .matcher(text).replaceAll("$1\n\n   $2");
-
-		// Cas C : avec ligne vide mais sans indentation requise pour imbriquer le paragraphe dans l'item
+		// 3. Corriger l'indentation d'un paragraphe explicatif déjà séparé par une ligne vide sous un titre numéroté en gras
 		text = java.util.regex.Pattern.compile("(?m)^([ \t]*[0-9]+\\.\\s+\\*\\*[^*\n]+?\\*\\*:?)[ \t]*\r?\n[ \t]*\r?\n([ \t]{0,2})([^\n\r#\\s`].*)$")
 					  .matcher(text).replaceAll("$1\n\n   $3");
 
@@ -704,20 +832,12 @@ public class MarkdownViewer extends AbstractEditor {
 
 	@Override
 	public synchronized void save_content() {
-		File file = getFile() != null ? getFile() : extern_file;
-		if (file == null) return;
-		save_content(file);
+		// Visualiseur en lecture seule : ne jamais écraser le fichier .md sur disque
 	}
 
 	@Override
 	public synchronized void save_content(File file) {
-		if (file == null) return;
-		try {
-			Files.writeString(file.toPath(), codeArea.getText(), StandardCharsets.UTF_8);
-			setModified(false);
-		} catch (IOException e) {
-			ExceptionManager.process(e);
-		}
+		// Visualiseur en lecture seule : ne jamais écraser le fichier .md sur disque
 	}
 
 	@Override

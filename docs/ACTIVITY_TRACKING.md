@@ -234,9 +234,10 @@ Le serveur Rust évalue en temps réel chaque observable reçu au sein de son mo
 ### A. Indicateurs Calculés en Direct par le Serveur Rust
 
 Sans dépendre d'aucun interpréteur externe, le serveur calcule de manière incrémentale :
-* **Score d'Authenticité en direct ($S_{\text{auth}}$)** : rapport continu entre les caractères issus de la frappe clavier réelle et le volume total intégrant collages externes et bursts :
-  $$S_{\text{auth}} = \frac{K_{\text{typing}}}{K_{\text{typing}} + C_{\text{paste\_ext}} + (L_{\text{burst}} \times 30)} \times 100$$
+* **Score d'Authenticité en direct ($S_{\text{auth}}$)** : rapport continu entre les caractères issus de la frappe clavier réelle et le volume total intégrant les injections externes dédupliquées (`PASTE` externe et `BURST` sur le même `basename` dans une fenêtre de 30 s) :
+  $$S_{\text{auth}} = \frac{K_{\text{typing}}}{K_{\text{typing}} + C_{\text{injected\_ext}}} \times 100$$
   - **Immunité des collages internes (`internal: true`)** : les caractères copiés/collés depuis CodeLab sont comptabilisés à part (`internal_pasted_chars`) et **n'entrent pas au dénominateur**, préservant le score d'authenticité de l'étudiant lors de réorganisations ou de duplications légitimes.
+  - **Déduplication `PASTE` / `BURST`** : lorsqu'un collage externe déclenche une alerte `BURST` à la sauvegarde dans les 30 s sur le même fichier (`basename`), seul le surplus éventuel (`burst_chars - paste_chars`) est ajouté à `C_injected_ext`.
   - **État sentinelle d'attente (`-1.0`)** : tant que l'étudiant n'a effectué aucune frappe ni collage, $S_{\text{auth}} = -1.0$ (restitué sous la forme `• Authenticité : -- (En attente d'activité)` en gris neutre dans l'IHM, éliminant tout faux 100 %).
 * **Taux de Navette Hors IDE ($I_{\text{nav}}$)** : ratio de temps passé hors focus applicatif par rapport à la durée totale écoulée.
 * **Compteur d'Acharnement** : suivi des échecs consécutifs sans succès intermédiaire.
@@ -399,7 +400,7 @@ flowchart LR
 | | 🚪 **Le Décrocheur** | Difficulté non résolue, passivité, inactivité prolongée et abandon silencieux. | Périodes Idle $> 15\,\text{min}$, Hors IDE $> 40\%$, $\le 2$ runs. |
 | **Axe 1 $\longleftrightarrow$ Axe 4**<br>*(Authenticité vs IA)* | 🔨 **L'Artisan** | Démarche d'apprentissage exemplaire, saisie personnelle, cycles itératifs courts. | $S_{auth} > 80\%$, $T_{fric} \in [10\%, 25\%]$, $I_{thrash} < 10\%$. |
 | | 🤖 **Le Cyborg** | Délégation externe / IA, injections massives de blocs sans maturation. | $S_{auth} < 30\%$, alertes `BURST` multiples, $I_{nav} > 40\%$. |
-| **Axe 2 $\longleftrightarrow$ Axe 5**<br>*(Copie vs Acharnement)* | 🏴‍☠️ **Le Pirate** | Collusion directe en salle, import par support externe (USB/réseau) ou copie d'autrui. | Présence d'événements `FILE_DROP`, similarité Jaccard/Winnowing $\ge 75\%$. |
+| **Axe 2 $\longleftrightarrow$ Axe 5**<br>*(Copie vs Acharnement)* | 🏴‍☠️ **Le Pirate** | Collusion directe en salle, import par support externe (USB/réseau) ou copie d'autrui. | Présence d'événements `FILE_DROP` de code, ou similarité forte (`>= 2` fichiers `>= 75%` ou `>= 85%` après filtrage anti-boilerplate). |
 | | ⚡ **Le Casse-cou** | Combat acharné avec le compilateur, tâtonnement compulsif sans recul ni diagnostic. | $I_{thrash} > 35\%$, erreurs $> 70\%$, $\Delta t$ entre runs $< 15\,\text{s}$. |
 
 #### 1. L'Artisan (Comportement d'Apprentissage Exemplaire)

@@ -139,6 +139,8 @@ public class ServerPopupMenu extends JPopupMenu {
 			});
 			add(item3);
 		}
+		
+		/*
 		add(new JSeparator());
 
 		// Item information client
@@ -149,6 +151,7 @@ public class ServerPopupMenu extends JPopupMenu {
 			}
 		});
 		add(item5);
+		*/
 
         show(component, x, y);
     }

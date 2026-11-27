@@ -59,7 +59,7 @@ Ce skill intègre un moteur de contrôle garantissant l'authenticité des travau
 - Détecte l'apparition instantanée de codes volumineux en moins de 60 secondes (indicateur de copier-coller ou de génération IA non assimilée).
 
 ### 2. 📐 Stylométrie d'Indentation & Détection IA
-- Vérifie l'homogénéité du style d'indentation : respect des tabulations de l'éditeur CodeLab vs insertions sauvages de blocs indentés en 4 espaces provenant d'Internet.
+- Vérifie l'homogénéité du style d'indentation : signale uniquement un mélange incohérent (tabulations natives CodeLab + blocs en 4 espaces importés) ; un code Python purement PEP 8 (4 espaces homogènes) ou un carnet `.ipynb` n'est jamais pénalisé.
 - Détecte les marqueurs typiques des LLM (ChatGPT/Claude) : commentaires didactiques formatés, annotations de types complexes (`typing`), imports interdits (`sys`, `os`, `subprocess`).
 
 ### 3. 👥 Détection de Copier-Collé Inter-Étudiants (Plagiat)
@@ -77,10 +77,10 @@ L'évaluation génère un compte-rendu individuel Markdown conforme au gabarit [
 3. **Profil Visuel Multidimensionnel (Diagrammes Radar)** : Double diagramme radar Mermaid (`radar-beta`) affichant côte à côte les 6 indicateurs techniques et l'affinité aux 6 profils didactiques opposés deux à deux.
 4. **Analyses d'Intégrité & Dynamique Temporelle** : Télémétrie d'activité, tranches de 15 min, stylométrie et contrôle de similarités.
 5. **Sections Pédagogiques Structurées** :
-   - `### 1. Synthèse Globale & Appréciation Pédagogique`
-   - `### 2. Bilan Chiffré & Respect des Spécifications`
-   - `### 3. Métriques & Qualité du Code` (avec extraits de code Python dans des blocs ```python ... ```)
-   - `### 4. Pistes d'Amélioration & Conseils Pratiques`
+   - *Bilan de Progression & Analyse Pédagogique*
+   - *Points Forts Observés* (avec extraits de code Python annotés)
+   - *Axes d'Amélioration & Conseils Méthodologiques*
+   - *Commentaire de l'Enseignant*
 
 ---
 

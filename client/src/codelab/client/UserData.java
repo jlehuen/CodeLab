@@ -402,15 +402,16 @@ public class UserData {
 		String[] trendParts = splitProfileTrend(trendCode);
 		String trendLabel = getProfileTrendLabel(trendCode);
 		String trendColor = getProfileTrendColorHex(trendCode);
-		sb.append("• Tendance en séance : ");
+		sb.append("<table cellpadding='0' cellspacing='0' border='0' style='margin-top:2px;'><tr><td valign='middle'>• Tendance en séance :&nbsp;</td>");
 		for (String part : trendParts) {
 			java.net.URL iconUrl = codelab.utils.ResourceUtils.class.getResource("/data/" + getProfileTrendIconPath(part));
 			if (iconUrl != null) {
-				sb.append("<img src='").append(iconUrl.toString()).append("' width='13' height='13' style='vertical-align:middle;'/> ");
+				sb.append("<td valign='middle' style='padding-top:2px; padding-right:4px;'><img src='").append(iconUrl.toString()).append("' width='20' height='20'/></td>");
 			}
 		}
+		sb.append("<td valign='middle'>");
 		if ("OBSERVING".equalsIgnoreCase(trendCode)) {
-			sb.append("<font color='#7f8c8d'><i>Observation en cours</i></font><br/>");
+			sb.append("<font color='#7f8c8d'><i>Observation en cours</i></font>");
 		} else {
 			sb.append("<font color='").append(trendColor).append("'><b>").append(trendLabel).append("</b></font>");
 			String nickname = getDoubleProfileNickname(trendCode);
@@ -419,8 +420,8 @@ public class UserData {
 			} else {
 				sb.append(" <font color='#7f8c8d'><i>(provisoire)</i></font>");
 			}
-			sb.append("<br/>");
 		}
+		sb.append("</td></tr></table>");
 		if (!activeAlerts.isEmpty()) {
 			sb.append("<hr style='margin:4px 0;'/>");
 			sb.append("<b>Alertes actives (").append(activeAlerts.size()).append(") :</b><br/>");

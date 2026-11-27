@@ -11,11 +11,18 @@ import re
 import csv
 from pathlib import Path
 from itertools import combinations
-from audit_student import audit_student, strip_c_comments
+from audit_student import audit_student, strip_c_comments, is_c_notebook, extract_c_from_notebook
+
+SKILL_DIR = Path(__file__).resolve().parent.parent
+SKILLS_ROOT = SKILL_DIR.parent
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+from skills_common import load_weights, compute_similarity_malus, apply_combined_penalties, get_canonical_boilerplate_keys
 
 def tokenize_c_code(content):
-    """Normalise le code C : élimine commentaires et chaînes, canonise les identifiants."""
+    """Normalise le code C : élimine commentaires, directives #include et chaînes, canonise les identifiants."""
     content = strip_c_comments(content)
+    content = re.sub(r'^\s*#\s*include\b[^\n]*', '', content, flags=re.MULTILINE)
 
     c_keywords = {
         'void', 'int', 'char', 'float', 'double', 'short', 'long', 'signed', 'unsigned',
@@ -40,9 +47,9 @@ def canonical_c_file_key(fname):
         return None
     if low in ('primitives.c', 'primitive.c', 'primitives2.c', 'test_primitives.c', 'test_primitive.c', 'mesfonctions.c'):
         return None
-    stem = os.path.splitext(low)[0]
+    stem, ext = os.path.splitext(low)
     clean = re.sub(r'[_\s-]+', '_', stem).strip('_')
-    return f"{clean}.c" if clean else low
+    return f"{clean}{ext}" if clean else low
 
 def get_ngrams(tokens, n=4):
     if len(tokens) < n:
@@ -56,16 +63,23 @@ def jaccard_similarity(set1, set2):
     union = len(set1 | set2)
     return inter / float(union) if union > 0 else 0.0
 
-def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
+def detect_cohort_plagiarism(cohort_dir, threshold=75.0, exclude_students=None, users_db=None):
     """Détecte les similarités de code anormales entre étudiants sur les programmes C."""
     student_files = {}
     p = Path(cohort_dir).resolve()
-    students = [d.name for d in p.iterdir() if d.is_dir() and not d.name.startswith('.') and d.name not in ('evaluations', '__pycache__', '.hidden', 'codelab', 'recovery')]
+    excluded = set(exclude_students or ())
+    students = [
+        d.name for d in p.iterdir()
+        if d.is_dir() and not d.name.startswith('.')
+        and d.name not in ('evaluations', '__pycache__', '.hidden', 'codelab', 'recovery')
+        and d.name not in excluded
+    ]
 
     for s in students:
         s_dir = p / s
         student_files[s] = {}
-        for f in s_dir.glob('**/*.c'):
+        candidates = list(s_dir.glob('**/*.c')) + [nb for nb in s_dir.glob('**/*.ipynb') if is_c_notebook(nb)]
+        for f in candidates:
             rel_parts = f.relative_to(s_dir).parts
             if any(part.startswith('.') or part in ('evaluations', '__pycache__', '.hidden', 'codelab', 'recovery') for part in rel_parts):
                 continue
@@ -74,11 +88,11 @@ def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
                 continue
             rel = str(f.relative_to(s_dir))
             try:
-                content = f.read_text(encoding='utf-8', errors='ignore')
+                content = extract_c_from_notebook(f) if f.suffix.lower() == '.ipynb' else f.read_text(encoding='utf-8', errors='ignore')
                 if len(content.strip()) < 80:
                     continue
                 toks = tokenize_c_code(content)
-                if len(toks) >= 30:
+                if len(toks) >= 55:
                     ngrams = get_ngrams(toks, n=4)
                     if ngrams:
                         prev = student_files[s].get(ckey)
@@ -87,7 +101,16 @@ def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
             except Exception:
                 pass
 
-    suspicions = []
+    file_submitters = {}
+    file_tok_lists = {}
+    for fdict in student_files.values():
+        for ckey, info in fdict.items():
+            file_submitters[ckey] = file_submitters.get(ckey, 0) + 1
+            file_tok_lists.setdefault(ckey, []).append(info[2])
+    file_median_tokens = {k: sorted(v)[len(v) // 2] for k, v in file_tok_lists.items()}
+
+    raw_pair_matches = []
+    file_pair_hits = {}
     all_pairs_matrix = []
 
     for s1, s2 in combinations(students, 2):
@@ -97,21 +120,32 @@ def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
         if not common:
             continue
 
-        similar_files = []
-        max_sim = 0.0
+        matched_entries = []
+        max_sim_raw = 0.0
         for ckey in sorted(common):
             sim = jaccard_similarity(files1[ckey][1], files2[ckey][1])
             sim_pct = round(sim * 100, 1)
-            if sim_pct > max_sim:
-                max_sim = sim_pct
+            if sim_pct > max_sim_raw:
+                max_sim_raw = sim_pct
             if sim_pct >= threshold:
                 display_name = files1[ckey][3] if files1[ckey][3] == files2[ckey][3] else f"{files1[ckey][3]} / {files2[ckey][3]}"
-                similar_files.append((display_name, sim_pct))
+                min_toks = min(files1[ckey][2], files2[ckey][2])
+                matched_entries.append((ckey, display_name, sim_pct, min_toks))
+                file_pair_hits.setdefault(ckey, set()).update((s1, s2))
 
-        all_pairs_matrix.append((s1, s2, max_sim))
+        all_pairs_matrix.append((s1, s2, max_sim_raw))
+        if matched_entries:
+            raw_pair_matches.append((s1, s2, len(common), matched_entries))
 
-        if similar_files:
-            severity = "Forte suspicion" if max_sim >= 85.0 or len(similar_files) >= 3 else "Suspicion modérée"
+    boilerplate_keys = get_canonical_boilerplate_keys(file_pair_hits, file_submitters, file_median_tokens=file_median_tokens)
+    suspicions = []
+    for s1, s2, common_cnt, matched_entries in raw_pair_matches:
+        kept = [(dname, sim_pct, min_toks) for ckey, dname, sim_pct, min_toks in matched_entries if ckey not in boilerplate_keys]
+        if kept:
+            similar_files = [(dname, sim_pct) for dname, sim_pct, _ in kept]
+            max_sim = max(sim for _, sim, _ in kept)
+            has_substantial_92 = any(sim >= 92.0 and (toks >= 120 or common_cnt <= 2) for _, sim, toks in kept)
+            severity = "Forte suspicion" if (len(similar_files) >= 2 or has_substantial_92) else "À vérifier (signal faible)"
             suspicions.append({
                 's1': s1,
                 's2': s2,
@@ -124,9 +158,12 @@ def detect_cohort_plagiarism(cohort_dir, threshold=75.0):
     return suspicions, all_pairs_matrix
 
 def apply_similarity_penalties(results, suspicions):
-    """Applique les malus de similarité sur la note avec malus (total) sans toucher à note_technique_brute."""
+    """Applique les malus de similarité (Forte suspicion uniquement) sur la note avec malus (total)."""
+    weights = load_weights(SKILL_DIR)
     sim_by_student = {}
     for susp in suspicions:
+        if "forte" not in str(susp.get('severity', '')).lower():
+            continue
         for sid in (susp['s1'], susp['s2']):
             info = sim_by_student.setdefault(sid, {'files': set(), 'max_sim': 0.0})
             for fname, sim_pct in susp.get('similar_files', []):
@@ -147,38 +184,32 @@ def apply_similarity_penalties(results, suspicions):
             sc["malus_similarite"] = 0.0
             sc["total"] = sc["note_apres_ia"]
             continue
-        nb_files = len(sim_by_student[sid]['files'])
-        max_sim = sim_by_student[sid]['max_sim']
-        malus = 0.0
-        if nb_files >= 3 or max_sim >= 95.0:
-            malus = 2.0
-        elif nb_files >= 2 or max_sim >= 85.0:
-            malus = 1.0
-        elif nb_files >= 1 and max_sim >= 75.0:
-            malus = 0.5
+        plag_info = {
+            "files": list(sim_by_student[sid]['files']),
+            "max_sim": sim_by_student[sid]['max_sim'],
+        }
+        ai_prob = float((r.get("ai_analysis") or r.get("ai_detection") or {}).get("probability_pct", 0.0))
+        tot, malus = apply_combined_penalties(sc["note_technique_brute"], ai_prob, plag_info, weights)
         sc["malus_similarite"] = malus
-        tot = sc["note_apres_ia"] - malus
-        if "note_technique_brute" in sc:
-            tot = max(tot, sc["note_technique_brute"] - 3.5)
-        sc["total"] = max(0.0, round(tot, 1))
+        sc["total"] = tot
 
-def analyze_cohort(session_dir):
+def analyze_cohort(session_dir, exclude_students=None):
     p = Path(session_dir).resolve()
+    excluded = set(exclude_students or ())
     cohort_results = []
     for item in sorted(p.iterdir()):
-        if item.is_dir() and item.name not in ("evaluations", ".hidden", "recovery", "codelab", "__pycache__"):
-            c_files = list(item.glob("*.c")) + list(item.glob("*.h"))
-            if not c_files:
-                def _is_ign(f):
-                    try:
-                        return any(p.startswith(".") or p in ("__pycache__", "evaluations", "codelab") for p in f.relative_to(item).parts[:-1])
-                    except Exception:
-                        return False
-                c_files = [f for f in item.rglob("*.c") if not _is_ign(f)]
-            if c_files:
+        if item.is_dir() and not item.name.startswith(".") and item.name not in ("evaluations", ".hidden", "recovery", "codelab", "__pycache__") and item.name not in excluded:
+            def _is_ign(f):
+                try:
+                    return any(part.startswith(".") or part in ("__pycache__", "evaluations", "codelab") for part in f.relative_to(item).parts[:-1])
+                except Exception:
+                    return False
+            c_files = [f for f in item.rglob("*.c") if not _is_ign(f)] + [f for f in item.rglob("*.h") if not _is_ign(f)]
+            c_nbs = [nb for nb in item.rglob("*.ipynb") if not _is_ign(nb) and is_c_notebook(nb)]
+            if c_files or c_nbs:
                 res = audit_student(str(item))
                 cohort_results.append(res)
-    suspicions, _ = detect_cohort_plagiarism(session_dir)
+    suspicions, _ = detect_cohort_plagiarism(session_dir, exclude_students=excluded)
     apply_similarity_penalties(cohort_results, suspicions)
     return cohort_results
 
@@ -196,12 +227,14 @@ def ensure_results_radars(results):
     except Exception:
         pass
 
-def export_csv(results, csv_path, cohort_dir=None):
+def export_csv(results, csv_path, cohort_dir=None, exclude_students=None):
     os.makedirs(os.path.dirname(os.path.abspath(csv_path)), exist_ok=True)
-    ensure_results_radars(results)
-    suspicions, _ = detect_cohort_plagiarism(cohort_dir) if cohort_dir else ([], [])
+    result_ids = {r.get("student_id", "") for r in results}
+    suspicions, _ = detect_cohort_plagiarism(cohort_dir, exclude_students=exclude_students) if cohort_dir else ([], [])
+    suspicions = [s for s in suspicions if s['s1'] in result_ids and s['s2'] in result_ids]
     if suspicions:
         apply_similarity_penalties(results, suspicions)
+    ensure_results_radars(results)
     sim_map = {}
     for susp in suspicions:
         s_desc = f"{susp['s2']} ({susp['max_sim']}%)"
@@ -220,11 +253,13 @@ def export_csv(results, csv_path, cohort_dir=None):
             login = r.get("student_id", "")
             sim_str = " | ".join(sim_map.get(login, [])) if login in sim_map else "Aucune"
             act = r.get("activity_analysis") or {}
-            s_auth_col = f"{act.get('s_auth', '')}%" if act.get("active") else ""
-            i_nav_col = f"{act.get('i_nav', '')}%" if act.get("active") else ""
-            comp_col = act.get("compilations", {}).get("total", "") if act.get("active") else ""
-            exec_col = act.get("executions", {}).get("total", "") if act.get("active") else ""
-            burst_col = (act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0)) if act.get("active") else ""
+            has_rich = bool(act.get("has_rich_telemetry"))
+            s_auth_val = act.get("s_auth")
+            s_auth_col = f"{s_auth_val}%" if (has_rich and s_auth_val is not None) else ""
+            i_nav_col = f"{act.get('i_nav', '')}%" if has_rich else ""
+            comp_col = act.get("compilations", {}).get("total", "") if has_rich else ""
+            exec_col = act.get("executions", {}).get("total", "") if has_rich else ""
+            burst_col = (act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0)) if has_rich else ""
             rad = r.get("radars") or {}
             prof_col = rad.get("profil_display", rad.get("profil_dominant", ""))
             writer.writerow([
@@ -379,7 +414,7 @@ def build_cohort_clusters(results, suspicious_logins):
     double_profils = [r for r in results if (r.get("radars") or {}).get("is_double_profil")]
     if double_profils:
         lines.append("## 🧬 Analyse des Profils Hybrides & Doubles-Profils Remarquables\n")
-        lines.append("> 💡 **Interprétation des Doubles-Profils** : Un double-profil est automatiquement identifié lorsque deux dimensions issues d'axes orthogonaux présentent conjointement une affinité élevée (scores $\\ge 11.0 / 20$ et écart $\\le 3.5$ pts). Ces hybridations permettent d'affiner le diagnostic pédagogique au-delà des archétypes simples.\n")
+        lines.append("> 💡 **Interprétation des Doubles-Profils** : Un double-profil est automatiquement identifié lorsque deux dimensions issues d'axes orthogonaux présentent conjointement une affinité élevée (scores >= 11.0 / 20 et écart <= 3.5 pts). Ces hybridations permettent d'affiner le diagnostic pédagogique au-delà des archétypes simples.\n")
         lines.append("| Étudiant | Login | Double-Profil Détecté | Surnom Pédagogique | Diagnostic Didactique & Posture Conseillée |")
         lines.append("| :--- | :---: | :--- | :--- | :--- |")
         for dp in double_profils:
@@ -439,16 +474,22 @@ def resolve_cohort_name(cohort_dir=None, output_md=None, session_id=None):
 
     return "Session"
 
-def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, session_id=None, **kwargs):
+def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, session_id=None, exclude_students=None, **kwargs):
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
-    ensure_results_radars(results)
-    suspicions, _ = detect_cohort_plagiarism(cohort_dir) if cohort_dir else ([], [])
+    result_ids = {r.get("student_id", "") for r in results}
+    suspicions, _ = detect_cohort_plagiarism(cohort_dir, exclude_students=exclude_students) if cohort_dir else ([], [])
+    suspicions = [s for s in suspicions if s['s1'] in result_ids and s['s2'] in result_ids]
     if suspicions:
         apply_similarity_penalties(results, suspicions)
+    ensure_results_radars(results)
     suspicious_logins = set()
+    strong_suspicious_logins = set()
     for susp in suspicions:
         suspicious_logins.add(susp['s1'])
         suspicious_logins.add(susp['s2'])
+        if "forte" in str(susp.get('severity', '')).lower():
+            strong_suspicious_logins.add(susp['s1'])
+            strong_suspicious_logins.add(susp['s2'])
 
     cohort_name = resolve_cohort_name(cohort_dir, out_path, session_id or kwargs.get("session"))
 
@@ -494,6 +535,11 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
     md.append(f"**Algorithme d'évaluation** : `eval-c-sample` | Analyse IA : {ia_status} | Barème : 6 (Compilation) + 8 (Conception) + 4 (Style) + 2 (Validation) = 20 pts\n")
     md.append("---")
     md.append("")
+    from skills_common import build_cohort_integrity_red_banner
+    red_banner = build_cohort_integrity_red_banner(suspicions, results)
+    if red_banner:
+        md.append(red_banner)
+        md.append("")
 
     if suspicions:
         md.append("## Analyse de Similarités & Copier-Collé Inter-Étudiants")
@@ -502,12 +548,25 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
         md.append("| :--- | :--- | :--- | :---: | :--- |")
         for susp in suspicions:
             f_str = ", ".join(f"`{f}` ({sim}%)" for f, sim in susp['similar_files'])
-            md.append(f"| `{susp['s1']}` | `{susp['s2']}` | {f_str} | **{susp['max_sim']}%** | {susp['severity']} |")
+            sev_txt = susp['severity']
+            sev_badge = f'<span style="color:#dc2626; font-weight:bold;">🚨 {sev_txt}</span>' if "forte" in sev_txt.lower() else f'<span style="color:#d97706; font-weight:bold;">⚠️ {sev_txt}</span>'
+            md.append(f"| `{susp['s1']}` | `{susp['s2']}` | {f_str} | **{susp['max_sim']}%** | {sev_badge} |")
         md.append("")
         md.append("---")
         md.append("")
 
-    md.append("| Étudiant / Dossier | Compilation (/6) | Architecture (/8) | Style (/4) | Tests (/2) | Note sans malus (/20) | Note avec malus (/20) | Profil Didactique | Indice IA | Alertes |")
+    from skills_common import compute_indicative_malus, format_indicative_malus_badge
+    weights_s = load_weights(SKILL_DIR)
+    strong_plag_by_id = {}
+    for susp in suspicions:
+        if "forte" in str(susp.get("severity", "")).lower():
+            for sid in (susp["s1"], susp["s2"]):
+                info = strong_plag_by_id.setdefault(sid, {"files": [], "max_sim": 0.0, "severity": susp["severity"]})
+                info["files"].extend(susp.get("similar_files", []))
+                if susp["max_sim"] > info["max_sim"]:
+                    info["max_sim"] = susp["max_sim"]
+
+    md.append("| Étudiant / Dossier | Compilation (/6) | Architecture (/8) | Style (/4) | Tests (/2) | Note brute (/20) | Malus | Profil Didactique | Indice IA | Alertes |")
     md.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :---: | :--- |")
     for r in results:
         sc = r.get("scores", {})
@@ -516,19 +575,23 @@ def export_summary_markdown(results, out_path, cohort_dir=None, use_ai=None, ses
         rad = r.get("radars") or {}
         prof_col = rad.get("profil_display", rad.get("profil_dominant", "—"))
         alerts = []
-        if login in suspicious_logins:
-            alerts.append("Similarite forte")
+        if login in strong_suspicious_logins:
+            alerts.append('<span style="color:#dc2626; font-weight:bold;">🚨 Similarité forte</span>')
+        elif login in suspicious_logins:
+            alerts.append('<span style="color:#d97706; font-weight:bold;">⚠️ À vérifier</span>')
         ai_data = r.get('ai_detection', {})
         ai_prob = ai_data.get('ai_probability', 0.0)
         ai_level = f"{ai_prob}% IA"
         if ai_prob >= 60.0:
-            alerts.append("IA suspectee")
+            alerts.append('<span style="color:#dc2626; font-weight:bold;">🤖 Alerte IA</span>')
         elif ai_prob >= 30.0:
-            alerts.append("Marqueurs IA")
+            alerts.append('<span style="color:#d97706; font-weight:bold;">🤖 Marqueurs IA</span>')
         alert_str = " | ".join(alerts) if alerts else "Aucune"
-        md.append(f"| `{login}` | {sc.get('syntax', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | {note_sans_malus:.1f} | **{sc.get('total', 0):.1f}** | {prof_col} | {ai_level} | {alert_str} |")
+        malus_ind = compute_indicative_malus(ai_prob, strong_plag_by_id.get(login), weights_s)
+        malus_col = format_indicative_malus_badge(malus_ind)
+        md.append(f"| `{login}` | {sc.get('syntax', 0):.1f} | {sc.get('architecture', 0):.1f} | {sc.get('style', 0):.1f} | {sc.get('tests', 0):.1f} | **{note_sans_malus:.1f}** | {malus_col} | {prof_col} | {ai_level} | {alert_str} |")
     md.append("")
-    md.append(build_cohort_clusters(results, suspicious_logins))
+    md.append(build_cohort_clusters(results, strong_suspicious_logins))
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md))
 

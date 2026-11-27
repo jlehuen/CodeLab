@@ -16,133 +16,247 @@ import sys
 import json
 import math
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
+
+CODE_DROP_EXTENSIONS = {
+    ".c", ".h", ".cpp", ".cc", ".cxx", ".hpp",
+    ".py", ".hs", ".lhs", ".java", ".ipynb",
+    ".js", ".ts", ".sh", ".rs", ".ml", ".mli", ".sql",
+}
+
+SESSION_GAP_SEC = 1800.0
+MAX_FOCUS_AWAY_SEC = 1800.0
+PASTE_BURST_DEDUP_SEC = 30.0
+
+
+def is_code_drop_file(fname: str) -> bool:
+    """Retourne True uniquement pour les fichiers de code source / carnets (exclut .csv, .txt, etc.)."""
+    if not fname:
+        return False
+    return Path(fname).suffix.lower() in CODE_DROP_EXTENSIONS
+
+
+def _compute_external_injected_chars(events_slice: list) -> int:
+    """
+    Calcule le volume de caractères injectés d'origine externe sans double comptage
+    entre PASTE externe et BURST_INSERT/BURST_NEW_FILE survenus dans les 30s sur le même fichier,
+    tout en additionnant les événements indépendants (ex: TP1 puis TP2).
+    """
+    external_total = 0
+    recent_ext_pastes: dict[str, list[tuple[datetime | None, int]]] = {}
+
+    for dt, ev in events_slice:
+        ev_type = ev.get("type", "")
+        if ev_type == "PASTE":
+            if bool(ev.get("internal", False)):
+                continue
+            chars = int(ev.get("chars", 0) or 0)
+            fname = Path(str(ev.get("file", "unknown"))).name
+            external_total += chars
+            recent_ext_pastes.setdefault(fname, []).append((dt, chars))
+        elif ev_type == "EDIT":
+            al = ev.get("alert")
+            if al in ("BURST_INSERT", "BURST_NEW_FILE"):
+                ins = int(ev.get("lines_added", 0) or 0)
+                burst_chars = ins * 30
+                fname = Path(str(ev.get("file", "unknown"))).name
+                matched_paste_chars = 0
+                pastes = recent_ext_pastes.get(fname, [])
+                if pastes:
+                    # Chercher un collage externe récent (<= 30s) sur le même fichier
+                    best_idx = None
+                    for idx in range(len(pastes) - 1, -1, -1):
+                        p_dt, p_chars = pastes[idx]
+                        if dt and p_dt:
+                            delta = (dt - p_dt).total_seconds()
+                            if 0.0 <= delta <= PASTE_BURST_DEDUP_SEC:
+                                best_idx = idx
+                                matched_paste_chars = p_chars
+                                break
+                        elif dt is None and p_dt is None:
+                            best_idx = idx
+                            matched_paste_chars = p_chars
+                            break
+                    if best_idx is not None:
+                        pastes.pop(best_idx)
+                external_total += max(0, burst_chars - matched_paste_chars)
+
+    return external_total
+
+
+def _split_active_sessions(parsed_events: list, gap_sec: float = SESSION_GAP_SEC) -> list:
+    """Découpe les événements horodatés en segments de séances actives (coupure sur SESSION ou gap > 30 min)."""
+    segments = []
+    current = []
+    prev_dt = None
+
+    for dt, ev in parsed_events:
+        if dt is None:
+            continue
+        ev_type = ev.get("type", "")
+        ev_status = ev.get("status", "")
+
+        if prev_dt is not None and (dt - prev_dt).total_seconds() > gap_sec:
+            if current:
+                segments.append(current)
+                current = []
+        elif ev_type == "SESSION" and ev_status == "CONNECTED" and current:
+            segments.append(current)
+            current = []
+
+        current.append((dt, ev))
+        prev_dt = dt
+
+        if ev_type == "SESSION" and ev_status == "DISCONNECTED":
+            segments.append(current)
+            current = []
+            prev_dt = None
+
+    if current:
+        segments.append(current)
+    return segments
+
 
 def compute_sliding_windows(parsed_events: list, window_sec: int = 900) -> list:
     """
-    Découpe les événements horodatés en tranches temporelles (fenêtres de window_sec, par défaut 15 min).
-    Pour chaque fenêtre, calcule l'authenticité locale, les tests et le diagnostic de phase.
+    Découpe les événements horodatés en tranches temporelles intra-séance (fenêtres de window_sec, par défaut 15 min).
+    Évite les tranches nocturnes vides en cas de séances espacées de plusieurs jours.
     """
-    valid_dts = [pe[0] for pe in parsed_events if pe[0]]
-    if not valid_dts:
+    segments = _split_active_sessions(parsed_events)
+    if not segments:
         return []
-        
-    t_start = valid_dts[0]
-    t_end = valid_dts[-1]
-    total_sec = max(1.0, (t_end - t_start).total_seconds())
-    
-    # Nombre de tranches de window_sec
-    num_windows = max(1, math.ceil(total_sec / float(window_sec)))
+
+    all_dates = {dt.date() for seg in segments for dt, _ in seg}
+    multi_day = len(all_dates) > 1
+    time_fmt = "%d/%m %H:%M" if multi_day else "%H:%M"
+
     windows = []
-    
-    from datetime import timedelta
-    for w_idx in range(num_windows):
-        w_t0 = t_start + timedelta(seconds=w_idx * window_sec)
-        w_t1 = min(t_end, w_t0 + timedelta(seconds=window_sec))
-        dur_sec = max(1.0, (w_t1 - w_t0).total_seconds())
-        
-        # Filtre des événements dans la tranche
-        win_evs = [pe for pe in parsed_events if pe[0] and (w_t0 <= pe[0] <= w_t1)]
-        
-        keys = 0
-        backspaces = 0
-        paste_chars = 0
-        paste_lines = 0
-        paste_internal_chars = 0
-        paste_internal_lines = 0
-        burst_lines = 0
-        burst_count = 0
-        code_modifs = 0
-        away_sec = 0.0
-        compiles = 0
-        execs = 0
-        errors = 0
-        drops = 0
-        
-        for dt, ev in win_evs:
-            ev_type = ev.get("type", "")
-            if ev_type == "TYPING":
-                keys += ev.get("typed_chars", 0)
-                backspaces += ev.get("backspaces", 0)
-            elif ev_type == "PASTE":
-                is_internal = bool(ev.get("internal", False))
-                c = ev.get("chars", 0)
-                l = ev.get("lines", 0)
-                if is_internal:
-                    paste_internal_chars += c
-                    paste_internal_lines += l
-                else:
-                    paste_chars += c
-                    paste_lines += l
-            elif ev_type == "EDIT":
-                ins = ev.get("lines_added", 0)
-                rem = ev.get("lines_removed", 0)
-                code_modifs += (ins + rem)
-                al = ev.get("alert")
-                if al in ("BURST_INSERT", "BURST_NEW_FILE"):
-                    burst_lines += ins
-                    burst_count += 1
-            elif ev_type == "FOCUS":
-                if ev.get("status") == "GAINED":
-                    dur = ev.get("duration_sec")
-                    if dur:
-                        away_sec += float(dur)
-            elif ev_type == "COMPILE":
-                compiles += 1
-                if ev.get("status") == "ERROR":
-                    errors += 1
-            elif ev_type == "EXECUTE":
-                execs += 1
-                if ev.get("status") == "ERROR":
-                    errors += 1
-            elif ev_type == "FILE_DROP":
-                drops += 1
-                
-        denom = keys + paste_chars + (burst_lines * 30)
-        s_auth_local = round((keys / float(denom)) * 100.0, 1) if denom > 0 else (0.0 if burst_lines > 0 else None)
-        inav_local = min(100.0, round((away_sec / dur_sec) * 100.0, 1))
-        
-        # Diagnostic de la phase
-        if drops > 0:
-            diag = "📥 Dépôt de fichier externe"
-        elif burst_count > 0 or (s_auth_local is not None and s_auth_local < 40.0):
-            diag = "🚨 Décrochage IA / Injection"
-        elif errors >= 3 and code_modifs < 10:
-            diag = "⚠️ Acharnement sur erreurs"
-        elif inav_local > 60.0:
-            diag = "🌐 Consultation externe intensive"
-        elif keys >= 80 and (s_auth_local is None or s_auth_local >= 80.0):
-            diag = "✅ Saisie autonome active"
-        elif (compiles + execs) >= 2 and errors <= 1:
-            diag = "⚙️ Validation & Tests itératifs"
-        elif keys < 30 and paste_chars == 0 and burst_lines == 0:
-            diag = "📖 Réflexion / Lecture de l'énoncé"
-        else:
-            diag = "🟡 Travail mixte"
-            
-        windows.append({
-            "index": w_idx + 1,
-            "t0_str": w_t0.strftime("%H:%M"),
-            "t1_str": w_t1.strftime("%H:%M"),
-            "duration_min": round(dur_sec / 60.0, 1),
-            "keys": keys,
-            "backspaces": backspaces,
-            "paste_chars": paste_chars,
-            "paste_lines": paste_lines,
-            "paste_internal_chars": paste_internal_chars,
-            "paste_internal_lines": paste_internal_lines,
-            "burst_lines": burst_lines,
-            "burst_count": burst_count,
-            "s_auth": s_auth_local,
-            "away_sec": round(away_sec, 1),
-            "inav": inav_local,
-            "compiles": compiles,
-            "execs": execs,
-            "errors": errors,
-            "drops": drops,
-            "diagnostic": diag
-        })
-        
+    w_global_idx = 0
+
+    for seg in segments:
+        t_start = seg[0][0]
+        t_end = seg[-1][0]
+        total_sec = max(1.0, (t_end - t_start).total_seconds())
+        num_windows = max(1, math.ceil(total_sec / float(window_sec)))
+
+        for w_idx in range(num_windows):
+            w_t0 = t_start + timedelta(seconds=w_idx * window_sec)
+            w_t1 = min(t_end, w_t0 + timedelta(seconds=window_sec))
+            dur_sec = max(1.0, (w_t1 - w_t0).total_seconds())
+
+            # Filtre des événements dans la tranche (borne droite inclusive sur la dernière tranche)
+            if w_idx == num_windows - 1:
+                win_evs = [pe for pe in seg if w_t0 <= pe[0] <= w_t1]
+            else:
+                win_evs = [pe for pe in seg if w_t0 <= pe[0] < w_t1]
+
+            if not win_evs and num_windows > 1:
+                continue
+
+            keys = 0
+            backspaces = 0
+            paste_chars = 0
+            paste_lines = 0
+            paste_internal_chars = 0
+            paste_internal_lines = 0
+            burst_lines = 0
+            burst_count = 0
+            code_modifs = 0
+            away_sec = 0.0
+            compiles = 0
+            execs = 0
+            errors = 0
+            drops = 0
+
+            for dt, ev in win_evs:
+                ev_type = ev.get("type", "")
+                if ev_type == "TYPING":
+                    keys += ev.get("typed_chars", 0)
+                    backspaces += ev.get("backspaces", 0)
+                elif ev_type == "PASTE":
+                    is_internal = bool(ev.get("internal", False))
+                    c = ev.get("chars", 0)
+                    l = ev.get("lines", 0)
+                    if is_internal:
+                        paste_internal_chars += c
+                        paste_internal_lines += l
+                    else:
+                        paste_chars += c
+                        paste_lines += l
+                elif ev_type == "EDIT":
+                    ins = ev.get("lines_added", 0)
+                    rem = ev.get("lines_removed", 0)
+                    code_modifs += (ins + rem)
+                    al = ev.get("alert")
+                    if al in ("BURST_INSERT", "BURST_NEW_FILE"):
+                        burst_lines += ins
+                        burst_count += 1
+                elif ev_type == "FOCUS":
+                    if ev.get("status") == "GAINED":
+                        dur = ev.get("duration_sec")
+                        if dur:
+                            away_sec += min(MAX_FOCUS_AWAY_SEC, max(0.0, float(dur)))
+                elif ev_type == "COMPILE":
+                    compiles += 1
+                    if ev.get("status") == "ERROR":
+                        errors += 1
+                elif ev_type == "EXECUTE":
+                    st_exec = ev.get("status", "")
+                    if st_exec in ("DONE", "ERROR", "HALTED"):
+                        execs += 1
+                        if st_exec == "ERROR":
+                            errors += 1
+                elif ev_type == "FILE_DROP":
+                    if is_code_drop_file(ev.get("file", "")):
+                        drops += 1
+
+            external_chars = _compute_external_injected_chars(win_evs)
+            denom = keys + external_chars
+            s_auth_local = round((keys / float(denom)) * 100.0, 1) if denom > 0 else (0.0 if burst_lines > 0 else None)
+            inav_local = min(100.0, round((away_sec / dur_sec) * 100.0, 1))
+
+            # Diagnostic de la phase
+            if drops > 0:
+                diag = "📥 Dépôt de fichier externe"
+            elif burst_count > 0 or (s_auth_local is not None and s_auth_local < 40.0):
+                diag = "🚨 Décrochage IA / Injection"
+            elif errors >= 3 and code_modifs < 10:
+                diag = "⚠️ Acharnement sur erreurs"
+            elif inav_local > 60.0:
+                diag = "🌐 Consultation externe intensive"
+            elif keys >= 80 and (s_auth_local is None or s_auth_local >= 80.0):
+                diag = "✅ Saisie autonome active"
+            elif (compiles + execs) >= 2 and errors <= 1:
+                diag = "⚙️ Validation & Tests itératifs"
+            elif keys < 30 and paste_chars == 0 and burst_lines == 0:
+                diag = "📖 Réflexion / Lecture de l'énoncé"
+            else:
+                diag = "🟡 Travail mixte"
+
+            w_global_idx += 1
+            windows.append({
+                "index": w_global_idx,
+                "t0_str": w_t0.strftime(time_fmt),
+                "t1_str": w_t1.strftime(time_fmt),
+                "duration_min": round(dur_sec / 60.0, 1),
+                "keys": keys,
+                "backspaces": backspaces,
+                "paste_chars": paste_chars,
+                "paste_lines": paste_lines,
+                "paste_internal_chars": paste_internal_chars,
+                "paste_internal_lines": paste_internal_lines,
+                "burst_lines": burst_lines,
+                "burst_count": burst_count,
+                "s_auth": s_auth_local,
+                "away_sec": round(away_sec, 1),
+                "inav": inav_local,
+                "compiles": compiles,
+                "execs": execs,
+                "errors": errors,
+                "drops": drops,
+                "diagnostic": diag
+            })
+
     return windows
 
 def parse_iso_timestamp(ts_str: str) -> datetime | None:
@@ -173,12 +287,14 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     # Structure de résultats par défaut (sans trace)
     res = {
         "active": False,
+        "has_rich_telemetry": False,
         "log_file": str(log_file),
         "events_count": 0,
         "first_event": None,
         "last_event": None,
         "span_duration_sec": 0.0,
         "span_duration_min": 0.0,
+        "active_duration_min": 0.0,
         "sessions_count": 0,
         
         # 1. Authenticité & Saisie
@@ -191,7 +307,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         "burst_insert_lines": 0,
         "burst_new_file_count": 0,
         "burst_new_file_lines": 0,
-        "s_auth": 100.0,
+        "s_auth": None,
         "s_auth_level": "Non mesuré (pas de trace)",
         
         # 2. Navette Externe & Focus
@@ -233,6 +349,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         # 5. Événements secondaires
         "file_drops": [],
         "file_drop_count": 0,
+        "code_file_drop_count": 0,
         "idle_max_sec": 0.0,
         "file_ops": [],
         "help_requests": 0,
@@ -319,10 +436,10 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     pending_errors = {}
     ttf_values = []
     
-    # Pour le calcul d'acharnement I_thrash
-    # Séquences d'erreurs consécutives sans edit significatif
+    # Pour le calcul d'acharnement I_thrash (monotone : chaque erreur en rafale au rang >= 3)
     consecutive_errors = 0
     thrash_episodes = 0
+    thrash_error_runs = 0
     
     # Pour les quadrants de temps
     q_edit = 0.0
@@ -332,18 +449,33 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     idle_max_sec = 0.0
 
     alerts = []
+    client_telemetry_events = 0
+    prev_dt_loop = None
 
     for i, (dt, ev) in enumerate(parsed_events):
         ev_type = ev.get("type", "")
+        if ev_type in ("TYPING", "PASTE", "FOCUS", "COMPILE", "EXECUTE", "FILE_DROP"):
+            client_telemetry_events += 1
+
+        # Coupure de séance si écart > 30 min : purger pending_errors / consecutive_errors / focus lost
+        if dt and prev_dt_loop and (dt - prev_dt_loop).total_seconds() > SESSION_GAP_SEC:
+            pending_errors.clear()
+            consecutive_errors = 0
+            last_focus_lost_dt = None
+        if dt:
+            prev_dt_loop = dt
         
         # Calcul du delta temps avec l'événement suivant pour les quadrants
+        next_ev = parsed_events[i + 1][1] if (i + 1 < len(parsed_events)) else None
         next_dt = parsed_events[i + 1][0] if (i + 1 < len(parsed_events)) else None
         dt_step = 0.0
         if dt and next_dt:
             raw_gap = max(0.0, (next_dt - dt).total_seconds())
             dt_step = min(300.0, raw_gap) # borné à 5 min
-            # Plus long intervalle d'inactivité au sein d'une même séance (hors déconnexion)
-            if not (ev_type == "SESSION" and ev.get("status") == "DISCONNECTED"):
+            # Plus long intervalle d'inactivité au sein d'une même séance (aligné sur SESSION_GAP_SEC = 1800s)
+            is_disconnect = (ev_type == "SESSION" and ev.get("status") == "DISCONNECTED")
+            next_is_connect = (next_ev is not None and next_ev.get("type") == "SESSION" and next_ev.get("status") == "CONNECTED")
+            if not is_disconnect and not next_is_connect and raw_gap <= SESSION_GAP_SEC:
                 if raw_gap > idle_max_sec:
                     idle_max_sec = raw_gap
 
@@ -382,15 +514,17 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
                 consecutive_errors = 0
                 if fname in pending_errors and dt:
                     ttf = (dt - pending_errors[fname]).total_seconds()
-                    if ttf > 0:
+                    if 0 < ttf <= SESSION_GAP_SEC:
                         ttf_values.append(ttf)
                     del pending_errors[fname]
             elif status == "ERROR":
                 compile_err += 1
                 consecutive_errors += 1
-                if consecutive_errors >= 3:
+                if consecutive_errors == 3:
                     thrash_episodes += 1
                     alerts.append(f"⚠️ **Acharnement détecté** : {consecutive_errors} erreurs répétées sans modification de code substantielle (`{fname}`)")
+                if consecutive_errors >= 3:
+                    thrash_error_runs += 1
                 if fname not in pending_errors and dt:
                     pending_errors[fname] = dt
                     
@@ -407,15 +541,17 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
                 consecutive_errors = 0
                 if fname in pending_errors and dt:
                     ttf = (dt - pending_errors[fname]).total_seconds()
-                    if ttf > 0:
+                    if 0 < ttf <= SESSION_GAP_SEC:
                         ttf_values.append(ttf)
                     del pending_errors[fname]
             elif status == "ERROR":
                 exec_err += 1
                 consecutive_errors += 1
-                if consecutive_errors >= 3:
+                if consecutive_errors == 3:
                     thrash_episodes += 1
                     alerts.append(f"⚠️ **Acharnement sur exécution** : {consecutive_errors} plantages successifs sans modification de code (`{fname}`)")
+                if consecutive_errors >= 3:
+                    thrash_error_runs += 1
                 if fname not in pending_errors and dt:
                     pending_errors[fname] = dt
             elif status == "HALTED":
@@ -435,10 +571,11 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
             elif st == "GAINED":
                 dur = ev.get("duration_sec")
                 if dur is not None:
-                    total_away_sec += float(dur)
-                    q_away += float(dur)
+                    d_clamped = min(MAX_FOCUS_AWAY_SEC, max(0.0, float(dur)))
+                    total_away_sec += d_clamped
+                    q_away += d_clamped
                 elif last_focus_lost_dt and dt:
-                    away_diff = max(0.0, (dt - last_focus_lost_dt).total_seconds())
+                    away_diff = min(MAX_FOCUS_AWAY_SEC, max(0.0, (dt - last_focus_lost_dt).total_seconds()))
                     total_away_sec += away_diff
                     q_away += away_diff
                 last_focus_lost_dt = None
@@ -460,19 +597,25 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
                 if lines >= 15 or chars >= 400:
                     alerts.append(f"📋 **Collage volumineux** : {lines} lignes ({chars} caractères) collées dans `{fname}`")
             q_edit += min(dt_step, 30.0)
+            if dt_step > 30.0:
+                q_read += (dt_step - 30.0)
 
         # 6. TYPING
         elif ev_type == "TYPING":
             typing_keys += ev.get("typed_chars", 0)
             typing_backspaces += ev.get("backspaces", 0)
             q_edit += min(dt_step, 30.0)
+            if dt_step > 30.0:
+                q_read += (dt_step - 30.0)
 
         # 7. FILE_DROP
         elif ev_type == "FILE_DROP":
             fname = ev.get("file", "unknown")
             size = ev.get("size_bytes", 0)
-            file_drops.append({"file": fname, "size": size, "time": dt.strftime("%H:%M:%S") if dt else ""})
-            alerts.append(f"📥 **FILE_DROP** : Fichier externe `{fname}` ({size} octets) déposé par glisser-déposer dans l'IDE")
+            is_code = is_code_drop_file(fname)
+            file_drops.append({"file": fname, "size": size, "time": dt.strftime("%H:%M:%S") if dt else "", "is_code": is_code})
+            if is_code:
+                alerts.append(f"📥 **FILE_DROP** : Fichier externe `{fname}` ({size} octets) déposé par glisser-déposer dans l'IDE")
 
         # 8. FILE_OP
         elif ev_type == "FILE_OP":
@@ -486,67 +629,87 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
             st = ev.get("status", "")
             if st == "REQUESTED":
                 help_requests += 1
+            elif st == "CANCELLED":
+                help_requests = max(0, help_requests - 1)
             elif st == "RESOLVED":
                 help_resolved += 1
 
         # 10. SESSION
         elif ev_type == "SESSION":
             st = ev.get("status", "")
+            if st == "DISCONNECTED" and last_focus_lost_dt and dt:
+                tail_away = min(MAX_FOCUS_AWAY_SEC, max(0.0, (dt - last_focus_lost_dt).total_seconds()))
+                total_away_sec += tail_away
+                q_away += tail_away
+            last_focus_lost_dt = None  # Ne jamais étendre un FOCUS LOST à travers une déconnexion/reconnexion
+            pending_errors.clear()     # Ne jamais propager un TTF à travers une frontière de séance
+            consecutive_errors = 0
             if st == "CONNECTED":
                 sessions_count += 1
 
         # 11. VIEW
         elif ev_type == "VIEW":
-            q_read += min(dt_step, 60.0)
+            q_read += dt_step
 
-    # Clôture du calcul de focus lost s'il est resté ouvert
+    # Clôture du calcul de focus lost s'il est resté ouvert en fin de séance (borné à 30 min max)
     if last_focus_lost_dt and valid_dts:
-        tail_away = max(0.0, (valid_dts[-1] - last_focus_lost_dt).total_seconds())
+        tail_away = min(MAX_FOCUS_AWAY_SEC, max(0.0, (valid_dts[-1] - last_focus_lost_dt).total_seconds()))
         total_away_sec += tail_away
         q_away += tail_away
 
+    has_rich_telemetry = client_telemetry_events > 0
+    res["has_rich_telemetry"] = has_rich_telemetry
+
     # Dérivation des indicateurs mathématiques
     
-    # A. Score d'Authenticité S_auth
+    # A. Score d'Authenticité S_auth (déduplication locale PASTE vs BURST sur même fichier <= 30s)
     total_burst_lines = burst_insert_lines + burst_new_file_lines
-    denom_auth = typing_keys + paste_chars + (total_burst_lines * 30)
-    if denom_auth > 0:
+    external_injected_chars = _compute_external_injected_chars(parsed_events)
+    denom_auth = typing_keys + external_injected_chars
+    if not has_rich_telemetry:
+        s_auth = None
+        s_auth_level = "Non mesuré (télémétrie client absente)"
+    elif denom_auth > 0:
         s_auth = (typing_keys / float(denom_auth)) * 100.0
+        s_auth = max(0.0, min(100.0, round(s_auth, 1)))
+        if s_auth >= 85.0:
+            s_auth_level = f"Authentique ({s_auth}% saisie clavier)"
+        elif s_auth >= 50.0:
+            s_auth_level = f"Mixte ({s_auth}% saisie, collages partiels)"
+        else:
+            s_auth_level = f"🚨 Suspect ({s_auth}% saisie - Injection/Collages dominants)"
     else:
-        # Aucun caractère saisi ni collé
-        s_auth = 0.0 if total_burst_lines > 0 else 100.0
-    s_auth = max(0.0, min(100.0, round(s_auth, 1)))
+        # Télémétrie client présente (ex: FOCUS/COMPILE) mais aucune frappe ni collage ni burst
+        s_auth = None
+        s_auth_level = "Non mesuré (aucune saisie ni collage)"
 
-    if s_auth >= 85.0:
-        s_auth_level = f"Authentique ({s_auth}% saisie clavier)"
-    elif s_auth >= 50.0:
-        s_auth_level = f"Mixte ({s_auth}% saisie, collages partiels)"
-    else:
-        s_auth_level = f"🚨 Suspect ({s_auth}% saisie - Injection/Collages dominants)"
-
-    # B. Taux de Navette Externe I_nav
-    total_time_ref = max(res["span_duration_sec"], total_away_sec, 1.0)
+    # B. Taux de Navette Externe I_nav (rapporté au temps actif cumulé des séances, pas à l'écart calendaire multi-jours)
+    active_session_time = q_edit + q_read + q_test + q_away
+    total_time_ref = max(active_session_time, total_away_sec, 1.0)
     i_nav = (total_away_sec / float(total_time_ref)) * 100.0
     i_nav = max(0.0, min(100.0, round(i_nav, 1)))
 
-    if i_nav <= 25.0:
+    if not has_rich_telemetry:
+        i_nav_level = "Non mesuré (télémétrie client absente)"
+    elif i_nav <= 25.0:
         i_nav_level = f"Forte concentration locale ({i_nav}% hors IDE, {focus_lost_count} sorties)"
     elif i_nav <= 55.0:
         i_nav_level = f"Consultation normale ({i_nav}% hors IDE, {focus_lost_count} sorties)"
     else:
         i_nav_level = f"⚠️ Navette externe intensive ({i_nav}% hors IDE, {focus_lost_count} sorties)"
 
-    # C. Indice d'Acharnement I_thrash
+    # C. Indice d'Acharnement I_thrash (monotone dans [0, 1] : proportion d'erreurs en rafale >= 3)
     total_compiles = compile_ok + compile_err
     total_execs = exec_done + exec_err + exec_halted
     total_runs = total_compiles + total_execs
-    i_thrash = round(thrash_episodes / float(max(1, total_runs)), 2)
+    i_thrash = round(thrash_error_runs / float(max(1, total_runs)), 2)
 
     # D. Time-To-Fix moyen (TTF)
     ttf_avg = round(sum(ttf_values) / len(ttf_values), 1) if ttf_values else None
 
     # E. Répartition des Quadrants de Temps
     sum_q = q_edit + q_read + q_test + q_away
+    active_duration_min = round(sum_q / 60.0, 1)
     if sum_q > 0:
         p_edit = round((q_edit / sum_q) * 100.0, 1)
         p_read = round((q_read / sum_q) * 100.0, 1)
@@ -556,6 +719,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         p_edit = p_read = p_test = p_away = 25.0
 
     # Sauvegarde dans res
+    res["active_duration_min"] = active_duration_min
     res["typing_keys"] = typing_keys
     res["typing_backspaces"] = typing_backspaces
     res["paste_chars"] = paste_chars
@@ -602,8 +766,10 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         "q_away_pct": p_away,
     }
 
+    code_file_drop_count = sum(1 for d in file_drops if d.get("is_code", True))
     res["file_drops"] = file_drops
     res["file_drop_count"] = len(file_drops)
+    res["code_file_drop_count"] = code_file_drop_count
     res["idle_max_sec"] = round(idle_max_sec, 1)
     res["file_ops"] = file_ops
     res["help_requests"] = help_requests
@@ -611,19 +777,31 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
     res["sessions_count"] = max(sessions_count, 1)
     res["alerts"] = alerts
 
-    # Calcul des fenêtres glissantes (tranches de 15 minutes)
-    sliding_windows = compute_sliding_windows(parsed_events, window_sec=900)
+    # Calcul des fenêtres glissantes (tranches de 15 minutes intra-séance) uniquement si télémétrie client présente
+    sliding_windows = compute_sliding_windows(parsed_events, window_sec=900) if has_rich_telemetry else []
     res["sliding_windows"] = sliding_windows
 
     # Construction du résumé court console
-    status_icon = "🚨" if (s_auth < 50.0 or burst_insert_count > 0 or burst_new_file_count > 0) else ("🟡" if s_auth < 85.0 else "✅")
-    res["summary_short"] = f"{status_icon} S_auth: {s_auth}% | Inav: {i_nav}% ({focus_lost_count} sorties) | Runs: {total_runs} (err: {compile_err+exec_err}) | TTF: {ttf_avg or 'N/A'}s | Bursts: {burst_insert_count + burst_new_file_count}"
+    if not has_rich_telemetry:
+        res["summary_short"] = f"ℹ️ Télémétrie client absente ({res['events_count']} événements serveur SESSION/VIEW/EDIT uniquement)"
+        res["summary_markdown"] = (
+            f"**Télémétrie d'activité CodeLab** ({res['events_count']} événements serveur uniquement — client pré-1.5.5 ou consultation seule)\n\n"
+            f"- **Indicateurs de saisie ($S_{{auth}}$, $I_{{nav}}$, runs)** : *Non mesurés (aucune télémétrie client reçue)*"
+        )
+        return res
+
+    s_auth_display = f"{s_auth}%" if s_auth is not None else "N/A"
+    status_icon = (
+        "🚨" if ((s_auth is not None and s_auth < 50.0) or burst_insert_count > 0 or burst_new_file_count > 0)
+        else ("🟡" if (s_auth is not None and s_auth < 85.0) else ("ℹ️" if s_auth is None else "✅"))
+    )
+    res["summary_short"] = f"{status_icon} S_auth: {s_auth_display} | Inav: {i_nav}% ({focus_lost_count} sorties) | Runs: {total_runs} (err: {compile_err+exec_err}) | TTF: {ttf_avg or 'N/A'}s | Bursts: {burst_insert_count + burst_new_file_count}"
 
     # Construction de la section Markdown complète
     md_lines = []
     md_lines.append(f"**Télémétrie d'activité CodeLab** ({res['events_count']} événements tracés)")
     md_lines.append("")
-    md_lines.append(f"- **Score d'Authenticité ($S_{{auth}}$)** : **{s_auth}%** — {s_auth_level}")
+    md_lines.append(f"- **Score d'Authenticité ($S_{{auth}}$)** : **{s_auth_display}** — {s_auth_level}")
     md_lines.append(f"  - Frappe réelle : `{typing_keys}` touches (`{typing_backspaces}` corrections backspace)")
     if paste_internal_count > 0:
         md_lines.append(f"  - Collages détectés : `{paste_chars}` caractères externes en `{paste_count}` collage(s) ({paste_lines} lignes) + `{paste_internal_chars}` caractères internes CodeLab en `{paste_internal_count}` collage(s) (neutralisés)")
@@ -633,7 +811,7 @@ def analyze_student_activity(student_dir: str | Path) -> dict:
         md_lines.append(f"  - Injections massives (bursts) : **{total_burst_lines} lignes** ({burst_insert_count} bursts d'insertion, {burst_new_file_count} nouveaux fichiers complets)")
         
     md_lines.append(f"- **Taux de Navette Externe ($I_{{nav}}$)** : **{i_nav}%** — {i_nav_level}")
-    md_lines.append(f"  - Temps passé hors IDE : `{round(total_away_sec / 60.0, 1)} min` sur une durée totale de `{res['span_duration_min']} min`")
+    md_lines.append(f"  - Temps passé hors IDE : `{round(total_away_sec / 60.0, 1)} min` sur une durée active de `{active_duration_min} min`")
     
     ttf_str = f"`{ttf_avg} s`" if ttf_avg is not None else "*Aucune erreur persistante*"
     md_lines.append(f"- **Cycle de Validation & Robustesse** :")
@@ -759,44 +937,80 @@ def generate_mermaid_radars(data: dict, student_name: str = "Étudiant") -> dict
     ai_data = data.get("ai_analysis") or {}
     ai_prob = float(ai_data.get("probability_pct", 0.0))
     
+    # Vérifie si le journal contient de la vraie télémétrie client (frappes, runs, collages, focus, drops)
+    # et pas uniquement des événements serveur SESSION/VIEW/EDIT (clients pré-1.5.5 ou simple relecture)
+    _total_runs_pre = int(act.get("compilations", {}).get("total", 0) + act.get("executions", {}).get("total", 0))
+    _drops_pre = int(act.get("file_drop_count", len(act.get("file_drops", []))))
+    if "has_rich_telemetry" in act:
+        has_rich_telemetry = bool(act.get("has_rich_telemetry"))
+    else:
+        has_rich_telemetry = bool(act.get("active")) and (
+            int(act.get("typing_keys", 0)) > 0
+            or _total_runs_pre > 0
+            or _drops_pre > 0
+            or int(act.get("paste_count", 0)) > 0
+            or int(act.get("paste_internal_count", 0)) > 0
+            or int(act.get("focus_lost_count", 0)) > 0
+        )
+
     # -------------------------------------------------------------
     # 1. RADAR DES INDICATEURS CLÉS (/20)
     # -------------------------------------------------------------
     # Axe 1 : Authenticité de frappe (S_auth)
-    if act.get("active"):
-        auth_val = min(20.0, max(0.0, round(float(act.get("s_auth", 100.0)) / 5.0, 1)))
+    raw_s_auth = act.get("s_auth")
+    _code_drops_pre = int(act.get("code_file_drop_count", act.get("file_drop_count", len(act.get("file_drops", [])))))
+    _burst_lines_pre = int(act.get("burst_insert_lines", 0) + act.get("burst_new_file_lines", 0))
+    if has_rich_telemetry and raw_s_auth is not None and float(raw_s_auth) >= 0.0:
+        auth_val = min(20.0, max(0.0, round(float(raw_s_auth) / 5.0, 1)))
+    elif has_rich_telemetry:
+        auth_val = 0.0 if (_code_drops_pre > 0 or _burst_lines_pre > 0) else 10.0
     else:
         auth_val = max(0.0, min(20.0, round(20.0 - (ai_prob / 5.0), 1)))
 
     # Axe 2 : Concentration locale (100 - I_nav)
-    if act.get("active"):
+    if has_rich_telemetry:
         focus_val = min(20.0, max(0.0, round((100.0 - float(act.get("i_nav", 0.0))) / 5.0, 1)))
     else:
         focus_val = 18.0
 
     # Axe 3 : Efficience de débogage (absence d'acharnement)
-    if act.get("active"):
+    if has_rich_telemetry:
         i_thrash = float(act.get("i_thrash", 0.0))
         debug_val = min(20.0, max(0.0, round(20.0 - (i_thrash * 20.0), 1)))
     else:
         debug_val = 16.0
 
-    # Axe 4 : Validation & Tests
-    test_score = float(scores.get("tests", data.get("score_transversal", 0.0)))
-    test_max = 2.0 if test_score <= 2.5 else 4.0
-    if test_max > 0:
-        test_val = min(20.0, max(0.0, round((test_score / test_max) * 20.0, 1)))
+    axes_max = data.get("axes_max") or scores.get("axes_max") or {}
+
+    # Axe 4 : Validation & Tests (avec repli sur verdicts/asserts pour IntroPython ou compilation_rate pour IntroProg)
+    if "tests" in scores:
+        test_score = float(scores.get("tests", 0.0))
+        test_max = float(axes_max.get("tests") or (2.0 if test_score <= 2.5 else 4.0))
+        test_val = min(20.0, max(0.0, round((test_score / test_max) * 20.0, 1))) if test_max > 0 else 14.0
+    elif data.get("verdicts"):
+        verdicts = data.get("verdicts", {})
+        a_pass = sum(int(v.get("asserts_passed", 0) or 0) for v in verdicts.values() if isinstance(v, dict))
+        a_tot = sum(int(v.get("asserts_total", 0) or 0) for v in verdicts.values() if isinstance(v, dict))
+        test_val = round((a_pass / float(a_tot)) * 20.0, 1) if a_tot > 0 else 0.0
+    elif "compilation_rate" in data:
+        test_val = min(20.0, max(0.0, round(float(data.get("compilation_rate", 0.0)) / 5.0, 1)))
     else:
-        test_val = 14.0
+        test_score = float(data.get("score_transversal", 0.0))
+        test_max = float(axes_max.get("tests") or (2.0 if test_score <= 2.5 else 4.0))
+        test_val = min(20.0, max(0.0, round((test_score / test_max) * 20.0, 1))) if test_max > 0 else 14.0
 
     # Axe 5 : Architecture & Conception
     arch_score = float(scores.get("architecture", data.get("score_p2", scores.get("axe2_architecture", 0.0))))
-    arch_max = 8.0 if arch_score <= 8.5 else (10.0 if arch_score <= 10.5 else 20.0)
+    arch_max = float(axes_max.get("architecture") or (8.0 if arch_score <= 8.5 else (10.0 if arch_score <= 10.5 else 20.0)))
     arch_val = min(20.0, max(0.0, round((arch_score / arch_max) * 20.0, 1)))
 
     # Axe 6 : Style & Conventions
-    style_score = float(scores.get("style", scores.get("axe3_style", data.get("score_p1", 0.0))))
-    style_max = 4.0 if style_score <= 4.5 else (2.0 if style_score <= 2.5 else 8.0)
+    if "axe3_style" in scores:
+        style_score = float(scores.get("axe3_style", 0.0))
+        style_max = float(axes_max.get("style") or 2.0)
+    else:
+        style_score = float(scores.get("style", data.get("score_p1", 0.0)))
+        style_max = float(axes_max.get("style") or (4.0 if style_score <= 4.5 else 10.0))
     style_val = min(20.0, max(0.0, round((style_score / style_max) * 20.0, 1)))
 
     # Assainissement du nom de l'étudiant pour la syntaxe Mermaid
@@ -809,7 +1023,7 @@ def generate_mermaid_radars(data: dict, student_name: str = "Étudiant") -> dict
 %%{{init: {{'radar': {{'marginLeft': 100, 'marginRight': 100, 'marginTop': 40, 'marginBottom': 40, 'axisLabelFactor': 1.12}}, 'themeVariables': {{'fontSize': '22px', 'radar': {{'axisLabelFontSize': 22}}}}}}}}%%
 radar-beta
     showLegend false
-    axis auth["Authenticité"], focus["Concentration"], debug["Débogage"], test["Tests & Validation"], arch["Architecture"], style["Style & PEP8"]
+    axis auth["Authenticité"], focus["Concentration"], debug["Débogage"], test["Tests & Validation"], arch["Architecture"], style["Style & Qualité"]
     curve etud{{{auth_val}, {focus_val}, {debug_val}, {test_val}, {arch_val}, {style_val}}}
     max 20
     min 0
@@ -819,63 +1033,148 @@ radar-beta
     # -------------------------------------------------------------
     # 2. RADAR D'AFFINITÉ AUX 6 PROFILS TYPES ARCHÉTYPAUX (/20)
     # -------------------------------------------------------------
-    note_brute = float(scores.get("note_technique_brute", data.get("note_technique_brute", scores.get("total", data.get("total", 10.0)))))
+    _nb_raw = scores.get("note_technique_brute")
+    if _nb_raw is None:
+        _nb_raw = data.get("note_technique_brute")
+    if _nb_raw is None:
+        _nb_raw = scores.get("total_note")
+    if _nb_raw is None:
+        _nb_raw = scores.get("total", data.get("total"))
+    note_brute = float(_nb_raw) if _nb_raw is not None else 10.0
+
     help_reqs = int(act.get("help_requests", 0))
     burst_cnt = int(act.get("burst_insert_count", 0) + act.get("burst_new_file_count", 0))
-    file_drops = int(act.get("file_drop_count", len(act.get("file_drops", []))))
-    total_runs = int(act.get("compilations", {}).get("total", 0) + act.get("executions", {}).get("total", 0))
+    code_drops = int(act.get("code_file_drop_count", act.get("file_drop_count", len(act.get("file_drops", [])))))
+    comp_tot = int(act.get("compilations", {}).get("total", 0))
+    exec_tot = int(act.get("executions", {}).get("total", 0))
+    comp_err = int(act.get("compilations", {}).get("error", 0))
+    exec_err = int(act.get("executions", {}).get("error", 0))
+    total_runs = comp_tot + exec_tot
+    err_rate = (comp_err + exec_err) / float(max(1, total_runs))
     i_thrash = float(act.get("i_thrash", 0.0))
     backspaces = int(act.get("typing_backspaces", 0))
     ttf = act.get("ttf_avg_sec")
     idle_max = float(act.get("idle_max_sec", 0.0))
     q_read_pct = float(act.get("time_quadrants", {}).get("q_read_pct", 0.0))
     q_edit_pct = float(act.get("time_quadrants", {}).get("q_edit_pct", 50.0))
-    is_suspicious_copy = bool(data.get("is_suspicious_copy", False))
+
+    plag_dict = data.get("plagiarism_alert") or {}
+    plag_max_sim = float(plag_dict.get("max_sim", 0.0) or 0.0)
+    plag_files_cnt = len(plag_dict.get("files", []))
+    plag_sev = str(plag_dict.get("severity", "") or "").lower()
+    malus_sim = float(scores.get("malus_similarite", 0.0) or 0.0)
+    # Palier anti-faux-positifs :
+    # - Si la cohorte a déjà qualifié la gravité ("Forte suspicion" vs "Suspicion modérée" / "À vérifier"), on la respecte.
+    # - Sinon, Forte suspicion = >= 2 fichiers >= 75% ou >= 92% sur 1 fichier (jamais sur un petit fichier < 92% isolé).
+    if plag_sev:
+        is_strong_copy = bool(data.get("is_suspicious_copy", False)) or any(
+            k in plag_sev for k in ("forte", "élevée", "elevee", "critique", "haute", "high")
+        )
+    else:
+        is_strong_copy = (
+            bool(data.get("is_suspicious_copy", False))
+            or (plag_files_cnt >= 2 and plag_max_sim >= 75.0)
+            or (plag_max_sim >= 92.0)
+            or (malus_sim >= 1.0)
+        )
+    is_moderate_copy = (not is_strong_copy) and ((plag_max_sim >= 75.0) or (malus_sim > 0.0))
+    typing_keys = int(act.get("typing_keys", 0))
+    help_pen = min(6.0, help_reqs * 2.0)
 
     # 1. LE BOSS (Excellence, rapidité, maîtrise, zéro friction)
-    boss_score = (note_brute * 0.60) + (auth_val * 0.40) - (help_reqs * 4.0) - (burst_cnt * 4.0) - (i_thrash * 25.0)
-    if ttf is not None:
-        if ttf <= 30.0 and note_brute >= 16.0 and help_reqs == 0:
-            boss_score += 1.5
-        elif ttf > 90.0:
-            boss_score -= min(5.0, (ttf - 90.0) / 30.0)
+    if has_rich_telemetry and typing_keys < 60:
+        boss_score = 0.5
+    else:
+        boss_score = (note_brute * 0.60) + (auth_val * 0.40) - help_pen - (burst_cnt * 4.0) - (i_thrash * 25.0)
+        if ttf is not None:
+            if ttf <= 30.0 and note_brute >= 16.0 and help_reqs == 0:
+                boss_score += 1.5
+            elif ttf > 90.0:
+                boss_score -= min(5.0, (ttf - 90.0) / 30.0)
+    # Plafonnement progressif par la maîtrise réelle (continu entre 11 et 14/20) et garde-fou fraude/authenticité
+    if note_brute < 11.0:
+        boss_score = min(boss_score, note_brute * 0.85)
+    elif note_brute < 14.0:
+        _t = (note_brute - 11.0) / 3.0
+        _boss_cap = (note_brute * 0.85) * (1.0 - _t) + 20.0 * _t
+        boss_score = min(boss_score, _boss_cap)
+    if (
+        is_strong_copy
+        or ai_prob >= 60.0
+        or (has_rich_telemetry and raw_s_auth is not None and float(raw_s_auth) < 50.0)
+        or code_drops >= 2
+    ):
+        boss_score = min(boss_score, 9.5)
+    if note_brute < 2.0:
+        boss_score = min(boss_score, 2.0)
     boss_val = min(20.0, max(0.5, round(boss_score, 1)))
 
     # 2. L'ARTISAN (Démarche d'apprentissage appliquée, itérative, sans acharnement)
     bonus_bs = 2.0 if backspaces >= 15 else (1.0 if backspaces >= 5 else 0.0)
-    artisan_score = (auth_val * 0.40) + (debug_val * 0.25) + (style_val * 0.20) + (test_val * 0.15) + bonus_bs - (burst_cnt * 4.0)
-    if act.get("active"):
-        if total_runs >= 6 and total_runs <= 16:
+    if has_rich_telemetry and typing_keys < 60:
+        artisan_score = 0.5
+    elif has_rich_telemetry:
+        artisan_score = (auth_val * 0.40) + (debug_val * 0.25) + (style_val * 0.20) + (test_val * 0.15) + bonus_bs - (burst_cnt * 4.0)
+        if total_runs >= 6:
             artisan_score += 2.0
-        elif total_runs <= 4:
+        elif total_runs <= 4 and note_brute < 12.0:
             artisan_score -= 6.0
-        if idle_max >= 600.0:
+        if idle_max >= 1200.0:
             artisan_score -= 6.0
+    else:
+        # Sans télémétrie : calibré sur la qualité technique réelle (évite l'inflation Artisan sur copies faibles)
+        artisan_score = (note_brute * 0.45) + (style_val * 0.25) + (test_val * 0.15) + (auth_val * 0.15)
     if note_brute < 8.0:
         artisan_score -= 4.0
+    if note_brute < 2.0:
+        artisan_score = min(artisan_score, 3.0)
+    if ai_prob >= 60.0 or (has_rich_telemetry and raw_s_auth is not None and float(raw_s_auth) < 50.0):
+        artisan_score = min(artisan_score, 9.5)
     artisan_val = min(20.0, max(0.5, round(artisan_score, 1)))
 
-    # 3. LE CYBORG (Assistance IA / Solution injectée)
-    if act.get("active"):
-        cyborg_score = ((20.0 - auth_val) * 0.50) + ((20.0 - focus_val) * 0.30) + (burst_cnt * 4.5)
+    # 3. LE CYBORG (Assistance IA / Solution injectée — combine télémétrie et stylométrie IA)
+    ai_cyborg_score = (ai_prob / 100.0) * 20.0
+    if has_rich_telemetry:
+        cyborg_tel = ((20.0 - auth_val) * 0.50) + ((20.0 - focus_val) * 0.30) + (burst_cnt * 4.5)
+        cyborg_score = max(cyborg_tel, ai_cyborg_score * 0.85 if ai_prob >= 30.0 else 0.0)
     else:
-        cyborg_score = (ai_prob / 100.0) * 20.0
+        cyborg_score = ai_cyborg_score
     cyborg_val = min(20.0, max(0.5, round(cyborg_score, 1)))
 
-    # 4. LE CASSE-COU (Acharnement stérile, runs compulsifs, tâtonnement)
-    casse_score = (i_thrash * 45.0) + (4.0 if total_runs >= 10 and (ttf is not None and ttf > 180) else 0.0)
-    if act.get("active") and total_runs >= 8 and q_read_pct < 15.0:
-        casse_score += 4.0
+    # 4. LE CASSE-COU (Acharnement stérile, runs compulsifs, ou raccourcis/anti-patterns sans télémétrie)
+    if has_rich_telemetry:
+        casse_score = (i_thrash * 45.0) + (4.0 if total_runs >= 10 and (ttf is not None and ttf > 180) else 0.0)
+        if total_runs >= 8 and q_read_pct < 15.0 and err_rate >= 0.35:
+            casse_score += 4.0
+        elif total_runs >= 5 and err_rate >= 0.60:
+            casse_score += err_rate * 12.0
+    else:
+        has_skips = bool(data.get("critical_skips")) or (float(scores.get("malus_saut", 0.0) or 0.0) > 0)
+        ap_cnt = len(data.get("antipatterns", []))
+        synt_sc = float(scores.get("syntax", scores.get("compilation", 0.0)))
+        arch_sc = float(scores.get("architecture", scores.get("axe2_architecture", 0.0)))
+        casse_score = 0.5
+        if has_skips:
+            casse_score += 12.0
+        if ap_cnt >= 2:
+            casse_score += min(10.0, ap_cnt * 3.5)
+        if synt_sc >= 4.5 and arch_sc < 3.5 and note_brute >= 6.0:
+            casse_score += 8.0
     casse_val = min(20.0, max(0.5, round(casse_score, 1)))
 
-    # 5. LE DÉCROCHEUR (Inactivité prolongée, abandon face aux blocages, peu de runs)
-    idle_score = 7.0 if idle_max >= 900 else (4.0 if idle_max >= 450 else 0.0)
-    stagnation = 4.0 if (q_read_pct > 40.0 and q_edit_pct < 20.0) else 0.0
-    decroch_score = max(0.0, (11.0 - note_brute) * 0.8) + idle_score + stagnation + (4.0 if (act.get("active") and total_runs <= 2) else 0.0)
+    # 5. LE DÉCROCHEUR (Inactivité prolongée, abandon face aux blocages, peu de runs ou échec sans télémétrie)
+    if has_rich_telemetry:
+        idle_score = (7.0 if idle_max >= 900 else (4.0 if idle_max >= 450 else 0.0))
+        stagnation = (4.0 if (q_read_pct > 40.0 and q_edit_pct < 20.0) else 0.0)
+        decroch_score = max(0.0, (11.0 - note_brute) * 0.8) + idle_score + stagnation + (4.0 if total_runs <= 2 else 0.0)
+    else:
+        decroch_score = max(0.0, (11.5 - note_brute) * 1.65)
+    if note_brute < 2.0:
+        decroch_score = max(decroch_score, 15.0)
     decroch_val = min(20.0, max(0.5, round(decroch_score, 1)))
 
-    # 6. LE PIRATE (Collusion directe, import USB / drag & drop, forte similarité)
-    pirate_score = (file_drops * 8.0) + (16.0 if is_suspicious_copy else 0.0)
+    # 6. LE PIRATE (Collusion directe graduée : forte -> +16.0, signal faible isolé -> +4.0 sans jamais forcer Pirate)
+    pirate_score = (code_drops * 8.0) + (16.0 if is_strong_copy else (4.0 if is_moderate_copy else 0.0))
     pirate_val = min(20.0, max(0.5, round(pirate_score, 1)))
 
     # Identification du profil dominant et secondaire
@@ -900,12 +1199,16 @@ radar-beta
     double_info = None
 
     if p2 and (pair_key not in OPPOSITE_AXES) and (p1["val"] >= 11.0) and (p2["val"] >= 11.0) and (abs(p1["val"] - p2["val"]) <= 3.5):
-        is_double_profil = True
-        double_info = HYBRID_PROFILES_CATALOG.get(pair_key, {
-            "surnom": f"Hybride {p1['name']} / {p2['name']}",
-            "desc": f"Profil combinant une forte composante de {p1['name']} et de {p2['name']}.",
-            "conseil": "Accompagnement mixte tenant compte de ces deux postures complémentaires."
-        })
+        # Exiger une vraie excellence (>= 14/20) pour l'hybridation d'exception Boss + Artisan
+        if pair_key == frozenset(["boss", "artisan"]) and (note_brute < 14.0 or style_val < 12.0):
+            is_double_profil = False
+        else:
+            is_double_profil = True
+            double_info = HYBRID_PROFILES_CATALOG.get(pair_key, {
+                "surnom": f"Hybride {p1['name']} / {p2['name']}",
+                "desc": f"Profil combinant une forte composante de {p1['name']} et de {p2['name']}.",
+                "conseil": "Accompagnement mixte tenant compte de ces deux postures complémentaires."
+            })
 
     dominant = p1
     secondary = p2 if (p2 and not is_double_profil) else None
@@ -968,7 +1271,7 @@ radar-beta
 >   - 👑 **Le Boss** $\\longleftrightarrow$ 🚪 **Le Décrocheur** : aisance et réussite autonome face au décrochage silencieux.
 >   - 🔨 **L'Artisan** $\\longleftrightarrow$ 🤖 **Le Cyborg** : démarche d'apprentissage authentique face à la délégation externe / IA.
 >   - ⚡ **Le Casse-cou** $\\longleftrightarrow$ 🏴‍☠️ **Le Pirate** : combat acharné avec le code face à la facilité de la copie d'autrui.
-> - **Détection des Doubles-Profils Didactiques** : Lorsque deux profils issus d'axes orthogonaux présentent simultanément des affinités élevées (scores $\\ge 11.0 / 20$ et écart $\\le 3.5$ pts), l'algorithme identifie une posture d'apprentissage hybride cohérente (ex: *Boss + Artisan* = *« L'Architecte »*, *Artisan + Casse-cou* = *« Le Travailleur Acharné »*). La fiche explicite alors la signification didactique de l'hybridation et les conseils d'accompagnement adaptés.
+> - **Détection des Doubles-Profils Didactiques** : Lorsque deux profils issus d'axes orthogonaux présentent simultanément des affinités élevées (scores >= 11.0 / 20 et écart <= 3.5 pts), l'algorithme identifie une posture d'apprentissage hybride cohérente (ex: *Boss + Artisan* = *« L'Architecte »*, *Artisan + Casse-cou* = *« Le Travailleur Acharné »*). La fiche explicite alors la signification didactique de l'hybridation et les conseils d'accompagnement adaptés.
 
 <table width="100%" border="0" cellspacing="0" cellpadding="0" style="border:none; border-collapse:collapse; margin: 8px 0;">
 <tr>

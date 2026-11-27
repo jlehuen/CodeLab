@@ -3,15 +3,15 @@ name: eval-c-sample
 description: >-
   Skill d'exemple pour l'évaluation de programmes et algorithmes en langage C.
   Vérifie la syntaxe et la compilation C, la modularité et les fonctions, le style de codage, la détection d'anti-patrons et l'authenticité du code.
-version: 1.1.0
-last_modified: 2026-10-14
+version: 1.2.0
+last_modified: 2026-11-27
 ---
 
 # Skill d'Évaluation : C / Algorithmique (Exemple)
 
-**Version :** 1.1.0 | **Dernière modification :** 14 octobre 2026
+**Version :** 1.2.0 | **Dernière modification :** 27 novembre 2026
 
-Ce skill est un modèle d'exemple générique fourni avec CodeLab pour illustrer l'évaluation automatique de code en langage C.
+Ce skill est un modèle d'exemple générique fourni avec CodeLab pour illustrer l'évaluation automatique de code en langage C (fichiers `.c`, `.h` et carnets interactifs `.ipynb` C).
 Il s'appuie sur une analyse syntaxique Clang/GCC et vérifie la qualité du code sans dépendre d'un cursus ou d'un jeu de TP particulier.
 
 ## Structure du barème d'exemple (sur 20 points)

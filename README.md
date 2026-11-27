@@ -70,16 +70,16 @@ Une fonctionnalité de CodeLab est de permettre la constitution de **classes vir
 <a id="telechargements" name="telechargements"></a>
 <a id="téléchargements" name="téléchargements"></a>
 
-## Téléchargements (version 1.5.5)
+## Téléchargements (version 1.5.6)
 
 <br>
 
 <p align="center">
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.5.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-MacOS-Silicon-1.5.6.dmg"><img src="client/images/download-macos.png" alt="Télécharger pour macOS" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.5-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Win64-1.5.6-Setup.exe"><img src="client/images/download-windows.png" alt="Télécharger pour Windows" width="150"></a>
   &emsp;
-  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.5.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
+  <a href="https://github.com/jlehuen/CodeLab/releases/latest/download/CodeLab-Linux-1.5.6.zip"><img src="client/images/download-linux.png" alt="Télécharger pour Linux" width="150"></a>
 </p>
 
 Toutes les versions disponibles sont dans la section [Releases](https://github.com/jlehuen/CodeLab/releases) de CodeLab.
@@ -135,7 +135,7 @@ CodeLab prend en charge un certain nombre de langages : certains sont intégrés
 [codelab] Vérification de la librairie Numpy...OK -> Numpy version 2.3.0
 [codelab] Vérification de la librairie Matplotlib...OK -> Matplotlib version 3.10.3
 [codelab] Vérification du langage Processing...OK -> Processing version 4.3
-[codelab] Vérification du langage Haskell...indisponible
+[codelab] Vérification du langage Haskell...OK -> The Glorious Glasgow Haskell compiler 9.14.1
 [codelab] Vérification du langage CLIPS...OK -> CLIPS version 6.31 - CodeLab build (04/12/23)
 ```
 

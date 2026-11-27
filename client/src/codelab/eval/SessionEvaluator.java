@@ -81,14 +81,17 @@ public class SessionEvaluator {
 			} catch (Exception ignored) {}
 		}
 
-		// Initialisation / réplication des exemples et du runner vers ~/codelab.files/skills
+		// Initialisation / réplication des exemples, du moteur et de la doc vers ~/codelab.files/skills
 		if (projectSkills.exists() && projectSkills.isDirectory() && userSkillsFolder.exists()) {
 			try {
-				File projScript = new File(projectSkills, "eval_codelab.py");
-				File userScript = new File(userSkillsFolder, "eval_codelab.py");
-				if (projScript.exists() && (!userScript.exists() || projScript.lastModified() > userScript.lastModified())) {
-					FileUtils.copyFile(projScript, userScript);
-					userScript.setExecutable(true);
+				String[] rootFiles = { "eval_codelab.py", "skills_common.py", "activity_analyzer.py", "recalculate_grades.py", "README.md" };
+				for (String fname : rootFiles) {
+					File projFile = new File(projectSkills, fname);
+					File userFile = new File(userSkillsFolder, fname);
+					if (projFile.exists() && (!userFile.exists() || projFile.lastModified() > userFile.lastModified())) {
+						FileUtils.copyFile(projFile, userFile);
+						if (fname.endsWith(".py")) userFile.setExecutable(true);
+					}
 				}
 
 				File[] psubs = projectSkills.listFiles();
@@ -100,9 +103,17 @@ public class SessionEvaluator {
 								FileUtils.copyDirectory(ps, dest);
 							} else if (ps.getName().endsWith("-sample")) {
 								// Mise à jour automatique des compétences d'exemples si la distribution est plus récente
-								File projAudit = new File(ps, "scripts/audit_student.py");
-								File userAudit = new File(dest, "scripts/audit_student.py");
-								if (projAudit.exists() && (!userAudit.exists() || projAudit.lastModified() > userAudit.lastModified())) {
+								String[] watched = { "SKILL.md", "README.md", "weights.json", "scripts/audit_student.py", "scripts/generate_report.py", "scripts/audit_cohort.py" };
+								boolean needsUpdate = false;
+								for (String rel : watched) {
+									File pf = new File(ps, rel);
+									File uf = new File(dest, rel);
+									if (pf.exists() && (!uf.exists() || pf.lastModified() > uf.lastModified())) {
+										needsUpdate = true;
+										break;
+									}
+								}
+								if (needsUpdate) {
 									FileUtils.copyDirectory(ps, dest);
 								}
 							}
@@ -202,8 +213,29 @@ public class SessionEvaluator {
 		itemAuto.addActionListener(e -> onSelect.accept(null, isUseAi()));
 		parentMenu.add(itemAuto);
 
-		// 3. Compétences individuelles
+		// 3. Compétences individuelles (skills personnels puis séparateur puis skills "sample")
+		List<SkillDescr> customSkills = new ArrayList<>();
+		List<SkillDescr> sampleSkills = new ArrayList<>();
 		for (SkillDescr skill : availableSkills) {
+			String sid = (skill.getId() != null) ? skill.getId().toLowerCase() : "";
+			String stitle = (skill.getTitle() != null) ? skill.getTitle().toLowerCase() : "";
+			if (sid.contains("sample") || stitle.contains("sample")) {
+				sampleSkills.add(skill);
+			} else {
+				customSkills.add(skill);
+			}
+		}
+
+		for (SkillDescr skill : customSkills) {
+			JMenuItem item = new JMenuItem(skill.getTitle());
+			item.setToolTipText(skill.getDescription());
+			item.addActionListener(e -> onSelect.accept(skill, isUseAi()));
+			parentMenu.add(item);
+		}
+		if (!customSkills.isEmpty() && !sampleSkills.isEmpty()) {
+			parentMenu.add(new JSeparator());
+		}
+		for (SkillDescr skill : sampleSkills) {
 			JMenuItem item = new JMenuItem(skill.getTitle());
 			item.setToolTipText(skill.getDescription());
 			item.addActionListener(e -> onSelect.accept(skill, isUseAi()));
@@ -581,6 +613,20 @@ public class SessionEvaluator {
 				if (CodeLab.JAVAC_CMD != null && !CodeLab.JAVAC_CMD.isBlank() && !CodeLab.JAVAC_CMD.equals("undefined")) {
 					pb.environment().put("JAVAC_CMD", CodeLab.JAVAC_CMD);
 				}
+				String gccCmd = CodeLab.PROP("GCC_CMD");
+				if (gccCmd != null && !gccCmd.isBlank() && !gccCmd.equals(CodeLab.UNDEFINED)) {
+					pb.environment().put("GCC_CMD", gccCmd);
+					pb.environment().put("CODELAB_GCC_CMD", gccCmd);
+				}
+				String haskellCmd = CodeLab.PROP("HASKELL_CMD");
+				if (haskellCmd != null && !haskellCmd.isBlank() && !haskellCmd.equals(CodeLab.UNDEFINED)) {
+					pb.environment().put("HASKELL_CMD", haskellCmd);
+					pb.environment().put("CODELAB_HASKELL_CMD", haskellCmd);
+				}
+				if (pythonCmd != null && !pythonCmd.isBlank() && !pythonCmd.equals(CodeLab.UNDEFINED)) {
+					pb.environment().put("PYTHON_CMD", pythonCmd);
+					pb.environment().put("CODELAB_PYTHON_CMD", pythonCmd);
+				}
 
 				// Transmission transparente du proxy configuré dans CodeLab
 				if (CodeLab.PROXY_CONFIGURED && CodeLab.PROXY_HOST != null && !CodeLab.PROXY_HOST.isBlank() && !CodeLab.PROXY_HOST.equalsIgnoreCase("NO_PROXY")) {
@@ -736,6 +782,116 @@ public class SessionEvaluator {
 
 		workerRef.set(worker);
 		worker.execute();
+	}
+
+	/**
+	 * Recharge à chaud la liste des skills d'évaluation sans redémarrer CodeLab.
+	 */
+	public static void reloadSkills(CodeLab codelab) {
+		scanSkills();
+		if (codelab != null) {
+			codelab.printlnToConsole("[codelab] Skills rechargés : " + availableSkills.size() + " compétence(s) disponible(s).");
+		}
+	}
+
+	/**
+	 * Assistant interactif de création d'un nouveau skill spécialisé par duplication
+	 * d'un des modèles génériques (*-sample), puis ouverture de SKILL.md et weights.json.
+	 */
+	public static void createSkillFromTemplate(CodeLab codelab) {
+		String[] templates = { "eval-c-sample", "eval-python-sample", "eval-haskell-sample", "eval-java-sample" };
+		String chosen = (String) JOptionPane.showInputDialog(
+			CodeLab.FRAME,
+			"Choisissez le modèle générique à dupliquer :",
+			"Nouveau skill d'évaluation",
+			JOptionPane.PLAIN_MESSAGE,
+			CodeLab.ICON,
+			templates,
+			templates[0]
+		);
+		if (chosen == null || chosen.isBlank()) return;
+
+		String rawId = (String) JOptionPane.showInputDialog(
+			CodeLab.FRAME,
+			"Identifiant du nouveau skill (ex: eval-tp3-listes) :",
+			"Nouveau skill d'évaluation",
+			JOptionPane.PLAIN_MESSAGE,
+			CodeLab.ICON,
+			null,
+			chosen.replace("-sample", "-tp1")
+		);
+		if (rawId == null || rawId.isBlank()) return;
+		String newId = rawId.trim().toLowerCase().replaceAll("[^a-z0-9_-]", "-");
+		if (newId.isEmpty()) return;
+
+		File srcDir = new File(CodeLab.SKILLS_FOLDER, chosen);
+		if (!srcDir.isDirectory()) {
+			srcDir = new File(CodeLab.BASE, "client/codelab.files/skills/" + chosen);
+		}
+		if (!srcDir.isDirectory()) {
+			Utils.showWarningDialog("CodeLab", "Modèle introuvable : " + chosen);
+			return;
+		}
+
+		File destDir = new File(CodeLab.SKILLS_FOLDER, newId);
+		if (destDir.exists()) {
+			Utils.showWarningDialog("CodeLab", "Un skill portant l'identifiant '" + newId + "' existe déjà :\n" + destDir.getAbsolutePath());
+			return;
+		}
+
+		try {
+			FileUtils.copyDirectory(srcDir, destDir);
+			File skillMd = new File(destDir, "SKILL.md");
+			if (skillMd.isFile()) {
+				String content = FileUtils.readFileToString(skillMd, StandardCharsets.UTF_8);
+				content = content.replaceFirst("(?m)^name:\\s*.*$", "name: " + newId);
+				FileUtils.writeStringToFile(skillMd, content, StandardCharsets.UTF_8);
+			}
+			scanSkills();
+			if (codelab != null) {
+				codelab.printlnToConsole("[codelab] Nouveau skill créé : " + destDir.getAbsolutePath());
+				if (codelab.getEditor() != null) {
+					File weightsFile = new File(destDir, "weights.json");
+					if (weightsFile.isFile()) codelab.getEditor().open_file(weightsFile, false);
+					if (skillMd.isFile()) codelab.getEditor().open_file(skillMd, false);
+					codelab.showEditor();
+				}
+			}
+		} catch (Exception ex) {
+			Utils.showWarningDialog("CodeLab", "Impossible de créer le skill : " + ex.getMessage());
+		}
+	}
+
+	/**
+	 * Ouvre directement la documentation des skills d'évaluation (README.md)
+	 * dans le visualiseur Markdown intégré de CodeLab.
+	 */
+	public static void openSkillsDocumentation(CodeLab codelab) {
+		File docFile = new File(CodeLab.SKILLS_FOLDER, "README.md");
+		if (!docFile.exists()) {
+			File[] fallbacks = {
+				new File(CodeLab.BASE, "codelab.files/skills/README.md"),
+				new File(CodeLab.BASE, "client/codelab.files/skills/README.md"),
+				new File("client/codelab.files/skills/README.md")
+			};
+			for (File fb : fallbacks) {
+				if (fb.exists()) {
+					docFile = fb;
+					break;
+				}
+			}
+		}
+
+		if (!docFile.exists()) {
+			Utils.showWarningDialog("CodeLab", "Documentation des skills introuvable :\n" + docFile.getAbsolutePath());
+			return;
+		}
+
+		if (codelab != null && codelab.getEditor() != null) {
+			codelab.getEditor().open_file(docFile, false);
+			codelab.showEditor();
+			codelab.printlnToConsole("[codelab] Documentation des skills ouverte : " + docFile.getAbsolutePath());
+		}
 	}
 
 	/**

@@ -214,7 +214,12 @@ public class MermaidRenderer {
 	}
 
 	private static String renderBlock(String source, String original, int maxW, float scale, Object owner, Runnable onReady) {
-		String key = keyOf(source, scale);
+		// report.css calibre --mermaid-scale (ex. 0.22) pour les doubles radars côte à côte (radar-beta).
+		// Les autres diagrammes (flowchart, sequenceDiagram...) doivent rester à taille naturelle (>= 1.0),
+		// plafonnés automatiquement à maxW par imageHtml().
+		boolean isRadar = source != null && source.toLowerCase(Locale.ROOT).contains("radar-beta");
+		float effectiveScale = (!isRadar && scale < 0.52f) ? 0.52f : scale;
+		String key = keyOf(source, effectiveScale);
 
 		Result res = cached(key);
 		if (res != null) {
@@ -226,7 +231,7 @@ public class MermaidRenderer {
 			return note("Diagramme Mermaid invalide ou rendu impossible : " + escapeXml(error)) + original;
 		}
 
-		requestRender(key, source, scale, owner, onReady);
+		requestRender(key, source, effectiveScale, owner, onReady);
 		return PENDING_HTML;
 	}
 

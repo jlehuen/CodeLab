@@ -15,17 +15,31 @@ from pathlib import Path
 from datetime import datetime
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
+SKILLS_ROOT = SKILL_DIR.parent
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+
+from skills_common import (
+    load_weights as _load_weights_common,
+    detect_notebook_language,
+    extract_notebook_code,
+    run_declarative_tests,
+)
 
 
 def load_weights():
     """Charge dynamiquement les pondérations depuis weights.json."""
-    for p in (SKILL_DIR / "weights.json", Path(__file__).resolve().parent / "weights.json"):
-        if p.is_file():
-            try:
-                return json.loads(p.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-    return {}
+    return _load_weights_common(SKILL_DIR)
+
+
+def is_python_notebook(ipynb_path):
+    """Vérifie si un fichier .ipynb est un carnet Python (défaut Jupyter hors C/Haskell)."""
+    return detect_notebook_language(ipynb_path) == "python"
+
+
+def extract_python_from_notebook(ipynb_path):
+    """Extrait les cellules de code Python d'un carnet .ipynb en neutralisant les magics (% / !)."""
+    return extract_notebook_code(ipynb_path, "python")
 
 
 def strip_python_comments_and_strings(content):
@@ -177,21 +191,23 @@ def detect_ai_markers(py_files, student_dir=None):
                 sys.path.insert(0, str(skills_root))
             from activity_analyzer import analyze_student_activity
             act_data = analyze_student_activity(student_dir)
-            if act_data.get("active"):
+            if act_data.get("has_rich_telemetry"):
                 for a in act_data.get("alerts", []):
                     if "BURST_INSERT" in a:
                         add_marker("Télémétrie", "chronometrie_instantanee", "burst_insert", a, 0.45)
                     elif "BURST_NEW_FILE" in a:
                         add_marker("Télémétrie", "chronometrie_instantanee", "burst_new_file", a, 0.40)
-                if act_data.get("s_auth", 100.0) < 50.0:
-                    add_marker("Télémétrie", "variance_stylometrique", "low_s_auth", f"Score d'authenticité faible ({act_data['s_auth']}%) - Code majoritairement injecté ou collé ({act_data['paste_chars']} caractères collés)", 0.35)
+                s_auth_val = act_data.get("s_auth")
+                if s_auth_val is not None and float(s_auth_val) < 50.0:
+                    add_marker("Télémétrie", "variance_stylometrique", "low_s_auth", f"Score d'authenticité faible ({s_auth_val}%) - Code majoritairement injecté ou collé ({act_data['paste_chars']} caractères collés)", 0.35)
         except Exception:
             pass
 
     for fpath in py_files:
         rel_path = fpath.name
+        is_nb = fpath.suffix.lower() == '.ipynb'
         try:
-            content = fpath.read_text(encoding='utf-8', errors='ignore')
+            content = extract_python_from_notebook(fpath) if is_nb else fpath.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             continue
 
@@ -199,12 +215,13 @@ def detect_ai_markers(py_files, student_dir=None):
         lines = content.splitlines()
         loc = len([l for l in lines if l.strip() and not l.strip().startswith('#')])
 
-        # Analyse d'indentation (Tabulations natives CodeLab vs 4 Espaces LLM Web)
-        t_count = sum(1 for l in lines if l.startswith('\t'))
-        s_count = sum(1 for l in lines if l.startswith('    '))
-        total_tabs += t_count
-        total_spaces += s_count
-        file_indent[rel_path] = {'tabs': t_count, 'spaces': s_count, 'loc': loc}
+        # Analyse d'indentation (Tabulations natives CodeLab vs 4 Espaces LLM Web — neutralisée sur .ipynb Jupyter)
+        if not is_nb:
+            t_count = sum(1 for l in lines if l.startswith('\t'))
+            s_count = sum(1 for l in lines if l.startswith('    '))
+            total_tabs += t_count
+            total_spaces += s_count
+            file_indent[rel_path] = {'tabs': t_count, 'spaces': s_count, 'loc': loc}
 
         # Horodatage CodeLab
         m_dt = re.search(r'Created by .* on (\d{2}/\d{2}/\d{2}) \((\d{2}:\d{2}:\d{2})\)', content)
@@ -254,7 +271,7 @@ def detect_ai_markers(py_files, student_dir=None):
         if re.search(r'#\s*(?:ChatGPT|Copilot|Claude|OpenAI|DeepSeek|AI generated|Prompt)', content, re.I):
             add_marker(rel_path, 'mention_explicite', 'explicit_ai', "Mention textuelle d'outil IA dans les commentaires", 1.0)
 
-    # Rupture d'indentation intra-copie ou globale Tab ➔ 4 Espaces
+    # Rupture d'indentation intra-copie ou globale Tab ➔ 4 Espaces (uniquement en cas de mélange réel, PEP 8 = 4 espaces)
     for f_rel, ind in file_indent.items():
         other_tabs = total_tabs - ind['tabs']
         other_spaces = total_spaces - ind['spaces']
@@ -262,9 +279,17 @@ def detect_ai_markers(py_files, student_dir=None):
             if other_tabs >= 25 and other_tabs > other_spaces * 1.5:
                 add_marker(f_rel, 'variance_stylometrique', 'indentation_spaces_rupture',
                            f"Rupture d'indentation intra-copie : {ind['spaces']} lignes en 4 espaces contre {ind['tabs']} tabulation(s), en contraste avec le style natif CodeLab ({other_tabs} tabulations dans le reste de la copie)", 0.35)
-    if total_spaces >= 35 and total_spaces > total_tabs * 2:
+    if total_tabs >= 10 and total_spaces >= 35 and total_spaces > total_tabs * 2:
         add_marker("Ensemble des fichiers", 'variance_stylometrique', 'indentation_spaces_rupture',
-                   f"Indentation dominante en 4 espaces ({total_spaces} lignes en 4 espaces vs {total_tabs} tabulations natives CodeLab) caractéristique d'un copier-coller externe / LLM", 0.35)
+                   f"Rupture d'indentation globale (mélange {total_spaces} lignes en 4 espaces vs {total_tabs} tabulations natives CodeLab) caractéristique d'un copier-coller externe / LLM", 0.35)
+
+    # Neutraliser les heuristiques de chronométrie basées sur mtime/header si la télémétrie prouve une frappe authentique (>= 85%)
+    _tel_authentic = bool(
+        act_data
+        and act_data.get("has_rich_telemetry")
+        and act_data.get("s_auth") is not None
+        and float(act_data.get("s_auth")) >= 85.0
+    )
 
     # Chronométrie (< 300s pour scripts complexes, < 60s pour fichiers standards, ou rafale sans .bak)
     dates_info = {}
@@ -278,18 +303,19 @@ def detect_ai_markers(py_files, student_dir=None):
             "first_date": created_timestamps[0][0].strftime("%d/%m/%Y"),
             "last_date": created_timestamps[-1][0].strftime("%d/%m/%Y")
         }
-        if distinct_days == 1 and len(created_timestamps) >= 5 and bak_count == 0:
+        if not _tel_authentic and distinct_days == 1 and len(created_timestamps) >= 5 and bak_count == 0:
             add_marker(created_timestamps[-1][1], 'chronometrie_instantanee', 'single_session_dump',
                        f"Dépôt massif de {len(created_timestamps)} scripts sur une seule séance sans aucun historique .bak", 0.40)
 
-    for i in range(1, len(created_timestamps)):
-        dt_prev, f_prev, loc_prev = created_timestamps[i - 1]
-        dt_curr, f_curr, loc_curr = created_timestamps[i]
-        diff_sec = (dt_curr - dt_prev).total_seconds()
-        if 0 < diff_sec <= 300 and loc_curr >= 60:
-            add_marker(f_curr, 'chronometrie_instantanee', 'fast_complex_creation', f"Script complexe ({loc_curr} lignes) produit en seulement {int(diff_sec)}s (< 5 min) après {f_prev} (copier-coller externe / IA probable)", 0.35)
-        elif 0 < diff_sec < 60 and loc_curr >= 25 and loc_prev >= 15:
-            add_marker(f_curr, 'chronometrie_instantanee', 'fast_creation', f"Création quasi-instantanée ({int(diff_sec)}s) d'un script complexe ({loc_curr} lignes)", 0.30)
+    if not _tel_authentic:
+        for i in range(1, len(created_timestamps)):
+            dt_prev, f_prev, loc_prev = created_timestamps[i - 1]
+            dt_curr, f_curr, loc_curr = created_timestamps[i]
+            diff_sec = (dt_curr - dt_prev).total_seconds()
+            if 0 < diff_sec <= 300 and loc_curr >= 60:
+                add_marker(f_curr, 'chronometrie_instantanee', 'fast_complex_creation', f"Script complexe ({loc_curr} lignes) produit en seulement {int(diff_sec)}s (< 5 min) après {f_prev} (copier-coller externe / IA probable)", 0.35)
+            elif 0 < diff_sec < 60 and loc_curr >= 25 and loc_prev >= 15:
+                add_marker(f_curr, 'chronometrie_instantanee', 'fast_creation', f"Création quasi-instantanée ({int(diff_sec)}s) d'un script complexe ({loc_curr} lignes)", 0.30)
 
     total_weight = sum(category_weights.values())
     active_categories = [cat for cat, w in category_weights.items() if w >= 0.15]
@@ -324,14 +350,14 @@ def detect_ai_markers(py_files, student_dir=None):
 
 def audit_student(folder_path, sessions_xml_path=None):
     folder = Path(folder_path).resolve()
-    py_files = [f for f in folder.glob("*.py") if not f.name.startswith(".") and not f.name.endswith(".bak")]
-    if not py_files:
-        def _is_ign(f):
-            try:
-                return any(p.startswith(".") or p in ("__pycache__", "evaluations", "codelab", ".venv", "env", "build") for p in f.relative_to(folder).parts[:-1]) or f.name.endswith(".bak")
-            except Exception:
-                return False
-        py_files = [f for f in folder.rglob("*.py") if not _is_ign(f)]
+    def _is_ign(f):
+        try:
+            return any(p.startswith(".") or p in ("__pycache__", "evaluations", "codelab", ".venv", "env", "build") for p in f.relative_to(folder).parts[:-1]) or f.name.startswith(".") or f.name.endswith(".bak")
+        except Exception:
+            return False
+    py_files = sorted([f for f in folder.rglob("*.py") if not _is_ign(f)])
+    py_notebooks = sorted([f for f in folder.rglob("*.ipynb") if not _is_ign(f) and is_python_notebook(f)])
+    py_files = sorted(set(py_files + py_notebooks))
 
     # Détection de l'identité et du travail
     student_id = folder.name
@@ -428,7 +454,7 @@ def audit_student(folder_path, sessions_xml_path=None):
         content = ""
         lines = []
         try:
-            content = py_file.read_text(encoding="utf-8", errors="replace")
+            content = extract_python_from_notebook(py_file) if py_file.suffix.lower() == ".ipynb" else py_file.read_text(encoding="utf-8", errors="replace")
             lines = content.splitlines()
             tree = ast.parse(content, filename=py_file.name)
             results["valid_ast_count"] += 1
@@ -506,6 +532,12 @@ def audit_student(folder_path, sessions_xml_path=None):
     arch_max = float(axes_w.get("axe2_conception_max", 8.0))
     style_max = float(axes_w.get("axe3_style_max", 4.0))
     tests_max = float(axes_w.get("axe4_validation_max", 2.0))
+    results["axes_max"] = {
+        "syntax": syntax_max,
+        "architecture": arch_max,
+        "style": style_max,
+        "tests": tests_max,
+    }
 
     # 1. Syntaxe & AST (/6)
     num_errors = len(py_files) - results["valid_ast_count"]
@@ -552,17 +584,22 @@ def audit_student(folder_path, sessions_xml_path=None):
         style_pts += 0.4
     results["scores"]["style"] = min(style_max, round((style_pts / 4.0) * style_max, 1))
 
-    # 4. Tests (/2)
-    has_test_file = any("test" in f.name.lower() for f in py_files)
-    if total_asserts >= 4 or (has_test_file and total_asserts >= 2):
-        test_pts = 2.0
-    elif total_asserts >= 2 or has_test_file:
-        test_pts = 1.2
-    elif total_asserts == 1:
-        test_pts = 0.5
+    # 4. Tests (/2) — piloté par tests.json si présent, sinon heuristique statique
+    decl_tests = run_declarative_tests(SKILL_DIR, folder, "python")
+    results["declarative_tests"] = decl_tests
+    if decl_tests.get("active") and decl_tests.get("total", 0) > 0:
+        results["scores"]["tests"] = min(tests_max, round(decl_tests["ratio"] * tests_max, 1))
     else:
-        test_pts = 0.0
-    results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
+        has_test_file = any("test" in f.name.lower() for f in py_files)
+        if total_asserts >= 4 or (has_test_file and total_asserts >= 2):
+            test_pts = 2.0
+        elif total_asserts >= 2 or has_test_file:
+            test_pts = 1.2
+        elif total_asserts == 1:
+            test_pts = 0.5
+        else:
+            test_pts = 0.0
+        results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
 
     ai_info = detect_ai_markers(py_files, student_dir=folder)
     results["ai_analysis"] = ai_info
@@ -576,18 +613,8 @@ def audit_student(folder_path, sessions_xml_path=None):
     )
     results["scores"]["note_technique_brute"] = note_sans_malus
 
-    anti_ia = weights.get("anti_triche", {}).get("assistance_ia", {})
-    malus_eleve = float(anti_ia.get("malus_eleve", 2.0))
-    plafond_eleve = float(anti_ia.get("plafond_note_eleve", 12.0))
-    malus_modere = float(anti_ia.get("malus_modere", 1.0))
-    plafond_modere = float(anti_ia.get("plafond_note_modere", 14.0))
-
+    # Politique zéro faux positif : aucun malus/plafond IA automatique (alerte rouge informative uniquement)
     total_note = note_sans_malus
-    if ai_prob >= 60:
-        total_note = min(plafond_eleve, max(0.0, round(total_note - malus_eleve, 1)))
-    elif ai_prob >= 30:
-        total_note = min(plafond_modere, max(0.0, round(total_note - malus_modere, 1)))
-
     results["scores"]["note_apres_ia"] = total_note
     results["scores"]["total"] = total_note
     return results

@@ -1068,8 +1068,6 @@ public class CodeLab extends AbstractCodeLab {
 		new Thread(() -> {
 			boolean ok = false;
 			try {
-				// Phase 1 : 1 seconde pour la connexion au serveur (labor illusion)
-				Utils.wait(1000);
 				ok = client.connection(finalLogin, finalPassword);
 			}
 			finally {
@@ -1319,7 +1317,6 @@ public class CodeLab extends AbstractCodeLab {
 		check_Processing();
 		check_Haskell();
 		check_CLIPS();
-		Utils.wait(1000);
 		WaitingDialog.close();
 
 		console.focus(); // Flusher la console
@@ -2472,8 +2469,7 @@ public class CodeLab extends AbstractCodeLab {
 
 		String msg = String.format("CodeLab %s build %s (%s) is ready!", VERSION, BUILD, ARCHITECTURE);
 		directPrintln("[codelab] " + msg, Console.COLOR_LOG);
-		
-		Utils.wait(1000);
+
 		WaitingDialog.close();
 		logger(msg);
 

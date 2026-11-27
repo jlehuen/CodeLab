@@ -92,8 +92,8 @@ def count_similar_files(sim_alert_str):
     """Compte le nombre de fichiers uniques impliqués dans une alerte de similarité."""
     if not sim_alert_str:
         return 0
-    # Recherche les motifs type 'sur TP2E2a.c, TP1E3.c' ou '.py' ou '.java'
-    files = set(re.findall(r'[a-zA-Z0-9_\-\.]+\.(?:c|h|py|java)', sim_alert_str))
+    # Recherche les motifs type 'sur TP2E2a.c, TP1E3.c' ou '.py', '.hs', '.java', '.ipynb'
+    files = set(re.findall(r'[a-zA-Z0-9_\-\.]+\.(?:c|h|py|hs|java|ipynb)', sim_alert_str))
     return len(files)
 
 def update_student_report_markdown(report_file, st_info, a1_max=10.0, a2_max=8.0, a3_max=2.0, a4_max=0.0):
@@ -317,13 +317,8 @@ def recalculate_session(session_dir, weights_path=None):
                 sim_malus = sim_m1
             sim_malus = min(sim_malus, sim_max_total)
 
-            # 4. Calcul de la note totale finale (IA plafonnée puis similarité déduite)
-            note_after_ia = raw_subtotal - ia_malus
-            if applied_ia_cap is not None:
-                note_after_ia = min(note_after_ia, applied_ia_cap)
-            adjusted_total = note_after_ia - sim_malus
-            if malus_cumule_max > 0.0:
-                adjusted_total = max(adjusted_total, raw_subtotal - malus_cumule_max)
+            # 4. Politique zéro faux positif : aucun malus automatique IA / similarité
+            adjusted_total = raw_subtotal
 
             final_total = round(max(0.0, min(20.0, adjusted_total)), 1)
             new_notes.append(final_total)
@@ -522,6 +517,8 @@ def recalculate_session(session_dir, weights_path=None):
             
             if "intropython" in skill_name:
                 bareme_str = f"{a1_max:.0f} (Logs & Regex) + {a2_max:.0f} (Numpy & Visualisation) + {a3_max:.0f} (Style) = 20 pts"
+            elif "haskell" in skill_name:
+                bareme_str = f"{a1_max:.0f} (Compilation GHC) + {a2_max:.0f} (Conception Fonctionnelle) + {a3_max:.0f} (Style) + {a4_max:.0f} (Tests) = 20 pts"
             elif "java" in skill_name:
                 bareme_str = f"{a1_max:.0f} (Compilation) + {a2_max:.0f} (Conception) + {a3_max:.0f} (Javadoc) + {a4_max:.0f} (Tests) = 20 pts"
             elif "python" in skill_name:

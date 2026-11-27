@@ -16,17 +16,19 @@ from pathlib import Path
 from datetime import datetime
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
+SKILLS_ROOT = SKILL_DIR.parent
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+
+from skills_common import (
+    load_weights as _load_weights_common,
+    run_declarative_tests,
+)
 
 
 def load_weights():
     """Charge dynamiquement les pondérations depuis weights.json."""
-    for p in (SKILL_DIR / "weights.json", Path(__file__).resolve().parent / "weights.json"):
-        if p.is_file():
-            try:
-                return json.loads(p.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-    return {}
+    return _load_weights_common(SKILL_DIR)
 
 
 def strip_java_comments(content):
@@ -104,6 +106,49 @@ def run_javac_check(java_files):
     except Exception as e:
         return False, str(e)
 
+
+def run_javac_check_detailed(java_files):
+    """
+    Tente d'abord une compilation globale ; en cas d'échec (ex. brouillon cassé ou classes Main
+    en doublon dans TP1/ et TP2/), re-teste par sous-dossier puis par fichier (-sourcepath)
+    pour calculer un ratio réel de classes compilables.
+    Retourne (all_ok, first_err, valid_count, total_count).
+    """
+    total = len(java_files)
+    if total == 0:
+        return True, "", 0, 0
+    all_ok, err = run_javac_check(java_files)
+    if all_ok:
+        return True, "", total, total
+
+    javac_bin = _resolve_codelab_javac()
+    valid_files = set()
+    by_dir = {}
+    for jf in java_files:
+        by_dir.setdefault(jf.parent, []).append(jf)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for parent_dir, dir_files in by_dir.items():
+            try:
+                cmd = [javac_bin, "-nowarn", "-sourcepath", str(parent_dir), "-d", tmpdir] + [str(f) for f in dir_files]
+                res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                if res.returncode == 0:
+                    for f in dir_files:
+                        valid_files.add(f)
+                    continue
+            except Exception:
+                pass
+            for jf in dir_files:
+                try:
+                    cmd = [javac_bin, "-nowarn", "-sourcepath", str(parent_dir), "-d", tmpdir, str(jf)]
+                    res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                    if res.returncode == 0:
+                        valid_files.add(jf)
+                except Exception:
+                    pass
+
+    return (len(valid_files) == total), err, len(valid_files), total
+
 def format_lines(lines, start_idx, end_idx, highlight_line=None, note=None):
     """Formate une portion de lignes avec numérotation 'ligne | code' et annotation optionnelle."""
     start = max(0, start_idx)
@@ -173,14 +218,15 @@ def detect_ai_markers(java_files, student_dir=None):
                 sys.path.insert(0, str(skills_root))
             from activity_analyzer import analyze_student_activity
             act_data = analyze_student_activity(student_dir)
-            if act_data.get("active"):
+            if act_data.get("has_rich_telemetry"):
                 for a in act_data.get("alerts", []):
                     if "BURST_INSERT" in a:
                         add_marker("Télémétrie", "chronometrie_instantanee", "burst_insert", a, 0.45)
                     elif "BURST_NEW_FILE" in a:
                         add_marker("Télémétrie", "chronometrie_instantanee", "burst_new_file", a, 0.40)
-                if act_data.get("s_auth", 100.0) < 50.0:
-                    add_marker("Télémétrie", "variance_stylometrique", "low_s_auth", f"Score d'authenticité faible ({act_data['s_auth']}%) - Code majoritairement injecté ou collé ({act_data['paste_chars']} caractères collés)", 0.35)
+                s_auth_val = act_data.get("s_auth")
+                if s_auth_val is not None and float(s_auth_val) < 50.0:
+                    add_marker("Télémétrie", "variance_stylometrique", "low_s_auth", f"Score d'authenticité faible ({s_auth_val}%) - Code majoritairement injecté ou collé ({act_data['paste_chars']} caractères collés)", 0.35)
         except Exception:
             pass
 
@@ -229,8 +275,8 @@ def detect_ai_markers(java_files, student_dir=None):
         if re.search(r'\bOptional<', code_nc) or 'java.util.concurrent' in code_nc or 'java.nio.file' in code_nc:
             add_marker(rel_path, 'bibliotheque_avancee', 'optional_nio', "Bibliothèques avancées (Optional / NIO / Concurrent) atypiques pour un débutant", 0.25)
 
-        # 4. Javadoc industrielle formelle
-        if len(re.findall(r'[@\\](param|return|throws|author)', content)) >= 4:
+        # 4. Javadoc industrielle formelle (seuil relevé à >= 12 tags pour ne pas pénaliser la Javadoc valorisée en Axe 3)
+        if len(re.findall(r'[@\\](param|return|throws|author)', content)) >= 12:
             add_marker(rel_path, 'stylometrie_ia', 'javadoc_heavy', "Sur-documentation Javadoc formelle (@param / @return / @throws)", 0.20)
 
         # 5. Phrasé didactique et étapes scolaires
@@ -263,6 +309,14 @@ def detect_ai_markers(java_files, student_dir=None):
         add_marker("Ensemble des fichiers", 'variance_stylometrique', 'indentation_spaces_rupture',
                    f"Indentation dominante en 4 espaces ({total_spaces} lignes en 4 espaces vs {total_tabs} tabulations natives CodeLab) caractéristique d'un copier-coller externe / LLM", 0.35)
 
+    # Neutraliser les heuristiques de chronométrie si la télémétrie prouve une frappe authentique (>= 85%)
+    _tel_authentic = bool(
+        act_data
+        and act_data.get("has_rich_telemetry")
+        and act_data.get("s_auth") is not None
+        and float(act_data.get("s_auth")) >= 85.0
+    )
+
     # Chronométrie (< 300s pour classes complexes, < 60s pour fichiers standards, ou rafale sans .bak)
     dates_info = {}
     if created_timestamps:
@@ -275,18 +329,19 @@ def detect_ai_markers(java_files, student_dir=None):
             "first_date": created_timestamps[0][0].strftime("%d/%m/%Y"),
             "last_date": created_timestamps[-1][0].strftime("%d/%m/%Y")
         }
-        if distinct_days == 1 and len(created_timestamps) >= 5 and bak_count == 0:
+        if not _tel_authentic and distinct_days == 1 and len(created_timestamps) >= 5 and bak_count == 0:
             add_marker(created_timestamps[-1][1], 'chronometrie_instantanee', 'single_session_dump',
                        f"Dépôt massif de {len(created_timestamps)} classes sur une seule séance sans aucun historique .bak", 0.40)
 
-    for i in range(1, len(created_timestamps)):
-        dt_prev, f_prev, loc_prev = created_timestamps[i - 1]
-        dt_curr, f_curr, loc_curr = created_timestamps[i]
-        diff_sec = (dt_curr - dt_prev).total_seconds()
-        if 0 < diff_sec <= 300 and loc_curr >= 60:
-            add_marker(f_curr, 'chronometrie_instantanee', 'fast_complex_creation', f"Classe complexe ({loc_curr} lignes) produite en seulement {int(diff_sec)}s (< 5 min) après {f_prev} (copier-coller externe / IA probable)", 0.35)
-        elif 0 < diff_sec < 60 and loc_curr >= 25 and loc_prev >= 15:
-            add_marker(f_curr, 'chronometrie_instantanee', 'fast_creation', f"Création quasi-instantanée ({int(diff_sec)}s) d'une classe de {loc_curr} lignes (copier-coller externe)", 0.30)
+    if not _tel_authentic:
+        for i in range(1, len(created_timestamps)):
+            dt_prev, f_prev, loc_prev = created_timestamps[i - 1]
+            dt_curr, f_curr, loc_curr = created_timestamps[i]
+            diff_sec = (dt_curr - dt_prev).total_seconds()
+            if 0 < diff_sec <= 300 and loc_curr >= 60:
+                add_marker(f_curr, 'chronometrie_instantanee', 'fast_complex_creation', f"Classe complexe ({loc_curr} lignes) produite en seulement {int(diff_sec)}s (< 5 min) après {f_prev} (copier-coller externe / IA probable)", 0.35)
+            elif 0 < diff_sec < 60 and loc_curr >= 25 and loc_prev >= 15:
+                add_marker(f_curr, 'chronometrie_instantanee', 'fast_creation', f"Création quasi-instantanée ({int(diff_sec)}s) d'une classe de {loc_curr} lignes (copier-coller externe)", 0.30)
 
     total_weight = sum(category_weights.values())
     active_categories = [cat for cat, w in category_weights.items() if w >= 0.15]
@@ -321,14 +376,12 @@ def detect_ai_markers(java_files, student_dir=None):
 
 def audit_student(folder_path, sessions_xml_path=None):
     folder = Path(folder_path).resolve()
-    java_files = [f for f in folder.glob("*.java") if not f.name.startswith(".") and not f.name.endswith(".bak")]
-    if not java_files:
-        def _is_ign(f):
-            try:
-                return any(p.startswith(".") or p in ("__pycache__", "evaluations", "codelab", "bin", "build") for p in f.relative_to(folder).parts[:-1]) or f.name.endswith(".bak")
-            except Exception:
-                return False
-        java_files = [f for f in folder.rglob("*.java") if not _is_ign(f)]
+    def _is_ign(f):
+        try:
+            return any(p.startswith(".") or p in ("__pycache__", "evaluations", "codelab", "bin", "build") for p in f.relative_to(folder).parts[:-1]) or f.name.startswith(".") or f.name.endswith(".bak")
+        except Exception:
+            return False
+    java_files = sorted([f for f in folder.rglob("*.java") if not _is_ign(f)])
 
     # Détection de l'identité et du travail
     student_id = folder.name
@@ -412,8 +465,9 @@ def audit_student(folder_path, sessions_xml_path=None):
         results["feedback"].append("Aucun fichier source Java (.java) trouvé dans le dossier.")
         return results
 
-    ok, err = run_javac_check(java_files)
+    ok, err, valid_java_count, total_java_count = run_javac_check_detailed(java_files)
     results["compilation_ok"] = ok
+    results["valid_java_count"] = valid_java_count
     if not ok:
         results["compilation_error"] = err.strip()[:300]
 
@@ -538,9 +592,20 @@ def audit_student(folder_path, sessions_xml_path=None):
     arch_max = float(axes_w.get("axe2_conception_max", 8.0))
     style_max = float(axes_w.get("axe3_style_max", 4.0))
     tests_max = float(axes_w.get("axe4_validation_max", 2.0))
+    results["axes_max"] = {
+        "compilation": comp_max,
+        "architecture": arch_max,
+        "style": style_max,
+        "tests": tests_max,
+    }
 
-    # 1. Compilation javac exigeante (/6)
-    results["scores"]["compilation"] = comp_max if results["compilation_ok"] else round(comp_max / 6.0, 1)
+    # 1. Compilation javac proportionnelle par classe/sous-dossier (/6)
+    num_java_errors = max(0, total_java_count - valid_java_count)
+    ratio_valid_java = valid_java_count / float(max(1, total_java_count))
+    if results["compilation_ok"]:
+        results["scores"]["compilation"] = comp_max
+    else:
+        results["scores"]["compilation"] = max(0.0, round(ratio_valid_java * comp_max - 0.6 * num_java_errors, 1))
 
     # 2. Modélisation Objet & Encapsulation exigeante (/8)
     arch_pts = 0.0
@@ -582,19 +647,24 @@ def audit_student(folder_path, sessions_xml_path=None):
         style_pts += 0.5
     results["scores"]["style"] = min(style_max, round((style_pts / 4.0) * style_max, 1))
 
-    # 4. Tests & Validation (/2)
-    total_assert_calls = sum(
-        len(re.findall(r'\b(?:assert|assertEquals|assertTrue|assertFalse|@Test)\b', strip_java_comments(jf.read_text(encoding="utf-8", errors="ignore"))))
-        for jf in java_files
-    )
-    has_dedicated_test_file = any("test" in jf.name.lower() for jf in java_files)
-    if total_assert_calls >= 3 or (has_dedicated_test_file and total_assert_calls >= 1):
-        test_pts = 2.0
-    elif total_assert_calls >= 1 or has_dedicated_test_file:
-        test_pts = 1.0
+    # 4. Tests & Validation (/2) — piloté par tests.json si présent, sinon heuristique statique
+    decl_tests = run_declarative_tests(SKILL_DIR, folder, "java")
+    results["declarative_tests"] = decl_tests
+    if decl_tests.get("active") and decl_tests.get("total", 0) > 0:
+        results["scores"]["tests"] = min(tests_max, round(decl_tests["ratio"] * tests_max, 1))
     else:
-        test_pts = 0.0
-    results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
+        total_assert_calls = sum(
+            len(re.findall(r'\b(?:assert|assertEquals|assertTrue|assertFalse|@Test)\b', strip_java_comments(jf.read_text(encoding="utf-8", errors="ignore"))))
+            for jf in java_files
+        )
+        has_dedicated_test_file = any("test" in jf.name.lower() for jf in java_files)
+        if total_assert_calls >= 3 or (has_dedicated_test_file and total_assert_calls >= 1):
+            test_pts = 2.0
+        elif total_assert_calls >= 1 or has_dedicated_test_file:
+            test_pts = 1.0
+        else:
+            test_pts = 0.0
+        results["scores"]["tests"] = min(tests_max, round((test_pts / 2.0) * tests_max, 1))
 
     ai_info = detect_ai_markers(java_files, student_dir=folder)
     results["ai_analysis"] = ai_info
@@ -608,18 +678,8 @@ def audit_student(folder_path, sessions_xml_path=None):
     )
     results["scores"]["note_technique_brute"] = note_sans_malus
 
-    anti_ia = weights.get("anti_triche", {}).get("assistance_ia", {})
-    malus_eleve = float(anti_ia.get("malus_eleve", 2.0))
-    plafond_eleve = float(anti_ia.get("plafond_note_eleve", 12.0))
-    malus_modere = float(anti_ia.get("malus_modere", 1.0))
-    plafond_modere = float(anti_ia.get("plafond_note_modere", 14.0))
-
+    # Politique zéro faux positif : aucun malus/plafond IA automatique (alerte rouge informative uniquement)
     total_note = note_sans_malus
-    if ai_prob >= 60:
-        total_note = min(plafond_eleve, max(0.0, round(total_note - malus_eleve, 1)))
-    elif ai_prob >= 30:
-        total_note = min(plafond_modere, max(0.0, round(total_note - malus_modere, 1)))
-
     results["scores"]["note_apres_ia"] = total_note
     results["scores"]["total"] = total_note
     return results

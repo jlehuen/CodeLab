@@ -3,15 +3,15 @@ name: eval-python-sample
 description: >-
   Skill d'exemple pour l'évaluation de scripts et algorithmes en langage Python.
   Analyse l'AST, vérifie le respect des conventions PEP 8, détecte les anti-patterns et exécute les tests unitaires.
-version: 1.1.0
-last_modified: 2026-10-10
+version: 1.2.0
+last_modified: 2026-11-27
 ---
 
 # Skill d'Évaluation : Python / Algorithmique (Exemple)
 
-**Version :** 1.1.0 | **Dernière modification :** 10 octobre 2026
+**Version :** 1.2.0 | **Dernière modification :** 27 novembre 2026
 
-Ce skill est un modèle d'exemple fourni avec CodeLab pour illustrer l'évaluation automatique de code en langage Python.
+Ce skill est un modèle d'exemple fourni avec CodeLab pour illustrer l'évaluation automatique de code en langage Python (fichiers `.py` et carnets interactifs `.ipynb` Python).
 Il s'appuie sur l'analyseur syntaxique AST standard de Python (`ast`) et vérifie la qualité du code sans dépendance externe lourde.
 
 ## Structure du barème d'exemple (sur 20 points)

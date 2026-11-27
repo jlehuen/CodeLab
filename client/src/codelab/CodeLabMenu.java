@@ -20,6 +20,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JSeparator;
 
 import codelab.console.ConsolePopupMenu;
+import codelab.eval.SessionEvaluator;
 import codelab.utils.MyFileUtils;
 import codelab.utils.HTMLInfoDialog;
 import codelab.utils.FontChooser;
@@ -411,6 +412,50 @@ public class CodeLabMenu extends JPopupMenu {
 		});
 
 		// ---------------------------------------
+		// Sous-menu Skills d'évaluation
+
+		JMenuItem itemSkillsDoc = new JMenuItem(CodeLab.LABEL("itemSkillsDoc"));
+		itemSkillsDoc.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				SessionEvaluator.openSkillsDocumentation(codelab);
+			}
+		});
+
+		JMenuItem itemNewSkill = new JMenuItem(CodeLab.LABEL("evalNewSkillFromTemplate"));
+		itemNewSkill.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				SessionEvaluator.createSkillFromTemplate(codelab);
+			}
+		});
+
+		JMenuItem itemReloadSkills = new JMenuItem(CodeLab.LABEL("evalReloadSkills"));
+		itemReloadSkills.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				SessionEvaluator.reloadSkills(codelab);
+			}
+		});
+
+		JMenuItem itemSkillsFolder = new JMenuItem(CodeLab.LABEL("itemSkillsFolder"));
+		itemSkillsFolder.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				try {
+					java.io.File dir = new java.io.File(CodeLab.SKILLS_FOLDER);
+					if (!dir.exists()) dir.mkdirs();
+					Desktop.getDesktop().open(dir);
+				} catch (Exception ex) {
+					codelab.printlnToConsole("[codelab] Impossible d'ouvrir le dossier skills : " + ex.getMessage());
+				}
+			}
+		});
+
+		JMenu menuSkills = new JMenu(CodeLab.LABEL("menuSkills"));
+		menuSkills.add(itemSkillsDoc);
+		menuSkills.add(new JSeparator());
+		menuSkills.add(itemNewSkill);
+		menuSkills.add(itemReloadSkills);
+		if (Desktop.isDesktopSupported()) menuSkills.add(itemSkillsFolder);
+
+		// ---------------------------------------
 		// Vérifier la version
 
 		JMenuItem itemCheckVersion = new JMenuItem(CodeLab.LABEL("itemCheckVersion"));
@@ -558,6 +603,7 @@ public class CodeLabMenu extends JPopupMenu {
 		add(menuConsole);
 		add(menuPlugins);
 		add(menuConfigFile);
+		if (codelab.isConnected() && (codelab.isTutor() || codelab.isAdmin())) add(menuSkills);
 		add(new JSeparator());
 		add(itemGotoHomepage);
 		add(itemInformations);

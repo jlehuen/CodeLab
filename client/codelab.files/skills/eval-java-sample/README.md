@@ -78,10 +78,10 @@ L'évaluation génère un compte-rendu individuel Markdown conforme au gabarit [
 3. **Profil Visuel Multidimensionnel (Diagrammes Radar)** : Double diagramme radar Mermaid (`radar-beta`) affichant côte à côte les 6 indicateurs techniques et l'affinité aux 6 profils didactiques opposés deux à deux.
 4. **Analyses d'Intégrité & Dynamique Temporelle** : Télémétrie d'activité, tranches de 15 min, stylométrie et contrôle de similarités.
 5. **Sections Pédagogiques Structurées** :
-   - `### 1. Synthèse Globale & Appréciation Pédagogique`
-   - `### 2. Bilan Chiffré & Respect des Spécifications`
-   - `### 3. Métriques & Qualité du Code` (avec extraits de code Java dans des blocs ```java ... ```)
-   - `### 4. Pistes d'Amélioration & Conseils Pratiques`
+   - *Bilan de Progression & Analyse Pédagogique*
+   - *Points Forts Observés* (avec extraits de code Java annotés)
+   - *Axes d'Amélioration & Conseils Méthodologiques*
+   - *Commentaire de l'Enseignant*
 
 ---
 

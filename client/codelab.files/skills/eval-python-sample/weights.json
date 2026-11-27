@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.2",
   "description": "Pondérations et barème universel CodeLab pour Python / Algorithmique (6 + 8 + 4 + 2 = 20 pts)",
   "axes": {
     "axe1_compilation_max": 6.0,

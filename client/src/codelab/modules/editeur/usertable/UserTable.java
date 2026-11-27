@@ -125,33 +125,44 @@ public class UserTable extends JScrollPane {
 
 	private static final HashMap<String, ImageIcon> PROFILE_ICON_CACHE = new HashMap<>();
 
-	private static ImageIcon getProfileIcon(String code) {
+	private static ImageIcon getProfileIcon(String code, int size) {
+		int iconSize = Math.max(16, size);
 		String key = (code != null && !code.isBlank()) ? code.toUpperCase() : "OBSERVING";
-		ImageIcon cached = PROFILE_ICON_CACHE.get(key);
+		String cacheKey = key + "@" + iconSize;
+		ImageIcon cached = PROFILE_ICON_CACHE.get(cacheKey);
 		if (cached != null) return cached;
 
 		ImageIcon result = null;
 		String[] parts = UserData.splitProfileTrend(key);
 		if (parts.length == 2) {
-			ImageIcon i1 = getProfileIcon(parts[0]);
-			ImageIcon i2 = getProfileIcon(parts[1]);
+			ImageIcon i1 = getProfileIcon(parts[0], iconSize);
+			ImageIcon i2 = getProfileIcon(parts[1], iconSize);
 			if (i1 != null && i2 != null) {
-				java.awt.image.BufferedImage combined = new java.awt.image.BufferedImage(34, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+				int gap = 3;
+				java.awt.image.BufferedImage combined = new java.awt.image.BufferedImage(iconSize * 2 + gap, iconSize, java.awt.image.BufferedImage.TYPE_INT_ARGB);
 				java.awt.Graphics2D g2 = combined.createGraphics();
-				g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-				g2.drawImage(i1.getImage(), 0, 0, 16, 16, null);
-				g2.drawImage(i2.getImage(), 18, 0, 16, 16, null);
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+				g2.drawImage(i1.getImage(), 0, 0, iconSize, iconSize, null);
+				g2.drawImage(i2.getImage(), iconSize + gap, 0, iconSize, iconSize, null);
 				g2.dispose();
 				result = new ImageIcon(combined);
 			}
 		} else {
 			ImageIcon raw = ResourceUtils.loadImageIcon(UserData.getProfileTrendIconPath(parts[0]));
 			if (raw != null && raw.getIconWidth() > 0) {
-				java.awt.Image scaled = raw.getImage().getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH);
+				java.awt.image.BufferedImage scaled = new java.awt.image.BufferedImage(iconSize, iconSize, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+				java.awt.Graphics2D g2 = scaled.createGraphics();
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+				g2.drawImage(raw.getImage(), 0, 0, iconSize, iconSize, null);
+				g2.dispose();
 				result = new ImageIcon(scaled);
 			}
 		}
-		if (result != null) PROFILE_ICON_CACHE.put(key, result);
+		if (result != null) PROFILE_ICON_CACHE.put(cacheKey, result);
 		return result;
 	}
 
@@ -716,15 +727,28 @@ public class UserTable extends JScrollPane {
 	public void adjustColumnsWidth() {
 		// Invoqué également par reinit() de ModuleEditor
 		TableColumnModel model = table.getColumnModel();
-		int nbColumns = (int) Arrays.stream(visible).filter(flag -> flag).count();
-		int width = table.getWidth() / nbColumns;
+		boolean profileVisible = visible.length > 5 && visible[5];
+		int profileW = 58;
+		int otherCols = 0;
+		for (int i = 0; i < table.getColumnCount(); i++) {
+			if (visible[i] && i != 5) otherCols++;
+		}
+		int remaining = Math.max(0, table.getWidth() - (profileVisible ? profileW : 0));
+		int width = (otherCols > 0) ? (remaining / otherCols) : table.getWidth();
 		for (int i = 0; i < table.getColumnCount(); i++) {
 			TableColumn column = model.getColumn(i);
 			if (visible[i]) {
-				column.setMinWidth(20);
-				column.setMaxWidth(800);
-				column.setPreferredWidth(width);
-				column.setWidth(width);
+				if (i == 5) {
+					column.setMinWidth(48);
+					column.setMaxWidth(96);
+					column.setPreferredWidth(profileW);
+					column.setWidth(profileW);
+				} else {
+					column.setMinWidth(20);
+					column.setMaxWidth(800);
+					column.setPreferredWidth(width);
+					column.setWidth(width);
+				}
 			} else {
 				column.setMinWidth(0);
 				column.setMaxWidth(0);
@@ -775,6 +799,9 @@ public class UserTable extends JScrollPane {
 			if (column == 0) {
 				setHorizontalAlignment(JLabel.LEFT);
 				((JLabel)comp).setToolTipText(udata.buildUserInfoTooltipHtml(isPresent(udata)));
+			} else if (column == 1) {
+				setHorizontalAlignment(JLabel.CENTER);
+				((JLabel)comp).setToolTipText(udata.buildUserInfoTooltipHtml(isPresent(udata)));
 			} else if (column == 3) {
 				setHorizontalAlignment(JLabel.CENTER);
 				int ipCount = getUsersCountWithIp(udata.getAddress());
@@ -795,13 +822,15 @@ public class UserTable extends JScrollPane {
 				}
 				((JLabel)comp).setToolTipText(udata.buildTooltipHtml());
 			} else if (column == 5) {
-				setHorizontalAlignment(JLabel.LEFT);
+				setHorizontalAlignment(JLabel.CENTER);
+				setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 2));
+				int iconSize = Math.min(22, Math.max(18, table.getRowHeight() - 1));
 				String trend = udata.getProfileTrend();
-				setIcon(getProfileIcon(trend));
-				setIconTextGap(5);
-				try {
-					setForeground(Color.decode(UserData.getProfileTrendColorHex(trend)));
-				} catch (Exception ignored) {
+				ImageIcon icon = getProfileIcon(trend, iconSize);
+				setIcon(icon);
+				setText(icon != null ? "" : "--");
+				setIconTextGap(0);
+				if (icon == null) {
 					setForeground(Color.GRAY);
 				}
 				((JLabel)comp).setToolTipText(udata.buildTooltipHtml());
